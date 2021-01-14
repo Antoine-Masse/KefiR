@@ -1,0 +1,40 @@
+#' igraph of correlated variables
+#'
+#' @param data a data.frame
+#' @param pval the maximum permissible p-value for the display
+#' @param exclude the minimum threshold of displayed correlations
+#' @param ampli coefficient of amplification of vertices
+#'
+#' @return correlation graph network (igraph) of the variables
+#' @import igraph
+#' @import psych
+#' @importFrom stats na.omit
+#' @importFrom stats cor
+#' @export
+#'
+#' @examples
+#' data(swiss)
+#' corrigraph(swiss)
+corrigraph <- function(data,pval=0.01,exclude=0.3, ampli=4) {
+  # Fonction réalisée par Antoine Massé
+  # Ctrl Alt Shift R
+  # Version 01
+  # Janvier 2021
+  cor(data) -> cor_matrice
+  # Matrice of p.values of theses correlations
+  #require("psych") - corr.test
+  corr.test(data)$p -> pval_matrice # Matrice des p-values
+  ifelse(pval_matrice<pval,1,0) -> pval_matrice
+  pval_matrice* cor_matrice -> mymat
+  #require(igraph)
+  net <- graph_from_adjacency_matrix(mymat, weighted=T,mode="lower")
+  net <- simplify(net, remove.multiple = T, remove.loops = TRUE) # élaguer les liens redondants
+  net <- delete.edges(net, E(net)[ abs(weight) < exclude ])
+  E(net)$colour <- ifelse(E(net)$weight<0,"red","blue")
+  E(net)$weight <- abs(E(net)$weight)
+  clp <- cluster_optimal(net)
+  class(clp)
+  l <- layout_with_fr(net)
+  plot(clp, net, layout = l,vertex.size=sqrt(betweenness(net))*ampli+10,vertex.color="yellow",
+       edge.arrow.size =0,arrow.mode=0,edge.width=(abs(E(net)$weight)*2)^3, edge.color =E(net)$colour)
+}

@@ -1,0 +1,5 @@
+devtools::use_package('igraph')
+devtools::use_package('psych')
+devtools::use_package('stats')
+usethis::use_build_ignore("devtools_history.R")
+usethis::use_build_ignore("comment-utiliser-mon-package.Rmd")
