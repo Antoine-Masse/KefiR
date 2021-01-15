@@ -1,32 +1,61 @@
 #' igraph of correlated variables
 #'
-#' @param data a data.frame
-#' @param pval the maximum permissible p-value for the display
-#' @param exclude the minimum threshold of displayed correlations
-#' @param ampli coefficient of amplification of vertices
+#' @param data A data.frame
+#' @param pval The maximum permissible p-value for the display
+#' @param exclude The minimum threshold of displayed correlations
+#' @param ampli Coefficient of amplification of vertices
+#' @param return If return=T, returns the correlation matrix of significant correlations
 #'
-#' @return correlation graph network (igraph) of the variables
+#' @return Correlation graph network (igraph) of the variables of a data.frame. Pay attention to the possible presence of non-numeric variables or missing data. Grouping of correlated variables: the vertices (circles) correspond to the variables. The more a variable is connected, the larger it appears. The color of the lines reflects the nature of the correlation (positive or negative).  The size of the lines is the value of the correlation from 0 to 1. All these correlations are significant (pval < 0.01). The coloured groupings reflect families of inter-correlated variables. BLUE: positive correlation - RED: negative correlation
 #' @import igraph
-#' @import psych
 #' @importFrom stats na.omit
 #' @importFrom stats cor
 #' @export
 #'
 #' @examples
+#' # Example 1
 #' data(swiss)
 #' corrigraph(swiss)
+#' # Example 2
+#' data(airquality)
+#' corrigraph(airquality)
 corrigraph <- function(data,pval=0.01,exclude=0.3, ampli=4) {
   # Fonction réalisée par Antoine Massé
   # Ctrl Alt Shift R
   # Version 01
   # Janvier 2021
-  cor(data) -> cor_matrice
-  # Matrice of p.values of theses correlations
-  #require("psych") - corr.test
-  corr.test(data)$p -> pval_matrice # Matrice des p-values
-  ifelse(pval_matrice<pval,1,0) -> pval_matrice
-  pval_matrice* cor_matrice -> mymat
-  #require(igraph)
+  # Control 1 - is.numeric ?
+  sapply(data, is.numeric) -> temp_id
+  data <- data[,temp_id]
+  if (any(temp_id==FALSE)) {cat("Warning ! Presence of non-numeric variables that cannot be taken into account.\n")}
+  # Control 2 - var is NULL ?
+  sapply(data, var, na.rm=T)->temp_var
+  which(temp_var!=0) -> temp_id
+  if (length(temp_id) != ncol(data)) {cat("Warning ! Some variables have a null variance and cannot be taken into account.\n")}
+  data <- data[,temp_id]
+  # Control 3 - is.na ?
+  if (any(is.na(data))==TRUE) {cat("Warning ! Presence of missing values.\n")}
+  # Matrice de corrélation
+  matrix(rep(0,ncol(data)^2),ncol(data),ncol(data))->mymat
+  rownames(mymat) <- colnames(data)
+  colnames(mymat) <- colnames(data)
+  warning<-0
+  for (i in 1: ncol(data)) {
+    for (j in 1: ncol(data)) {
+      temp_tab <- data.frame(data[,i],data[,j])
+      na.omit(temp_tab) -> temp_tab
+      if ((var(temp_tab[,1])!=0)&(var(temp_tab[,2])!=0)){
+        temp <- cor.test(data[,i],data[,j],na.rm=T)
+        temp <- ifelse(temp$p.value<= pval,temp$estimate,0)
+      }else{
+        temp<-0
+        if(warning==0){
+          warning <- 1
+          cat("Warning : Failure to account for missing data generated zero variances on some variables that had to be ignored.\n")}
+      }
+      mymat[i,j] <- temp
+    }
+  }
   net <- graph_from_adjacency_matrix(mymat, weighted=T,mode="lower")
   net <- simplify(net, remove.multiple = T, remove.loops = TRUE) # élaguer les liens redondants
   net <- delete.edges(net, E(net)[ abs(weight) < exclude ])

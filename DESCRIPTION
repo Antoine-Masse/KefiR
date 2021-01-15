@@ -17,5 +17,4 @@ RoxygenNote: 7.1.1
 Suggests: 
     knitr
 VignetteBuilder: knitr
-Imports: stats, psych,
-    igraph, qpdf  
+Imports: stats, igraph, lmtest, car 

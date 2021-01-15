@@ -1,35 +1,32 @@
----
-title: "comment-utiliser-mon-package KefiR"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{comment-utiliser-mon-package}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
----
-
-```{r, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
-)
-```
-
-# 1- Pour installer KefiR
-
-```{r}
-# Sélectionner le package tar.gz
-#install.packages(file.choose(), repos = NULL, type="source")
-library(KefiR)
-```
-
-Voici comment utiliser la commande corrigraph :
-
-```{r}
-data(swiss)
-corrigraph(swiss)
-```
-
-```{r}
+#' Function to validate a regression model
+#'
+#' @param reg : A regression model
+#' @param analyse : To see the detailed balance sheet
+#' @param nvar : The maximum number of variables allowed.
+#'
+#' @return This function allows to run all the tests necessary to validate a regression model (check the normal distribution of the residuals, avoid leverage effects, control the variance of the residuals...).
+#' @import lmtest
+#' @import car
+#' @export
+#'
+#' @examples
+#' #Example 1
+#' data(iris)
+#' reg <- lm(Sepal.Length~.,data=iris[,1:4])
+#' valreg(reg,analyse=TRUE)
+#' #Example 2
+#' data(airquality)
+#' reg <- lm(Wind~Temp,data=airquality)
+#' valreg(reg,analyse=TRUE)
+#' #Example 3
+#' data(mtcars)
+#' reg <- lm(cyl~gear,data=mtcars)
+#' valreg(reg,analyse=TRUE)
+#' #Example 4
+#' data(iris)
+#' reg <- lm(Petal.Width~Petal.Length,data=iris[iris$Species=="virginica",])
+#' valreg(reg,analyse=TRUE)
+#' plot(reg)
 valreg <- function(reg,analyse=FALSE,nvar=5) {
   error <- "OK"
   nvar1 <- length(coef(reg))
@@ -47,12 +44,7 @@ valreg <- function(reg,analyse=FALSE,nvar=5) {
       if (pval < 0.05) {if(analyse==TRUE){cat("Non-constant variance of the residuals.\n")};error = "error"}
     }
     cooks.distance(reg)->cooksd
-    if (max(cooksd,na.rm=T) > 1) {if(analyse==TRUE){cat("Leverage effect.\n")};error = "error"}
+    if (max(cooksd,na.rm=TRUE) > 1) {if(analyse==TRUE){cat("Leverage effect.\n")};error = "error"}
   }
   return(error)
 }
-data(airquality)
-library(lmtest) ; library(car)
-reg <- lm(Wind~Temp,data=airquality)
-valreg(reg,analyse=T)
-```
