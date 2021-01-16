@@ -6,7 +6,7 @@
 #'
 #' @return This function allows to run all the tests necessary to validate a regression model (check the normal distribution of the residuals, avoid leverage effects, control the variance of the residuals...).
 #' @import lmtest
-#' @import car
+#' @importFrom stats cooks.distance
 #' @export
 #'
 #' @examples

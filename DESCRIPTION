@@ -1,6 +1,6 @@
 Package: KefiR
 Title: KefiR Package
-Version: 0.0.0.1
+Version: 0.0.0.2
 Authors@R: 
     person(given = "Antoine",
            family = "Massé",
@@ -17,4 +17,5 @@ RoxygenNote: 7.1.1
 Suggests: 
     knitr
 VignetteBuilder: knitr
-Imports: stats, igraph, lmtest, car 
+Imports: stats, igraph, lmtest,
+     plot3D, rgl, plotly, plot3Drgl, plot3D

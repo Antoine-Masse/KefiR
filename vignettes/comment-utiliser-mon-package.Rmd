@@ -28,31 +28,3 @@ Voici comment utiliser la commande corrigraph :
 data(swiss)
 corrigraph(swiss)
 ```
-
-```{r}
-valreg <- function(reg,analyse=FALSE,nvar=5) {
-  error <- "OK"
-  nvar1 <- length(coef(reg))
-  if (nvar1 > nvar) {if(analyse==TRUE){cat("Plus de 6 variables\n")};error = "error"
-  } else if ( (length(summary(reg)[[4]][,4])) != (length(coef(reg))) ) {error = "error"
-  } else {
-    raintest(reg)$p.value -> pval # test de rainbow Adequacy
-    if (pval < 0.05) {if(analyse==TRUE){cat("Bad adequacy.\n")};error = "error"}
-    dwtest(reg)$p.value -> pval # Independence of DurbinWatson residues
-    if (pval < 0.05) {if(analyse==TRUE){cat("Bad independence of the residues.\n")};error = "error"}
-    shapiro.test(residuals(reg))$p.value->pval # Normal distribution of residues
-    if (pval < 0.05) {if(analyse==TRUE){cat("Non-normal distribution of residues.\n")};error = "error"}
-    if (length(coef(reg))>=2) {
-      bptest(reg)$p.value -> pval # Breush Pagan: constant variance of residuals
-      if (pval < 0.05) {if(analyse==TRUE){cat("Non-constant variance of the residuals.\n")};error = "error"}
-    }
-    cooks.distance(reg)->cooksd
-    if (max(cooksd,na.rm=T) > 1) {if(analyse==TRUE){cat("Leverage effect.\n")};error = "error"}
-  }
-  return(error)
-}
-data(airquality)
-library(lmtest) ; library(car)
-reg <- lm(Wind~Temp,data=airquality)
-valreg(reg,analyse=T)
-```

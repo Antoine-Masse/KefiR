@@ -16,14 +16,13 @@
 #' @return Vp - Part - variability due to the measured parts
 #' @return Vt - total variability
 #' @return It also directly infers the percentage of the total variability that each of these variabilities represents :
-#' @return
-#' Equipment share: Share_Equipment - Percentage of total variability due to measuring equipment
+#' @return Equipment share: Share_Equipment - Percentage of total variability due to measuring equipment
 #' @return Operator share: share_Operators - Percentage of total variability due to operators
 #' @return Share of R&R (%R&R): share_R_R - Percentage of total variability due to the combination repeatability&reproducibility
 #' @return Part_Part - Percentage of total variability due to the measured parts
 #' @return
 #' @export
-#'
+
 #' @examples
 #' set.seed(2)
 #' data <- data.frame("Measures"=rep(rnorm(10,20,0.007),9)*abs(rnorm(90,1,0.025)),"Operator"=rep(c("A","B","C"),30),"Equipement"=rep(1:10,9))
