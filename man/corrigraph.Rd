@@ -4,7 +4,7 @@
 \alias{corrigraph}
 \title{igraph of correlated variables}
 \usage{
-corrigraph(data, pval = 0.01, exclude = 0.3, ampli = 4)
+corrigraph(data, pval = 0.01, exclude = 0.3, ampli = 4, return = FALSE)
 }
 \arguments{
 \item{data}{A data.frame}

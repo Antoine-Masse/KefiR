@@ -4,17 +4,47 @@
 \alias{valreg}
 \title{Function to validate a regression model}
 \usage{
-valreg(reg, analyse = FALSE, nvar = 5)
+valreg(
+  reg,
+  analyse = FALSE,
+  nvar = 5,
+  boot = FALSE,
+  pval = 0.05,
+  conf.level = 0.95,
+  plot = FALSE,
+  raintest_pval = 0.05,
+  dwtest_pval = 0.03,
+  shapiro_pval = 0.05,
+  bptest_pval = 0.05
+)
 }
 \arguments{
-\item{reg}{: A regression model}
+\item{reg}{A regression model}
 
-\item{analyse}{: To see the detailed balance sheet}
+\item{analyse}{To see the detailed balance sheet}
 
-\item{nvar}{: The maximum number of variables allowed.}
+\item{nvar}{The maximum number of variables allowed.}
+
+\item{boot}{For checking the model by bootstrap with bootreg() (FALSE or TRUE)}
+
+\item{pval}{Maximum value accepted for the p-values of the model and its coefficients.}
+
+\item{conf.level}{Confidence interval accepted to validate the regression model by bootstrap.}
+
+\item{plot}{For seeing the graphical analysis of bootreg() (FALSE or TRUE)}
+
+\item{raintest_pval}{Minimal value of p-value accepted for Rainbow test}
+
+\item{dwtest_pval}{Minimal value of p-value accepted for Durbin-Watson test}
+
+\item{shapiro_pval}{Minimal value of p-value accepted for Shapiro-Wilk test}
+
+\item{bptest_pval}{Minimal value of p-value accepted for Breush-Pagan test}
 }
 \value{
 This function allows to run all the tests necessary to validate a regression model (check the normal distribution of the residuals, avoid leverage effects, control the variance of the residuals...).
+
+valreg will therefore validate the regression model, control the p-values and, possibly (boot argument), control the reliability by bootstrap with the bootreg function.
 }
 \description{
 Function to validate a regression model
@@ -31,10 +61,10 @@ valreg(reg,analyse=TRUE)
 #Example 3
 data(mtcars)
 reg <- lm(cyl~gear,data=mtcars)
-valreg(reg,analyse=TRUE)
+valreg(reg,analyse=TRUE,boot=TRUE)
 #Example 4
 data(iris)
 reg <- lm(Petal.Width~Petal.Length,data=iris[iris$Species=="virginica",])
-valreg(reg,analyse=TRUE)
+valreg(reg,analyse=TRUE,boot=TRUE,plot=TRUE)
 plot(reg)
 }

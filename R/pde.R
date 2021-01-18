@@ -1,22 +1,22 @@
 #' Vary two parameters in a recipe and model the ideal recipe.
 #'
-#' @param x : x values of first parameter
-#' @param y : y values of second parameter
-#' @param z : evaluation of the 6 recipes
-#' @param xlim : manual x limitation
-#' @param ylim : manual y limitation
-#' @param zlim : manual z limitation
-#' @param dim : resolution of the modelisation
-#' @param xlab : x title
-#' @param ylab : y title
-#' @param zlab : z title
-#' @param main : main
-#' @param col : color of th modelisation
-#' @param alpha : transparency
-#' @param pch : cf. plot function
-#' @param col.pt : color of points
-#' @param cex.pt : length of points
-#' @param mode : Two graphical modes (1 or 2)
+#' @param x x values of first parameter
+#' @param y y values of second parameter
+#' @param z evaluation of the 6 recipes
+#' @param xlim manual x limitation
+#' @param ylim manual y limitation
+#' @param zlim manual z limitation
+#' @param dim resolution of the modelisation
+#' @param xlab x title
+#' @param ylab y title
+#' @param zlab z title
+#' @param main main
+#' @param col color of th modelisation
+#' @param alpha transparency
+#' @param pch cf. plot function
+#' @param col.pt color of points
+#' @param cex.pt length of points
+#' @param mode Two graphical modes (1 or 2)
 #'
 #' @return : By varying 2 parameters, we can obtain different recipes that we will evaluate. A 3D modeling will thus allow to anticipate what would have been the ideal parameterization to obtain the best recipe.
 #' @import plot3D
@@ -27,26 +27,34 @@
 #' @export
 #'
 #' @examples
-#' x1   <- c(0,2,3,4,5,6)  ; # sugar
-#' y1   <- c(0,2,1,0,4,4)  ;  # salt
-#' hedo <- c(0,3,3,2,0,0)  ; # hedonique taste
+#' #Example 1
+#' x1   <- c(0,2,3,4,5,6)   # sugar
+#' y1   <- c(0,2,1,0,4,4)   # salt
+#' hedo <- c(0,3,3,2,0,0)   # hedonique taste
 #' pde(x1,y1,hedo,xlab="Sucre",ylab="Sel",zlab="Note hedonique",main="Optimisation d'une recette",dim=30,mode=1)
+#' #Example 2
+#' x1   <- c(0,2,3,4,4,0,1,3,2,0,2)  ; # sucre
+#' y1   <- c(0,2,1,0,4,4,3,3,0,2,4)  ;  # sel
+#' hedo <- c(0,3,3,0,0,0,3,5,0,0,0)  ; # note hédonique obtenue en goûtant le produit
+#' pde(x1,y1,hedo,xlab="Sucre",mode=2,pch=c(10:16),alpha=0.5,
+#'     ylab="Sel",zlab="Note hédonique",main="Optimisation d'une recette",dim=50)
 pde <- function(x,y,z,xlim=c(),ylim=c(),zlim=c(),dim=45,xlab="",ylab="",
                 zlab="",main="3D plot",col=c("blue","cyan","yellow","red","#990000"),alpha=0.1,pch=16,
                 col.pt="blue",cex.pt=6,mode=1) {
-  # limites des axes des graphiques
+  # Made by Antoine Masse & Julien Bousquet
   if (length(xlim) == 0) {xlim <- range(x)}
   if (length(ylim) == 0) {ylim <- range(y)}
   if (length(zlim) == 0) {zlim <- range(z)}
   # Débogage
-  if(cor(x,y)==1) {print("Vectors must not converge in order to be distributed over a 2D surface..\n") }
+  BUG<-0
+  if(cor.test(x,y)$p.value>0.05) {BUG<-1;print("x and y should not be correlated!\n") }
   if((length(x)!=length(y)) | (length(x)!=length(z)) | (length(unique(paste(x,y)))<6) | (length(unique(x)) < 3) | (length(unique(y)) < 3)){
-    cat("Ca ne peut pas marcher pas.\n")
+    cat("It can't work.\n")
     if((length(x)!=length(y)) | (length(x)!=length(z))) {print("Vector length are not identical.\n") }
     if (length(paste(x,y))<6) {print("There is no minimum of 6 different x and y combinations.") }
     if ((length(unique(x))) < 3) {print("Beware x does not vary enough!")}
     if ((length(unique(y))) < 3) {print("Beware y does not vary enough!")}
-  }else{
+  }else if (BUG==0) {
     lm(formula = z ~ I(x^2) + I(y^2) +I(x*y) + x + y ) -> lmpoly
     cat( "Equation de la nappe dans lmpoly : \n" )
     print(lmpoly)

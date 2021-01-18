@@ -25,39 +25,39 @@ pde(
 )
 }
 \arguments{
-\item{x}{: x values of first parameter}
+\item{x}{x values of first parameter}
 
-\item{y}{: y values of second parameter}
+\item{y}{y values of second parameter}
 
-\item{z}{: evaluation of the 6 recipes}
+\item{z}{evaluation of the 6 recipes}
 
-\item{xlim}{: manual x limitation}
+\item{xlim}{manual x limitation}
 
-\item{ylim}{: manual y limitation}
+\item{ylim}{manual y limitation}
 
-\item{zlim}{: manual z limitation}
+\item{zlim}{manual z limitation}
 
-\item{dim}{: resolution of the modelisation}
+\item{dim}{resolution of the modelisation}
 
-\item{xlab}{: x title}
+\item{xlab}{x title}
 
-\item{ylab}{: y title}
+\item{ylab}{y title}
 
-\item{zlab}{: z title}
+\item{zlab}{z title}
 
-\item{main}{: main}
+\item{main}{main}
 
-\item{col}{: color of th modelisation}
+\item{col}{color of th modelisation}
 
-\item{alpha}{: transparency}
+\item{alpha}{transparency}
 
-\item{pch}{: cf. plot function}
+\item{pch}{cf. plot function}
 
-\item{col.pt}{: color of points}
+\item{col.pt}{color of points}
 
-\item{cex.pt}{: length of points}
+\item{cex.pt}{length of points}
 
-\item{mode}{: Two graphical modes (1 or 2)}
+\item{mode}{Two graphical modes (1 or 2)}
 }
 \value{
 : By varying 2 parameters, we can obtain different recipes that we will evaluate. A 3D modeling will thus allow to anticipate what would have been the ideal parameterization to obtain the best recipe.
@@ -66,8 +66,15 @@ pde(
 Vary two parameters in a recipe and model the ideal recipe.
 }
 \examples{
-x1   <- c(0,2,3,4,5,6)  ; # sugar
-y1   <- c(0,2,1,0,4,4)  ;  # salt
-hedo <- c(0,3,3,2,0,0)  ; # hedonique taste
+#Example 1
+x1   <- c(0,2,3,4,5,6)   # sugar
+y1   <- c(0,2,1,0,4,4)   # salt
+hedo <- c(0,3,3,2,0,0)   # hedonique taste
 pde(x1,y1,hedo,xlab="Sucre",ylab="Sel",zlab="Note hedonique",main="Optimisation d'une recette",dim=30,mode=1)
+#Example 2
+x1   <- c(0,2,3,4,4,0,1,3,2,0,2)  ; # sucre
+y1   <- c(0,2,1,0,4,4,3,3,0,2,4)  ;  # sel
+hedo <- c(0,3,3,0,0,0,3,5,0,0,0)  ; # note hÃ©donique obtenue en goÃ»tant le produit
+pde(x1,y1,hedo,xlab="Sucre",mode=2,pch=c(10:16),alpha=0.5,
+    ylab="Sel",zlab="Note hÃ©donique",main="Optimisation d'une recette",dim=50)
 }

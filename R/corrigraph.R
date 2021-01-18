@@ -19,7 +19,7 @@
 #' # Example 2
 #' data(airquality)
 #' corrigraph(airquality)
-corrigraph <- function(data,pval=0.01,exclude=0.3, ampli=4) {
+corrigraph <- function(data,pval=0.01,exclude=0.3, ampli=4,return=FALSE) {
   # Fonction réalisée par Antoine Massé
   # Ctrl Alt Shift R
   # Version 01
@@ -66,4 +66,5 @@ corrigraph <- function(data,pval=0.01,exclude=0.3, ampli=4) {
   l <- layout_with_fr(net)
   plot(clp, net, layout = l,vertex.size=sqrt(betweenness(net))*ampli+10,vertex.color="yellow",
        edge.arrow.size =0,arrow.mode=0,edge.width=(abs(E(net)$weight)*2)^3, edge.color =E(net)$colour)
+  if (return==TRUE){return(mymat)}
 }

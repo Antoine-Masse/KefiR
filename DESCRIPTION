@@ -1,6 +1,6 @@
 Package: KefiR
 Title: KefiR Package
-Version: 0.0.0.2
+Version: 0.0.0.3
 Authors@R: 
     person(given = "Antoine",
            family = "Massé",
