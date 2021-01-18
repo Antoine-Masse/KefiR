@@ -45,13 +45,13 @@ pde <- function(x,y,z,xlim=c(),ylim=c(),zlim=c(),dim=45,xlab="",ylab="",
   if (length(xlim) == 0) {xlim <- range(x)}
   if (length(ylim) == 0) {ylim <- range(y)}
   if (length(zlim) == 0) {zlim <- range(z)}
-  # Débogage
+  # Debogage
   BUG<-0
-  if(cor.test(x,y)$p.value>0.05) {BUG<-1;print("x and y should not be correlated!\n") }
+  if(cor.test(x,y)$p.value<0.05) {BUG<-1;print("x and y should not be correlated!\n") }
   if((length(x)!=length(y)) | (length(x)!=length(z)) | (length(unique(paste(x,y)))<6) | (length(unique(x)) < 3) | (length(unique(y)) < 3)){
     cat("It can't work.\n")
     if((length(x)!=length(y)) | (length(x)!=length(z))) {print("Vector length are not identical.\n") }
-    if (length(paste(x,y))<6) {print("There is no minimum of 6 different x and y combinations.") }
+    if (length(unique(paste(x,y)))<6) {print("There is no minimum of 6 different x and y combinations.") }
     if ((length(unique(x))) < 3) {print("Beware x does not vary enough!")}
     if ((length(unique(y))) < 3) {print("Beware y does not vary enough!")}
   }else if (BUG==0) {

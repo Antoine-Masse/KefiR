@@ -17,5 +17,5 @@ RoxygenNote: 7.1.1
 Suggests: 
     knitr
 VignetteBuilder: knitr
-Imports: stats, igraph, lmtest,
-     plot3D, rgl, plotly, plot3Drgl, plot3D
+Imports: stats, lmtest,
+     plot3D, rgl, plotly, igraph, plot3Drgl, plot3D

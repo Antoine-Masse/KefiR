@@ -4,18 +4,27 @@
 \alias{corrigraph}
 \title{igraph of correlated variables}
 \usage{
-corrigraph(data, pval = 0.01, exclude = 0.3, ampli = 4, return = FALSE)
+corrigraph(
+  data,
+  pval = 0.01,
+  exclude = 0.3,
+  ampli = 4,
+  return = FALSE,
+  wash = TRUE
+)
 }
 \arguments{
-\item{data}{A data.frame}
+\item{data}{a data.frame}
 
-\item{pval}{The maximum permissible p-value for the display}
+\item{pval}{the maximum permissible p-value for the display}
 
-\item{exclude}{The minimum threshold of displayed correlations}
+\item{exclude}{the minimum threshold of displayed correlations}
 
-\item{ampli}{Coefficient of amplification of vertices}
+\item{ampli}{coefficient of amplification of vertices}
 
-\item{return}{If return=T, returns the correlation matrix of significant correlations}
+\item{return}{if return=T, returns the correlation matrix of significant correlations}
+
+\item{wash}{automatically eliminates variables using the signal-to-noise ratio when there are too many variables}
 }
 \value{
 Correlation graph network (igraph) of the variables of a data.frame. Pay attention to the possible presence of non-numeric variables or missing data. Grouping of correlated variables: the vertices (circles) correspond to the variables. The more a variable is connected, the larger it appears. The color of the lines reflects the nature of the correlation (positive or negative).  The size of the lines is the value of the correlation from 0 to 1. All these correlations are significant (pval < 0.01). The coloured groupings reflect families of inter-correlated variables. BLUE: positive correlation - RED: negative correlation

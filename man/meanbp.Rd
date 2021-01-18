@@ -19,3 +19,8 @@ This function returns an average whose values are weighted according to the dist
 \description{
 Moving average (weighted) per iteration
 }
+\examples{
+x <- rnorm(100,20,5) # simulate a sample of a population with an average of 20\%.
+meanbp(x,100) # 100 because the calculation will only be repeated a maximum of 100 times.
+#if we compare with mean(x) or median(x): we see that meanbp gives a result closer to the true average which is 20
+}
