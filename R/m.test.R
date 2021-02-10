@@ -112,7 +112,7 @@ pairwise <- function(x,g,type="mean",pval=0.05,control=c(),pool.sd=FALSE,silent=
         options(warn = oldw)
       }
     }
-  return(oldw)
+    return(oldw)
   }
   g <- factor(g)
   init_order <- levels(g)
@@ -190,7 +190,7 @@ pairwise <- function(x,g,type="mean",pval=0.05,control=c(),pool.sd=FALSE,silent=
       pairwise.wilcox.test(x,g,p.adjust.method="BH")-> result
       groups <- catego(result,control=control)
       if (boot==TRUE) {
-        print(groups$p.value)
+        #print(groups$p.value)
         mymat <- groups$p.value
         mydim <- dim(mymat)
         mymat <- array(rep(NA,iter*mydim[1]*mydim[2]),c(iter,mydim))
@@ -223,7 +223,7 @@ pairwise <- function(x,g,type="mean",pval=0.05,control=c(),pool.sd=FALSE,silent=
       pairwise.wilcox.test(x,g,p.adjust.method="BH")-> result
       groups <- catego(result,pval=pval)
       if (boot==TRUE) {
-        print(groups$p.value)
+        #print(groups$p.value)
         mymat <- groups$p.value
         mydim <- dim(mymat)
         mymat <- array(rep(NA,iter*mydim[1]*mydim[2]),c(iter,mydim))
@@ -252,24 +252,39 @@ pairwise <- function(x,g,type="mean",pval=0.05,control=c(),pool.sd=FALSE,silent=
     if (boot==TRUE) {groups$bootstrap$groups <- groups$bootstrap$groups[indices,]}
     return(groups)
   } else if (type == "ks" ){
-    # FAIRE LE test de Kolmogorov-Smirnov
-    # Nécessaire pour wilcox & kruskal
-    # Mettre un mode plot vioplot + stripchart.
-    # Mettre au propre les affichages en verbose
-    # Intégrer les p-values. et les noms des tests.
     unique_g <- unique(g)
-    mymat <- matrix(1:(length(unique_g))^2,nc=length(unique_g),nr=length(unique_g))
-    rownames(mymat) <- unique_g ; colnames(mymat) <- unique_g
-    onoff("on",silent)->oldw
-    for (i in 1:length(unique_g)) {
-      for (j in 1:length(unique_g)) {
-        pv <- ks.test(x[g==unique_g[i]],x[g==unique_g[j]])$p.value
-        #print(pv)
-        mymat[i,j] <- pv ; pv -> mymat[j,i]
+    mymat <- matrix(rep(NA,(length(unique_g)-1)^2),nc=(length(unique_g)-1),nr=(length(unique_g)-1))
+    rownames(mymat) <- unique_g[2:length(unique_g)] ; colnames(mymat) <- unique_g[1:(length(unique_g)-1)]
+    ks_func <- function(x,g,mymat,unique_g) {
+      for (i in 1:(length(unique_g)-1)) {
+        for (j in (i+1):length(unique_g)) {
+          pv <- ks.test(x[g==unique_g[i]],x[g==unique_g[j]])$p.value
+          #print(pv)
+          mymat[(j-1),i] <- pv
+        }
       }
+      return(mymat)
+    }
+    onoff("on",silent)->oldw
+    if (boot == FALSE) {mymat <- ks_func(x,g,mymat,unique_g) ; output <- list() ; output$p.value <- mymat
+    } else if (boot==TRUE) {
+      mydim <- dim(mymat)
+      myarray <- array(rep(NA,iter*mydim[1]*mydim[2]),c(iter,mydim))
+      for (k in 1: iter) {
+        x_temp <- x
+        for (j in levels(g)) {
+          x_temp[g==j] <- sample(x_temp[g==j],replace=TRUE)
+        }
+        temp <- ks_func(x_temp,g,mymat,unique_g)
+        myarray[k,,] <- temp
+      }
+      output <- list()
+      apply(myarray,c(2,3),quantile,probs=conf,na.rm=T)->output$p.value
+      colnames(output$p.value) <- colnames(mymat)
+      rownames(output$p.value) <- rownames(mymat)
     }
     onoff("off",silent,oldw)
-    return(mymat)
+    return(output)
   } else if (type == "lincon" ){
     if (length(ind_control)==1) {
       categories <- c(levels(g)[ind_control],levels(g)[-ind_control])
@@ -312,7 +327,7 @@ pairwise <- function(x,g,type="mean",pval=0.05,control=c(),pool.sd=FALSE,silent=
 #' @param return allows to return the results of pairwise analysis (p-values and groups).
 #' @param paired (under development) to allow the analysis of matched data.
 #' @param control name of the category that will eventually be used as a control.
-#' @param pval_ks minimal p-value of automatic analyse of distribution by ks.test().
+#' @param pval_ks minimal p-value of automatic analyse of distribution by ks.test(). The minimum p-value of the ks.test() also fluctuates when boot=TRUE.
 #' @param maxcat maximum number of categories allowed. When this number is high, some tests may return an error message.
 #' @param plot to display the distribution of the data.
 #' @param silent for displaying or not warnings.
@@ -370,6 +385,8 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
         temp <- t.test(sample(data[cat==unique(cat)[1]],replace=TRUE),sample(data[cat==unique(cat)[2]],replace=TRUE),var.equal=var.equal)$p.value
       } else if (type=="median") {
         temp <- wilcox.test(sample(data[cat==unique(cat)[1]],replace=TRUE),sample(data[cat==unique(cat)[2]],replace=TRUE))$p.value
+      } else if (type=="ks") {
+        temp <- ks.test(sample(data[cat==unique(cat)[1]],replace=TRUE),sample(data[cat==unique(cat)[2]],replace=TRUE))$p.value
       }
       pvals <- c(pvals,temp)
     }
@@ -399,8 +416,6 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
     }
     return(synth)
   }
-
-
   shapi <- function(vector) {return(shapiro.test(as.numeric(vector))$p.value)}
   skew <- function(vector) {return(abs(skewness(vector)))}
   kurto <- function(vector) {if (is.na(abs(kurtosis(vector)))){return(10)} ; return(abs(kurtosis(vector)))}
@@ -412,6 +427,17 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
     data <- temp[,1]
     cat <- temp[,2]
   }
+  if(max(by(data,cat,length),na.rm=T)<3) {
+    if (verbose==TRUE) {cat("Error! No enough values in the samples.\n")}
+    return(FALSE)
+  }
+  if(min(by(data,cat,length),na.rm=T)<3) {
+    if (verbose==TRUE) {cat("Warning! No enough values for some samples. The categories concerned are eliminated..\n")}
+    which(by(data,cat,length)<3)-> ind_temp
+    '%notin%' <- Negate('%in%')
+    data <- data[cat%notin%names(ind_temp)]
+    cat <- cat[cat%notin%names(ind_temp)]
+  }
   if (length(unique(cat))<=1) {
     if (verbose==TRUE) {cat("Error! Only one category.\n")}
     return(FALSE)
@@ -420,13 +446,16 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
     if (verbose==TRUE) {cat("Error! Too much categories.\n")}
     return(FALSE)
   }
-  if(min(by(data,cat,length),na.rm=T)<3) {
-    if (verbose==TRUE) {cat("Error! No enough values for some samples.\n")}
+  if(max(by(data,cat,var,na.rm=T),na.rm=T)==0) {
+    if (verbose==TRUE) {cat("Error! No variability in samples.\n")}
     return(FALSE)
   }
   if(min(by(data,cat,var,na.rm=T),na.rm=T)==0) {
-    if (verbose==TRUE) {cat("Error! No variability in samples.\n")}
-    return(FALSE)
+    if (verbose==TRUE) {cat("Warning! Some samples do not vary. Non-variable categories are eliminated\n")}
+    which(by(data,cat,var,na.rm=T)==0)-> ind_temp
+    '%notin%' <- Negate('%in%')
+    data <- data[cat%notin%names(ind_temp)]
+    cat <- cat[cat%notin%names(ind_temp)]
   }
   if (plot==TRUE) {
     boxplot(data~cat,col="cyan")
@@ -651,7 +680,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
           }
           if (return==TRUE) {
             synth <- pairwise(data,cat,type="mean",pool.sd=FALSE,pval=pval,control=control,boot=boot,conf=conf,iter=iter)
-            if (verbose==TRUE) {cat("5) Post-hoc Student test (pairwise.t.test(pool.sd=FALSE)\n")}
+            if (verbose==TRUE) {cat("5) Post-hoc Student test (pairwise.t.test(pool.sd=FALSE))\n")}
             if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
               cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
             }
@@ -664,7 +693,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
           }
           if (return==TRUE) {
             synth <- pairwise(data,cat,type="mean",pool.sd=FALSE,pval=pval,control=control,boot=boot,conf=conf,iter=iter)
-            if (verbose==TRUE) {cat("5) Post-hoc Student test (pairwise.t.test(pool.sd=FALSE)\n")}
+            if (verbose==TRUE) {cat("5) Post-hoc Student test (pairwise.t.test(pool.sd=FALSE))\n")}
             if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
               cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
             }
@@ -678,7 +707,8 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
     ###################################################
   } else { 												#
     if (verbose==TRUE) {cat("1) Shapiro-Wilk test (shapiro.test()) -  One or more non-normal samples. min(p-value) : ",min(pvals),"\n")}
-    ks_result <- min(pairwise(data,cat,type="ks",silent=silent))
+    temp <- pairwise(data,cat,type="ks",silent=silent,boot=boot)
+    ks_result <- min(unlist(temp$p.value),na.rm=T)
     ###################################################
     #			NON-NORMAL		2 categories
     ###################################################
@@ -796,10 +826,13 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
               cat("\tKurtosis limite (max and absolute):",ku,"\n")
               cat("\tSample length (minimal):",tt,"\n")
             }
-            onoff("on",silent)->oldw
-            pvals <- ks.test(data[cat==unique(cat)[1]],data[cat==unique(cat)[2]])$p.value
-            onoff("off",silent,oldw)
-            if (pvals < pval_ks ) {
+            #onoff("on",silent)->oldw
+            #if (boot==FALSE) {pvals <- ks.test(data[cat==unique(cat)[1]],data[cat==unique(cat)[2]])$p.value
+            #} else if (boot==TRUE) {
+            #		pvals <- boots(data,cat,ctrl=FALSE,type="ks",conf=conf,iter=iter,pval=pval)$p.value
+            #}
+            #onoff("off",silent,oldw)
+            if (ks_result < pval_ks ) {
               cat("4) Kolmogorov-Smirnov test (ks.test()) -  Warning! the data do not have the same distribution. p-value: ",ks_result,"\n\tThe Mann-Whitney-Wilcoxon test will be less reliable.\n\tWarning! For wilcox.test() : Please, check graphically that the samples have the same distribution.\n")
             } else {
               cat("4) Kolmogorov-Smirnov test (ks.test()) - The samples have the same distribution. p-value: ",ks_result,"\n\tThe Mann-Whitney-Wilcoxon test will be reliable.\n")
@@ -902,7 +935,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
       }
       #print(pvals)
       if ((sk<=2)&(ku<=2)&(pvals2>pval)) {					# Acceptable non-normality
-        if (verbose==TRUE) {cat("3) Skweness & Kurtosis limits and Brown-Forsyth test (swkeness() & kurtosis() & bf.test()) - The distribution of values and sample variances are acceptable.\n")
+        if (verbose==TRUE) {cat("4) Skweness & Kurtosis limits and Brown-Forsyth test (swkeness() & kurtosis() & bf.test()) - The distribution of values and sample variances are acceptable.\n")
           cat("\tSkweness limite (max and absolute):",sk,"\n")
           cat("\tKurtosis limite (max and absolute):",ku,"\n")
         }
@@ -910,10 +943,10 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
         mya <- aov(data.frame(data,cat), formula=formula)
         pvals <- summary(mya)[[1]][["Pr(>F)"]][1]
         if (pvals<=pval) {
-          if (verbose==TRUE) {cat("4) Oneway analysis of variance (aov()) - Significant differences between samples\n")}
+          if (verbose==TRUE) {cat("5) Oneway analysis of variance (aov()) - Significant differences between samples. p-value:",pvals,"\n")}
           if (return==TRUE) {
             mynk <- SNK.test(mya,"cat",alpha=pval)
-            if (verbose==TRUE) {cat("5) Post-hoc tests Student and Newman-Keuls (pairwise.t.test() & SNK.test()) \n")}
+            if (verbose==TRUE) {cat("6) Post-hoc tests Student and Newman-Keuls (pairwise.t.test() & SNK.test()) \n")}
             synth <- pairwise(data,cat,type="mean",pool.sd=TRUE,pval=pval,control=control,boot=boot,conf=conf,iter=iter)
             match(synth$groups[,1],rownames(mynk$groups)) -> ind_temp
             synth$groups <- data.frame(synth$groups , "SNK"=mynk$groups$groups[ind_temp])
@@ -928,10 +961,10 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
             return(synth)
           } else {return(TRUE)}
         } else {
-          if (verbose==TRUE) {cat("4) Oneway test analysis of variance (aov()) - Non-significant differences between samples\n")}
+          if (verbose==TRUE) {cat("5) Oneway test analysis of variance (aov()) - Non-significant differences between samples. p-value:",pvals,"\n")}
           if (return==TRUE) {
             mynk <- SNK.test(mya,"cat",alpha=pval)
-            if (verbose==TRUE) {cat("5) Post-hoc tests Student and Newman-Keuls (pairwise.t.test() & SNK.test()) \n")}
+            if (verbose==TRUE) {cat("6) Post-hoc tests Student and Newman-Keuls (pairwise.t.test() & SNK.test()) \n")}
             synth <- pairwise(data,cat,type="mean",pool.sd=TRUE,pval=pval,control=control,boot=boot,conf=conf,iter=iter)
             match(synth$groups[,1],rownames(mynk$groups)) -> ind_temp
             synth$groups <- data.frame(synth$groups , "SNK"=mynk$groups$groups[ind_temp])
@@ -951,91 +984,103 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
         # Si verbose : blabla
         if (verbose==TRUE) {
           if ((sk>2)|(ku>2)) {
-            cat("3) Skweness & Kurtosis limits (swkeness() & kurtosis()) Bad distribution of data (asymmetry, spread).\n")
+            cat("4) Skweness & Kurtosis limits (swkeness() & kurtosis()) Bad distribution of data (asymmetry, spread).\n")
             cat("\tSkweness limite (max and absolute):",sk,"\n")
             cat("\tKurtosis limite (max and absolute):",ku,"\n")
           }
-          onoff("on",silent)->oldw
-          pvals <- levene.test(data,cat)$p.value
-          onoff("off",silent,oldw)
-          if (pvals2 <= pval) {
-            cat("3) Brown-Forsyth test (bf.test()) Non-identical sample variances.\n")
-          }
-          pvals <- fligner.test(data,cat)$p.value
-          if (is.na(pvals)) {
-            if (verbose==TRUE) {cat("4) Fligner-Killeen test (fligner.test()) - Error, return NA.\n")}
-            return(FALSE)
-          }
+          #onoff("on",silent)->oldw
+          #pvals <- levene.test(data,cat)$p.value
+          #onoff("off",silent,oldw)
+          #if (pvals2 <= pval) {
+          #	cat("3) Brown-Forsyth test (bf.test()) Non-identical sample variances.\n")
+          #}
+        }
+        pvals <- fligner.test(data,cat)$p.value
+        if (is.na(pvals)) {
+          if (verbose==TRUE) {cat("5) Fligner-Killeen test (fligner.test()) - Error, return NA.\n")}
+          return(FALSE)
+        }
+        if (verbose==TRUE) {
           if (pvals<=pval) {
-            cat("4) Fligner-Killeen test (fligner.test())Significant differences of variance between samples\n")
+            cat("5) Fligner-Killeen test (fligner.test())Significant differences of variance between samples. p-value:",pvals,"\n")
           } else {
-            cat("4) Fligner-Killeen test (fligner.test())Non-significant differences of variance between samples. p-value",pvals,"\n")
+            cat("5) Fligner-Killeen test (fligner.test())Non-significant differences of variance between samples. p-value",pvals,"\n")
           }
-          ks_result <- min(pairwise(data,cat,type="ks",silent=silent))
+          #temp <- pairwise(data,cat,type="ks",silent=silent,boot=boot)$p.value
+          #ks_result <- min(unlist(temp),na.rm=TRUE)
           if (ks_result < pval_ks ) {
-            cat("5) Kolmogorov-Smirnov test (ks.test()) -  Warning! the samples do not have the same distribution. min(p-value) : ",ks_result,"\n\tThe Kruskal-Wallis test and Mann-Whitney-Wilcoxon test will be less reliable.\n\tPlease, check graphically the samples distributions.\n")
+            cat("6) Kolmogorov-Smirnov test (ks.test()) -  Warning! the samples do not have the same distribution. min(p-value) : ",ks_result,"\n\tThe Kruskal-Wallis test and Mann-Whitney-Wilcoxon test will be less reliable.\n\tPlease, check graphically the samples distributions.\n")
           } else {
-            cat("5) Kolmogorov-Smirnov test (ks.test()) -  The samples have the same distribution. min(p-value) : ",ks_result,"\nGood accuracy expected on the tests of Kruskal-Wallis and Mann-Whitney-Wilcoxon\n")
+            cat("6) Kolmogorov-Smirnov test (ks.test()) -  The samples have the same distribution. min(p-value) : ",ks_result,"\nGood accuracy expected on the tests of Kruskal-Wallis and Mann-Whitney-Wilcoxon\n")
           }
           if (pvals3 <= pval) {
-            cat("6) Kruskal-Wallis test (kruskal.test()) - At least one sample appears to show a difference. p-value:",pvals3,"\n")
+            cat("7) Kruskal-Wallis test (kruskal.test()) - At least one sample appears to show a difference. p-value:",pvals3,"\n")
           } else {
-            cat("6) Kruskal-Wallis test (kruskal.test()) - No different sample a priori. p-value:",pvals3,"\n")
+            cat("7) Kruskal-Wallis test (kruskal.test()) - No different sample a priori. p-value:",pvals3,"\n")
           }
         }
         if ((return==TRUE) | (verbose==TRUE)) {
           if (pvals<=pval) {
             pvals <- med1way(data~cat)$p.value
-            if (pvals <= pval) {
-              if (verbose==TRUE) {cat("7) Oneway ANOVA of medians (med1way()) - Significant differences between the median of samples. p-value:",pvals,"\n")
-                if (pvals3 > pval) {
-                  cat("\tWarning! The Kruskal-Wallis test and anova on medians give contradictory results.\n")
-                }
-              }
-              if (return==TRUE) {
-                if (verbose==TRUE) {cat("8) Wilcoxon-Mann-Whitney test (pairwise.wilcox.test()) \n")}
-                synth <- pairwise(data,cat,type="median",pval=pval,control=control,boot=boot,conf=conf,iter=iter)
-                if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-                  cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
-                }
-                return(synth)
-              } else {return(TRUE)}
+            if (is.na(pvals)) {
+              if (verbose==TRUE) {cat("8) Oneway ANOVA of medians (med1way()) - Failed, return NA. The Kruskal-Wallis test should be used for interpretation.\n")}
             } else {
-              if (verbose==TRUE) {cat("7) Oneway ANOVA of medians (med1way()) - Non-significant differences between the median of samples. p-value:",pvals,"\n")
-                if (pvals3 <= pval) {
-                  cat("\tWarning! The Kruskal-Wallis test and anova on medians give contradictory results.\n")
+              if (pvals <= pval) {
+                if (verbose==TRUE) {cat("8) Oneway ANOVA of medians (med1way()) - Significant differences between the median of samples. p-value:",pvals,"\n")
+                  if (pvals3 > pval) {
+                    cat("\tWarning! The Kruskal-Wallis test and anova on medians give contradictory results.\n")
+                  }
                 }
+                if (return==FALSE) {return(TRUE)}
+              } else if (pvals > pval) {
+                if (verbose==TRUE) {cat("8) Oneway ANOVA of medians (med1way()) - Non-significant differences between the median of samples. p-value:",pvals,"\n")
+                  if (pvals3 <= pval) {
+                    cat("\tWarning! The Kruskal-Wallis test and anova on medians give contradictory results.\n")
+                  }
+                }
+                if (return==FALSE) {return(FALSE)}
               }
-              if (return==TRUE) {
-                if (verbose==TRUE) {cat("8) Wilcoxon-Mann-Whitney test (pairwise.wilcox.test()) - You need to check graphically that the samples have the same distribution.\n")}
-                synth <- pairwise(data,cat,type="median",pval=pval,control=control,boot=boot,conf=conf,iter=iter)
-                if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-                  cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
-                }
-                return(synth)
+            }
+            if (return==TRUE) {
+              if (verbose==TRUE) {cat("9) Wilcoxon-Mann-Whitney test (pairwise.wilcox.test()) \n")}
+              synth <- pairwise(data,cat,type="median",pval=pval,control=control,boot=boot,conf=conf,iter=iter)
+              if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
+                cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
+              }
+              return(synth)
+            } else {
+              if (pvals3 <= pval) {
+                return(TRUE)
               } else {return(FALSE)}
             }
           } else {
             pvals <- t1way(data~cat)$p.value
-            if (pvals <= pval) {
-              if (verbose==TRUE) {cat("7) One-way ANOVA on trimmed means (t1way()) - Significant differences between the trimmed samples. p-value:",pvals,"\n")
-                if (pvals2 > pval) {
-                  cat("\tWarning! The Kruskal-Wallis test and anova on trimmed means give contradictory results.\n")
-                }
-              }
-              if (return==TRUE) {
-                if (verbose==TRUE) {cat("8) Correspondoncance post-hoc on trimmed means (lincon())\n")}
-                return(pairwise(data,cat,type="lincon",pval=pval,control=control))
-              } else {return(TRUE)}
+            if (is.na(pvals)) {
+              if (verbose==TRUE) {cat("8) One-way ANOVA on trimmed means (t1way()) - Failed, return NA. The Kruskal-Wallis test should be used for interpretation.\n")}
             } else {
-              if (verbose==TRUE) {cat("7) One-way ANOVA on trimmed means (t1way()) - Non-significant differences between the trimmed samples. p-value:",pvals,"\n")
-                if (pvals2 <= pval) {
-                  cat("\tWarning! The Kruskal-Wallis test and anova on trimmed means give contradictory results.\n")
+              if (pvals <= pval) {
+                if (verbose==TRUE) {cat("8) One-way ANOVA on trimmed means (t1way()) - Significant differences between the trimmed samples. p-value:",pvals,"\n")
+                  if (pvals3 > pval) {
+                    cat("\tWarning! The Kruskal-Wallis test and anova on trimmed means give contradictory results.\n")
+                  }
                 }
+                if (return==FALSE) {return(TRUE)}
+              } else if (pvals > pval) {
+                if (verbose==TRUE) {cat("8) One-way ANOVA on trimmed means (t1way()) - Non-significant differences between the trimmed samples. p-value:",pvals,"\n")
+                  if (pvals3 <= pval) {
+                    cat("\tWarning! The Kruskal-Wallis test and anova on trimmed means give contradictory results.\n")
+                  }
+                }
+                if (return==FALSE) {return(FALSE)}
               }
-              if (return==TRUE) {
-                if (verbose==TRUE) {cat("8) Correspondoncance post-hoc on trimmed means (lincon())\n")}
-                return(pairwise(data,cat,type="lincon",pval=pval,control=control))
+            }
+            if (return==TRUE) {
+              if (verbose==TRUE) {cat("9) Correspondoncance post-hoc on trimmed means (lincon())\n")}
+              synth <- pairwise(data,cat,type="lincon",pval=pval,control=control)
+              return(synth)
+            } else {
+              if (pvals3 <= pval) {
+                return(TRUE)
               } else {return(FALSE)}
             }
           }

@@ -36,7 +36,7 @@ m.test(
 
 \item{control}{name of the category that will eventually be used as a control.}
 
-\item{pval_ks}{minimal p-value of automatic analyse of distribution by ks.test().}
+\item{pval_ks}{minimal p-value of automatic analyse of distribution by ks.test(). The minimum p-value of the ks.test() also fluctuates when boot=TRUE.}
 
 \item{maxcat}{maximum number of categories allowed. When this number is high, some tests may return an error message.}
 
