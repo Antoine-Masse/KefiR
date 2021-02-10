@@ -28,6 +28,7 @@
 #' @importFrom igraph graph_from_adjacency_matrix
 #' @importFrom stats na.omit
 #' @importFrom stats cor
+#' @importFrom igraph layout_
 #' @export
 #'
 #' @examples
