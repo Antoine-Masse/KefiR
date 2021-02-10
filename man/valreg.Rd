@@ -6,7 +6,7 @@
 \usage{
 valreg(
   reg,
-  analyse = FALSE,
+  verbose = FALSE,
   nvar = 5,
   boot = FALSE,
   pval = 0.05,
@@ -21,7 +21,7 @@ valreg(
 \arguments{
 \item{reg}{A regression model}
 
-\item{analyse}{To see the detailed balance sheet}
+\item{verbose}{To see the detailed balance sheet}
 
 \item{nvar}{The maximum number of variables allowed.}
 
@@ -53,18 +53,23 @@ Function to validate a regression model
 #Example 1
 data(iris)
 reg <- lm(Sepal.Length~.,data=iris[,1:4])
-valreg(reg,analyse=TRUE)
+valreg(reg,verbose=TRUE)
 #Example 2
 data(airquality)
 reg <- lm(Wind~Temp,data=airquality)
-valreg(reg,analyse=TRUE)
+valreg(reg,verbose=TRUE)
 #Example 3
 data(mtcars)
 reg <- lm(cyl~gear,data=mtcars)
-valreg(reg,analyse=TRUE,boot=TRUE)
+valreg(reg,verbose=TRUE,boot=TRUE)
 #Example 4
 data(iris)
 reg <- lm(Petal.Width~Petal.Length,data=iris[iris$Species=="virginica",])
-valreg(reg,analyse=TRUE,boot=TRUE,plot=TRUE)
+valreg(reg,verbose=TRUE,boot=TRUE,plot=TRUE)
 plot(reg)
+#Example 5
+data(mtcars);
+reg<- lm(cyl~disp+hp,data=mtcars);
+corrigraph(mtcars,"cyl");
+valreg(reg, verbose=TRUE, plot=TRUE)
 }

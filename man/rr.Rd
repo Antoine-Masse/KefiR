@@ -53,7 +53,9 @@ Gage R&R
 }
 \examples{
 set.seed(2)
-data <- data.frame("Measures"=rep(rnorm(10,20,0.007),9)*abs(rnorm(90,1,0.025)),"Operator"=rep(c("A","B","C"),30),"Equipement"=rep(1:10,9))
+data <- data.frame("Measures"=rep(rnorm(10,20,0.007),9)*abs(rnorm(90,1,0.025)),
+"Operator"=rep(c("A","B","C"),30),
+"Equipement"=rep(1:10,9))
 boxplot(data$Measures~data$Equipement)
 rr(data$Measures,data$Operator,data$Equipement)
 }

@@ -2,7 +2,7 @@
 #'
 #' @param reg Linear model
 #' @param plot Enable or disable the display of graphical analysis
-#' @param analyse Enable or disable the display of the commented analysis
+#' @param verbose Enable or disable the display of the commented analysis
 #' @param conf.level Confidence level for validation of the model
 #' @param pval Minimal value accepted for validation of the model and his coefficients
 #' @param iter Number of iterations
@@ -13,7 +13,11 @@
 #' @export
 #'
 #' @examples
-bootreg <- function(reg,plot=T,analyse=T,conf.level=0.95,pval=0.05,iter=1000) {
+#' data(mtcars);
+#' corrigraph(mtcars);
+#' reg<- lm(cyl~disp+hp,data=mtcars);
+#' bootreg(reg, verbose=TRUE, plot=TRUE)
+bootreg <- function(reg,plot=TRUE,verbose=TRUE,conf.level=0.95,pval=0.05,iter=1000) {
   numind <- nrow(reg$model)
   indices <- c(1:numind ) # num if individus
   enregistrement <- 0
@@ -77,7 +81,7 @@ bootreg <- function(reg,plot=T,analyse=T,conf.level=0.95,pval=0.05,iter=1000) {
   if (plot==T) {
     boxplot_Pr <- function(x,main="") {
       my_min <- min(c(apply(x,2,quantile)[2,]),0.0009)
-      if (my_min <=0) {my_min -> 1e-20}
+      if (my_min <=0) {my_min <- 1e-20}
       boxplot(x,log="y",ylim=c(my_min,1),main=main)
       abline(h=0.05,col="red",lwd=2)
       abline(h=0.01,col="orange",lwd=2)
@@ -122,7 +126,7 @@ bootreg <- function(reg,plot=T,analyse=T,conf.level=0.95,pval=0.05,iter=1000) {
   synth <- rbind(p.values_median,p.values_max,coeff_model,coeff_median,coeff_IC)
   synth <- t(synth)
   rownames(synth)[1] <- "Model"
-  if (analyse==T){return(synth)
+  if (verbose==T){return(synth)
   } else {
     if (max(synth[,2])>pval) {return(FALSE)
     } else {return(TRUE)}

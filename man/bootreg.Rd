@@ -6,8 +6,8 @@
 \usage{
 bootreg(
   reg,
-  plot = T,
-  analyse = T,
+  plot = TRUE,
+  verbose = TRUE,
   conf.level = 0.95,
   pval = 0.05,
   iter = 1000
@@ -18,7 +18,7 @@ bootreg(
 
 \item{plot}{Enable or disable the display of graphical analysis}
 
-\item{analyse}{Enable or disable the display of the commented analysis}
+\item{verbose}{Enable or disable the display of the commented analysis}
 
 \item{conf.level}{Confidence level for validation of the model}
 
@@ -35,4 +35,10 @@ As an output, we can have a validation or not of the model (analysis=F), or we c
 }
 \description{
 Validating a bootstrap linear regression model
+}
+\examples{
+data(mtcars);
+corrigraph(mtcars);
+reg<- lm(cyl~disp+hp,data=mtcars);
+bootreg(reg, verbose=TRUE, plot=TRUE)
 }

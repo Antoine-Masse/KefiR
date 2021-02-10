@@ -2,35 +2,68 @@
 % Please edit documentation in R/corrigraph.R
 \name{corrigraph}
 \alias{corrigraph}
-\title{igraph of correlated variables}
+\title{igraph of correlated variables global or in relation to y}
 \usage{
 corrigraph(
   data,
-  pval = 0.01,
-  exclude = 0.3,
+  colY = c(),
+  pval = 0.05,
+  exclude = c(0, 0, 0),
   ampli = 4,
   return = FALSE,
-  wash = TRUE
+  wash = "stn",
+  multi = TRUE,
+  mu = FALSE,
+  prop = FALSE,
+  layout = "fr"
 )
 }
 \arguments{
 \item{data}{a data.frame}
 
+\item{colY}{a vector of indices or variables to predict. To force the correlogram to display only the variables correlated to a selection of Y.}
+
 \item{pval}{the maximum permissible p-value for the display}
 
-\item{exclude}{the minimum threshold of displayed correlations}
+\item{exclude}{the minimum threshold of displayed correlations - or a vector of threshold in this order : c(cor,mu,prop)}
 
 \item{ampli}{coefficient of amplification of vertices}
 
-\item{return}{if return=T, returns the correlation matrix of significant correlations}
+\item{return}{if return=T, returns the correlation matrix of significant correlation}
 
-\item{wash}{automatically eliminates variables using the signal-to-noise ratio when there are too many variables}
+\item{wash}{automatically eliminates variables using differnts methods when there are too many variables (method = NA, stn (signal-to-noise ratio), sum, length)}
+
+\item{multi}{to ignore multiple regressions and control only single regressions.}
+
+\item{mu}{to display the effect on median/mean identified by m.test()}
+
+\item{prop}{to display the dependencies between categorical variables identified by chisq.test()}
+
+\item{layout}{to choose the network organization method - choose "fr", "circle", "kk" or "3d".}
 }
 \value{
 Correlation graph network (igraph) of the variables of a data.frame. Pay attention to the possible presence of non-numeric variables or missing data. Grouping of correlated variables: the vertices (circles) correspond to the variables. The more a variable is connected, the larger it appears. The color of the lines reflects the nature of the correlation (positive or negative).  The size of the lines is the value of the correlation from 0 to 1. All these correlations are significant (pval < 0.01). The coloured groupings reflect families of inter-correlated variables. BLUE: positive correlation - RED: negative correlation
+
+When mu is TRUE or prop : we see the connexion with mean effect (orange) and chisq effect (pink)
+
+The size of orange edge and pink edge depend of p-values (-1*log10(p-value)/10) of kruskal.test() and chisq.test().
+
+
+
+When indicating Y's in colY, the correlogram will identify the correlated X's, then the remaining X's correlated to these X's, and so on.
+
+X's not related to these Y's are excluded.
+
+The blue always displays the positive correlations and the red, negative correlations. When the display is green, it means that the predictive (~correlation) capacity of the variable can be reinforced by adding a 2nd variable in a multiple regression model (interaction X1+X2, X1*X2 or X1+X1:X2).
+
+Correlations between X or Y of the same level are neglected.
+
+The color of the vertices makes it possible to identify the correlated variables alone in a significant way (blue: positive, red: negative, purple: positive or negative depending on the Y).
+
+The values displayed to the right of the Ys (colY) correspond to the maximum predictive capacity of these Ys by one or two variables.
 }
 \description{
-igraph of correlated variables
+igraph of correlated variables global or in relation to y
 }
 \examples{
 # Example 1
@@ -38,5 +71,14 @@ data(swiss)
 corrigraph(swiss)
 # Example 2
 data(airquality)
-corrigraph(airquality)
+corrigraph(airquality,layout="3d")
+# Example 3
+data(airquality)
+corrigraph(airquality,c("Ozone","Wind"))
+# Example 4
+data(iris)
+corrigraph(iris,mu=TRUE)
+# Example 5
+require(MASS) ; data(Aids2)
+corrigraph(Aids2 ,prop=TRUE,mu=TRUE,exclude=c(0.3,0.3,0))
 }
