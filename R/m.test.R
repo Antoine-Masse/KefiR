@@ -349,7 +349,7 @@ pairwise <- function(x,g,type="mean",pval=0.05,control=c(),pool.sd=FALSE,silent=
 #' @importFrom WRS2 lincon
 #' @importFrom onewaytests bf.test
 #' @importFrom vioplot vioplot
-#' @import stats methods
+#' @import methods
 #' @export
 #'
 #' @examples
@@ -438,14 +438,6 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
     data <- data[cat%notin%names(ind_temp)]
     cat <- cat[cat%notin%names(ind_temp)]
   }
-  if (length(unique(cat))<=1) {
-    if (verbose==TRUE) {cat("Error! Only one category.\n")}
-    return(FALSE)
-  }
-  if (length(unique(cat))>maxcat) {
-    if (verbose==TRUE) {cat("Error! Too much categories.\n")}
-    return(FALSE)
-  }
   if(max(by(data,cat,var,na.rm=T),na.rm=T)==0) {
     if (verbose==TRUE) {cat("Error! No variability in samples.\n")}
     return(FALSE)
@@ -456,6 +448,14 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
     '%notin%' <- Negate('%in%')
     data <- data[cat%notin%names(ind_temp)]
     cat <- cat[cat%notin%names(ind_temp)]
+  }
+  if (length(unique(cat))<=1) {
+    if (verbose==TRUE) {cat("Error! Only one category.\n")}
+    return(FALSE)
+  }
+  if (length(unique(cat))>maxcat) {
+    if (verbose==TRUE) {cat("Error! Too much categories.\n")}
+    return(FALSE)
   }
   if (plot==TRUE) {
     boxplot(data~cat,col="cyan")

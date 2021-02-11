@@ -5,12 +5,13 @@
 #' @param pval the maximum permissible p-value for the display
 #' @param exclude the minimum threshold of displayed correlations - or a vector of threshold in this order : c(cor,mu,prop)
 #' @param ampli coefficient of amplification of vertices
-#' @param return if return=T, returns the correlation matrix of significant correlation
-#' @param wash automatically eliminates variables using differnts methods when there are too many variables (method = NA, stn (signal-to-noise ratio), sum, length)
+#' @param return if return=T, returns the correlation matrix of significant correlation.
+#' @param wash automatically eliminates variables using differnts methods when there are too many variables (method = NA, stn (signal-to-noise ratio), sum, length).
 #' @param multi to ignore multiple regressions and control only single regressions.
-#' @param mu to display the effect on median/mean identified by m.test()
-#' @param prop to display the dependencies between categorical variables identified by chisq.test()
+#' @param mu to display the effect on median/mean identified by m.test().
+#' @param prop to display the dependencies between categorical variables identified by chisq.test().
 #' @param layout to choose the network organization method - choose "fr", "circle", "kk" or "3d".
+#' @param verbose to see the comments.
 #'
 #' @return Correlation graph network (igraph) of the variables of a data.frame. Pay attention to the possible presence of non-numeric variables or missing data. Grouping of correlated variables: the vertices (circles) correspond to the variables. The more a variable is connected, the larger it appears. The color of the lines reflects the nature of the correlation (positive or negative).  The size of the lines is the value of the correlation from 0 to 1. All these correlations are significant (pval < 0.01). The coloured groupings reflect families of inter-correlated variables. BLUE: positive correlation - RED: negative correlation
 #' @return When mu is TRUE or prop : we see the connexion with mean effect (orange) and chisq effect (pink)
@@ -18,17 +19,16 @@
 #' @return
 #' @return  When indicating Y's in colY, the correlogram will identify the correlated X's, then the remaining X's correlated to these X's, and so on.
 #' @return X's not related to these Y's are excluded.
-#' @return The blue always displays the positive correlations and the red, negative correlations. When the display is green, it means that the predictive (~correlation) capacity of the variable can be reinforced by adding a 2nd variable in a multiple regression model (interaction X1+X2, X1*X2 or X1+X1:X2).
+#' @return The blue always displays the positive correlations and the red, negative correlations. When the display is green, it means that the predictive (~correlation) capacity of the variable can be reinforced by adding a 2nd variable in a multiple regression model (interaction X1+X2, X1*X2 or X1+X1:X2) better than X1 or X2 alone.
 #' @return Correlations between X or Y of the same level are neglected.
 #' @return The color of the vertices makes it possible to identify the correlated variables alone in a significant way (blue: positive, red: negative, purple: positive or negative depending on the Y).
 #' @return The values displayed to the right of the Ys (colY) correspond to the maximum predictive capacity of these Ys by one or two variables.
 #'
-#' @import igraph graphics utils
-#'
+#' @import utils
+#' @rawNamespace import(igraph, except = decompose)
 #' @importFrom igraph graph_from_adjacency_matrix
 #' @importFrom stats na.omit
 #' @importFrom stats cor
-#' @importFrom igraph layout_
 #' @export
 #'
 #' @examples
@@ -48,11 +48,11 @@
 #' require(MASS) ; data(Aids2)
 #' corrigraph(Aids2 ,prop=TRUE,mu=TRUE,exclude=c(0.3,0.3,0))
 corrigraph <- function(data,colY=c(),pval=0.05,exclude=c(0,0,0), ampli=4,return=FALSE,wash="stn",multi=TRUE,
-                       mu=FALSE,prop=FALSE,layout="fr") {
+                       mu=FALSE,prop=FALSE,layout="fr",verbose=FALSE) {
   # Fonction réalisée par Antoine Massé
   # Ctrl Alt Shift R
-  # Version 02
-  # Janvier 2021
+  # Version 03
+  # Février 2021
   databrut<-data # saving
   # Control 1 - is.numeric ?
   which(sapply(data, is.numeric)) -> temp_id_num ; temp_id_factor <- c()
@@ -154,7 +154,7 @@ corrigraph <- function(data,colY=c(),pval=0.05,exclude=c(0,0,0), ampli=4,return=
       return(synthese)
     }
     mymat_interconnect <- mymat
-    while (sum_mymat2  != sum(mymat)) { # Tant que la matrice évolue à chaque cycle...
+    while (sum_mymat2  != sum(mymat)) { # Tant que la matrice evolue à chaque cycle...
       sum_mymat2 <- sum(mymat)
       indices <- c()
       for (i in indY) { # Modelization of Y
@@ -273,6 +273,10 @@ corrigraph <- function(data,colY=c(),pval=0.05,exclude=c(0,0,0), ampli=4,return=
     vertices <- rep("white",ncol(mymat)) ; vertices[temp_id_factor]<-"grey"
     if ((prop==TRUE)|(mu==TRUE)) {
       # Factor interactions
+      if (verbose==TRUE) {
+        cat("Non-numeric variables.\n")
+        print(colnames(data)[temp_id_factor])
+      }
       if (length(temp_id_factor)>5){
         barre <- txtProgressBar(min=0,max=length(temp_id_factor),width=50)
         cat("\nprop calculation\n")
@@ -328,9 +332,9 @@ corrigraph <- function(data,colY=c(),pval=0.05,exclude=c(0,0,0), ampli=4,return=
         }
         for (i in temp_id_factor) {
           if (length(temp_id_factor)>5){setTxtProgressBar(barre,i)}
-          #cat("\n") ; print(colnames(data)[i])
+          if (verbose==TRUE) {cat("\nAnalysis of the cat:") ; print(colnames(data)[i])}
           for (j in temp_id_num) {
-            #cat(colnames(data)[j],"- ")
+            if (verbose==TRUE) {cat("\n\tvs numerical: ") ; print(colnames(data)[j])}
             if (m.test(data[,j],data[,i],pval=pval,return=FALSE,verbose=FALSE,plot=FALSE,boot=FALSE)) {
               #by(data[,j],data[,i],median,na.rm=T)-> temp
               #temp <- mean(abs(temp-median(temp)))/mean(by(data[,j],data[,i],function(x){return(hdi(x)[2]-hdi(x)[1])}))
@@ -434,18 +438,30 @@ corrigraph <- function(data,colY=c(),pval=0.05,exclude=c(0,0,0), ampli=4,return=
       net <- delete.edges(net, E(net)[ abs(weight) < exclude[1] ])
       E(net)$colour <- ifelse(E(net)$weight<0,"red","blue")
       E(net)$weight <- abs(E(net)$weight)
-      if (ncol(mymat)<50) {
+      if (layout=="circle") {l <- layout_in_circle(net)
+      } else if (layout=="kk"){l <- layout_with_kk(net)
+      } else  {l <- layout_with_fr(net)}
+      if ((layout=="3d") |(layout=="3D")) {
+        l <- layout_with_fr(net,dim=3)
+        rglplot( net, layout = l, vertex.size = sqrt(betweenness(net))*ampli/4+10,
+                 vertex.color = vertices, edge.arrow.size = 0,
+                 arrow.mode = 0, edge.width = (abs(E(net)$weight) * 2)^3,
+                 edge.color = E(net)$colour,label.dist=sqrt(betweenness(net))*ampli/4+10)
+      }else if (ncol(mymat)<50) {
         clp <- cluster_optimal(net)
         class(clp)
-        l <- layout_with_fr(net)
         plot(clp, net, layout = l,vertex.size=sqrt(betweenness(net))*ampli+10,vertex.color="yellow",
+             edge.arrow.size =0,arrow.mode=0,edge.width=(abs(E(net)$weight)*2)^3, edge.color =E(net)$colour)
+      } else {
+        plot(net,layout=l,vertex.size=sqrt(betweenness(net))*ampli+10,vertex.color=vertices,
              edge.arrow.size =0,arrow.mode=0,edge.width=(abs(E(net)$weight)*2)^3, edge.color =E(net)$colour)
       }
     } else {
+      #print(mymat)
       net <- graph_from_adjacency_matrix(mymat, weighted=T,mode="directed")
-      net <- simplify(net, remove.multiple = T, remove.loops = TRUE) # élaguer les liens redondants
+      net <- simplify(net, remove.multiple = TRUE, remove.loops = TRUE) # elaguer les liens redondants
       net_interconnect <- graph_from_adjacency_matrix(mymat_interconnect, weighted=T,mode="directed")
-      net_interconnect <- simplify(net_interconnect, remove.multiple = T, remove.loops = TRUE) # élaguer les liens redondants
+      net_interconnect <- simplify(net_interconnect, remove.multiple = TRUE, remove.loops = TRUE) # elaguer les liens redondants
       if (length(exclude)==3) {
         net2 <- net ; net_interconnect2 <- net_interconnect
         net_interconnect  <- delete.edges(net_interconnect , E(net_interconnect)[ abs(E(net2)$weight) < exclude[1] & abs(E(net_interconnect2)$weight) < 2 ])

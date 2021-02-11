@@ -15,7 +15,8 @@ corrigraph(
   multi = TRUE,
   mu = FALSE,
   prop = FALSE,
-  layout = "fr"
+  layout = "fr",
+  verbose = FALSE
 )
 }
 \arguments{
@@ -29,17 +30,19 @@ corrigraph(
 
 \item{ampli}{coefficient of amplification of vertices}
 
-\item{return}{if return=T, returns the correlation matrix of significant correlation}
+\item{return}{if return=T, returns the correlation matrix of significant correlation.}
 
-\item{wash}{automatically eliminates variables using differnts methods when there are too many variables (method = NA, stn (signal-to-noise ratio), sum, length)}
+\item{wash}{automatically eliminates variables using differnts methods when there are too many variables (method = NA, stn (signal-to-noise ratio), sum, length).}
 
 \item{multi}{to ignore multiple regressions and control only single regressions.}
 
-\item{mu}{to display the effect on median/mean identified by m.test()}
+\item{mu}{to display the effect on median/mean identified by m.test().}
 
-\item{prop}{to display the dependencies between categorical variables identified by chisq.test()}
+\item{prop}{to display the dependencies between categorical variables identified by chisq.test().}
 
 \item{layout}{to choose the network organization method - choose "fr", "circle", "kk" or "3d".}
+
+\item{verbose}{to see the comments.}
 }
 \value{
 Correlation graph network (igraph) of the variables of a data.frame. Pay attention to the possible presence of non-numeric variables or missing data. Grouping of correlated variables: the vertices (circles) correspond to the variables. The more a variable is connected, the larger it appears. The color of the lines reflects the nature of the correlation (positive or negative).  The size of the lines is the value of the correlation from 0 to 1. All these correlations are significant (pval < 0.01). The coloured groupings reflect families of inter-correlated variables. BLUE: positive correlation - RED: negative correlation
@@ -54,7 +57,7 @@ When indicating Y's in colY, the correlogram will identify the correlated X's, t
 
 X's not related to these Y's are excluded.
 
-The blue always displays the positive correlations and the red, negative correlations. When the display is green, it means that the predictive (~correlation) capacity of the variable can be reinforced by adding a 2nd variable in a multiple regression model (interaction X1+X2, X1*X2 or X1+X1:X2).
+The blue always displays the positive correlations and the red, negative correlations. When the display is green, it means that the predictive (~correlation) capacity of the variable can be reinforced by adding a 2nd variable in a multiple regression model (interaction X1+X2, X1*X2 or X1+X1:X2) better than X1 or X2 alone.
 
 Correlations between X or Y of the same level are neglected.
 
