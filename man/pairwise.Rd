@@ -39,7 +39,7 @@ pairwise(
 \item{conf}{confidence level of bootstrap.}
 }
 \value{
-This function automates the work of the ks.test(), lincon() functions of {WSR2}, peerwise.t.test() and peerwise.wilcox.test() and extracts groups of means or comparisons to a control with the catego() function.
+This function automates the work of the ks.test(), lincon() functions of {WSR2}, pairwise.t.test() and pairwise.wilcox.test() and extracts groups of means or comparisons to a control with the catego() function.
 
 It pre-sorts the means/medians to ensure that the groups are identified in ascending order.
 

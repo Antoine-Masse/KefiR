@@ -90,7 +90,7 @@ catego <- function(result,control=c(),pval=0.05) {
 #' @param iter number f iterations (boot==TRUE).
 #' @param conf confidence level of bootstrap.
 #'
-#' @return This function automates the work of the ks.test(), lincon() functions of {WSR2}, peerwise.t.test() and peerwise.wilcox.test() and extracts groups of means or comparisons to a control with the catego() function.
+#' @return This function automates the work of the ks.test(), lincon() functions of {WSR2}, pairwise.t.test() and pairwise.wilcox.test() and extracts groups of means or comparisons to a control with the catego() function.
 #' @return It pre-sorts the means/medians to ensure that the groups are identified in ascending order.
 #' @return It also identifies the robustness of these groups by establishing a bootstrap.
 #' @importFrom WRS2 lincon
@@ -253,6 +253,9 @@ pairwise <- function(x,g,type="mean",pval=0.05,control=c(),pool.sd=FALSE,silent=
     return(groups)
   } else if (type == "ks" ){
     unique_g <- unique(g)
+    for (i in unique_g) {
+      x[g==i] <- (x[g==i]-mean(x[g==i]))/sd(x[g==i])
+    }
     mymat <- matrix(rep(NA,(length(unique_g)-1)^2),nc=(length(unique_g)-1),nr=(length(unique_g)-1))
     rownames(mymat) <- unique_g[2:length(unique_g)] ; colnames(mymat) <- unique_g[1:(length(unique_g)-1)]
     ks_func <- function(x,g,mymat,unique_g) {
@@ -334,6 +337,7 @@ pairwise <- function(x,g,type="mean",pval=0.05,control=c(),pool.sd=FALSE,silent=
 #' @param boot to activate the boostrap on 'mean' and 'median'.
 #' @param iter number f iterations (boot==TRUE).
 #' @param conf confidence level of bootstrap.
+#' @param code allows to display the simplified R source code to be able to do the same R study step by step.
 #'
 #' @return m.test() runs a decision tree to choose the most appropriate test series for sample comparison.
 #' @return She chooses the tests, justifies her choices.
@@ -363,7 +367,9 @@ pairwise <- function(x,g,type="mean",pval=0.05,control=c(),pool.sd=FALSE,silent=
 #' m.test(iris[,3],iris[,5],verbose=TRUE, return=TRUE,control="setosa")
 #' m.test(iris[,4],iris[,5],verbose=TRUE, return=TRUE,control="setosa")
 m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALSE,control=c(),
-                    pval_ks = 0.01, maxcat=50, plot=TRUE,silent=TRUE,boot=TRUE,iter=500,conf=0.95){
+                    pval_ks = 0.01, maxcat=50, plot=TRUE,silent=TRUE,boot=TRUE,iter=500,conf=0.95,
+                    code=FALSE){
+  if (code==TRUE) {verbose <- FALSE}
   discret.test <- function(vector) {
     return(length(unique(vector))/length(vector))
   }
@@ -386,7 +392,11 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
       } else if (type=="median") {
         temp <- wilcox.test(sample(data[cat==unique(cat)[1]],replace=TRUE),sample(data[cat==unique(cat)[2]],replace=TRUE))$p.value
       } else if (type=="ks") {
-        temp <- ks.test(sample(data[cat==unique(cat)[1]],replace=TRUE),sample(data[cat==unique(cat)[2]],replace=TRUE))$p.value
+        ech1 <- sample(data[cat==unique(cat)[1]],replace=TRUE)
+        ech2 <- sample(data[cat==unique(cat)[2]],replace=TRUE)
+        ech1 <- (ech1 - mean(ech1))/sd(ech1)
+        ech2 <- (ech2 - mean(ech2))/sd(ech2)
+        temp <- ks.test(ech1,ech2)$p.value
       }
       pvals <- c(pvals,temp)
     }
@@ -464,21 +474,25 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
   }
   discret <- discret.test(data)
   pvals <- by(data,cat,shapi)
+  if (code==TRUE){cat("by(data,cat,shapiro.test)#1)\n")}
   if (min(pvals) > pval) { # NORMAL
     ###################################################
     #			NORMAL
     ###################################################
     if (verbose==TRUE) {cat("1) Shapiro-Wilk test (shapiro.test()) - The samples follow the normal law. min(p-value):",min(pvals),"\n")}
     if (length(unique(cat))==2) { # 2 categories
+      if (code==TRUE){cat("length(unique(cat)) #2)\n")}
       if (verbose==TRUE) {cat("2) Two categories.\n")}
       formula <- formula(data~cat)
       pvals <- var.test(formula)$p.value
+      if (code==TRUE){cat("var.test(data~cat) #3)\n")}
       if (pvals>pval) {
         ###################################################
-        #			NON-NORMAL		2 categories	homogene variance
+        #			NORMAL		2 categories	homogene variance
         ###################################################
         if (verbose==TRUE) {cat("3) Fisher-Snedecor test (var.test()) - Identical sample variances. p-value:",pvals,"\n")}
         pvals <- t.test(data[cat==unique(cat)[1]],data[cat==unique(cat)[2]],var.equal=TRUE)$p.value
+        if (code==TRUE){cat("t.test(data[cat==unique(cat)[1]],data[cat==unique(cat)[2]],var.equal=TRUE) #4)\n")}
         if (pvals <= pval) {
           if (verbose==TRUE) {cat("4) Student test (t.test()) - Significant differences between samples. p-value:",pvals,"\n")}
           if (return==TRUE) {
@@ -498,13 +512,11 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
             } else {
               synth <- list()
               starss <- c("","")
-              starss[-ind_control] <- ifelse(pvals <=0.001,"***",ifelse(pvals <=0.01,"**",
-                                                                        ifelse(pvals <=0.05,"*","")))
+              starss[-ind_control] <- ifelse(pvals <=0.001,"***",ifelse(pvals <=0.01,"**",ifelse(pvals <=0.05,"*","")))
               synth$groups <- data.frame(categories=unique(cat),group=starss)
               synth$p.value <- pvals
               if (boot==TRUE) {
-                synth$bootstrap <- boots(data,cat,ctrl=TRUE,
-                                         type="mean",var.equal=TRUE,conf=conf,iter=iter,pval=pval)
+                synth$bootstrap <- boots(data,cat,ctrl=TRUE,type="mean",var.equal=TRUE,conf=conf,iter=iter,pval=pval)
               }
               if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
                 cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
@@ -545,10 +557,11 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
         }
       } else {
         ###################################################
-        #			NON-NORMAL		2 categories	non-homogene variance
+        #			NORMAL		2 categories	non-homogene variance
         ###################################################
         if (verbose==TRUE) {cat("3) Fisher-Snedecor test (var.test()) - Non-identical sample variances. p-value:",pvals,"\n")}
         pvals <- t.test(data[cat==unique(cat)[1]],data[cat==unique(cat)[2]],,var.equal=FALSE)$p.value
+        if (code==TRUE){cat("t.test(data[cat==unique(cat)[1]],data[cat==unique(cat)[2]],var.equal=TRUE) #4)\n")}
         if (pvals <= pval) {
           if (verbose==TRUE) {cat("4) Student test (t.test()) - Significant differences between samples. p-value:",pvals,"\n")}
           if (return==TRUE) {
@@ -568,8 +581,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
             } else {
               synth <- list()
               starss <- c("","")
-              starss[-ind_control] <- ifelse(pvals <=0.001,"***",ifelse(pvals <=0.01,"**",
-                                                                        ifelse(pvals <=0.05,"*","")))
+              starss[-ind_control] <- ifelse(pvals <=0.001,"***",ifelse(pvals <=0.01,"**",                                                                       ifelse(pvals <=0.05,"*","")))
               synth$groups <- data.frame(categories=unique(cat),group=starss)
               synth$p.value <- pvals
               if (boot==TRUE) {
@@ -616,19 +628,23 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
       }
     } else { 													# > 2 categories
       ###################################################
-      #			NON-NORMAL		>2 categories
+      #			NORMAL		>2 categories
       ###################################################
+      if (code==TRUE){cat("length(unique(cat))#2)\n")}
       if (verbose==TRUE) {cat("2) More than two categories.\n")}
       pvals <- bartlett.test(data,cat)$p.value
+      if (code==TRUE){cat("bartlett.test(data,cat) #3)\n")}
       if (pvals > pval) {											# Identical variances
         if (verbose==TRUE) {cat("3) Bartlett test (bartlett.test()) - Identical sample variances. p-value:",pvals,"\n")}
         formula <- formula(data~cat)
         onoff("on",silent)->oldw
         mya <- aov(data.frame(data,cat), formula=formula)
+        if (code==TRUE){cat("mya <- aov(data.frame(data,cat), formula=data~cat) #4)\n")}
         onoff("off",silent,oldw)
         pvals <- summary(mya)[[1]][["Pr(>F)"]][1]
         if (pvals<=pval) {										# Significant AOV
           if (verbose==TRUE) {cat("4) One-way analysis of variance (aov()) - Significant differences between samples. p-value:",pvals,"\n")}
+          if (code==TRUE){cat("library(agricolae)#5a)\nprint(SNK.test(mya,'cat',alpha=",pval,"))#5b)\n")}
           if (return==TRUE) {
             mynk <- SNK.test(mya,"cat",alpha=pval)
             if (verbose==TRUE) {cat("5) Post-hoc Student and Newman-Keuls tests (pairwise.t.test() & SNK.test() for Newman-Keuls) \n")}
@@ -668,7 +684,8 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
       } else {												# Non-identical variances
         if (verbose==TRUE) {cat("3) Bartlett test (bartlett.test()) - Non-identical sample variances. p-value:",pvals,"\n")}
         pvals <- oneway.test(data~cat,var.equal=FALSE)$p.value
-        myf <- try(fanova.hetero(data.frame(data,cat),data~cat),silent=silent)
+        if (code==TRUE){cat("oneway.test(data~cat,var.equal=FALSE) #4)\n")}
+        myf <- try(fanova.hetero(data.frame(data,cat = as.factor(cat)),data~cat),silent=silent)
         if (is(myf)=="try-error") {
           #if (verbose==TRUE) {cat("Error on fanova.hetero()\n")}
           pvals2 <- pval
@@ -678,6 +695,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
           if (pvals2 > pval) {
             if (verbose==TRUE) {cat("Warning! fanova.hetero() does not give the same result as oneway.test. p-value:",pvals2,"\n")}
           }
+          if (code==TRUE){cat("result <- pairwise.t.test(data,cat,pool.sd=FALSE)#5a)\nlibrary(KefiR)#5b)\ncatego(result)#5c)\n")}
           if (return==TRUE) {
             synth <- pairwise(data,cat,type="mean",pool.sd=FALSE,pval=pval,control=control,boot=boot,conf=conf,iter=iter)
             if (verbose==TRUE) {cat("5) Post-hoc Student test (pairwise.t.test(pool.sd=FALSE))\n")}
@@ -707,8 +725,9 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
     ###################################################
   } else { 												#
     if (verbose==TRUE) {cat("1) Shapiro-Wilk test (shapiro.test()) -  One or more non-normal samples. min(p-value) : ",min(pvals),"\n")}
-    temp <- pairwise(data,cat,type="ks",silent=silent,boot=boot)
+    temp <- pairwise(data,cat,type="ks",silent=silent,boot=FALSE)
     ks_result <- min(unlist(temp$p.value),na.rm=T)
+    if (code==TRUE){cat("length(unique(cat))#2)\n")}
     ###################################################
     #			NON-NORMAL		2 categories
     ###################################################
@@ -717,6 +736,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
       sk <- max(by(data,cat,skew))
       ku <- max(by(data,cat,kurto))
       tt <- min(by(data,cat,length))
+      if (code==TRUE){cat("library(agricolae)\nby(data,cat,skewness)\nby(data,cat,kurtosis)\nby(data,cat,length)#3)\n")}
       ###################################################
       #			NON-NORMAL		2 categories		Acceptable for t.test()
       ###################################################
@@ -726,6 +746,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
           cat("\tKurtosis limite (max and absolute):",ku,"\n")
           cat("\tSample length (minimal):",tt,"\n")
         }
+        if (code==TRUE){cat("t.test(data[cat==unique(cat)[1]],data[cat==unique(cat)[2]],var.equal=FALSE)   #4)\n")}
         pvals <- t.test(data[cat==unique(cat)[1]],data[cat==unique(cat)[2]],var.equal=FALSE)$p.value
         if (pvals <= pval) {
           if (verbose==TRUE) {cat("4) Student Test (t.test())- Significant differences between samples.\n")}
@@ -746,8 +767,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
             } else {
               synth <- list()
               starss <- c("","")
-              starss[-ind_control] <- ifelse(pvals <=0.001,"***",ifelse(pvals <=0.01,"**",
-                                                                        ifelse(pvals <=0.05,"*","")))
+              starss[-ind_control] <- ifelse(pvals <=0.001,"***",ifelse(pvals <=0.01,"**",																			ifelse(pvals <=0.05,"*","")))
               synth$groups <- data.frame(categories=unique(cat),group=starss)
               synth$p.value <- pvals
               if (boot==TRUE) {
@@ -839,7 +859,10 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
             }
           }
         }
+        onoff("on",silent)->oldw
+        if (code==TRUE){cat("wilcox.test(data[cat==unique(cat)[1]],data[cat==unique(cat)[2]])  #2)\n")}
         pvals <- wilcox.test(data[cat==unique(cat)[1]],data[cat==unique(cat)[2]])$p.value
+        onoff("off",silent,oldw)
         if (pvals <= pval) {
           if (verbose==TRUE) {cat("5) Wilcoxon-Mann-Whitney test (wilcox.test()) - Significant differences between samples. p-value: ",pvals,"\n")}
           if (return==TRUE) {
@@ -914,6 +937,11 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
       #print(sk)
       ku <- max(by(data,cat,kurto))
       #print(ku)
+      if (code==TRUE){
+        cat("library(agricolae)#3a)\nby(data,cat,skewness)#3b)\nby(data,cat,kurtosis)#3c)\nby(data,cat,length)#3d)\n")
+        cat("library(lawstat)#4a)\nlevene.test(data,cat)#4b)\n")
+        cat("library(onewaytests)#5a)\nbf.test(data~cat,data=data.frame(data,'cat'=factor(cat)))#5b)\n")
+      }
       onoff("on",silent)->oldw
       pvals2 <- bf.test(data~cat,data=data.frame(data,"cat"=factor(cat)),verbose=FALSE)$p.value
       onoff("off",silent,oldw)
@@ -939,6 +967,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
           cat("\tSkweness limite (max and absolute):",sk,"\n")
           cat("\tKurtosis limite (max and absolute):",ku,"\n")
         }
+        if (code==TRUE){cat("mya <- aov(data.frame(data,cat), formula=data~cat) #6)\n")	}
         formula <- formula(data~cat)
         mya <- aov(data.frame(data,cat), formula=formula)
         pvals <- summary(mya)[[1]][["Pr(>F)"]][1]
@@ -962,6 +991,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
           } else {return(TRUE)}
         } else {
           if (verbose==TRUE) {cat("5) Oneway test analysis of variance (aov()) - Non-significant differences between samples. p-value:",pvals,"\n")}
+          if (code==TRUE){cat("library(agricolae)#7a)\nprint(SNK.test(mya,'cat',alpha=",pval,"))#7b)\n")}
           if (return==TRUE) {
             mynk <- SNK.test(mya,"cat",alpha=pval)
             if (verbose==TRUE) {cat("6) Post-hoc tests Student and Newman-Keuls (pairwise.t.test() & SNK.test()) \n")}
@@ -980,6 +1010,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
           } else {return(FALSE)}
         }
       } else {
+        if (code==TRUE){cat("kruskal.test(data,cat) #6)\n")}
         pvals3 <- kruskal.test(data,cat)$p.value
         # Si verbose : blabla
         if (verbose==TRUE) {
@@ -1011,7 +1042,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
           if (ks_result < pval_ks ) {
             cat("6) Kolmogorov-Smirnov test (ks.test()) -  Warning! the samples do not have the same distribution. min(p-value) : ",ks_result,"\n\tThe Kruskal-Wallis test and Mann-Whitney-Wilcoxon test will be less reliable.\n\tPlease, check graphically the samples distributions.\n")
           } else {
-            cat("6) Kolmogorov-Smirnov test (ks.test()) -  The samples have the same distribution. min(p-value) : ",ks_result,"\nGood accuracy expected on the tests of Kruskal-Wallis and Mann-Whitney-Wilcoxon\n")
+            cat("6) Kolmogorov-Smirnov test (ks.test()) -  The samples have the same distribution. min(p-value) : ",ks_result,"\n\tGood accuracy expected on the tests of Kruskal-Wallis and Mann-Whitney-Wilcoxon\n")
           }
           if (pvals3 <= pval) {
             cat("7) Kruskal-Wallis test (kruskal.test()) - At least one sample appears to show a difference. p-value:",pvals3,"\n")
@@ -1041,6 +1072,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
                 if (return==FALSE) {return(FALSE)}
               }
             }
+            if (code==TRUE){cat("pairwise.wilcox.test(data,cat,p.adjust.method='BH') #7)\n")}
             if (return==TRUE) {
               if (verbose==TRUE) {cat("9) Wilcoxon-Mann-Whitney test (pairwise.wilcox.test()) \n")}
               synth <- pairwise(data,cat,type="median",pval=pval,control=control,boot=boot,conf=conf,iter=iter)
@@ -1074,6 +1106,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
                 if (return==FALSE) {return(FALSE)}
               }
             }
+            if (code==TRUE){cat("library(WRS2) #7a)\nlincon(data~cat) #7b)\n")}
             if (return==TRUE) {
               if (verbose==TRUE) {cat("9) Correspondoncance post-hoc on trimmed means (lincon())\n")}
               synth <- pairwise(data,cat,type="lincon",pval=pval,control=control)

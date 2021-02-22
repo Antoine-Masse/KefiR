@@ -459,9 +459,9 @@ corrigraph <- function(data,colY=c(),pval=0.05,exclude=c(0,0,0), ampli=4,return=
     } else {
       #print(mymat)
       net <- graph_from_adjacency_matrix(mymat, weighted=T,mode="directed")
-      net <- simplify(net, remove.multiple = TRUE, remove.loops = TRUE) # elaguer les liens redondants
+      #net <- simplify(net, remove.multiple = TRUE, remove.loops = TRUE) # elaguer les liens redondants
       net_interconnect <- graph_from_adjacency_matrix(mymat_interconnect, weighted=T,mode="directed")
-      net_interconnect <- simplify(net_interconnect, remove.multiple = TRUE, remove.loops = TRUE) # elaguer les liens redondants
+      #net_interconnect <- simplify(net_interconnect, remove.multiple = TRUE, remove.loops = TRUE) # elaguer les liens redondants
       if (length(exclude)==3) {
         net2 <- net ; net_interconnect2 <- net_interconnect
         net_interconnect  <- delete.edges(net_interconnect , E(net_interconnect)[ abs(E(net2)$weight) < exclude[1] & abs(E(net_interconnect2)$weight) < 2 ])

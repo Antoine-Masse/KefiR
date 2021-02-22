@@ -18,7 +18,8 @@ m.test(
   silent = TRUE,
   boot = TRUE,
   iter = 500,
-  conf = 0.95
+  conf = 0.95,
+  code = FALSE
 )
 }
 \arguments{
@@ -49,6 +50,8 @@ m.test(
 \item{iter}{number f iterations (boot==TRUE).}
 
 \item{conf}{confidence level of bootstrap.}
+
+\item{code}{allows to display the simplified R source code to be able to do the same R study step by step.}
 }
 \value{
 m.test() runs a decision tree to choose the most appropriate test series for sample comparison.
