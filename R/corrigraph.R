@@ -468,10 +468,10 @@ corrigraph <- function(data,colY=c(),pval=0.05,exclude=c(0,0,0), ampli=4,return=
         net <- 	delete.edges(net, E(net)[ abs(E(net2)$weight) < exclude[1] & abs(E(net_interconnect2)$weight) < 2])
         net2 <- net ; net_interconnect2 <- net_interconnect
         net_interconnect  <- delete.edges(net_interconnect , E(net_interconnect)[ abs(E(net2)$weight) < exclude[2] & abs(E(net_interconnect2)$weight) == 3 ])
-        net <- 	delete.edges(net, E(net)[ abs(E(net2)$weight) < exclude[2] & abs(E(net_interconnect2)$weight) < 2])
+        net <- 	delete.edges(net, E(net)[ abs(E(net2)$weight) < exclude[2] & abs(E(net_interconnect2)$weight) ==3])		
         net2 <- net ; net_interconnect2 <- net_interconnect
         net_interconnect  <- delete.edges(net_interconnect , E(net_interconnect)[ abs(E(net2)$weight) < exclude[3] & abs(E(net_interconnect2)$weight) == 2 ])
-        net <- 	delete.edges(net, E(net)[ abs(E(net2)$weight) < exclude[3] & abs(E(net_interconnect2)$weight) < 2])
+        net <- 	delete.edges(net, E(net)[ (abs(E(net2)$weight) < exclude[3]) & (abs(E(net_interconnect2)$weight) ==2)])		
       } else {
         net_interconnect  <- delete.edges(net_interconnect , E(net_interconnect)[ abs(E(net)$weight) < exclude[1]])
         net <- 	delete.edges(net, E(net)[ abs(E(net)$weight) < exclude[1] ])
