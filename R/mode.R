@@ -6,8 +6,8 @@
 #' @export
 #'
 #' @examples
-#' mode(rnorm(80,20,3))
-mode <- function(x) {
+#' Mode(rnorm(80,20,3))
+Mode <- function(x) {
   densite <- density(x)
   mode <- densite$x[which(densite$y==max(densite$y))]
   return(mode)}
