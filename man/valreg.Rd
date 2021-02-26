@@ -6,12 +6,12 @@
 \usage{
 valreg(
   reg,
-  verbose = FALSE,
+  verbose = TRUE,
   nvar = 5,
-  boot = FALSE,
+  boot = TRUE,
   pval = 0.05,
   conf.level = 0.95,
-  plot = FALSE,
+  plot = TRUE,
   raintest_pval = 0.05,
   dwtest_pval = 0.03,
   shapiro_pval = 0.05,
