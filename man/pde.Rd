@@ -74,7 +74,7 @@ pde(x1,y1,hedo,xlab="Sucre",ylab="Sel",zlab="Note hedonique",main="Receipe",dim=
 #Example 2
 x1   <- c(0,2,3,4,4,0,1,3,2,0,2)  ; # sucre
 y1   <- c(0,2,1,0,4,4,3,3,0,2,4)  ;  # sel
-hedo <- c(0,3,3,0,0,0,3,5,0,0,0)  ; # note hÃ©donique obtenue en goÃ»tant le produit
+hedo <- c(0,3,3,0,0,0,3,5,0,0,0)  ; # note hédonique obtenue en goûtant le produit
 pde(x1,y1,hedo,xlab="Sucre",mode=2,pch=c(10:16),alpha=0.5,
-    ylab="Sel",zlab="Note hÃ©donique",main="Receipe",dim=50)
+    ylab="Sel",zlab="Note hédonique",main="Receipe",dim=50)
 }

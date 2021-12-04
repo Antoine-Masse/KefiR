@@ -17,8 +17,12 @@ knitr::opts_chunk$set(
 # 1- Pour installer KefiR
 
 ```{r}
-# Sélectionner le package tar.gz
+# Sélectionner le package tar.gz de façon manuelle
+
+  #install.packages(file.choose(), repos = NULL, type="source")
+  # install.packages(c("lmtest","plot3D", "rgl", "plotly", "igraph", "plot3Drgl", "htmlwidgets", "WRS2", "agricolae", "fda.usc", "lawstat","onewaytests", "vioplot"))
 #install.packages(file.choose(), repos = NULL, type="source")
+
 library(KefiR)
 ```
 

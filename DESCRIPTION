@@ -8,18 +8,22 @@ Authors@R:
            email = "antoine.masse@u-bordeaux.fr",
            comment = c(ORCID = "YOUR-ORCID-ID"))
 Description: Useful functions under R for many topics (statistics, graphics, data mining, engineering, image analysis, bootstrap, sampling).
-Depends: R (>= 3.4.3)
+Depends: R (>= 3.5.0)
 License: `GPL-3`
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.1
-Suggests: 
-    knitr
+RoxygenNote: 7.1.2
 VignetteBuilder: knitr
 Imports: stats, lmtest,
-     plot3D, rgl, plotly, igraph, plot3Drgl, plot3D,
-     htmlwidgets, WRS2, agricolae, fda.usc, lawstat,
-     onewaytests, vioplot, MASS, stats, graphics,
-     utils, methods
+     rgl, plotly, igraph, plot3Drgl, plot3D,
+     htmlwidgets, WRS2, agricolae, fda.usc, lawstat,normtest, 
+     onewaytests, vioplot, MASS, graphics, foreach,
+     utils, methods, e1071
 ImportsFrom:
+Suggests: 
+    dplyr,
+    parallel,
+    knitr,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3

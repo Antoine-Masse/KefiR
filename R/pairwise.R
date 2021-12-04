@@ -312,7 +312,7 @@ pairwise.boot <- function(x,g,iter=500,mu="meanbp") {
 			if (sup>inf) {
 				pv <- 1-(sup/iter)
 			}else {pv <- 1-(inf/iter)}
-			mymat[(j-1),i] <- pv
+			mymat[(j-1),i] <- pv*2 # *2 because bilateral
 		}
 	}
 	result <- list() ; result$p.value <- mymat

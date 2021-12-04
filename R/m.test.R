@@ -4,6 +4,8 @@
 #' @param control name of the category that will be used as a control to establish differences with '*', '**' and '***'.
 #' @param pval threshold of p-value to establish groups of averages or medians of type "a", "ab", "b" ...
 #'
+#' @importFrom stringr str_sort
+#'
 #' @return catego() can be used to establish groups with significantly different mean/median values relative to each other or to a reference control. It exploits the results of the functions pairwise.t.test(), pairwise.wilcox.test() and pairwise(type = "median" or "mean").
 #' @export
 #'
@@ -59,7 +61,11 @@ catego <- function(result,control=c(),pval=0.05) {
               next
             } else {
               #print("signif mais sensé être de cat différente (situation intermédiaire)")
-              cats[i] <- paste0(cats[i],cats[j+1])
+			  if (str_sort(c(cats[i],cats[j+1]))[1] == cats[i]) {
+				cats[i] <- paste0(str_sort(c(cats[i],cats[j+1])),collapse="")
+			  } else {
+				cats[i+1] <- paste0(str_sort(c(cats[i],cats[j+1])),collapse="")
+			  }
             }
           }
         }
@@ -109,6 +115,9 @@ catego <- function(result,control=c(),pval=0.05) {
 #' @importFrom WRS2 lincon
 #' @importFrom onewaytests bf.test
 #' @importFrom vioplot vioplot
+#' @importFrom normtest skewness.norm.test
+#' @importFrom normtest kurtosis.norm.test
+#' @importFrom normtest jb.norm.test
 #' @import methods
 #' @export
 #'
@@ -184,7 +193,10 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
   }
   shapi <- function(vector) {return(shapiro.test(as.numeric(vector))$p.value)}
   skew <- function(vector) {return(abs(skewness(vector)))}
+  skew2 <- function(vector) {return(skewness.norm.test(vector)$p.value)}
   kurto <- function(vector) {if (is.na(abs(kurtosis(vector)))){return(10)} ; return(abs(kurtosis(vector)))}
+  kurto2 <- function(vector) {return(kurtosis.norm.test(vector)$p.value)}
+  jarquebare <- function(vector) {return(jb.norm.test(vector)$p.value)}
   if (paired==TRUE) {stop("Error! The paired analysis is not developped.\n")}
   if (any((is.na(data)))|(any((is.na(cat))))){
     if (verbose==TRUE) {cat("Warning! Missing values.\n")}
@@ -195,33 +207,40 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
   }
   if(max(by(data,cat,length),na.rm=T)<3) {
     if (verbose==TRUE) {cat("Error! No enough values in the samples.\n")}
-    return(FALSE)
+    return(1)
+  }
+  if(any(!is.finite(data))) {
+	stop("Error! Infinite values in data. Analysis impossible.\n")
   }
   if(min(by(data,cat,length),na.rm=T)<3) {
-    if (verbose==TRUE) {cat("Warning! No enough values for some samples. The categories concerned are eliminated..\n")}
+    if (verbose==TRUE) {cat("Warning! No enough values for some samples. The categories concerned are ignored.\n")}
     which(by(data,cat,length)<3)-> ind_temp
     '%notin%' <- Negate('%in%')
     data <- data[cat%notin%names(ind_temp)]
     cat <- cat[cat%notin%names(ind_temp)]
+	cat <- as.factor(cat)
+	droplevels(cat)->cat
   }
   if(max(by(data,cat,var,na.rm=T),na.rm=T)==0) {
     if (verbose==TRUE) {cat("Error! No variability in samples.\n")}
-    return(FALSE)
+    return(1)
   }
   if(min(by(data,cat,var,na.rm=T),na.rm=T)==0) {
-    if (verbose==TRUE) {cat("Warning! Some samples do not vary. Non-variable categories are eliminated\n")}
+    if (verbose==TRUE) {cat("Warning! Some samples do not vary. Non-variable categories are ignored.\n")}
     which(by(data,cat,var,na.rm=T)==0)-> ind_temp
     '%notin%' <- Negate('%in%')
     data <- data[cat%notin%names(ind_temp)]
     cat <- cat[cat%notin%names(ind_temp)]
+	cat <- as.factor(cat)
+	droplevels(cat)->cat
   }
   if (length(unique(cat))<=1) {
     if (verbose==TRUE) {cat("Error! Only one category.\n")}
-    return(FALSE)
+    return(1)
   }
   if (length(unique(cat))>maxcat) {
     if (verbose==TRUE) {cat("Error! Too much categories.\n")}
-    return(FALSE)
+    return(1)
   }
   if (plot==TRUE) {
     boxplot(data~cat,col="cyan")
@@ -229,13 +248,22 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
     stripchart(data~cat,col="#FF000088",pch=16,vertical=TRUE,add=T,method="jitter",jitter=1/(length(unique(cat))+2))
   }
   discret <- discret.test(data)
-  pvals <- by(data,cat,shapi)
-  if (code==TRUE){cat("by(data,cat,shapiro.test)#1)\n")}
+	if (length(vector)<5000) {
+		pvals <- by(data,cat,shapi)
+	} else {
+		pvals <- by(data,cat,jarquebare)}
+  if (code==TRUE){
+	if (max(by(data,cat,length))<5000) {
+		cat("by(data,cat,shapiro.test)#1)\n")
+	}else{
+		cat("library(normtest)#1A)\nby(data,cat,jb.norm.test)#1B)\n")
+	}
+  }
   if (min(pvals) > pval) { # NORMAL
     ###################################################
     #			NORMAL
     ###################################################
-    if (verbose==TRUE) {cat("1) Shapiro-Wilk test (shapiro.test()) - The samples follow the normal law. min(p-value):",min(pvals),"\n")}
+    if (verbose==TRUE) {cat("1) Shapiro-Wilk test or Jarque-Bera if > 5000 values by sample (shapiro.test() & jb.norm.test()) - The samples follow the normal law. min(p-value):",min(pvals),"\n")}
     if (length(unique(cat))==2) { # 2 categories
       if (code==TRUE){cat("length(unique(cat)) #2)\n")}
       if (verbose==TRUE) {cat("2) Two categories.\n")}
@@ -279,7 +307,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
               }
               return(synth)
             }
-          } else {return(TRUE)}
+          } else {return(pvals)}
         } else {
           if (verbose==TRUE) {cat("4) Student test (t.test()) - Non-significant differences between samples. p-value:",pvals,"\n")}
           if (return==TRUE) {
@@ -309,7 +337,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
               }
               return(synth)
             }
-          } else {return(FALSE)}
+          } else {return(pvals)}
         }
       } else {
         ###################################################
@@ -349,7 +377,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
               }
               return(synth)
             }
-          } else {return(TRUE)}
+          } else {return(pvals)}
         } else {
           if (verbose==TRUE) {cat("4) Student test (t.test()) - Non-significant differences between samples. p-value:",pvals,"\n")}
           if (return==TRUE) {
@@ -379,7 +407,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
               }
               return(synth)
             }
-          } else {return(FALSE)}
+          } else {return(pvals)}
         }
       }
     } else { 													# > 2 categories
@@ -417,7 +445,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
               cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
             }
             return(synth)
-          } else {return(TRUE)}
+          } else {return(pvals)}
         } else {											#	 Non-significant AOV
           if (verbose==TRUE) {cat("4) One-way analysis of variance (aov()) - Non-significant differences between samples. p-value:",pvals,"\n")}
           if (return==TRUE) {
@@ -435,7 +463,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
               cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
             }
             return(synth)
-          } else {return(FALSE)}
+          } else {return(pvals)}# FALSE
         }
       } else {												# Non-identical variances
         if (verbose==TRUE) {cat("3) Bartlett test (bartlett.test()) - Non-identical sample variances. p-value:",pvals,"\n")}
@@ -459,7 +487,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
               cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
             }
             return(synth)
-          } else {return(TRUE)}
+          } else {return(pvals)}# TRUE
         } else {
           if (verbose==TRUE) {cat("4) Welch’s heteroscedastic F test (oneway.test(var.equal=FALSE)) Non-significant differences between samples. p-value:",pvals,"\n")}
           if (pvals2 <= pval) {
@@ -472,7 +500,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
               cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
             }
             return(synth)
-          } else {return(FALSE)}
+          } else {return(pvals)}# FALSE
         }
       }
     }
@@ -480,7 +508,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
     #			NON-NORMAL
     ###################################################
   } else { 												#
-    if (verbose==TRUE) {cat("1) Shapiro-Wilk test (shapiro.test()) -  One or more non-normal samples. min(p-value) : ",min(pvals),"\n")}
+    if (verbose==TRUE) {cat("1) Shapiro-Wilk test  or Jarque-Bera if > 5000 values by sample (shapiro.test() & jb.norm.test()) -  One or more non-normal samples. min(p-value) : ",min(pvals),"\n")}
     temp <- pairwise(data,cat,type="ks",silent=silent,boot=FALSE)
     ks_result <- min(unlist(temp$p.value),na.rm=T)
     if (code==TRUE){cat("length(unique(cat))#2)\n")}
@@ -490,16 +518,22 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
     if (length(unique(cat))==2) { 							# 2 categories
       if (verbose==TRUE) {cat("2) Two categories.\n")}
       sk <- max(by(data,cat,skew))
+	  sk2 <- min(by(data,cat,skew2))
       ku <- max(by(data,cat,kurto))
+	  ku2 <- min(by(data,cat,kurto2))
+	  jb <- min(by(data,cat,jarquebare))
       tt <- min(by(data,cat,length))
-      if (code==TRUE){cat("library(agricolae)\nby(data,cat,skewness)\nby(data,cat,kurtosis)\nby(data,cat,length)#3)\n")}
+      if (code==TRUE){cat("library(normtest)\nby(data,cat,jb.norm.test)\nlibrary(agricolae)\nby(data,cat,skewness)\nby(data,cat,skewness.norm.test)\nby(data,cat,kurtosis)\nby(data,cat,kurtosis.norm.test)\nby(data,cat,length)#3)\n")}
       ###################################################
       #			NON-NORMAL		2 categories		Acceptable for t.test()
       ###################################################
-      if ((sk<=2)&(ku<=2)&(tt>100)&(discret>0.05)) {
-        if (verbose==TRUE) {cat("3) Skweness & Kurtosis limits and Length of sample (swkeness() & kurtosis() & length()) - Distribution and length of samples acceptable.\n")
+      if ((jb>pval)&(sk2>pval)&(ku2>pval)&(tt>100)&(discret>0.05)) {
+        if (verbose==TRUE) {cat("3) Jarque–Bera test & Skweness & Kurtosis limits and Length of sample (jb.norm.test() & swkeness() & skewness.norm.test() & kurtosis() & kurtosis.norm.test() & length()) - Distribution and length of samples acceptable.\n")
+		  cat("\tJarque-Bera test - normality acceptable (min(p.value)) :",jb,"\n")
           cat("\tSkweness limite (max and absolute):",sk,"\n")
+		  cat("\tSkweness bootstrapped (min(p.value)):",sk2,"\n")
           cat("\tKurtosis limite (max and absolute):",ku,"\n")
+		  cat("\tKurtosis bootstrapped (min(p.value)):",ku2,"\n")
           cat("\tSample length (minimal):",tt,"\n")
         }
         if (code==TRUE){cat("t.test(data[cat==unique(cat)[1]],data[cat==unique(cat)[2]],var.equal=FALSE)   #4)\n")}
@@ -536,7 +570,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
 
               return(synth)
             }
-          } else {return(TRUE)}
+          } else {return(pvals)} # TRUE
         } else {
           if (verbose==TRUE) {cat("4) Student test (t.test()) - Non-significant differences between samples.\n")}
           if (return==TRUE) {
@@ -566,7 +600,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
               }
               return(synth)
             }
-          } else {return(FALSE)}
+          } else {return(pvals)} # FALSE
         }
         ###################################################
         #			NON-NORMAL		2 categories		Non acceptable for t.test()
@@ -596,11 +630,14 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
             #			NON-NORMAL		2 categories		Non acceptable for t.test()		Wilcox comparison
             ###################################################
           } else {
-            if ((sk<=2)|(ku<=2)|(tt>100)) {
-              cat("3) Skweness & Kurtosis limits and length of sample (swkeness() & kurtosis() & length()) Bad distribution of data (asymmetry, spread) or insufficient length.\n")
-              cat("\tSkweness limite (max and absolute):",sk,"\n")
-              cat("\tKurtosis limite (max and absolute):",ku,"\n")
-              cat("\tSample length (minimal):",tt,"\n")
+            if ((jb<pval)|(sk2<pval)|(ku2<pval)|(tt<100)) {
+              cat("3) Jarque–Bera test & Skweness & Kurtosis limits and Length of sample (jb.norm.test() & swkeness() & skewness.norm.test() & kurtosis() & kurtosis.norm.test() & length()) - Bad distribution of data (asymmetry, spread) or insufficient length.\n")
+			  cat("\tJarque-Bera test - normality acceptable (min(p.value)) :",jb,"\n")
+			  cat("\tSkweness limite (max and absolute):",sk,"\n")
+			  cat("\tSkweness bootstrapped (min(p.value)):",sk2,"\n")
+			  cat("\tKurtosis limite (max and absolute):",ku,"\n")
+			  cat("\tKurtosis bootstrapped (min(p.value)):",ku2,"\n")
+			  cat("\tSample length (minimal):",tt,"\n")
             }
             #onoff("on",silent)->oldw
             #if (boot==FALSE) {pvals <- ks.test(data[cat==unique(cat)[1]],data[cat==unique(cat)[2]])$p.value
@@ -651,7 +688,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
               }
               return(synth)
             }
-          } else {return(TRUE)}
+          } else {return(pvals)} # TRUE
         } else {
           if (verbose==TRUE) {cat("5) Wilcoxon-Mann-Whitney test (wilcox.test()) - Non-significant differences between samples. p-value : ",pvals,"\n")}
           if (return==TRUE) {
@@ -681,7 +718,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
               }
               return(synth)
             }
-          } else {return(FALSE)}
+          } else {return(pvals)} # FALSE
         }
       }
       ###################################################
@@ -690,11 +727,12 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
     } else { 											# > 2 categories
       if (verbose==TRUE) {cat("2) More than two categories.\n")}
       sk <- max(by(data,cat,skew))
-      #print(sk)
+	  sk2 <- min(by(data,cat,skew2))
       ku <- max(by(data,cat,kurto))
-      #print(ku)
+	  ku2 <- min(by(data,cat,kurto2))
+	  jb <- min(by(data,cat,jarquebare))
       if (code==TRUE){
-        cat("library(agricolae)#3a)\nby(data,cat,skewness)#3b)\nby(data,cat,kurtosis)#3c)\nby(data,cat,length)#3d)\n")
+        cat("library(normtest)#3a)\nby(data,cat,jb.norm.test)#3b)\nlibrary(agricolae)#3c)\nby(data,cat,skewness)#3d)\nby(data,cat,skewness.norm.test)#3e)\nby(data,cat,kurtosis)#3f)\nby(data,cat,kurtosis.norm.test)#3g)\nby(data,cat,length)#3h)\n")
         cat("library(lawstat)#4a)\nlevene.test(data,cat)#4b)\n")
         cat("library(onewaytests)#5a)\nbf.test(data~cat,data=data.frame(data,'cat'=factor(cat)))#5b)\n")
       }
@@ -712,16 +750,31 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
           }
         } else {
           if (verbose==TRUE) {
-            cat("3) Inconsistent testing of Levene and Brown-Forsyth .\n\tOnly Brown-Forsyth is taken into account..\n")
+            cat("3) Inconsistent testing of Levene and Brown-Forsyth.\n")
             cat("\tLevene p-value : ",pvals," - Brown-Forsyth p-value : ",pvals2,"\n")
+			cat("3') Only Jarque-Bera is taking in account.\n")
+			cat("\tJarque-Bera test - normality acceptable (min(p.value)) :",jb,"\n")
           }
         }
+		if (jb <= pval) {
+			if (verbose==TRUE) {
+				cat("3') Only Jarque-Bera is taking in account.\n")
+				cat("\tJarque-Bera test - normality non-acceptable (min(p.value)) :",jb,"\n")
+			}
+		} else {
+			if (verbose==TRUE) {
+				cat("3') Only Jarque-Bera is taking in account.\n")
+				cat("\tJarque-Bera test - normality acceptable (min(p.value)) :",jb,"\n")
+			}
+		}
       }
       #print(pvals)
-      if ((sk<=2)&(ku<=2)&(pvals2>pval)) {					# Acceptable non-normality
-        if (verbose==TRUE) {cat("4) Skweness & Kurtosis limits and Brown-Forsyth test (swkeness() & kurtosis() & bf.test()) - The distribution of values and sample variances are acceptable.\n")
-          cat("\tSkweness limite (max and absolute):",sk,"\n")
-          cat("\tKurtosis limite (max and absolute):",ku,"\n")
+      if (jb>pval) {					# Acceptable non-normality
+        if (verbose==TRUE) {cat("4) Jarque-Bare & Skweness or Kurtosis limits & Brown-Forsyth test (swkeness() & kurtosis() & bf.test()) - The distribution of values and sample variances are acceptable.\n")
+			  cat("\tSkweness limite (max and absolute):",sk,"\n")
+			  cat("\tSkweness bootstrapped (min(p.value)):",sk2,"\n")
+			  cat("\tKurtosis limite (max and absolute):",ku,"\n")
+			  cat("\tKurtosis bootstrapped (min(p.value)):",ku2,"\n")
         }
         if (code==TRUE){cat("mya <- aov(data.frame(data,cat), formula=data~cat) #6)\n")	}
         formula <- formula(data~cat)
@@ -744,7 +797,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
               cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
             }
             return(synth)
-          } else {return(TRUE)}
+          } else {return(pvals)} # TRUE
         } else {
           if (verbose==TRUE) {cat("5) Oneway test analysis of variance (aov()) - Non-significant differences between samples. p-value:",pvals,"\n")}
           if (code==TRUE){cat("library(agricolae)#7a)\nprint(SNK.test(mya,'cat',alpha=",pval,"))#7b)\n")}
@@ -763,17 +816,20 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
               cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
             }
             return(synth)
-          } else {return(FALSE)}
+          } else {return(pvals)} # FALSE
         }
       } else {
         if (code==TRUE){cat("kruskal.test(data,cat) #6)\n")}
         pvals3 <- kruskal.test(data,cat)$p.value
         # Si verbose : blabla
         if (verbose==TRUE) {
-          if ((sk>2)|(ku>2)) {
+          if ((sk2<pval)|(ku2<pval)) {
             cat("4) Skweness & Kurtosis limits (swkeness() & kurtosis()) Bad distribution of data (asymmetry, spread).\n")
-            cat("\tSkweness limite (max and absolute):",sk,"\n")
-            cat("\tKurtosis limite (max and absolute):",ku,"\n")
+
+			  cat("\tSkweness limite (max and absolute):",sk,"\n")
+			  cat("\tSkweness bootstrapped (min(p.value)):",sk2,"\n")
+			  cat("\tKurtosis limite (max and absolute):",ku,"\n")
+			  cat("\tKurtosis bootstrapped (min(p.value)):",ku2,"\n")
           }
           #onoff("on",silent)->oldw
           #pvals <- levene.test(data,cat)$p.value
@@ -785,7 +841,7 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
         pvals <- fligner.test(data,cat)$p.value
         if (is.na(pvals)) {
           if (verbose==TRUE) {cat("5) Fligner-Killeen test (fligner.test()) - Error, return NA.\n")}
-          return(FALSE)
+          return(pvals)# FALSE
         }
         if (verbose==TRUE) {
           if (pvals<=pval) {
@@ -818,14 +874,14 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
                     cat("\tWarning! The Kruskal-Wallis test and anova on medians give contradictory results.\n")
                   }
                 }
-                if (return==FALSE) {return(TRUE)}
+                if (return==FALSE) {return(pvals)}
               } else if (pvals > pval) {
                 if (verbose==TRUE) {cat("8) Oneway ANOVA of medians (med1way()) - Non-significant differences between the median of samples. p-value:",pvals,"\n")
                   if (pvals3 <= pval) {
                     cat("\tWarning! The Kruskal-Wallis test and anova on medians give contradictory results.\n")
                   }
                 }
-                if (return==FALSE) {return(FALSE)}
+                if (return==FALSE) {return(pvals)}
               }
             }
             if (code==TRUE){cat("pairwise.wilcox.test(data,cat,p.adjust.method='BH') #7)\n")}
@@ -838,8 +894,8 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
               return(synth)
             } else {
               if (pvals3 <= pval) {
-                return(TRUE)
-              } else {return(FALSE)}
+                return(pvals3)
+              } else {return(pvals3)}
             }
           } else {
             pvals <- t1way(data~cat)$p.value
@@ -852,14 +908,14 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
                     cat("\tWarning! The Kruskal-Wallis test and anova on trimmed means give contradictory results.\n")
                   }
                 }
-                if (return==FALSE) {return(TRUE)}
+                if (return==FALSE) {return(pvals)}
               } else if (pvals > pval) {
                 if (verbose==TRUE) {cat("8) One-way ANOVA on trimmed means (t1way()) - Non-significant differences between the trimmed samples. p-value:",pvals,"\n")
                   if (pvals3 <= pval) {
                     cat("\tWarning! The Kruskal-Wallis test and anova on trimmed means give contradictory results.\n")
                   }
                 }
-                if (return==FALSE) {return(FALSE)}
+                if (return==FALSE) {return(pvals)}
               }
             }
             if (code==TRUE){cat("library(WRS2) #7a)\nlincon(data~cat) #7b)\n")}
@@ -869,13 +925,13 @@ m.test <- function (data, cat, pval=0.05, verbose=TRUE, return=TRUE, paired=FALS
               return(synth)
             } else {
               if (pvals3 <= pval) {
-                return(TRUE)
-              } else {return(FALSE)}
+                return(pvals3)
+              } else {return(pvals3)}
             }
           }
         } else if (return==FALSE) {
-          if (pvals3 <= pval) {return(TRUE)
-          }else {return(FALSE)}
+          if (pvals3 <= pval) {return(pvals3)
+          }else {return(pvals3)}
         }
       }
     }

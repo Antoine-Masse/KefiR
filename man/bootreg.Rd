@@ -27,14 +27,17 @@ bootreg(
 \item{iter}{Number of iterations}
 }
 \value{
+A graph of analysis.
+}
+\description{
+Validating a bootstrap linear regression model
+}
+\details{
 bootreg allows to validate a model by bootstrap.
 
 It will draw several times in the values of the model in order to test its robustness.
 
 As an output, we can have a validation or not of the model (analysis=F), or we can have a table expressing the variability of the coefficients, their p-values and their maximum fluctuation values.
-}
-\description{
-Validating a bootstrap linear regression model
 }
 \examples{
 data(mtcars);

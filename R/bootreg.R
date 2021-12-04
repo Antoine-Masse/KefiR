@@ -7,9 +7,10 @@
 #' @param pval Minimal value accepted for validation of the model and his coefficients
 #' @param iter Number of iterations
 #'
-#' @return bootreg allows to validate a model by bootstrap.
-#' @return It will draw several times in the values of the model in order to test its robustness.
-#' @return As an output, we can have a validation or not of the model (analysis=F), or we can have a table expressing the variability of the coefficients, their p-values and their maximum fluctuation values.
+#' @details bootreg allows to validate a model by bootstrap.
+#' @details It will draw several times in the values of the model in order to test its robustness.
+#' @details As an output, we can have a validation or not of the model (analysis=F), or we can have a table expressing the variability of the coefficients, their p-values and their maximum fluctuation values.
+#' @return A graph of analysis.
 #' @export
 #'
 #' @examples

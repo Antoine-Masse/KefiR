@@ -7,6 +7,8 @@
 corrigraph(
   data,
   colY = c(),
+  colX = c(),
+  type = "x",
   pval = 0.05,
   exclude = c(0, 0, 0),
   ampli = 4,
@@ -16,13 +18,21 @@ corrigraph(
   mu = FALSE,
   prop = FALSE,
   layout = "fr",
-  verbose = FALSE
+  verbose = FALSE,
+  NAfreq = 1,
+  NAcat = TRUE,
+  level = 2,
+  evolreg = FALSE
 )
 }
 \arguments{
 \item{data}{a data.frame}
 
 \item{colY}{a vector of indices or variables to predict. To force the correlogram to display only the variables correlated to a selection of Y.}
+
+\item{colX}{a vector of indices or variables to follow. We will only keep the variables that are connected to them on 1 or more levels (level parameter).}
+
+\item{type}{"x" or "y". To force the display in correlogram mode (colX, type = "x") or in prediction mode (colY, type = "y").}
 
 \item{pval}{the maximum permissible p-value for the display}
 
@@ -43,6 +53,14 @@ corrigraph(
 \item{layout}{to choose the network organization method - choose "fr", "circle", "kk" or "3d".}
 
 \item{verbose}{to see the comments.}
+
+\item{NAfreq}{from 0 to 1. NA part allowed in the variables. 1 by default (100\% of NA tolerate).}
+
+\item{NAcat}{TRUE or FALSE. Requires recognition of missing data as categories.}
+
+\item{level}{to be used with colY. Number of variable layers allowed (minimum 2, default 5).}
+
+\item{evolreg}{TRUE or FALSE. Not yet available. Allows you to use the evolreg function to improve the predictive ability (R squared) for the variables specified in colY.}
 }
 \value{
 Correlation graph network (igraph) of the variables of a data.frame. Pay attention to the possible presence of non-numeric variables or missing data. Grouping of correlated variables: the vertices (circles) correspond to the variables. The more a variable is connected, the larger it appears. The color of the lines reflects the nature of the correlation (positive or negative).  The size of the lines is the value of the correlation from 0 to 1. All these correlations are significant (pval < 0.01). The coloured groupings reflect families of inter-correlated variables. BLUE: positive correlation - RED: negative correlation
@@ -77,11 +95,14 @@ data(airquality)
 corrigraph(airquality,layout="3d")
 # Example 3
 data(airquality)
-corrigraph(airquality,c("Ozone","Wind"))
+corrigraph(airquality,c("Ozone","Wind"),type="y")
 # Example 4
 data(iris)
 corrigraph(iris,mu=TRUE)
 # Example 5
 require(MASS) ; data(Aids2)
 corrigraph(Aids2 ,prop=TRUE,mu=TRUE,exclude=c(0.3,0.3,0))
+# Example 6
+data(airquality)
+corrigraph(airquality,c("Ozone","Wind"),type="x")
 }

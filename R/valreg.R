@@ -57,12 +57,15 @@ valreg <- function(reg,verbose=TRUE,nvar=5,boot=TRUE,pval=0.05,conf.level=0.95,
     if (pval_mdl > pval) {if(verbose==TRUE){cat("\tWarning!\n\tBad significance of the model. p-value:",pval_mdl,"\n")};error = FALSE
 	} else {if(verbose==TRUE){cat("\tGood significance of the model. p-value:",pval_mdl,"\n")}}
     pval_coeff <- summary(reg)[[4]][,4]
-    if (max(pval_coeff) > pval) {if(verbose==TRUE){cat("\tWarning!\n\tBad significance of the coefficients. max(pval_coeff) :",max(pval_coeff),"\n")};error = FALSE
+    if (max(pval_coeff) > pval) {if(verbose==TRUE){cat("\tWarning!\n\tBad significance of the coefficients. max(p.value) :",max(pval_coeff),"\n")};error = FALSE
 	} else {if(verbose==TRUE){cat("\tGood significance of the coefficients. max(pval_coeff) :",max(pval_coeff),"\n")}}
 	# Rainbow test - Adequacy
-	if (verbose==TRUE) {cat("02- Analysis of the adaquacy of model (Equivalence between the global model and the model established on the best points.).\n")}
+	if (verbose==TRUE) {cat("02- Analysis of the adequacy of model (Equivalence between the global model and the model established on the best points.).\n")}
 	raintest(reg,order.by="mahalanobis")$p.value -> pvalt # test de rainbow Adequacy
-    if (pvalt < raintest_pval) {if(verbose==TRUE){cat("\tWarning!\n\tRainbow test (raintest()) - Bad adequacy. p.value : ",pvalt,"\n")};error = FALSE
+	#cooks.distance(reg)->cooksd
+	#raintest(reg,order.by=cooksd)$p.value -> pvalt2
+    if (pvalt < raintest_pval) {if(verbose==TRUE){cat("\tWarning!\n\tRainbow test ordered by mahalanobis (raintest()) - Bad adequacy. p.value : ",pvalt,"\n")};error = FALSE
+	#} else if (pvalt2 < raintest_pval){if(verbose==TRUE){cat("\tWarning!\n\tRainbow test ordered by Cook's distance (raintest()) - Bad adequacy. p.value : ",pvalt2,"\n")};error = FALSE
 	} else {if(verbose==TRUE){cat("\tRainbow test (raintest()) - Good adequacy. p.value : ",pvalt,"\n")}}
 	# Durbin-Watson test
 	if (verbose==TRUE) {cat("03- Analysis of independence of the residuals.\n")}
@@ -83,8 +86,8 @@ valreg <- function(reg,verbose=TRUE,nvar=5,boot=TRUE,pval=0.05,conf.level=0.95,
 	  } else {if(verbose==TRUE){cat("\tBreush-Pagan test (bptest()) - Constant variance of the residuals. p.value : ",pvalt,"\n")}}
     }
 	# Cooks's distance Leverage effect
+	cooks.distance(reg)->cooksd
 	if (verbose==TRUE) {cat("06- Analysis of leverage effect.\n")}
-    cooks.distance(reg)->cooksd
     if (max(cooksd,na.rm=TRUE) > 1) {if(verbose==TRUE){cat("\tWarning!\n\tCook's distance (cooks.distance()) - Leverage effect. max(cooks.distance())",max(cooksd,na.rm=TRUE),"\n")};error = FALSE
 	} else {if(verbose==TRUE){cat("\tCook's distance (cooks.distance()) - No leverage effect. max(cooks.distance())",max(cooksd,na.rm=TRUE),"\n")}}
     if (boot == TRUE) {
