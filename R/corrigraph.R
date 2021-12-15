@@ -446,7 +446,6 @@ if ((type=="y")&(length(colY)>0)){
 				data_temp[which(is.na(data_temp[,1])),1]<-"MANQUANTES"
 			}
 			pvals <- m.test(data_temp[,2],data_temp[,1],pval=pval,return=FALSE,verbose=FALSE,plot=FALSE,boot=FALSE)
-			cat("pvals : ",pvals)
 			if (pvals < pval) {
 			  log10(1/pvals)/10 -> temp ; ifelse(temp>1 ,1 ,temp)-> temp
 			  mymat[i,j] <- temp ; mymat[j,i] <- temp

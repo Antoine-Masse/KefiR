@@ -125,6 +125,7 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
         X_i_num <- c(X_i_num,i)
       }
     }
+	if (verbose==TRUE) {print(paste("X_i_num",X_i_num))}
     # Compilation of non-numerical var
     X_i_char <- 1:ncol(data)
     X_i_char <- setdiff(X_i_char,X_i_num)
@@ -149,11 +150,15 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     var_i <- c()
     p.value <- c()
     weight <- c()
+	if (verbose==TRUE) {
     print("log")
+	print(X_i_num)}
     X_i_num_log <- X_i_num[apply(data[,X_i_num],2,function(x){any(!is.finite(log(x)))})]
     #print(head(data[,X_i_num]))
-    #print(head(data[,X_i_num_log]))
-    pvals <- apply(data[,X_i_num_log],2,function(x){return(cor.test(log(x),data[,ind_Y])$p.value)})
+	if (verbose==TRUE) {
+    print(head(data[,X_i_num_log]))
+	}
+    pvals <- apply(data.frame(data[,X_i_num_log]),2,function(x){return(cor.test(log(x),data[,ind_Y])$p.value)})
     ind_noNA <- which(!is.na(pvals))
     formule0 <- paste("I(log(",colnames(data)[X_i_num_log],"))")
     var_i <- c(var_i, X_i_num_log[ind_noNA])
@@ -165,7 +170,9 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     type <- c(type,rep("Ynum_vs_log",length(ind_noNA)))
     p.value <- c(p.value,pvals[ind_noNA])
     weight	<- weight<-c(rep(1,length(ind_noNA)))
+	if (verbose==TRUE) {
     print("x^2")
+	}
     pvals <- apply(data[,X_i_num],2,function(x){return(cor.test((x^2),data[,ind_Y])$p.value)})
     #		print(pvals)
     ind_noNA <- which(!is.na(pvals))
@@ -178,7 +185,9 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     p.value <- c(p.value,pvals[ind_noNA])
     weight	<- weight<-c(weight,c(rep(1,length(ind_noNA))))
     #	cat("1",length(p.value),"2",length(var_i),"3",length(variables),"4",length(weight))
+	if (verbose==TRUE) {
     print("exp")
+	}
     pvals <- apply(data[,X_i_num],2,function(x){return(cor.test((exp(x)),data[,ind_Y])$p.value)})
     #		print(pvals)
     ind_noNA <- which(!is.na(pvals))
@@ -199,7 +208,9 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     type <- c()
     var_i <- c()
     p.value <- c()
+	if (verbose==TRUE) {
     print("Interaction j/i & i/j")
+	}
     for (i in which(dt$type=="Ynum_vs_num"|dt$type=="Ynum_vs_log")) {
       for (j in setdiff(which(dt$type=="Ynum_vs_num"|dt$type=="Ynum_vs_log"),i)) {
         # INTERACTION i/j
@@ -254,7 +265,9 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     weight <- c()
     ##########
     #	cat("1",length(p.value),"2",length(var_i),"3",length(variables),"4",length(weight))
+	if (verbose==TRUE) {
     print("1/x")
+	}
     X_i_num_inv <- apply(data[,X_i_num],2,function(x){return(any((x==0)))})
     ind_noNA <- which(!is.na(X_i_num_inv))
     #			print(X_i_num_inv)
@@ -277,7 +290,9 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     weight	<- weight<-c(weight,rep(1,length(ind_noNA)))
     #
     #	cat("1",length(p.value),"2",length(var_i),"3",length(variables),"4",length(weight))
+	if (verbose==TRUE) {
     print("poly")
+	}
     X_i_num_poly <- apply(data[,X_i_num],2,function(x){return(any(is.na(x)))})
     X_i_num_poly <- which(X_i_num_poly==FALSE)
     X_i_num_temp <- X_i_num[X_i_num_poly]
@@ -320,7 +335,7 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
         n2 <- nrow(dt2)-40
         n12 <- c(n1 , n2)
         n12[n12>0]->n12
-        n12 <- min(n12)
+		if (length(n12)>0){n12 <- min(n12)}
         if (n12 == n1) {
           dt <- dt1
         } else if (n12 == n2) {
@@ -331,8 +346,10 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
       }
     }
     #}
+	if (verbose==TRUE) {
     print("Après nettoyage")
     print(paste("Il reste ",nrow(dt)," variables."))
+	}
     #		print(dt)
   }
   #print(head(dt))
@@ -340,7 +357,9 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
   #	Interactions
   ########################
   if (interaction == TRUE){
+  if (verbose==TRUE) {
     print("Interaction")
+	}
     variables <- c()
     type <- c()
     var_i <- c()
@@ -385,15 +404,19 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     dt <- rbind(dt,dt_inter)
   }
   if (wash==TRUE) {
+  if (verbose==TRUE) {
     print("Nettoyage")
     print(paste("Il y a pour le moment ",nrow(dt)," variables."))
+	}
     #######################
     #	Nettoyage
     #######################
     seuil <- 100
     if (nrow(dt) > seuil) {
+	if (verbose==TRUE) {
       print("Nettoyage")
       print(nrow(dt))
+	  }
       var_alea <- qbinom(0.95,nrow(dt),pval)
       dt0 <- dt[dt$p.value<pval,]
       dt1 <- dt[dt$p.value<pval/nrow(dt),]
@@ -401,9 +424,11 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
       if (var_alea < length(ind)) {
         dt2 <- dt[ind[1:(length(ind)-var_alea)],]
         n1 <- nrow(dt1)-seuil
-        print(paste("reste_",n1))
+		if (verbose==TRUE) {
+        print(paste("reste_",n1))}
         n2 <- nrow(dt2)-seuil
-        print(paste("reste_",n2))
+		if (verbose==TRUE) {
+        print(paste("reste_",n2))}
         n12 <- c(n1 , n2)
         n12[n12>0]->n12
         n12 <- min(n12)
@@ -412,7 +437,8 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
         } else if (n12 == n2) {
           dt <- dt2
         } else {
-          print(n12)
+		if (verbose==TRUE) {
+          print(n12)}
           # nothing
         }
       }
@@ -424,10 +450,11 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     #		dt <- dt[ind,]
     #	}
     #}
+	if (verbose==TRUE) {
     print("Après nettoyage")
     print(paste("Nombre de variables retenues ",nrow(dt)))
+	}
   }
-  print("X")
   if (length(X)>0) {
     #ind_X <- which(colnames(data)%in%X)
     ind_X_bis <- which(dt$variables%in%X)
@@ -492,7 +519,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
   data_glob <- dvar(data,Y,pval=0.05,X=X,NAfreq=NAfreq,wash=wash,interaction=interaction,verbose=FALSE)
   data <- data_glob$data
   dt <- data_glob$variables
-  print(head(dt))
+  if (verbose==TRUE) {print(head(dt))}
   # Une détection devrait être proposée par défaut de la famille de Y
   #
   # Ainsi qu'une élimination optionnelle des var quantitatives
@@ -535,7 +562,8 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
   ###########################################
   #
   bornage_global <- 0 ; bornage2 <- 1 ; bornage3 <- 0 ; bornage4 <- 1000
-  globalBIC <- 100000 ; resultat_global <- 0 ; resultat_min <- 1
+  globalBIC <- 100000 ; resultat_global <- 0 ; distance_global <- 1000000
+  global_save <- c() ; BIC_save <- c() ; resultat_min <- 0
   my_i_model <- 0
   '%notin%' <- Negate('%in%')
   individuals <- nrow(dt)*(ceiling(40/log(nrow(dt))))^2;
@@ -549,6 +577,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
   ###################################################
   #			FAIRE LES PARENTS
   ###################################################
+  my_i_model <- c() ; resultat <- c()
   if (verbose==TRUE) {print(paste("Making the ",individuals," parents."))}
   for (indiv in 1:individuals) {
     nb_temp <- sample(nb,1) ; nvar_temp <- 0 ; formul <- c() ; my_i <- c()
@@ -574,8 +603,10 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
     formul <- formula(paste(Y,"~",paste(formul,collapse='+')))
     if (family == "lm") {
       reg <- lm(formula=formul,data=data)
-      global <- summary(reg)$r.squared
+      global <- summary(reg)$adj.r.squared
       bic_temp <- BIC(reg)
+		global_save <- c(global_save,global)
+		BIC_save <- c(BIC_save,bic_temp)
     } else if (family=="logit") {
       # DES COMPILATIONS DE DATA3 à REMPLACER PAR DATA...
       data3[,1] <- as.factor(data3[,1]) # Mettre en facteur
@@ -591,10 +622,8 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
     if (indiv == 1) {parents <- list()}
     parents[[indiv]] <- parent
     if ((length(X) == 0) | (length(intersect(which(dt$variables%in%X),my_i))>0)) {
-      if (global >= bornage_global) {
-        if (BIC(reg)<globalBIC){
+      if ((global >= bornage_global)&(bic_temp<globalBIC)) {
           if (family == "lm") {
-            #reg <- lm(formul,data=data)
             pvals <- summary(reg)[[4]][,4]
           } else if (family=="logit") {
             # Encore du data3 à nettoyer
@@ -602,87 +631,86 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
             reg2 <- drop1(reg, test="F")
             pvals <- unlist(reg2[5])[-1]
           }
-          if (any(is.na(pvals))==FALSE) {
+		 if (any(is.na(reg$coefficients))==FALSE) {
+		  if (any(is.na(pvals))==FALSE) {
             if (any(pvals>0.05)==FALSE) {
-              #if (identical(sort(my_i),sort(my_i_model))==FALSE){
-              #print("Modèle acceptable en termes de pvals")
-              #print("Description")
-              #print(BIC(reg))
-              #print(globalBIC)
-              #							for (i in 1:500) {
-              #								apprentissage <- sample(1:nrow(data),replace=T)
-              #								test <- c()
-              #								test <- setdiff(1:nrow(data),apprentissage)
-              #### Voir à quoi sert cette partie ctrl
-              #								ctrl <- c()
-              #								for (i in 1:ncol(data)){
-              #									if (is.numeric(data[,i])==FALSE){
-              #										part_common <- sort(intersect(unique(data[apprentissage,i]),unique(data[test,i])))
-              #										part_common <- as.factor(part_common)
-              #										ctrl <- c(ctrl,identical(part_common,as.factor(sort(unique(data[test,i])))))
-              #									}
-              #								}
-              #
-              #								if (family == "lm") {
-              #										reg <- lm(formul,data=data[apprentissage,])
-              #										#prediction <- predict(reg,newdata=data3[test,])
-              #										prediction <- summary(reg)$r.squared
-              #										resultat <- c(resultat,prediction)
-              #								} else if ((family=="logit")&(length(test)>0)&(length(unique(data3[,which(colnames(data3)%in%Y)][apprentissage]))==2)&(min(table(data3[,which(colnames(data3)%in%Y)][test]))>2)&(min(table(data3[,which(colnames(data3)%in%Y)][apprentissage]))>2)&(all(ctrl==TRUE)==TRUE)) {
-              #										reg <- glm(formul,data=data3[apprentissage,],family=binomial(logit))
-              #										prediction <- predict(reg,newdata=data3[test,])
-              #										prediction <- ifelse(prediction>0.5,"oui","non")
-              #										tempdf <- data.frame("test" = data3[,which(colnames(data3)%in%Y)][test],prediction)
-              #										tempdf <- table(tempdf)
-              #										tempdf <- round(prop.table(tempdf ), 2)
-              #										if (ncol(tempdf)==2) {resultat <- c(resultat,sum(tempdf[1,1],tempdf[2,2]))
-              #										} else {resultat <- c(resultat,tempdf[1,1])}
-              #								}
-
-              #							}
-              #print("B")
-              if (family == "lm") {
-                reg <- lm(formul,data=data)
-              } else if (family=="logit") {
-                reg <- glm(formul,data=data3,family=binomial(logit))
+              if (identical(sort(my_i),sort(my_i_model))==FALSE){
+				for (i in 1:250) {
+              		apprentissage <- sample(1:nrow(data),replace=T)
+              		test <- c()
+              		test <- setdiff(1:nrow(data),apprentissage)
+              		if (family == "lm") {
+						reg <- lm(formul,data=data[apprentissage,])
+						prediction <- predict(reg,newdata=data[test,])
+						prediction <- summary(reg)$adj.r.squared
+						resultat <- c(resultat,prediction)
+						if (i==100) {
+							if (quantile(resultat,probs=0.05)<resultat_min){break}
+						}
+              		} else if ((family=="logit")&(length(test)>0)&(length(unique(data3[,which(colnames(data3)%in%Y)][apprentissage]))==2)&(min(table(data3[,which(colnames(data3)%in%Y)][test]))>2)&(min(table(data3[,which(colnames(data3)%in%Y)][apprentissage]))>2)) {
+						ctrl <- c()
+              			for (i in 1:ncol(data)){
+              				if (is.numeric(data[,i])==FALSE){
+              					part_common <- sort(intersect(unique(data[apprentissage,i]),unique(data[test,i])))
+              					part_common <- as.factor(part_common)
+              					ctrl <- c(ctrl,identical(part_common,as.factor(sort(unique(data[test,i])))))
+              				}
+              			}
+						if (all(ctrl==TRUE)==TRUE) {
+              				reg <- glm(formul,data=data3[apprentissage,],family=binomial(logit))
+              				prediction <- predict(reg,newdata=data3[test,])
+              				prediction <- ifelse(prediction>0.5,"oui","non")
+              				tempdf <- data.frame("test" = data3[,which(colnames(data3)%in%Y)][test],prediction)
+              				tempdf <- table(tempdf)
+              				tempdf <- round(prop.table(tempdf ), 2)
+              				if (ncol(tempdf)==2) {resultat <- c(resultat,sum(tempdf[1,1],tempdf[2,2]))
+              				} else {resultat <- c(resultat,tempdf[1,1])}
+              			}
+					}
+				}
+				if (quantile(resultat,probs=0.05)>=resultat_min){
+					resultat_min<-quantile(resultat,probs=0.05)
+					resultat_global<-median(resultat)
+					# Global function after bootstrap
+					if (family == "lm") {
+						reg <- lm(formul,data=data)
+					} else if (family=="logit") {
+						reg <- glm(formul,data=data3,family=binomial(logit))
+					}
+					reg2 <- drop1(reg, test="F")
+					super_reg <- reg ; super_reg2 <- reg2
+					my_i_model <- my_i
+					formule = formul
+					formule <- formula(formule)
+					globalBIC <- BIC(reg)
+					bornage_global <- global
+					if (family == "lm") {
+					} else if (family=="logit") {
+						modelG <- naiveBayes(form,data=data3)
+						# print(formule)
+						# cat("Prévision médiane : ",median(resultat),"\n")
+						# cat("Prévision inférieure 95% : ",quantile(resultat,probs=0.05),"\n")
+						prediction <- predict(model,data)
+						tempdf <- data.frame("test" = data[,which(colnames(data)%in%Y)],prediction)
+						tempdf <- table(tempdf)
+						tempdf <- round(prop.table(tempdf ), 2) ;
+						tempdf_save <- tempdf
+						#print("Prédiction : ")
+						#		    print(tempdf)
+					}
+					if ((verbose==TRUE)&(bornage_global == 0)&(bornage_global!=global)) {print("At least one significant model identified.")}
+					if (verbose == TRUE) {
+						cat("Modèle sur parents avec R2 : ",global,"\n")
+						print(paste("BIC ",BIC(reg)))
+						print(formule)
+					}
+				}
               }
-              reg2 <- drop1(reg, test="F")
-              #							resultat_global<-median(resultat)
-              #							resultat_min<-quantile(resultat,probs=0.05)
-              super_reg <- reg ; super_reg2 <- reg2
-              my_i_model <- my_i
-              #vari_model <- mynames
-              #form <- formula(paste0(Y,"~."))
-              #formule <- paste0(Y,"~",paste(colnames(data3)[which(colnames(data3)!=Y)],collapse="+"))
-              formule = formul
-              formule <- formula(formule)
-              #print("C")
-              if (family == "lm") {
-              } else if (family=="logit") {
-                modelG <- naiveBayes(form,data=data3)
-                # print(formule)
-                # cat("Prévision médiane : ",median(resultat),"\n")
-                # cat("Prévision inférieure 95% : ",quantile(resultat,probs=0.05),"\n")
-                prediction <- predict(model,data)
-                tempdf <- data.frame("test" = data[,which(colnames(data)%in%Y)],prediction)
-                tempdf <- table(tempdf)
-                tempdf <- round(prop.table(tempdf ), 2) ;
-                tempdf_save <- tempdf
-                #print("Prédiction : ")
-                #		    print(tempdf)
-              }
-              if ((verbose==TRUE)&(bornage_global == 0)&(bornage_global!=global)) {print("At least one significant model identified.")}
-              globalBIC <- BIC(reg)
-              bornage_global <- global
-              #MYnames <- mynames
-              if (verbose == TRUE) {
-                cat("Modèle sur parents avec R2 : ",global,"\n")
-                print(paste("BIC ",BIC(reg), "versus globalBIC",globalBIC))
-                print(formule)}
             }
           }
-        }
-      }
+		 #}
+		}
+	  }
     }
   }
   ###########################################
@@ -693,13 +721,8 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
   # Making evolutiv approach
   ############################################################################################
   ############################################################################################
+  super_reg_global <- bornage_global
   if (verbose==TRUE) {print(paste("Making evolutiv approach on ",iter," iterations."))}
-  # METTRE UN BREAK DES QUE CA BOUGE PLUS OU QUE C'EST BIEN HAUT.
-  # Tuer la moitié des parents
-  #		ind_to_kill <- which(sapply(parents,"[[",2)%in%sort(sapply(parents,"[[",2))[1:(round(length(parents)/2,0))])
-  #		parents <- parents[-ind_to_kill]
-
-  #	print("Approche evolutionnaire")
   stocking <- c() ; stocking2<- c() ; pval_stop2 <- 1
   #rognage <- 400/round(log2(length(parents)),0) # Nombre de part de prélèvements...
   rognage <- 400
@@ -732,7 +755,6 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
       }
       next
     }
-    #print("A")
     nb_temp <- sample(nb,1) # Material of son/daughter
     demi_nb_temp <- round(nb_temp/2,0)
     #print(demi_nb_temp)
@@ -741,23 +763,11 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
       } else {sample(dad,demi_nb_temp)->spermatozoid}
     }else{spermatozoid<-dad}
     demi_nb_temp <- nb_temp - length(spermatozoid)
-    #print(demi_nb_temp)
-    #print(paste("sum(dt$weight[mom])",sum(dt$weight[mom])))
-    #print(mom)
     if (sum(dt$weight[mom])>=demi_nb_temp) {
       if (demi_nb_temp>=length(mom)) {ovul <- mom
       } else {sample(mom,demi_nb_temp)->ovul}
     }else{ovul <- mom}
-    #print("spermato & ovul")
-    #print(spermatozoid)
-    #print(ovul)
-    #print("AA")
-    #print(union(spermatozoid,ovul))
-    #print("DD")
     my_i <- union(spermatozoid,ovul)
-    #print("BB")
-    #print(my_i)
-    #print("CC")
     poids <- sum(dt$weight[my_i])
     if (poids < nb_temp) {
       my_i_max <- union(mom,dad)
@@ -770,7 +780,6 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
         }
       }
     }
-    #print("B")
     while(poids>nb_temp){
       my_i_temp<-sample(my_i)[-1]
       poids <- sum(dt$weight[my_i_temp])
@@ -779,21 +788,10 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
       } else { poids <- 0
       }
     }
-    #difference <- length(spermatozoid+ovul) - length(my_i)
-    #if (difference > 0){
-    #	my_i <- c(my_i,sample(setdiff(c(dad,mom),my_i),difference))
-    #}
     formul <- formula(paste(Y,"~",paste(dt$variables[my_i],collapse='+')))
-    #if (dt$var_i %in% 510) {
-    #print(formul)
-    #}
-    #data3 <- cbind(data[Y],data[my_i]) ; colnames(data3)[1]<-Y
-    #formul <- formula(paste(Y,"~."))
-    #print("Titres de data3")
-    #print(colnames(data3))
     if (family == "lm") {
       reg <- lm(formula=formul,data=data)
-      global <- summary(reg)$r.squared
+      global <- summary(reg)$adj.r.squared
       bic_temp <- BIC(reg)
     } else if (family=="logit") {
       # Là aussi du data3 à remplacer par data
@@ -807,6 +805,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
     }
     stocking <- c(stocking,global)
     if (plot==TRUE) {
+		#plot(global_save,BIC_save)
       if (length(stocking)>10) {
         stocking2 <- c(stocking2,median(stocking[(length(stocking)-9):length(stocking)]))
       }
@@ -832,17 +831,21 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
       }
     }
     if (pval_stop2 == 5) {cat("Fin accélérée.\n") ; break}
-    #print("A2")
-    #print(my_i)
-    #print(which(dt$variables%in%X))
-    #print("A3")
     #############
     #	Si le modèle est meilleur que le meilleur modèle disponible
     #############
     if ((length(X) == 0) | (length(intersect(which(dt$variables%in%X),my_i))>0)) {
-      #print("A4")
-      if (global >= bornage_global){
-        #print("Nouveau modèle max identifié")
+		# Centrer-Réduire BIC et R² pour trouver un compromis
+	#	if (length(global_save)>20) {
+#			distance_g <- (global-mean(global_save))/sd(global_save)#
+			#distance_b <- (bic_temp-mean(BIC_save))/sd(BIC_save)
+			#BIC_save_cr <- (BIC_save-mean(BIC_save))/sd(BIC_save)
+			#distance <- (distance_g-((1-mean(global_save))/sd(global_save)))^2+(ifelse((distance_b-min(distance_g))<0,0,(distance_b-min(distance_b))))^2
+#			distance <- (distance_g-((1-mean(global_save))/sd(global_save)))^2+(distance_b-min(BIC_save_cr))^2
+#		} else {
+#			distance <- 10000
+#		}
+      if ((global > bornage_global)|(bic_temp < globalBIC))  { # | (distance<distance_global))
         if (family == "lm") {
           reg <- lm(formul,data=data)
           pvals <- summary(reg)[[4]][,4]
@@ -852,94 +855,79 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
           reg2 <- drop1(reg, test="F")
           pvals <- unlist(reg2[5])[-1]
         }
+		if (any(is.na(reg$coefficients))==FALSE) {
         if (any(is.na(pvals))==FALSE) {
           if (any(pvals>0.05)==FALSE) {
-            #if (identical(sort(my_i),sort(my_i_model))==FALSE){
             #print("Modèle acceptable en termes de pvals")
-            #print("Description")
-            #print(BIC(reg))
-            #print(globalBIC)
-            #if (bornage_global==0) {globalBIC<-BIC(reg)+1}
-            # Si BON BIC identifié, faire bootstrap
-            if ((BIC(reg)< globalBIC)&(identical(sort(my_i),sort(my_i_model))==FALSE)) {
+            # Si BON BIC identifié, faire bootstrap, sauf si modèle déjà sorti !
+            if (identical(sort(my_i),sort(my_i_model))==FALSE) {
               if (verbose==TRUE){print(formule)}
               #print("On se retrouve dans un modèle à bootstraper")
               resultat <- c()
-              #print("bootstrap")
-              #print("AAAA")
+              print("bootstrap")
               for (i in 1:500) {
                 apprentissage <- sample(1:nrow(data),replace=T)
                 test <- c()
                 test <- setdiff(1:nrow(data),apprentissage)
-
-                #### Voir à quoi sert cette partie ctrl
-                ctrl <- c()#
-                for (i in 1:ncol(data)){
-                  if (is.numeric(data[,i])==FALSE){
-                    part_common <- sort(intersect(unique(data[apprentissage,i]),unique(data[test,i])))
-                    part_common <- as.factor(part_common)
-                    ctrl <- c(ctrl,identical(part_common,as.factor(sort(unique(data[test,i])))))
-                  }
-                }
                 if (family == "lm") {
                   reg <- lm(formul,data=data[apprentissage,])
                   #prediction <- predict(reg,newdata=data3[test,])
-                  prediction <- summary(reg)$r.squared
+                  prediction <- summary(reg)$adj.r.squared
                   resultat <- c(resultat,prediction)
-                } else if ((family=="logit")&(length(test)>0)&(length(unique(data3[,which(colnames(data3)%in%Y)][apprentissage]))==2)&(min(table(data3[,which(colnames(data3)%in%Y)][test]))>2)&(min(table(data3[,which(colnames(data3)%in%Y)][apprentissage]))>2)&(all(ctrl==TRUE)==TRUE)) {
-                  reg <- glm(formul,data=data3[apprentissage,],family=binomial(logit))
-                  prediction <- predict(reg,newdata=data3[test,])
-                  prediction <- ifelse(prediction>0.5,"oui","non")
-                  tempdf <- data.frame("test" = data3[,which(colnames(data3)%in%Y)][test],prediction)
-                  tempdf <- table(tempdf)
-                  tempdf <- round(prop.table(tempdf ), 2)
-                  if (ncol(tempdf)==2) {resultat <- c(resultat,sum(tempdf[1,1],tempdf[2,2]))
-                  } else {resultat <- c(resultat,tempdf[1,1])}
+                } else if ((family=="logit")&(length(test)>0)&(length(unique(data3[,which(colnames(data3)%in%Y)][apprentissage]))==2)&(min(table(data3[,which(colnames(data3)%in%Y)][test]))>2)&(min(table(data3[,which(colnames(data3)%in%Y)][apprentissage]))>2)) {
+					  # Données catégorielles dans reg logistique :
+					# vérifier que les variantes de Y (0 et 1) apparaissent dans le test et l'apprentissage
+					ctrl <- c()#
+					for (i in 1:ncol(data)){
+					  if (is.numeric(data[,i])==FALSE){
+						part_common <- sort(intersect(unique(data[apprentissage,i]),unique(data[test,i])))
+						part_common <- as.factor(part_common)
+						ctrl <- c(ctrl,identical(part_common,as.factor(sort(unique(data[test,i])))))
+					  }
+					}
+					if (all(ctrl==TRUE)==TRUE){
+						reg <- glm(formul,data=data3[apprentissage,],family=binomial(logit))
+						 prediction <- predict(reg,newdata=data3[test,])
+						 prediction <- ifelse(prediction>0.5,"oui","non")
+						 tempdf <- data.frame("test" = data3[,which(colnames(data3)%in%Y)][test],prediction)
+						 tempdf <- table(tempdf)
+						 tempdf <- round(prop.table(tempdf ), 2)
+						 if (ncol(tempdf)==2) {resultat <- c(resultat,sum(tempdf[1,1],tempdf[2,2]))
+						 } else {resultat <- c(resultat,tempdf[1,1])}
+					}
                 }
-
               }
-              #print("BBBBB")
-              if (family == "lm") {
-                reg <- lm(formul,data=data)
-              } else if (family=="logit") {
-                reg <- glm(formul,data=data3,family=binomial(logit))
-              }
-              reg2 <- drop1(reg, test="F")
-              resultat_global<-median(resultat)
-              resultat_min<-quantile(resultat,probs=0.05)
-              super_reg <- reg ; super_reg2 <- reg2
-              globalBIC <- BIC(reg)
-              my_i_model <- my_i
-              #vari_model <- mynames
-              #form <- formula(paste0(Y,"~."))
-              #formule <- paste0(Y,"~",paste(colnames(data3)[which(colnames(data3)!=Y)],collapse="+"))
-              formule = formul
-              formule <- formula(formule)
-              #print("C")
-              if (family == "lm") {
-              } else if (family=="logit") {
-                modelG <- naiveBayes(form,data=data3)
-                # print(formule)
-                # cat("Prévision médiane : ",median(resultat),"\n")
-                # cat("Prévision inférieure 95% : ",quantile(resultat,probs=0.05),"\n")
-                prediction <- predict(model,data)
-                tempdf <- data.frame("test" = data[,which(colnames(data)%in%Y)],prediction)
-                tempdf <- table(tempdf)
-                tempdf <- round(prop.table(tempdf ), 2) ;
-                tempdf_save <- tempdf
-                #print("Prédiction : ")
-                #		    print(tempdf)
-              }
-              if ((verbose==TRUE)&(bornage_global == 0)&(bornage_global!=global)) {print("At least one significant model identified.")}
-              bornage_global <- global
-              #MYnames <- mynames
-              #print(formule)
-            }
-          }}}
+              if (quantile(resultat,probs=0.05)>=resultat_min){
+				if (verbose==TRUE){print("A new model identified for its better minimum capacities\n")}
+				  if (family == "lm") {
+					reg <- lm(formul,data=data)
+				  } else if (family=="logit") {
+					reg <- glm(formul,data=data3,family=binomial(logit))
+				  }
+				  reg2 <- drop1(reg, test="F")
+				  resultat_global<-median(resultat)
+				  resultat_min<-quantile(resultat,probs=0.05)
+				  super_reg <- reg ; super_reg2 <- reg2
+				  super_reg_global <- global
+				  if (BIC(reg)<globalBIC) {globalBIC <- BIC(reg)}
+				  if (bornage_global < global) {bornage_global <- global}
+				  my_i_model <- my_i
+				  formule = formul
+				  formule <- formula(formule)
+				  if (family == "lm") {
+				  } else if (family=="logit") {
+					modelG <- naiveBayes(form,data=data3)
+					prediction <- predict(model,data)
+					tempdf <- data.frame("test" = data[,which(colnames(data)%in%Y)],prediction)
+					tempdf <- table(tempdf)
+					tempdf <- round(prop.table(tempdf ), 2) ;
+					tempdf_save <- tempdf
+				  }
+				  if ((verbose==TRUE)&(bornage_global == 0)&(bornage_global!=global)) {print("At least one significant model identified.")}
+				}
+			}
+          }}}}
     }
-    #print("E")
-    #print("Bornage global")
-    #print(bornage_global)
     #############
     #	Si l'enfant est meilleur que 1 des parents
     #############
@@ -1007,7 +995,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
   if (verbose==TRUE) {
     print("Meilleur modèle sélectionné :")
     print(formule)
-    cat("Capacité de prédiction brute : ",bornage_global,"\n")
+    cat("Capacité de prédiction brute : ",super_reg_global,"\n")
     cat("Capacité de prédiction médiane (bootstrap): ",resultat_global,"\n")
     cat("Capacité de prédiction inférieure 95% : ",resultat_min,"\n")
     #cat("Prédiction obtenue (détails)\n")
