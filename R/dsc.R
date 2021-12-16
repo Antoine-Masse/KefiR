@@ -31,20 +31,23 @@ dsc <- function(data,reg,Y=c(),ymin=c(),ymax=c(),pop=iter/20,iter=2000,wash=pop/
 	} else if (is(reg)[1]!="list") {
 		error("Error! reg is not a list of linear models.")
 	}
+#print("D")
 	# Recuperation des variables utiles
 	my_colnames <- c() ; my_Y <- c()
 	for (i in 1:length(reg)) {
 		temp <- reg[[i]]
 		my_names <- names(get_all_vars(formula(temp$terms),data))
+		# model.frame(formula, data = NULL, …)
 		my_Y <- c(my_Y,my_names[1])
 		my_colnames <- union(my_colnames,my_names)
 	}
 	if (verbose == TRUE) {
 		print("Names of useful variables : ")
 		print(setdiff(my_names,my_Y))
-		print("Names of useful variables : ")
+		print("Names of useful Y : ")
 		print(my_Y)
 	}
+#print("D")
 	data <- data[,which(colnames(data)%in%my_colnames)]
 	# Captation des propri?t?s des Y pour centration-r?ductionee
 	if (length(my_Y)==1) {
@@ -53,15 +56,23 @@ dsc <- function(data,reg,Y=c(),ymin=c(),ymax=c(),pop=iter/20,iter=2000,wash=pop/
 		crY <- apply(data[,which(colnames(data)%in%my_Y)],2,mean)
 		crY <- rbind(crY,apply(data[,which(colnames(data)%in%my_Y)],2,sd))
 	}
+#print("C")
 	#
+#print(pop)
+#print(length(reg))
 	x <- apply(data,2,function(x){runif(pop,min(x),max(x))})
 	x <- data.frame(x)
-	# G?n?ration des Y parentaux
+#print("BC")
+#print(head(x))
+	# Generation of Y parentaux
 	for (i in 1:length(reg)) {
 		temp <- reg[[i]]
 		prediction<-predict(temp,x)
-		x[my_Y[i]] <- prediction
+		print(prediction)
+		print(my_Y[i])
+		x[,which(colnames(x)%in%my_Y[i])] <- prediction
 	}
+#print("B")
 	# Centration-R?duction des Y
 	for (colonne in 1:ncol(crY)) {
 		Y[colonne]<- ((Y[colonne]-crY[1,colonne])/crY[2,colonne])
@@ -69,6 +80,7 @@ dsc <- function(data,reg,Y=c(),ymin=c(),ymax=c(),pop=iter/20,iter=2000,wash=pop/
 	if (verbose == TRUE) {
 		print("Y centr?-r?duit : ")
 		print(Y)}
+#print("A")
 	# Centration-R?duction puis calcul d'une distance quadratique
 	xY <- data.frame(x[,which(colnames(x)%in%my_Y)] )
 	for (colonne in 1:ncol(xY)) {
