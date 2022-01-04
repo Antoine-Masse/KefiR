@@ -432,7 +432,8 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
         print(paste("reste_",n2))}
         n12 <- c(n1 , n2)
         n12[n12>0]->n12
-        n12 <- min(n12)
+        if (length(n12)>0){n12 <- min(n12)
+        }else{n12 <- 0}
         if (n12 == n1) {
           dt <- dt1
         } else if (n12 == n2) {
