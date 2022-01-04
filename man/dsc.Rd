@@ -11,10 +11,12 @@ dsc(
   ymin = c(),
   ymax = c(),
   pop = iter/20,
-  iter = 2000,
+  iter = 4000,
   wash = pop/2,
   plot = T,
-  verbose = T
+  verbose = T,
+  save = F,
+  file = "file.html"
 )
 }
 \arguments{
@@ -37,6 +39,10 @@ dsc(
 \item{plot}{If TRUE, displays interactive parallel coordinates (plot_ly) to identify the best possible settings.}
 
 \item{verbose}{If TRUE, gives information about the analysis.}
+
+\item{save}{For saving the graph (html format)}
+
+\item{file}{Name of the html page "xxx.html"}
 }
 \value{
 A dataframe containing all the selected settings sorted from best (top) to worst (bottom).
@@ -47,10 +53,13 @@ Obtain the best configuration to meet the objectives determined by one or more l
 \examples{
 data(mtcars)
 colnames(mtcars)
-myreg1 <- evolreg(mtcars,"mpg")
+myreg1 <- evolreg(mtcars,"mpg") 
 myreg2 <- evolreg(mtcars,"cyl")
 reg <- list()
 reg[[1]] <- myreg1
 reg[[2]] <- myreg2
-dsc(mtcars,reg,Y=c(26,6))
+output <- dsc(mtcars,reg,Y=c(26,6))
+for (i in 1:10) {
+	output <- rbind(output,dsc(mtcars,reg,Y=c(26,6),plot=F))
+} ; parco(output,"Distance")
 }
