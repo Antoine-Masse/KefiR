@@ -15,7 +15,7 @@
 #'
 #' @examples
 #' identify_ech(mean1=100,mean2=101,sd1=2,sd2=3,nmax=10000)
-identify_ech <- function(mean1,mean2,sd1,sd2,iter=500,conf.level = 0.99,conf=0.95,nmin=10,nmax=1000) {
+identify_ech <- function(mean1,mean2,sd1,sd2,iter=500,conf.level = 0.99,conf=0.95,nmin=2,nmax=1000) {
   # Version 02 - 17/11/2020
   # par Antoine Masse
   conftest <- 0 ;  intervalle <- 1 ; test <- 0 ; nprec <- 0 ;

@@ -12,7 +12,7 @@ identify_ech(
   iter = 500,
   conf.level = 0.99,
   conf = 0.95,
-  nmin = 10,
+  nmin = 2,
   nmax = 1000
 )
 }

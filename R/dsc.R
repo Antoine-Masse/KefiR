@@ -19,15 +19,18 @@
 #' @examples
 #' data(mtcars)
 #' colnames(mtcars)
-#' myreg1 <- evolreg(mtcars,"mpg") 
+#' myreg1 <- evolreg(mtcars,"mpg")
 #' myreg2 <- evolreg(mtcars,"cyl")
 #' reg <- list()
 #' reg[[1]] <- myreg1
 #' reg[[2]] <- myreg2
-#' output <- dsc(mtcars,reg,Y=c(26,6))
+#' output <- dsc(mtcars,reg,Y=c(23.4,5.4),pop=400,iter=200)
+#' # Aggregation of several trials
 #' for (i in 1:10) {
-#' 	output <- rbind(output,dsc(mtcars,reg,Y=c(26,6),plot=F))
+#' 	output <- rbind(output,dsc(mtcars,reg,Y=c(23.4,5.4),plot=F))
 #' } ; parco(output,"Distance")
+#' # With filtration of min and max y.
+#' output <- dsc(mtcars,reg,Y=c(15,5),ymin=c(14,4),ymax=c(15,6),pop=5000,iter=10000)
 dsc <- function(data,reg,Y=c(),ymin=c(),ymax=c(),pop=iter/20,iter=4000,wash=pop/2,plot=T,verbose=T,save=F,file="file.html") {
 	# Mise au format list()
 	if (is(reg)[1]=="lm") {
@@ -63,7 +66,8 @@ dsc <- function(data,reg,Y=c(),ymin=c(),ymax=c(),pop=iter/20,iter=4000,wash=pop/
 		crY <- rbind(crY,apply(data[,which(colnames(data)%in%my_Y)],2,sd))
 	}
 	# Generation des x parentaux
-	x <- apply(data,2,function(x){runif(pop,min(x),max(x))})
+	n_x <- length(my_colnames) - length(my_Y)
+	x <- apply(data,2,function(x){rbeta(pop,0.5/n_x,0.5/n_x)*(max(x)-min(x))+min(x)}) # min(x) max(x)
 	x <- data.frame(x)
 	# Generation of Y parentaux
 	for (i in 1:length(reg)) {
@@ -139,14 +143,14 @@ dsc <- function(data,reg,Y=c(),ymin=c(),ymax=c(),pop=iter/20,iter=4000,wash=pop/
 		for (colonne in which(colnames(tri)%in%my_Y)) {
 			filtre <- ((tri[,colonne]>ymin[indice])&(tri[,colonne]<ymax[indice]))
 			if (any(filtre) == FALSE) {
-				error("ymin and ymax too restrictive.")
+				stop("ymin and ymax too restrictive.")
 			} else {
 				tri <- tri[filtre,]
 			}
 			indice <- indice+1
 		}
 	} else if ((length(ymin)>0)|(length(ymax)>0)){
-		error("Error ! ymin or ymax do not correspond to the number of Y")
+		stop("Error ! ymin or ymax do not correspond to the number of Y")
 	}
 	if (wash<nrow(tri)){
 		tri <- tri[1:wash,]
