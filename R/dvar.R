@@ -143,10 +143,10 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     #return(data)
 
   } else {
-    # Autre sc?nario
+    # Autre scenario
     stop()
   }
-  # A contr?ler
+  # A controler
   if (multix == TRUE) {
     variables <- c()
     type <- c()
@@ -311,7 +311,7 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
   if (wash==TRUE) {
     if (verbose == TRUE) {print(paste("Il y a pour le moment ",nrow(dt)," variables."))}
     ########################
-    #	Pr?nettoyage
+    #	Prenettoyage
     ########################
     #if (length(wash)>0) {
     if (nrow(dt) > 40) {
@@ -338,7 +338,7 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     }
     #}
 	if (verbose==TRUE) {
-    print("Apr?s nettoyage")
+    print("Apres nettoyage")
     print(paste("Il reste ",nrow(dt)," variables."))
 	}
     #		print(dt)
@@ -447,7 +447,7 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     #	}
     #}
 	if (verbose==TRUE) {
-    print("Apr?s nettoyage")
+    print("Apres nettoyage")
     print(paste("Nombre de variables retenues ",nrow(dt)))
 	}
   }
