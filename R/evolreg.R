@@ -19,39 +19,32 @@
 #' data(iris)
 #' dvar(iris,"Sepal.Length")
 dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, interaction=TRUE,
-                 multix=TRUE,multidiv=FALSE, verbose=TRUE){
-  # Numerization if it is not made
-  dt <- data[,1:2]
-  for (i in 3:ncol(data)){
-    #if (length(unique(data[,i]))>1) {
-    temp <- as.numeric(as.character(data[,i]))
-    if (all(is.na(temp))) {temp <- data[,i]}
-    dt <- data.frame(dt,temp)
-    colnames(dt)[ncol(dt)] <- colnames(data)[i]
-    #}
-  }
+                 multix=TRUE,multidiv=FALSE, verbose=FALSE){
   # Compilation of numerical var
   X_i_num <- c()
-  for (i in 1:ncol(dt)){
-    if ((is.numeric(dt[,i])==TRUE)&(length(unique(dt[,i]))>1)) {
+  for (i in 1:ncol(data)){
+    if ((is.numeric(data[,i])==TRUE)&(length(unique(data[,i]))>1)) {
       X_i_num <- c(X_i_num,i)
     }
   }
   # Compilation of non-numerical var
-  X_i_char <- 1:ncol(dt)
+  X_i_char <- 1:ncol(data)
   X_i_char <- setdiff(X_i_char,X_i_num)
   # Substraction of Y
-  ind_Y <- which(colnames(dt)%in%Y)
+  if ((is.numeric(Y)==TRUE)&(Y>0)&(Y<=ncol(data))){ind_Y <- Y ; Y <- colnames(data)[Y]
+  } else {ind_Y <- which(colnames(data)%in%Y)}
+  if (length(ind_Y)==0){stop("Impossible to find Y.")}
   X_i_num <- setdiff(X_i_num,ind_Y)
   X_i_char <- setdiff(X_i_char,ind_Y)
+ if (verbose == TRUE){print(paste("Indice of Y: ",ind_Y))}
   # Type of Y
-  if (length(unique(dt[,which(colnames(dt)%in%Y)])) == 2) {
+  if (length(unique(data[,which(colnames(data)%in%Y)])) == 2) {
     Y_type <- "binary"
-    dt[,which(colnames(dt)==Y)] <-ifelse(dt[,which(colnames(dt)%in%Y)]==unique(dt[,which(colnames(dt)%in%Y)])[1],0,1)
+    data[,which(colnames(data)==Y)] <-ifelse(data[,which(colnames(data)%in%Y)]==unique(data[,which(colnames(data)%in%Y)])[1],0,1)
   }
   # NA like category in categorical
   for (i in X_i_char){
-    dt[which(is.na(dt[,i])),i]<-"MANQUANTES"
+    data[which(is.na(data[,i])),i]<-"MANQUANTES"
   }
   #
   variables <- c()
@@ -59,33 +52,44 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
   var_i <- c()
   p.value <- c()
   weight <- c()
-  if (is.numeric(dt[,which(colnames(dt)%in%Y)])==TRUE) {
-    pvals <- apply(dt[,X_i_num],2,function(x){cor.test(x,dt[,ind_Y])$p.value})
+  if (is.numeric(data[,which(colnames(data)%in%Y)])==TRUE) {
+	cor.test.NA <- function(x,y) {
+		na.omit(data.frame(x,y)) -> temp 
+		nrow(temp) -> nligne
+		if (any(apply(temp,2,function(x){any(is.infinite(x))}))==FALSE) {		
+			if ((nligne >= 2)&(sd(temp[,1])>0)&(sd(temp[,2])>0)) {
+				return(cor.test(x,y)$p.value)
+			} else {
+				return(NA)
+			}
+		} else {return(NA)}
+	}
+    pvals <- apply(data[,X_i_num],2,function(x){cor.test.NA(x,data[,ind_Y])})	
     ind_noNA <- which(!is.na(pvals))
     var_i <- c(var_i, X_i_num[ind_noNA])
-    variables <- c(variables, colnames(dt)[X_i_num[ind_noNA]])
+    variables <- c(variables, colnames(data)[X_i_num[ind_noNA]])
     type <- c(type,rep("Ynum_vs_num",length(ind_noNA)))
     p.value <- c(p.value,pvals[ind_noNA])
     #print("If Y presents some categories")
-    if (length(unique(dt[,ind_Y]))/length(dt[,which(colnames(dt)%in%Y)]) < 0.1){
+    if (length(unique(data[,ind_Y]))/length(data[,which(colnames(data)%in%Y)]) < 0.1){
       #			print("m.test")
       for (i in X_i_num){
-        if (is.numeric(dt[,i])==TRUE) {
-          #					print(colnames(dt)[i])
-          temp <- m.test(dt[,i],dt[,ind_Y],return=FALSE,plot=FALSE,boot=FALSE,verbose=FALSE)
+        if (is.numeric(data[,i])==TRUE) {
+          #					print(colnames(data)[i])
+          temp <- m.test(data[,i],data[,ind_Y],return=FALSE,plot=FALSE,boot=FALSE,verbose=FALSE)
           #print("temp") ; print(temp)
           if (length(temp)>1) {
             var_i <- c(var_i, i)
-            variables <- c(variables, colnames(dt)[i])
+            variables <- c(variables, colnames(data)[i])
             type <- c(type,"Ycal_vs_num")
             p.value <- c(p.value,temp$p.value)
           }}}
       if (length(X_i_char)>0){
         for (i in X_i_char){
-          chisq.test(table(dt[,i],dt[,ind_Y]))$p.value -> pvals
+          chisq.test(table(data[,i],data[,ind_Y]))$p.value -> pvals
           if (!is.na(pvals)==TRUE) {
             var_i <- c(var_i, i)
-            variables <- c(variables, colnames(dt)[i])
+            variables <- c(variables, colnames(data)[i])
             type <- c(type,"Qualitativ")
             p.value <- c(p.value,pvals)
           }
@@ -93,7 +97,6 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
       }
     }
   }
-  data <- dt
   weight <- rep(1,length(var_i))
   dt <- data.frame(var_i,variables,type,p.value,weight)
   #	print(head(dt))
@@ -158,7 +161,7 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
 	if (verbose==TRUE) {
     print(head(data[,X_i_num_log]))
 	}
-    pvals <- apply(data.frame(data[,X_i_num_log]),2,function(x){return(cor.test(log(x),data[,ind_Y])$p.value)})
+    pvals <- apply(data.frame(data[,X_i_num_log]),2,function(x){cor.test.NA(log(x),data[,ind_Y])})
     ind_noNA <- which(!is.na(pvals))
     formule0 <- paste("I(log(",colnames(data)[X_i_num_log],"))")
     var_i <- c(var_i, X_i_num_log[ind_noNA])
@@ -173,7 +176,7 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
 	if (verbose==TRUE) {
     print("x^2")
 	}
-    pvals <- apply(data[,X_i_num],2,function(x){return(cor.test((x^2),data[,ind_Y])$p.value)})
+    pvals <- apply(data[,X_i_num],2,function(x){cor.test.NA((x^2),data[,ind_Y])})
     #		print(pvals)
     ind_noNA <- which(!is.na(pvals))
     formule0 <- paste("I(",colnames(data)[X_i_num],"^2)")
@@ -185,10 +188,8 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     p.value <- c(p.value,pvals[ind_noNA])
     weight	<- weight<-c(weight,c(rep(1,length(ind_noNA))))
     #	cat("1",length(p.value),"2",length(var_i),"3",length(variables),"4",length(weight))
-	if (verbose==TRUE) {
-    print("exp")
-	}
-    pvals <- apply(data[,X_i_num],2,function(x){return(cor.test((exp(x)),data[,ind_Y])$p.value)})
+	if (verbose==TRUE) {print("exp")}
+    pvals <- apply(data[,X_i_num],2,function(x){cor.test.NA((exp(x)),data[,ind_Y])})
     #		print(pvals)
     ind_noNA <- which(!is.na(pvals))
     formule0 <- paste("I(exp(",colnames(data)[X_i_num],"))")
@@ -276,7 +277,7 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     X_i_num_inv <- X_i_num_temp[-(c(1:length(X_i_num_temp))[X_i_num_inv])]
     #			print(X_i_num_inv )
     #print(head(data[,X_i_num_log]))
-    pvals <- apply(data[,X_i_num_inv],2,function(x){return(cor.test((1/x),data[,ind_Y])$p.value)})
+    pvals <- apply(data[,X_i_num_inv],2,function(x){cor.test.NA((1/x),data[,ind_Y])})
     ind_noNA <- which(!is.na(pvals))
     formule0 <- paste("I(1/",colnames(data)[X_i_num_inv],")")
     var_i <- c(var_i, X_i_num_inv[ind_noNA])
@@ -290,17 +291,19 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     weight	<- weight<-c(weight,rep(1,length(ind_noNA)))
     #
     #	cat("1",length(p.value),"2",length(var_i),"3",length(variables),"4",length(weight))
-	if (verbose==TRUE) {
-    print("poly")
-	}
+	if (verbose==TRUE) {print("poly")}
+#return(data[,X_i_num])
     X_i_num_poly <- apply(data[,X_i_num],2,function(x){return(any(is.na(x)))})
+print("étape 331")
     X_i_num_poly <- which(X_i_num_poly==FALSE)
     X_i_num_temp <- X_i_num[X_i_num_poly]
-    #print(X_i_num_temp)
-    X_i_num_poly <- (apply(data[,X_i_num_temp],2,function(x){return(length(unique(x)))}))
+    #print(X_i_num_temp)*
+print("étape 336")
+    X_i_num_poly <- apply(data.frame(data[,X_i_num_temp]),2,function(x){return(length(unique(x)))})
     X_i_num_poly <- which(X_i_num_poly>2)
     X_i_num_temp <- X_i_num_temp[X_i_num_poly]
-    pvals <- apply(data[,X_i_num_temp],2,function(x){
+print("étape 340")
+    pvals <- apply(data.frame(data[,X_i_num_temp]),2,function(x){
       reg_temp <- lm( data[,ind_Y]~poly(x,2))
       pval_temp <- pf(summary(reg_temp)$fstatistic[1], summary(reg_temp)$fstatistic[2],summary(reg_temp)$fstatistic[3], lower.tail = FALSE)
       return(pval_temp)})
@@ -317,6 +320,7 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     dt_inter <- data.frame(var_i,variables,type,p.value,weight)
     dt <- rbind(dt,dt_inter)
   }
+ print("étape 358")
   #print("multix")
   if (wash==TRUE) {
     if (verbose == TRUE) {print(paste("Il y a pour le moment ",nrow(dt)," variables."))}
@@ -354,13 +358,12 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     #		print(dt)
   }
   #print(head(dt))
+ print("épisode 396")
   ########################
   #	Interactions
   ########################
   if (interaction == TRUE){
-  if (verbose==TRUE) {
-    print("Interaction")
-	}
+  if (verbose==TRUE) {print("Interaction")}
     variables <- c()
     type <- c()
     var_i <- c()
@@ -372,6 +375,7 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     #print(length(X_i_num_for_inter))
     #print((length(X_i_num_for_inter)-1))
     #print(dt$variables[X_i_num_for_inter[1:(length(X_i_num_for_inter)-1)]])
+print("épisode 413")
     for (i in 1:(length(X_i_num_for_inter)-1)) {
       #			for (i in X_i_num_for_inter[listeri]) {
       #print("D")
@@ -385,13 +389,28 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
         #print("A")
         #print(paste("i ",X_i_num_for_inter[i]," et j ",X_i_num_for_inter[j]))
         #print("B")
+print("épisode 427")
         formule0 <- paste(dt$variables[X_i_num_for_inter[i]],'*',dt$variables[X_i_num_for_inter[j]])
-        #print(formule0)
-        formule1 <- paste(Y,'~',formule0)
-        formule2 <- as.formula(formule1)
-        reg <- lm(formule2,data=data)
-        preg <- pf(summary(reg)$fstatistic[1], summary(reg)$fstatistic[2],
-                   summary(reg)$fstatistic[3], lower.tail = FALSE)
+print(formule0)
+		formule1 <- paste(Y,'~',formule0)
+print(formule1)
+		formule2 <- as.formula(formule1)
+print(formule2)
+		# Check NA values
+		ind_temp <- which(colnames(data)%in%names(get_all_vars(formule2, data = data)))
+print(ind_temp)
+		if (nrow(na.omit(data[,ind_temp]))>2){
+			#print(formule0)
+	 print("épisode 431")
+	 print(formule2)
+			reg <- lm(formule2,data=data)
+			preg <- pf(summary(reg)$fstatistic[1], summary(reg)$fstatistic[2],
+					   summary(reg)$fstatistic[3], lower.tail = FALSE)
+		} else {
+print("épisode 440")
+			preg <- NA
+		}
+print("épisode 435")
         if (!is.na(preg)==TRUE) {
           var_i <- c(var_i, dt$var_i[X_i_num_for_inter[i]])
           variables <- c(variables, formule0)
@@ -400,10 +419,12 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
         }
       }
     }
+print("épisode 443")
     weight <- rep(2,length(var_i))
     dt_inter <- data.frame(var_i,variables,type,p.value,weight)
     dt <- rbind(dt,dt_inter)
   }
+ print("épisode 447")
   if (wash==TRUE) {
   if (verbose==TRUE) {
     print("Nettoyage")
@@ -457,6 +478,7 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     print(paste("Nombre de variables retenues ",nrow(dt)))
 	}
   }
+ print("étape 497")
   if (length(X)>0) {
     #ind_X <- which(colnames(data)%in%X)
     ind_X_bis <- which(dt$variables%in%X)
@@ -518,7 +540,9 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
   # Identification des variables d'intérêt
   #	print("Id var interest")
   data -> data_save
+ print("avant")
   data_glob <- dvar(data,Y,pval=0.05,X=X,NAfreq=NAfreq,wash=wash,interaction=interaction,verbose=FALSE)
+ print("après")
   data <- data_glob$data
   dt <- data_glob$variables
   if (verbose==TRUE) {print(head(dt))}

@@ -32,8 +32,9 @@ bootreg <- function(reg,plot=TRUE,verbose=TRUE,conf.level=0.95,pval=0.05,iter=10
       formula <- eval(reg$call[[2]])
       oldw <- getOption("warn")
       options(warn = -1)
-      reg1 <- lm(formula=formula(formula),data=training,subset=indices_training)
-      reg1 <- update(reg1,subset=indices_training)
+      #reg1 <- lm(formula=formula(formula),data=training,subset=indices_training)
+	  reg1 <- lm(formula=formula(formula),data=training)
+      #reg1 <- update(reg1,subset=indices_training)
       options(warn = oldw)
       if (enregistrement == 0) {
         pval_mdl <- pf(summary(reg1)$fstatistic[1],summary(reg1)$fstatistic[2],summary(reg1)$fstatistic[3],lower.tail=FALSE)
@@ -126,6 +127,7 @@ bootreg <- function(reg,plot=TRUE,verbose=TRUE,conf.level=0.95,pval=0.05,iter=10
   coeff_IC <- c(NA,apply(coeff,2,int.ech,conf.level=conf.level))
   synth <- rbind(p.values_median,p.values_max,coeff_model,coeff_median,coeff_IC)
   synth <- t(synth)
+  synth <- data.frame(synth) ; synth <- cbind(data.frame(rownames(synth)),synth)
   rownames(synth)[1] <- "Model"
   if (verbose==T){return(synth)
   } else {

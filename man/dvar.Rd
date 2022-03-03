@@ -15,7 +15,7 @@ dvar(
   interaction = TRUE,
   multix = TRUE,
   multidiv = FALSE,
-  verbose = TRUE
+  verbose = FALSE
 )
 }
 \arguments{
