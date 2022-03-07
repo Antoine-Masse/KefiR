@@ -6,6 +6,7 @@
 \usage{
 bootreg(
   reg,
+  data = c(),
   plot = TRUE,
   verbose = TRUE,
   conf.level = 0.95,
@@ -25,6 +26,8 @@ bootreg(
 \item{pval}{Minimal value accepted for validation of the model and his coefficients}
 
 \item{iter}{Number of iterations}
+
+\item{optional}{A data.frame is formula is complex with I() function}
 }
 \value{
 A graph of analysis.

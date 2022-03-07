@@ -1,6 +1,7 @@
 #' Validating a bootstrap linear regression model
 #'
 #' @param reg Linear model
+#' @param optional A data.frame is formula is complex with I() function
 #' @param plot Enable or disable the display of graphical analysis
 #' @param verbose Enable or disable the display of the commented analysis
 #' @param conf.level Confidence level for validation of the model
@@ -18,8 +19,13 @@
 #' corrigraph(mtcars);
 #' reg<- lm(cyl~disp+hp,data=mtcars);
 #' bootreg(reg, verbose=TRUE, plot=TRUE)
-bootreg <- function(reg,plot=TRUE,verbose=TRUE,conf.level=0.95,pval=0.05,iter=1000) {
-  numind <- nrow(reg$model)
+bootreg <- function(reg,data=c(),plot=TRUE,verbose=TRUE,conf.level=0.95,pval=0.05,iter=1000) {
+  if (length(data)>1) {
+	dt <- data
+  } else {
+	dt <- reg$model
+  }
+  numind <- nrow(dt)
   indices <- c(1:numind ) # num if individus
   enregistrement <- 0
   erreur <- c() ; predictions <- c() ; verity <- c()
@@ -27,13 +33,14 @@ bootreg <- function(reg,plot=TRUE,verbose=TRUE,conf.level=0.95,pval=0.05,iter=10
     indices_training <- sample(indices,size=numind ,replace=T)
     indices_test <- setdiff(indices ,indices_training)
     if (length(indices_test) > 0) {
-      training  <- reg$model[indices_training,]
-      test   <- 	 reg$model[indices_test,]
-      formula <- eval(reg$call[[2]])
+      training  <- dt[indices_training,]	 
+      test   <- 	 dt[indices_test,]
+      #formula_ <- eval(reg$call[[2]])
+	  formula_ <- formula(reg)
       oldw <- getOption("warn")
       options(warn = -1)
       #reg1 <- lm(formula=formula(formula),data=training,subset=indices_training)
-	  reg1 <- lm(formula=formula(formula),data=training)
+	  reg1 <- lm(formula=formula(formula_),data=training)
       #reg1 <- update(reg1,subset=indices_training)
       options(warn = oldw)
       if (enregistrement == 0) {
@@ -46,9 +53,11 @@ bootreg <- function(reg,plot=TRUE,verbose=TRUE,conf.level=0.95,pval=0.05,iter=10
           coeff <- reg1$coefficients
           oldw <- getOption("warn")
           options(warn = -1)
-          predictions <- c(predictions,predict(reg1,reg$model)[indices_test])
+          predictions <- c(predictions,predict(reg1,dt)[indices_test])
           options(warn = oldw)
-          verity <- c(verity,test[,1])
+          #verity <- c(verity,test[,1])
+		  verity <- c(verity,test[[names(get_all_vars(formula(reg$terms),dt))[1]]])
+		  
         }
       } else {
         pval_mdl <- pf(summary(reg1)$fstatistic[1],summary(reg1)$fstatistic[2],summary(reg1)$fstatistic[3],lower.tail=FALSE)
@@ -57,9 +66,10 @@ bootreg <- function(reg,plot=TRUE,verbose=TRUE,conf.level=0.95,pval=0.05,iter=10
           coeff <- rbind(coeff,reg1$coefficients) # Coeff correspond aux coefficients récupérés pour chaque variable et chaque cycle du bootstrap (ici 1000)
           oldw <- getOption("warn")
           options(warn = -1)
-          predictions <- c(predictions,predict(reg1,reg$model)[indices_test])
+          predictions <- c(predictions,predict(reg1,dt)[indices_test])
           options(warn = oldw)
-          verity <- c(verity,test[,1])
+          #verity <- c(verity,test[,1])
+		  verity <- c(verity,test[[names(get_all_vars(formula(reg$terms),dt))[1]]])
         }
       }
       # Test sur les predictions
@@ -69,6 +79,7 @@ bootreg <- function(reg,plot=TRUE,verbose=TRUE,conf.level=0.95,pval=0.05,iter=10
   coeff <- na.omit(coeff) ; p_values <- na.omit(p_values)
   predverity <- data.frame(predictions ,verity); predverity <- na.omit(predverity)
   predictions  <- predverity[,1] ; verity  <- predverity[,2]
+ print("b")
   confiance <- function(x,conf.level=0.99) { # seuil
     temp = sort(x) ; valeur_seuil = round(length(x)*conf.level)
     temp <- temp[valeur_seuil]
