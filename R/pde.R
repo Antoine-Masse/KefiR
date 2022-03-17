@@ -96,7 +96,7 @@ pde <- function(x,y,z,xlim=c(),ylim=c(),zlim=c(),dim=45,xlab="",ylab="",
         ylabel <- list(    title = paste(ylab," (y)"),    titlefont = font )
         zlabel <- list(    title = paste(zlab," (z)"),    titlefont = font )
         scene = list(    xaxis = xlabel ,    yaxis = ylabel ,    zaxis = zlabel )
-        plot.pde <- plot_ly(x = x.grid, y = y.grid, z = z.mat, colorscale = colorscale) %>%
+        plot.pde <- plot_ly(x = x.grid, y = y.grid, z = t(z.mat), colorscale = colorscale) %>%
           layout(title = main, scene = scene)  %>% add_surface() %>%
           add_trace(x = x, y = y, z = z,name="Data brutes",
                     marker = list(

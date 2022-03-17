@@ -70,18 +70,18 @@ corrigraph <- function(data,colY=c(),colX=c(),type="x",pval=0.05,exclude=c(0,0,0
 	if (length(temp_id_num)<2) {stop("Error! Not enough numerical variable. Try mu=TRUE or prop=TRUE ?\n")}
 	data <- data[,temp_id_num]
 	which(sapply(data, is.numeric)) -> temp_id_num
-	if (length(temp_id_num)!=length(1:ncol(data))) {cat("Warning! Presence of non-numeric variables that cannot be taken into account.\n")}
+	if (length(temp_id_num)!=length(1:ncol(data))) {warning("Warning! Presence of non-numeric variables that cannot be taken into account.\n")}
   } else {
 	temp_id_factor <- setdiff(1:ncol(data),temp_id_num)
   }
   # temp_id_factor = categorical values identified
   # Control 2 - var is NULL ?
   which(sapply(data.frame(data[,temp_id_num]), var, na.rm=T)!=0)-> temp_var ; temp_var	<- temp_id_num[temp_var]
-  if (length(temp_var) != length(temp_id_num)) {cat("Warning! Some variables have a null variance and cannot be taken into account.\n")}
+  if (length(temp_var) != length(temp_id_num)) {warning("Warning! Some variables have a null variance and cannot be taken into account.\n")}
   data <- data[,union(temp_var,temp_id_factor)] ; temp_id_num <- which(sapply(data, is.numeric)) ; temp_id_factor  <- setdiff(1:ncol(data),temp_id_num)
   # Control 3 - is.na ?
-  if (any(is.na(data))==TRUE) {if (NAfreq == 1) {cat("Warning ! Presence of missing values. Please check NAfreq argument.\n")}}
-  if (ncol(data)>50) {cat("Warning! The calculation time increases exponentially with the number of variables (do not exceed 50).\n")}
+  if (any(is.na(data))==TRUE) {if (NAfreq == 1) {warning("Warning ! Presence of missing values. Please check NAfreq argument.\n")}}
+  if (ncol(data)>50) {warning("Warning! The calculation time increases exponentially with the number of variables (do not exceed 50).\n")}
   ##################################################
   # Prediction mode (colY)
   ##################################################
@@ -269,7 +269,7 @@ if ((type=="y")&(length(colY)>0)){
 				temp<-0
 				if(warning==0){
 				  warning <- 1
-				  cat("Warning! Failure to account for missing data generated zero variances on some variables that had to be ignored.\n")}
+				  warning("Warning! Failure to account for missing data generated zero variances on some variables that had to be ignored.\n")}
 			}
 			if (temp!=0){ # Coloration selon lien neg ou pos
 				indices <- c(indices,j) ; mymat[i,j] <- temp ; mymat[j,i] <- temp
@@ -501,7 +501,7 @@ if ((type=="y")&(length(colY)>0)){
 	  close(barre)
 	}
 	cat("\n")
-	if (warning==1) {cat("Warning! Failure to account for missing data generated zero variances on some variables that had to be ignored.\n")}
+	if (warning==1) {warning("Warning! Failure to account for missing data generated zero variances on some variables that had to be ignored.\n")}
 	#print(mymat)
 	#print(mymat_interconnect)
 	#########################

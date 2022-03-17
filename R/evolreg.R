@@ -332,10 +332,10 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
     win <- 200
     #cat("gene",gene,"avec stocking",length(stocking),"\n")
     if (((gene-(gene%/%win)*win)==0)&(gene>win)&(fast==TRUE)) {
-      cat("De : ",(gene-((1+pval_stop2)*win-1)),"-",(gene-win*(pval_stop2)),"à :",(gene-(win-1)),"-",gene)
+      if (verbose==TRUE) {cat("De : ",(gene-((1+pval_stop2)*win-1)),"-",(gene-win*(pval_stop2)),"à :",(gene-(win-1)),"-",gene)}
       t.test(stocking[(gene-((1+pval_stop2)*win-1)):(gene-win*(pval_stop2))],stocking[(gene-(win-1)):gene])$p.value -> pval_stop
-      cat(" - ",pval_stop)
-      cat(" pour ",length(sapply(parents,"[[",2))," parents en prélèvements ",prelevement,".\n")
+      if (verbose==TRUE) {cat(" - ",pval_stop)
+      cat(" pour ",length(sapply(parents,"[[",2))," parents en prélèvements ",prelevement,".\n")}
       if (pval_stop>0.05) {
         pval_stop2 <- pval_stop2 + 1
       } else {
@@ -379,7 +379,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
               if (verbose==TRUE){print(formule)}
               #print("On se retrouve dans un modèle à bootstraper")
               resultat <- c()
-              print("bootstrap")
+              if (verbose == TRUE) {print("bootstrap")}
               for (i in 1:500) {
                 apprentissage <- sample(1:nrow(data),replace=T)
                 test <- c()

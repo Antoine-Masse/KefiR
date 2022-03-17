@@ -290,10 +290,21 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     X_i_num_poly <- apply(data.frame(data[,X_i_num_temp]),2,function(x){return(length(unique(x)))})
     X_i_num_poly <- which(X_i_num_poly>2)
     X_i_num_temp <- X_i_num_temp[X_i_num_poly]
-    pvals <- apply(data.frame(data[,X_i_num_temp]),2,function(x){
-      reg_temp <- lm( data[,ind_Y]~poly(x,2))
-      pval_temp <- pf(summary(reg_temp)$fstatistic[1], summary(reg_temp)$fstatistic[2],summary(reg_temp)$fstatistic[3], lower.tail = FALSE)
-      return(pval_temp)})
+	#print(colnames(data)[X_i_num_temp])
+	X_i_num_temp_vari <- apply(data.frame(data[,X_i_num_temp]),2,function(x){
+		return(cor(x, data[,ind_Y]))})
+	#print(X_i_num_temp_vari)
+	X_i_num_temp <- X_i_num_temp[which(!is.na(X_i_num_temp_vari))]
+	#print(colnames(data)[X_i_num_temp])
+	if(length(X_i_num_temp)==0){
+		pvals <- NA
+	}else {
+		pvals <- apply(data.frame(data[,X_i_num_temp]),2,function(x){
+		  reg_temp <- lm( data[,ind_Y]~poly(x,2))
+		  #print(reg_temp)
+		  pval_temp <- pf(summary(reg_temp)$fstatistic[1], summary(reg_temp)$fstatistic[2],summary(reg_temp)$fstatistic[3], lower.tail = FALSE)
+		  return(pval_temp)})
+	}
     #		print(pvals)
     ind_noNA <- which(!is.na(pvals))
     formule0 <- paste("poly(",colnames(data)[X_i_num_temp],",2)")
