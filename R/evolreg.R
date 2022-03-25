@@ -426,7 +426,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
 					reg <- glm(formul,data=data3,family=binomial(logit))
 				  }
 				  reg2 <- drop1(reg, test="F")
-				  resultat_global<-median(resultat)
+				  resultat_global<-median(resultat,na.rm=T)
 				  resultat_min<-quantile(resultat,probs=0.05,na.rm=T)
 				  super_reg <- reg ; super_reg2 <- reg2
 				  super_reg_global <- global
