@@ -42,7 +42,17 @@ dsc <- function(data,reg,Y=c(),ymin=c(),ymax=c(),pop=iter/20,iter=4000,wash=pop/
   if (length(data)==0){stop("data is null.")}
   if (is(data)[1]!="data.frame"){stop("data is not data.frame.")}
   if (length(Y)==0){stop("Y must have the same number of values as models in reg.")}
-	# Recuperation des variables utiles
+	# Suppression des variables inutiles
+	# Ajouter le nettoyage des Ymin et Ymax ; à implémenter
+	reg2 <- list() ; j<-1 ; Y2 <- c()
+	for (i in 1:length(reg)) {
+		if (!is.null(reg[[i]])) {
+			reg2[[j]] <- reg[[i]]
+			Y2 <- c(Y2,Y[i])
+			j <- j+1
+		}
+	}
+	reg <- reg2 ; Y <- Y2
 	my_colnames <- c() ; my_Y <- c()
 	for (i in 1:length(reg)) {
 		temp <- reg[[i]]
@@ -51,23 +61,42 @@ dsc <- function(data,reg,Y=c(),ymin=c(),ymax=c(),pop=iter/20,iter=4000,wash=pop/
 		my_Y <- c(my_Y,my_names[1])
 		my_colnames <- union(my_colnames,my_names)
 	}
+	ind_X <- sort(which(colnames(data)%in%my_colnames))
+	ind_Y <- which(colnames(data)%in%my_Y)
+	trieur <- order(ind_Y,decreasing=T)
+	ind_Y <- ind_Y[trieur]
+	reg2 <- list()
+	for (i in 1:length(reg)) {
+		reg2[[i]] <- reg[[trieur[i]]]
+	}
+	reg <- reg2
+	my_colnames <- c() ; my_Y <- c()
+	for (i in 1:length(reg)) {
+		temp <- reg[[i]]
+		my_names <- names(get_all_vars(formula(temp$terms),data))
+		# model.frame(formula, data = NULL, …)
+		my_Y <- c(my_Y,my_names[1])
+		my_colnames <- union(my_colnames,my_names)
+	}	
 	if (verbose == TRUE) {
 		print("Names of useful variables : ")
-		print(setdiff(my_names,my_Y))
+		print(setdiff(my_colnames,my_Y))
 		print("Names of useful Y : ")
 		print(my_Y)
 	}
 	data <- data[,which(colnames(data)%in%my_colnames)]
 	# Captation des proprietes des Y pour centration-reduction
 	if (length(my_Y)==1) {
-		crY <- data.frame(c(mean(data[,which(colnames(data)%in%my_Y)]),sd(data[,which(colnames(data)%in%my_Y)])))
+		crY <- data.frame(c(mean(data[,which(colnames(data)%in%my_Y)],na.rm=T),sd(data[,which(colnames(data)%in%my_Y)],na.rm=T)))
+		crY[2,] <- ifelse(crY[2,]==0,1,crY[2,])
 	} else {
-		crY <- apply(data[,which(colnames(data)%in%my_Y)],2,mean)
-		crY <- rbind(crY,apply(data[,which(colnames(data)%in%my_Y)],2,sd))
+		crY <- apply(data[,which(colnames(data)%in%my_Y)],2,mean,na.rm=T)
+		crY <- rbind(crY,apply(data[,which(colnames(data)%in%my_Y)],2,sd,na.rm=T))
+		crY[2,] <- ifelse(crY[2,]==0,1,crY[2,])
 	}
 	# Generation des x parentaux
 	n_x <- length(my_colnames) - length(my_Y)
-	x <- apply(data,2,function(x){rbeta(pop,0.5/n_x,0.5/n_x)*(max(x)-min(x))+min(x)}) # min(x) max(x)
+	x <- apply(data,2,function(x){rbeta(pop,0.5/n_x,0.5/n_x)*(max(x,na.rm=T)-min(x,na.rm=T))+min(x,na.rm=T)}) # min(x) max(x)
 	x <- data.frame(x)
 	# Generation of Y parentaux
 	for (i in 1:length(reg)) {
@@ -75,7 +104,7 @@ dsc <- function(data,reg,Y=c(),ymin=c(),ymax=c(),pop=iter/20,iter=4000,wash=pop/
 		prediction<-predict(temp,x)
 		x[,which(colnames(x)%in%my_Y[i])] <- prediction
 	}
-	# Centration-Reduction des Y (Objectifs)
+	# Centration-Reduction des Y (Objectifs) - ATTENTION CE PASSAGE PREND TANTOT L'ORDRE DES Y défini par reg, tantôt l'ordre des Y défini par les  positions des colonnes dans crY
 	for (colonne in 1:ncol(crY)) {
 		Y[colonne]<- ((Y[colonne]-crY[1,colonne])/crY[2,colonne])
 	}
@@ -92,10 +121,10 @@ dsc <- function(data,reg,Y=c(),ymin=c(),ymax=c(),pop=iter/20,iter=4000,wash=pop/
 	for (colonne in 1:ncol(diff_parents)) {
 		diff_parents[,colonne] <- (diff_parents[,colonne]-Y[colonne])^2
 	}
-	diff_parents <- apply(diff_parents,1,mean)
+	diff_parents <- apply(diff_parents,1,mean,na.rm=T)
 	if (verbose==TRUE) {
 		print("Before - best combination")
-		print(x[which(diff_parents==min(diff_parents)),])
+		print(x[which(diff_parents==min(diff_parents,na.rm=T)),])
 	}
 	# Progress bar
 	pb <- txtProgressBar(min = 0,      # Minimum value of the progress bar
@@ -103,10 +132,12 @@ dsc <- function(data,reg,Y=c(),ymin=c(),ymax=c(),pop=iter/20,iter=4000,wash=pop/
                      style = 3,    # Progress bar style (also available style = 1 and style = 2)
                      width = 50,   # Progress bar width. Defaults to getOption("width")
                      char = "=")   # Character used to create the bar
+
 	# Evolutiv approach
 	for (i in 1:iter) {
 		ind <- sample(1:pop,2)
-		x_enfant <- apply(x[ind,],2,mean)
+		x_enfant <- apply(x[ind,],2,mean,na.rm=T)
+		# Prédiction de Y pour chaque modèle de régression
 		for (j in 1:length(reg)) {
 			temp <- reg[[j]]
 			prediction<-predict(temp,data.frame(t(unlist(x_enfant))))
@@ -122,13 +153,13 @@ dsc <- function(data,reg,Y=c(),ymin=c(),ymax=c(),pop=iter/20,iter=4000,wash=pop/
 		for (colonne in 1:length(diff_enfant)) {
 			diff_enfant[colonne] <- ( diff_enfant[colonne]-Y[colonne] )^2
 		}
-		diff_enfant <- mean(diff_enfant)
+		diff_enfant <- mean(diff_enfant,na.rm=T)
 		if ((diff_enfant < max(diff_parents[ind]))&(diff_enfant > min(diff_parents[ind]))) {
-			ind_p <- which(diff_parents[ind]==max(diff_parents[ind]))
+			ind_p <- which(diff_parents[ind]==max(diff_parents[ind],na.rm=T))
 			x[ind[ind_p],] <- x_enfant
 			diff_parents[ind[ind_p]]  <- diff_enfant
 		} else if (diff_enfant < min(diff_parents[ind])) {
-			ind_p <- which(diff_parents==max(diff_parents))
+			ind_p <- which(diff_parents==max(diff_parents,na.rm=T))
 			x[ind_p,] <- x_enfant
 			diff_parents[ind_p]  <- diff_enfant
 		}

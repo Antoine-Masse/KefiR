@@ -31,6 +31,12 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
   # Identification des variables d'intérêt
   #	print("Id var interest")
   data -> data_save
+  # Substraction of Y and washing NA
+  if ((is.numeric(Y)==TRUE)&(Y>0)&(Y<=ncol(data))){ind_Y <- Y ; Y <- colnames(data)[Y]
+  } else {ind_Y <- which(colnames(data)%in%Y)}
+  if (length(ind_Y)==0){stop("Impossible to find Y.")} 
+  data <- data[which(!is.na(data[,ind_Y])),]
+  #
   data_glob <- dvar(data,Y,pval=0.05,X=X,NAfreq=NAfreq,wash=wash,interaction=interaction,verbose=FALSE)
   data <- data_glob$data
   dt <- data_glob$variables
@@ -160,7 +166,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
 						prediction <- summary(reg)$adj.r.squared
 						resultat <- c(resultat,prediction)
 						if (i==100) {
-							if (quantile(resultat,probs=0.05)<resultat_min){break}
+							if (quantile(resultat,probs=0.05,na.rm=T)<resultat_min){break}
 						}
               		} else if ((family=="logit")&(length(test)>0)&(length(unique(data3[,which(colnames(data3)%in%Y)][apprentissage]))==2)&(min(table(data3[,which(colnames(data3)%in%Y)][test]))>2)&(min(table(data3[,which(colnames(data3)%in%Y)][apprentissage]))>2)) {
 						ctrl <- c()
@@ -183,8 +189,8 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
               			}
 					}
 				}
-				if (quantile(resultat,probs=0.05)>=resultat_min){
-					resultat_min<-quantile(resultat,probs=0.05)
+				if (quantile(resultat,probs=0.05,na.rm=T)>=resultat_min){
+					resultat_min<-quantile(resultat,probs=0.05,na.rm=T)
 					resultat_global<-median(resultat)
 					# Global function after bootstrap
 					if (family == "lm") {
@@ -335,7 +341,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
       if (verbose==TRUE) {cat("De : ",(gene-((1+pval_stop2)*win-1)),"-",(gene-win*(pval_stop2)),"à :",(gene-(win-1)),"-",gene)}
       t.test(stocking[(gene-((1+pval_stop2)*win-1)):(gene-win*(pval_stop2))],stocking[(gene-(win-1)):gene])$p.value -> pval_stop
       if (verbose==TRUE) {cat(" - ",pval_stop)
-      cat(" pour ",length(sapply(parents,"[[",2))," parents en prélèvements ",prelevement,".\n")}
+		cat(" pour ",length(sapply(parents,"[[",2))," parents en prélèvements ",prelevement,".\n")}
       if (pval_stop>0.05) {
         pval_stop2 <- pval_stop2 + 1
       } else {
@@ -412,7 +418,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
 					}
                 }
               }
-              if (quantile(resultat,probs=0.05)>=resultat_min){
+              if (quantile(resultat,probs=0.05,na.rm=T)>=resultat_min){
 				if (verbose==TRUE){print("A new model identified for its better minimum capacities\n")}
 				  if (family == "lm") {
 					reg <- lm(formul,data=data)
@@ -421,7 +427,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
 				  }
 				  reg2 <- drop1(reg, test="F")
 				  resultat_global<-median(resultat)
-				  resultat_min<-quantile(resultat,probs=0.05)
+				  resultat_min<-quantile(resultat,probs=0.05,na.rm=T)
 				  super_reg <- reg ; super_reg2 <- reg2
 				  super_reg_global <- global
 				  if (BIC(reg)<globalBIC) {globalBIC <- BIC(reg)}

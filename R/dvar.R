@@ -301,7 +301,7 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
 	}else {
 		pvals <- apply(data.frame(data[,X_i_num_temp]),2,function(x){
 		  reg_temp <- lm( data[,ind_Y]~poly(x,2))
-		  #print(reg_temp)
+		  print("Alarme!")
 		  pval_temp <- pf(summary(reg_temp)$fstatistic[1], summary(reg_temp)$fstatistic[2],summary(reg_temp)$fstatistic[3], lower.tail = FALSE)
 		  return(pval_temp)})
 	}
