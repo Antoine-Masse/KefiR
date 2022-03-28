@@ -314,6 +314,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
       reg <- lm(formula=formul,data=data)
       global <- summary(reg)$adj.r.squared
       bic_temp <- BIC(reg)
+	  if (length(bic_temp)==0) {bic_temp<- 1E6}
     } else if (family=="logit") {
       # Là aussi du data3 à remplacer par data
       data3[,1] <- as.factor(data3[,1]) # Mettre en facteur
@@ -456,10 +457,18 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
     #print(dad)
     #print(mom)
     dad_global <- sort(parents[[parents_temp[1]]][[2]])
+	if (length(dad_global)==0) {dad_global<-0}
     mom_global <- sort(parents[[parents_temp[2]]][[2]])
+	if (length(mom_global)==0) {mom_global<-0}
     bic_dad <- 	parents[[parents_temp[1]]][[3]]
+	if (length(bic_dad)==0) {bic_dad<-1E6}	
     bic_mom <- 	parents[[parents_temp[2]]][[3]]
-    which(c(dad_global,mom_global)==min(c(dad_global,mom_global))) -> ind
+	if (length(bic_mom)==0) {bic_mom<-1E6}	
+	#print("global") ; print(global)
+	#print("mom_global") ; print(mom_global)
+	#print("bic_temp") ; print(bic_temp)
+	#print("bic_mom") ; print(bic_mom)
+    which(c(dad_global,mom_global)==min(c(dad_global,mom_global),na.rm=T)) -> ind
     #print("B1")
     if (ind[1] == 1) { # Si papa est le plus faible
       #print("B2")
@@ -473,8 +482,8 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
       } else if ((global >= dad_global)&(bic_temp < bic_dad)) { # Si l'enfant est meilleur que le père, il remplace son père
         #print("C2")
         parents[[parents_temp[1]]][[1]] <- my_i
-        parents[[parents_temp[1]]][[2]] <- global
-        parents[[parents_temp[1]]][[2]] <- bic_temp
+        parents[[parents_temp[1]]][[2]] <- global[1]
+        parents[[parents_temp[1]]][[3]] <- bic_temp
       }
     } else { # Si maman est la plus faible
       #print("B3")
@@ -488,9 +497,11 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
         #parents[length(parents)+1][[1]] <- parent
         parents[length(parents)+1][[1]] <- parent
       } else if ((global >= mom_global)&(bic_temp < bic_mom)) { # Sinon, il remplace sa mère
+		print(parents[[parents_temp[2]]][[1]])
+	    print(my_i)
         parents[[parents_temp[2]]][[1]] <- my_i
-        parents[[parents_temp[2]]][[2]] <- global
-        parents[[parents_temp[2]]][[2]] <- bic_temp
+        parents[[parents_temp[2]]][[2]] <- global[1]
+        parents[[parents_temp[2]]][[3]] <- bic_temp[1]
       }
     }
     ########################
