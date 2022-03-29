@@ -256,14 +256,29 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
       break
     }
     sample(1:length(parents),prelevement) -> parents_temp
+	#
+	#print("parents_temp")
+	#print(parents_temp)
     #ind_to_kill <- which(sapply(parents,"[[",2)[parents_temp]==min(sapply(parents,"[[",2)[parents_temp]))
     # Indices parents_temp des individus à éliminer
     ind_to_kill <- which((sapply(parents,"[[",2)[parents_temp])%in%(sort(sapply(parents,"[[",2)[parents_temp])[1:(prelevement-prelevement_save)]))
+	if ((length(parents_temp)-length(ind_to_kill))<2){
+		#print("Nettoyage")
+		if (length(ind_to_kill) > length(parents_temp)) {ind_to_kill <- c()
+		} else if ((length(parents_temp) - length(ind_to_kill))==0) {ind_to_kill <- ind_to_kill[-c(1:2)]
+		} else {ind_to_kill <- ind_to_kill[-1]
+		}
+		#print(ind_to_kill)
+	}
     ind_to_kill2 <- parents_temp[ind_to_kill]
     parents_temp <- parents_temp[-ind_to_kill]
+	#print("parents_temp2")
+	#print(parents_temp)
     ind_to_parents <- which(sapply(parents,"[[",2)[parents_temp]%in%sort(sapply(parents,"[[",2)[parents_temp],decreasing = TRUE)[1:2])
     #	print(ind_to_parents)
     parents_temp <- parents_temp[ind_to_parents]
+	#print("parents_temp3")
+	#print(parents_temp)
     dad <- sort(parents[[parents_temp[1]]][[1]])
     mom <- sort(parents[[parents_temp[2]]][[1]])
     #print(mom)
@@ -497,8 +512,11 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
         #parents[length(parents)+1][[1]] <- parent
         parents[length(parents)+1][[1]] <- parent
       } else if ((global >= mom_global)&(bic_temp < bic_mom)) { # Sinon, il remplace sa mère
-		print(parents[[parents_temp[2]]][[1]])
-	    print(my_i)
+		#print(parents[[parents_temp[2]]][[1]])
+	    #print(my_i)
+		#print(parents_temp[2])
+		#if (is.null(parents[[parents_temp[2]]][[1]])==TRUE) {print("Encore nul.") ;return(parents)}
+		#print("ABC")
         parents[[parents_temp[2]]][[1]] <- my_i
         parents[[parents_temp[2]]][[2]] <- global[1]
         parents[[parents_temp[2]]][[3]] <- bic_temp[1]
