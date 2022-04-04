@@ -84,7 +84,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
   #
   bornage_global <- 0 ; bornage2 <- 1 ; bornage3 <- 0 ; bornage4 <- 1000
   globalBIC <- 100000 ; resultat_global <- 0 ; distance_global <- 1000000
-  global_save <- c() ; BIC_save <- c() ; resultat_min <- 0
+  global_save <- c() ; BIC_save <- c() ; resultat_min <- 0 ; super_reg <- NA
   my_i_model <- 0
   '%notin%' <- Negate('%in%')
   individuals <- nrow(dt)*(ceiling(40/log(nrow(dt))))^2;
@@ -138,6 +138,8 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
       tempdf <- round(prop.table(tempdf), 2)
       global <- sum(tempdf[1,1],tempdf[2,2])
     }
+	if (length(global)==0) {global<-0}
+	if (length(bic_temp)==0) {bic_temp<-100000}
     parent <- list()
     parent[[1]] <- my_i ; parent[[2]] <- global ; parent[[3]] <- bic_temp
     if (indiv == 1) {parents <- list()}

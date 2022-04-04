@@ -282,28 +282,34 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     #
     #	cat("1",length(p.value),"2",length(var_i),"3",length(variables),"4",length(weight))
 	if (verbose==TRUE) {print("poly")}
+#print("A")
 #return(data[,X_i_num])
     X_i_num_poly <- apply(data[,X_i_num],2,function(x){return(any(is.na(x)))})
     X_i_num_poly <- which(X_i_num_poly==FALSE)
     X_i_num_temp <- X_i_num[X_i_num_poly]
     #print(X_i_num_temp)*
     X_i_num_poly <- apply(data.frame(data[,X_i_num_temp]),2,function(x){return(length(unique(x)))})
-    X_i_num_poly <- which(X_i_num_poly>2)
-    X_i_num_temp <- X_i_num_temp[X_i_num_poly]
-	#print(colnames(data)[X_i_num_temp])
-	X_i_num_temp_vari <- apply(data.frame(data[,X_i_num_temp]),2,function(x){
-		return(cor(x, data[,ind_Y]))})
-	#print(X_i_num_temp_vari)
-	X_i_num_temp <- X_i_num_temp[which(!is.na(X_i_num_temp_vari))]
-	#print(colnames(data)[X_i_num_temp])
-	if(length(X_i_num_temp)==0){
-		pvals <- NA
-	}else {
-		pvals <- apply(data.frame(data[,X_i_num_temp]),2,function(x){
-		  reg_temp <- lm( data[,ind_Y]~poly(x,2))
-		  pval_temp <- pf(summary(reg_temp)$fstatistic[1], summary(reg_temp)$fstatistic[2],summary(reg_temp)$fstatistic[3], lower.tail = FALSE)
-		  return(pval_temp)})
-	}
+    X_i_num_poly <- which(X_i_num_poly>4)
+	#print(X_i_num_poly)
+	if (length(X_i_num_poly)>0){
+		X_i_num_temp <- X_i_num_temp[X_i_num_poly]
+		#print(colnames(data)[X_i_num_temp])
+		X_i_num_temp_vari <- apply(data.frame(data[,X_i_num_temp]),2,function(x){
+			return(cor(x, data[,ind_Y]))})
+		#print(X_i_num_temp_vari)
+		X_i_num_temp <- X_i_num_temp[which(!is.na(X_i_num_temp_vari))]
+		#print(colnames(data)[X_i_num_temp])
+		if(length(X_i_num_temp)==0){
+			pvals <- NA
+		}else {
+			#print('pb')
+			pvals <- apply(data.frame(data[,X_i_num_temp]),2,function(x){
+			  reg_temp <- lm( data[,ind_Y]~poly(x,2))
+			  pval_temp <- pf(summary(reg_temp)$fstatistic[1], summary(reg_temp)$fstatistic[2],summary(reg_temp)$fstatistic[3], lower.tail = FALSE)
+			  return(pval_temp)})
+		}
+	}else {pvals <- NA}
+#	print('nop')
     #		print(pvals)
     ind_noNA <- which(!is.na(pvals))
     formule0 <- paste("poly(",colnames(data)[X_i_num_temp],",2)")
@@ -317,6 +323,7 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     dt_inter <- data.frame(var_i,variables,type,p.value,weight)
     dt <- rbind(dt,dt_inter)
   }
+  #print("B")
   #print("multix")
   if (wash==TRUE) {
     if (verbose == TRUE) {print(paste("Il y a pour le moment ",nrow(dt)," variables."))}
