@@ -20,7 +20,7 @@
 #' reg[[2]] <- myreg2
 #' output <- dsc(mtcars,reg,Y=c(23.4,5.4),pop=400,iter=200)
 #' # Bootstrap on the best line with dsc2()
-#' output2 <- dsc(mtcars,reg,dsc=output[1,],plot=TRUE)
+#' output2 <- dsc2(mtcars,reg,dsc=output[1,],plot=TRUE)
 dsc2 <- function(data,reg,dsc,iter=500,plot=TRUE,return=FALSE) {
 	# Mise au format list()
 	if (is(reg)[1]=="lm") {

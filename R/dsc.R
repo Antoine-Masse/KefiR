@@ -27,7 +27,7 @@
 #' output <- dsc(mtcars,reg,Y=c(23.4,5.4),pop=400,iter=200)
 #' # Aggregation of several trials
 #' for (i in 1:10) {
-#' 	output <- rbind(output,dsc(mtcars,reg,Y=c(23.4,5.4),plot=F))
+#' 	output <- rbind(output,dsc(mtcars,reg,Y=c(23.4,5.4),plot=FALSE))
 #' } ; parco(output,"Distance")
 #' # With filtration of min and max y.
 #' output <- dsc(mtcars,reg,Y=c(15,5),ymin=c(14,4),ymax=c(15,6),pop=5000,iter=10000)

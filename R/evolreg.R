@@ -88,7 +88,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
   my_i_model <- 0 ; formul <- NA ; formule <- NA ; global <- 0
   '%notin%' <- Negate('%in%')
   individuals <- nrow(dt)*(ceiling(40/log(nrow(dt))))^2;
-  individuals <- ifelse(individuals>20000,20000,individuals)
+  individuals <- ifelse(individuals>5000,5000,individuals)
   if(length(nbind)>0){if (nbind>individuals){individuals <- nbind}}
   nb <- c()
   #print("la")
@@ -462,7 +462,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
 				  if (bornage_global < global) {bornage_global <- global}
 				  my_i_model <- my_i
 				  formule = formul
-				  if (!is.na(formule)) {formule <- formula(formule)}				  
+				  #if (!is.na(formule)) {formule <- formula(formule)}				  
 				  if (family == "lm") {
 				  } else if (family=="logit") {
 					modelG <- naiveBayes(form,data=data3)

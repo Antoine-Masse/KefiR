@@ -35,5 +35,5 @@ reg[[1]] <- myreg1
 reg[[2]] <- myreg2
 output <- dsc(mtcars,reg,Y=c(23.4,5.4),pop=400,iter=200)
 # Bootstrap on the best line with dsc2()
-output2 <- dsc(mtcars,reg,dsc=output[1,],plot=TRUE)
+output2 <- dsc2(mtcars,reg,dsc=output[1,],plot=TRUE)
 }
