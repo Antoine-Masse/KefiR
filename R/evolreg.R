@@ -85,7 +85,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
   bornage_global <- 0 ; bornage2 <- 1 ; bornage3 <- 0 ; bornage4 <- 1000
   globalBIC <- 100000 ; resultat_global <- 0 ; distance_global <- 1000000
   global_save <- c() ; BIC_save <- c() ; resultat_min <- 0 ; super_reg <- NA
-  my_i_model <- 0
+  my_i_model <- 0 ; formul <- NA ; formule <- NA
   '%notin%' <- Negate('%in%')
   individuals <- nrow(dt)*(ceiling(40/log(nrow(dt))))^2;
   individuals <- ifelse(individuals>20000,20000,individuals)
@@ -123,7 +123,13 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
     }
     formul <- formula(paste(Y,"~",paste(formul,collapse='+')))
     if (family == "lm") {
-      reg <- lm(formula=formul,data=data)
+#temp <- try(print(formul))
+      reg <- try(lm(formula=formul,data=data))
+	  #if (is(reg)=="try-error"){
+			#print(formul)
+			#print(colnames(data))
+			#return(data)
+		#}
       global <- summary(reg)$adj.r.squared
       bic_temp <- BIC(reg)
 		global_save <- c(global_save,global)
@@ -369,7 +375,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
         prelevement_save <- round(((prelevement-2)/2),0)+2
       }
     }
-    if (pval_stop2 == 5) {cat("Fin accélérée.\n") ; break}
+    if ((pval_stop2 == 5)&(verbose==TRUE)) {cat("Fin accélérée.\n") ; break}
     #############
     #	Si le modèle est meilleur que le meilleur modèle disponible
     #############
@@ -452,7 +458,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
 				  if (bornage_global < global) {bornage_global <- global}
 				  my_i_model <- my_i
 				  formule = formul
-				  formule <- formula(formule)
+				  if (!is.na(formule)) {formule <- formula(formule)}				  
 				  if (family == "lm") {
 				  } else if (family=="logit") {
 					modelG <- naiveBayes(form,data=data3)
@@ -540,7 +546,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
     print(paste("Evolutive approach really made on ",gene,"iterations."))
     print(paste("il reste parents : ",length(sapply(parents,"[[",2))))
   }
-  # Vérifier car la formule qui ressort est parfois celle d'un objet formule calculé or de la fonction...
+  # Vérifier car la formule qui ressort est parfois celle d'un objet formule calculé hors de la fonction...
   # Scénario en cas d'absence de global ?
 
   # Problème lorsque combiné avec corrigraph var(x) = NULL sur COAT de Jamet.

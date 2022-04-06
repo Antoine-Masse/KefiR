@@ -289,7 +289,7 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     X_i_num_temp <- X_i_num[X_i_num_poly]
     #print(X_i_num_temp)*
     X_i_num_poly <- apply(data.frame(data[,X_i_num_temp]),2,function(x){return(length(unique(x)))})
-    X_i_num_poly <- which(X_i_num_poly>4)
+    X_i_num_poly <- which(X_i_num_poly>2)
 	#print(X_i_num_poly)
 	if (length(X_i_num_poly)>0){
 		X_i_num_temp <- X_i_num_temp[X_i_num_poly]
