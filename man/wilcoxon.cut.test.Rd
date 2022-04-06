@@ -49,11 +49,11 @@ index \code{group} on the measured \code{x} tendency.
 }
 \examples{
 # Call with names of columns of dataframe
-wilcoxon.cut.test(x=c('FEF1','FEF'), group='FEF2', data=X) 
+#wilcoxon.cut.test(x=c('FEF1','FEF'), group='FEF2', data=X) 
 # Call with numbers of columns 
-wilcoxon.cut.test(x=2:4, group='FEF2', data=X, prop=0.2, boot=50) 
+#wilcoxon.cut.test(x=2:4, group='FEF2', data=X, prop=0.2, boot=50) 
 # Call data with vectors and data.frame :
-wilcoxon.cut.test(X[,2:3], group=X$FEF2, prop=0.1)
+#wilcoxon.cut.test(X[,2:3], group=X$FEF2, prop=0.1)
 
 }
 \author{

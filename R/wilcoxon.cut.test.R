@@ -1,4 +1,4 @@
-#source('libs.R')
+
 
 to.vector <- function(col, data){
 # Get the x column in data, except if x is already a 
@@ -41,7 +41,6 @@ ind.median <- function(group, prop){
        return(order(group)[round(length(group)/2-number.out/2):(round(length(group)/2+number.out/2)+1)])
   }
 }
-
 #' Compare two halves of a population by Wilcoxon test.
 #' 
 #'  Test the global efficiency of an index (group) on a mesure. 
@@ -68,11 +67,11 @@ ind.median <- function(group, prop){
 #' index `group` on the measured `x` tendency.
 #'
 #' @examples # Call with names of columns of dataframe
-#' wilcoxon.cut.test(x=c('FEF1','FEF'), group='FEF2', data=X) 
+#' #wilcoxon.cut.test(x=c('FEF1','FEF'), group='FEF2', data=X) 
 #' # Call with numbers of columns 
-#' wilcoxon.cut.test(x=2:4, group='FEF2', data=X, prop=0.2, boot=50) 
+#' #wilcoxon.cut.test(x=2:4, group='FEF2', data=X, prop=0.2, boot=50) 
 #' # Call data with vectors and data.frame :
-#' wilcoxon.cut.test(X[,2:3], group=X$FEF2, prop=0.1)
+#' #wilcoxon.cut.test(X[,2:3], group=X$FEF2, prop=0.1)
 #'
 #' @export
 wilcoxon.cut.test <- function(x, 
@@ -138,8 +137,7 @@ wilcoxon.cut.test <- function(x,
             #built group
             group <- ifelse(group>median(group),2,1)
           }
-          if(debug.){cat('\n Structure de group (wilcoxon.cut.test) : '); print(str(group))}
-    
+          if(debug.){cat('\n Structure de group (wilcoxon.cut.test) : '); print(str(group))}   
           #  test of wilcoxon
           if(verbose)cat('\n\n-------------------------------------------------------\n')
           w.t <- wilcox.test(x=x[group==1], y=x[group==2], exact=FALSE)
@@ -154,8 +152,7 @@ wilcoxon.cut.test <- function(x,
                             p.value=sign(median(x[group==1]) - median(x[group==2]))*w.t$p.value,
                             star=star(w.t$p.value)
                             )
-          return(DF) 
-          
+          return(DF)           
         }else{# with bootstrap
           if(verbose)print("Starting bootstrap")
           if(bootstrap<20){
@@ -208,12 +205,10 @@ wilcoxon.cut.test <- function(x,
 			sign(median(x.boot[group.boot==1])-median(x.boot[group.boot==2])),
 			'\n'
 		)
-			}
-            
+			}            
           	sign(median(x.boot[group.boot==1])-
 		median(x.boot[group.boot==2]))*wilcox.test(x=x.boot[group.boot==1],
                         y=x.boot[group.boot==2], exact=FALSE)$p.value
-
           }-> pval
             q <- quantile(abs(pval),c(0.5,0.95)) #determine quantiles of pvalues
             if(verbose==TRUE|q[1]<0.05){
@@ -250,22 +245,3 @@ wilcoxon.cut.test <- function(x,
 	prop=prop) 
   }
 }  
-
-
-
-#wilcoxon.cut.test(x=c('FEF1','FEF'),group='FEF2', data=X,debug.=TRUE) 
-
-################################
-# Quelques tests pour le developpement
-#wilcoxon.cut.test(x=2,group='FEF2', data=X, prop=0.2) 
-#wilcoxon.cut.test(x=2,group='FEF2', data=X, prop=0) 
-#wilcoxon.cut.test(x=2:4,group='FEF2', data=X, prop=0.2, boot=50) 
-#wilcoxon.cut.test(x=2:4,group='FEF2', data=X, prop=0, boot=50) 
-
-#wilcoxon.cut.test(x=2:3,group='FEF2', data=X, verbose=F)
-#wilcoxon.cut.test(X[,2:3],group=X$FEF2,prop=0.1)
-#wilcoxon.cut.test(x=c('FEF1','FEF.1'),group='FEF2', data=X, bootstrap = 10, verbose=TRUE)
-#wilcoxon.cut.test(rnorm(150),rnorm(150), verbose=F)#fonctionne
-#wilcoxon.cut.test('FEF','FEF.1', data=X)
-
-
