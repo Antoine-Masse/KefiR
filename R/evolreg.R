@@ -85,7 +85,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
   bornage_global <- 0 ; bornage2 <- 1 ; bornage3 <- 0 ; bornage4 <- 1000
   globalBIC <- 100000 ; resultat_global <- 0 ; distance_global <- 1000000
   global_save <- c() ; BIC_save <- c() ; resultat_min <- 0 ; super_reg <- NA
-  my_i_model <- 0 ; formul <- NA ; formule <- NA
+  my_i_model <- 0 ; formul <- NA ; formule <- NA ; global <- 0
   '%notin%' <- Negate('%in%')
   individuals <- nrow(dt)*(ceiling(40/log(nrow(dt))))^2;
   individuals <- ifelse(individuals>20000,20000,individuals)
@@ -123,15 +123,19 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
     }
     formul <- formula(paste(Y,"~",paste(formul,collapse='+')))
     if (family == "lm") {
-#temp <- try(print(formul))
       reg <- try(lm(formula=formul,data=data))
 	  #if (is(reg)=="try-error"){
 			#print(formul)
 			#print(colnames(data))
 			#return(data)
 		#}
-      global <- summary(reg)$adj.r.squared
-      bic_temp <- BIC(reg)
+	  if (is(reg)[1]=="lm") {
+		  global <- summary(reg)$adj.r.squared
+		  bic_temp <- BIC(reg)
+	  } else {
+		  global <- 0
+		  bic_temp <- 100000
+		}
 		global_save <- c(global_save,global)
 		BIC_save <- c(BIC_save,bic_temp)
     } else if (family=="logit") {
