@@ -136,8 +136,8 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
 		  global <- 0
 		  bic_temp <- 100000
 		}
-		global_save <- c(global_save,global)
-		BIC_save <- c(BIC_save,bic_temp)
+		#global_save <- c(global_save,global)
+		#BIC_save <- c(BIC_save,bic_temp)
     } else if (family=="logit") {
       # DES COMPILATIONS DE DATA3 à REMPLACER PAR DATA...
       data3[,1] <- as.factor(data3[,1]) # Mettre en facteur
@@ -174,7 +174,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
               		test <- setdiff(1:nrow(data),apprentissage)
               		if (family == "lm") {
 						reg <- lm(formul,data=data[apprentissage,])
-						prediction <- predict(reg,newdata=data[test,])
+						prediction <- try(predict(reg,newdata=data[test,]))
 						prediction <- summary(reg)$adj.r.squared
 						resultat <- c(resultat,prediction)
 						if (i==100) {
@@ -191,7 +191,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
               			}
 						if (all(ctrl==TRUE)==TRUE) {
               				reg <- glm(formul,data=data3[apprentissage,],family=binomial(logit))
-              				prediction <- predict(reg,newdata=data3[test,])
+              				prediction <- try(predict(reg,newdata=data3[test,]))
               				prediction <- ifelse(prediction>0.5,"oui","non")
               				tempdf <- data.frame("test" = data3[,which(colnames(data3)%in%Y)][test],prediction)
               				tempdf <- table(tempdf)
@@ -254,6 +254,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
   # Making evolutiv approach
   ############################################################################################
   ############################################################################################
+  if (bornage_global>0) { # Ne pas exec les croisements parentaux si pas de R² > 0
   super_reg_global <- bornage_global
   if (verbose==TRUE) {print(paste("Making evolutiv approach on ",iter," iterations."))}
   stocking <- c() ; stocking2<- c() ; pval_stop2 <- 1
@@ -576,5 +577,6 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
   #sortie$indices <- my_i_model
   #sortie$BIC <- globalBIC
   #return(sortie)
+  } else {print("No model")}
   return(super_reg)
 }
