@@ -24,9 +24,9 @@ pass to the argument in a list format, using function list().
 # Simple example
 
 # Call with numbers of columns 
-wilcoxon.cut.test(x=2:4, group='FEF2', data=X, prop=0.2, boot=50) 
+#wilcoxon.cut.test(x=2:4, group='FEF2', data=X, prop=0.2, boot=50) 
 # Call data with vectors and data.frame :
-wilcoxon.cut.test(X[,2:3], group=X$FEF2, prop=0.1)
+#wilcoxon.cut.test(X[,2:3], group=X$FEF2, prop=0.1)
 
 }
 \author{
