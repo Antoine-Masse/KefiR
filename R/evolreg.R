@@ -88,7 +88,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
   my_i_model <- 0 ; formul <- NA ; formule <- NA ; global <- 0
   '%notin%' <- Negate('%in%')
   individuals <- nrow(dt)*(ceiling(40/log(nrow(dt))))^2;
-  individuals <- ifelse(individuals>5000,5000,individuals)
+  individuals <- ifelse(individuals>10000,10000,individuals)
   if(length(nbind)>0){if (nbind>individuals){individuals <- nbind}}
   nb <- c()
   #print("la")
@@ -98,7 +98,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
   ###################################################
   #			FAIRE LES PARENTS
   ###################################################
-  my_i_model <- c() ; resultat <- c()
+  my_i_model <- c() ; 
   if (verbose==TRUE) {print(paste("Making the ",individuals," parents."))}
   for (indiv in 1:individuals) {
     nb_temp <- sample(nb,1) ; nvar_temp <- 0 ; formul <- c() ; my_i <- c()
@@ -109,7 +109,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
       formul <- c(formul,dt$variables[ind])
       my_i <- c(my_i,ind)
     }
-    while(nvar_temp <= nb_temp) {
+    while(nvar_temp <= nb_temp) { # nb_temp : nombre de var à atteindre, nvar_temp : nombre réel
       #print(nb_temp)
       ind <- sample(nrow(dt),1)
       nvar_temp <- nvar_temp + dt$weight[ind]
@@ -142,7 +142,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
       # DES COMPILATIONS DE DATA3 à REMPLACER PAR DATA...
       data3[,1] <- as.factor(data3[,1]) # Mettre en facteur
       model <- naiveBayes(formul,data=data3)
-      prediction <- predict(object=model,newdata=data3)
+      prediction <- try(predict(object=model,newdata=data3))
       tempdf <- data.frame("test" = data3[,which(colnames(data3)%in%Y)],prediction)
       tempdf <- table(tempdf)
       tempdf <- round(prop.table(tempdf), 2)
@@ -168,18 +168,22 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
 		  if (any(is.na(pvals))==FALSE) {
             if (any(pvals>0.05)==FALSE) {
               if (identical(sort(my_i),sort(my_i_model))==FALSE){
+			    resultat <- c()
 				for (i in 1:250) {
               		apprentissage <- sample(1:nrow(data),replace=T)
               		test <- c()
               		test <- setdiff(1:nrow(data),apprentissage)
-              		if (family == "lm") {
-						reg <- lm(formul,data=data[apprentissage,])
-						prediction <- try(predict(reg,newdata=data[test,]))
-						prediction <- summary(reg)$adj.r.squared
-						resultat <- c(resultat,prediction)
-						if (i==100) {
-							if (quantile(resultat,probs=0.05,na.rm=T)<resultat_min){break}
-						}
+              		if (family == "lm") {		
+						reg <- try(lm(formul,data=data[apprentissage,]))
+						#prediction <- try(predict(reg,newdata=data[test,]))
+						if (is(reg)[1]=="lm") { 
+							prediction <- summary(reg)$adj.r.squared
+#print(paste0("prediction ",prediction))
+							resultat <- c(resultat,prediction)
+							if (length(resultat)>100) {
+								if (quantile(resultat,probs=0.05,na.rm=T)<resultat_min){break}
+							}
+						} else {next}
               		} else if ((family=="logit")&(length(test)>0)&(length(unique(data3[,which(colnames(data3)%in%Y)][apprentissage]))==2)&(min(table(data3[,which(colnames(data3)%in%Y)][test]))>2)&(min(table(data3[,which(colnames(data3)%in%Y)][apprentissage]))>2)) {
 						ctrl <- c()
               			for (i in 1:ncol(data)){
@@ -201,6 +205,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
               			}
 					}
 				}
+				if (length(resultat)==0) {resultat<-0}
 				if (quantile(resultat,probs=0.05,na.rm=T)>=resultat_min){
 					resultat_min<-quantile(resultat,probs=0.05,na.rm=T)
 					resultat_global<-median(resultat)
@@ -264,6 +269,9 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
   prelevement_save <- round(((prelevement-3)/2),0) + 2
   if (prelevement_save>prelevement) {prelevement_save = 2 ; prelevement = 3}
   for (gene in 1:iter) {
+	########################
+	#	Prélever un échantillon parental
+	########################
     #if (verbose == TRUE) {cat("Prélèvement",prelevement," et save ",prelevement_save," sur ",length(parents)," parents.\n")}
     if (length(parents)< (prelevement)) {
       break
@@ -305,7 +313,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
       next
     }
     nb_temp <- sample(nb,1) # Material of son/daughter
-    demi_nb_temp <- round(nb_temp/2,0)
+    demi_nb_temp <- round(nb_temp/2,0) # Length of gamets
     #print(demi_nb_temp)
     if (sum(dt$weight[dad])>=demi_nb_temp) {
       if (demi_nb_temp>=length(dad)) {spermatozoid <- dad
@@ -329,7 +337,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
         }
       }
     }
-    while(poids>nb_temp){
+    while((poids>nb_temp)|(poids>nvar)){
       my_i_temp<-sample(my_i)[-1]
       poids <- sum(dt$weight[my_i_temp])
       if (length(my_i_temp)>=1) {
@@ -347,7 +355,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
       # Là aussi du data3 à remplacer par data
       data3[,1] <- as.factor(data3[,1]) # Mettre en facteur
       model <- naiveBayes(formul,data=data3)
-      prediction <- predict(object=model,newdata=data3)
+      prediction <- predict(object=model,newdata=data3) # Mettre try et condition is...
       tempdf <- data.frame("test" = data3[,which(colnames(data3)%in%Y)],prediction)
       tempdf <- table(tempdf)
       tempdf <- round(prop.table(tempdf), 2)
@@ -411,7 +419,8 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
             #print("Modèle acceptable en termes de pvals")
             # Si BON BIC identifié, faire bootstrap, sauf si modèle déjà sorti !
             if (identical(sort(my_i),sort(my_i_model))==FALSE) {
-              if (verbose==TRUE){print(formule)}
+			if (formula(reg) != formula(super_reg)){
+              if (verbose==TRUE){print(formul)}
               #print("On se retrouve dans un modèle à bootstraper")
               resultat <- c()
               if (verbose == TRUE) {print("bootstrap")}
@@ -420,10 +429,12 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
                 test <- c()
                 test <- setdiff(1:nrow(data),apprentissage)
                 if (family == "lm") {
-                  reg <- lm(formul,data=data[apprentissage,])
+                  reg <- try(lm(formul,data=data[apprentissage,]))
                   #prediction <- predict(reg,newdata=data3[test,])
-                  prediction <- summary(reg)$adj.r.squared
-                  resultat <- c(resultat,prediction)
+				  if (is(reg)[1]=="lm"){
+					prediction <- summary(reg)$adj.r.squared
+					resultat <- c(resultat,prediction)
+				  } 
                 } else if ((family=="logit")&(length(test)>0)&(length(unique(data3[,which(colnames(data3)%in%Y)][apprentissage]))==2)&(min(table(data3[,which(colnames(data3)%in%Y)][test]))>2)&(min(table(data3[,which(colnames(data3)%in%Y)][apprentissage]))>2)) {
 					  # Données catégorielles dans reg logistique :
 					# vérifier que les variantes de Y (0 et 1) apparaissent dans le test et l'apprentissage
@@ -435,7 +446,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
 						ctrl <- c(ctrl,identical(part_common,as.factor(sort(unique(data[test,i])))))
 					  }
 					}
-					if (all(ctrl==TRUE)==TRUE){
+					if (all(ctrl==TRUE)==TRUE){ # Intégrer si NA dans test... avec try()
 						reg <- glm(formul,data=data3[apprentissage,],family=binomial(logit))
 						 prediction <- predict(reg,newdata=data3[test,])
 						 prediction <- ifelse(prediction>0.5,"oui","non")
@@ -475,7 +486,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
 				  }
 				  if ((verbose==TRUE)&(bornage_global == 0)&(bornage_global!=global)) {print("At least one significant model identified.")}
 				}
-			}
+			}}
           }}}}
     }
     #############
