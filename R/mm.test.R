@@ -48,7 +48,7 @@ device.print <- function(x, y, info=NULL, title=NULL){
 #' @param conf Confidence of the bootstrap, 0.95 by default.
 #' @param code if `TRUE`, return the code that makes the different tests. `FALSE` by default
 #' @export
-M.test <- function(x, 
+mm.test <- function(x, 
 	group, 
 	pval=0.05, 
 	verbose=FALSE,

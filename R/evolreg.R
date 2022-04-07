@@ -136,12 +136,17 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
 	ssave <- formul
 	formul_temp <- paste0(Y,"~",paste0(formul,collapse='+'))
     formul <- try(formula(formul_temp))
-if (is(formul)[1]=="try-error"){
-	print("La formule a planté")
-			print(formul_temp)
-			print(ssave)
-			return(ssave)
-}
+#if (is(formul)[1]=="try-error"){
+#	print("La formule a planté")
+#			print(formul_temp)
+#			print(ssave)
+#			return(ssave)
+#}
+	var_a_croiser <- names(get_all_vars(formul,data))
+	data_a_croiser <- data[,colnames(data)%in%var_a_croiser]
+	if ((nrow(na.omit(data_a_croiser))==0)|(min(apply(data_a_croiser,2,function(x){length(unique(x,na.rm=T))}))<2)) {
+		next
+	}
     if (family == "lm") {
       reg <- try(lm(formula=formul,data=data))
 	  if (is(reg)[1]=="try-error"){
@@ -194,6 +199,11 @@ if (is(formul)[1]=="try-error"){
               		apprentissage <- sample(1:nrow(data),replace=T)
               		test <- c()
               		test <- setdiff(1:nrow(data),apprentissage)
+	var_a_croiser <- names(get_all_vars(formul,data))
+	data_a_croiser <- data[apprentissage,colnames(data)%in%var_a_croiser]
+	if ((nrow(na.omit(data_a_croiser))==0)|(min(apply(data_a_croiser,2,function(x){length(unique(x,na.rm=T))}))<2)) {
+		next
+	}
               		if (family == "lm") {		
 						reg <- try(lm(formul,data=data[apprentissage,]))
 						#prediction <- try(predict(reg,newdata=data[test,]))
@@ -259,8 +269,9 @@ if (is(formul)[1]=="try-error"){
 					}
 					if ((verbose==TRUE)&(bornage_global == 0)&(bornage_global!=global)) {print("At least one significant model identified.")}
 					if (verbose == TRUE) {
-						cat("Modèle sur parents avec R2 : ",global,"\n")
+						cat("Modèle sur parents avec R2 : ",round(global,2),"\n")
 						print(paste("BIC ",BIC(reg)))
+						print(paste("Performance inf 95%",round(resultat_min,2)))
 						print(formule)
 					}
 				}
@@ -274,7 +285,8 @@ if (is(formul)[1]=="try-error"){
   }
   ###########################################
   ###########################################
-  #
+  tosupp <- which(sapply(parents, is.null))
+  if (length(tosupp)>0) {parents <- parents[-tosupp]}
   ############################################################################################
   ############################################################################################
   # Making evolutiv approach
@@ -299,9 +311,6 @@ if (is(formul)[1]=="try-error"){
     }
     sample(1:length(parents),prelevement) -> parents_temp
 	#
-	#print("parents_temp")
-	#print(parents_temp)
-    #ind_to_kill <- which(sapply(parents,"[[",2)[parents_temp]==min(sapply(parents,"[[",2)[parents_temp]))
     # Indices parents_temp des individus à éliminer
     ind_to_kill <- which((sapply(parents,"[[",2)[parents_temp])%in%(sort(sapply(parents,"[[",2)[parents_temp])[1:(prelevement-prelevement_save)]))
 	if ((length(parents_temp)-length(ind_to_kill))<2){
@@ -358,6 +367,7 @@ if (is(formul)[1]=="try-error"){
         }
       }
     }
+#print("B")
 	breaker <- 0
     while((poids>nb_temp)|(poids>nvar)){
       my_i_temp<-sample(my_i)[-1]
@@ -369,6 +379,11 @@ if (is(formul)[1]=="try-error"){
 	  if (breaker > 3) {break}
     }
     formul <- formula(paste0(Y,"~",paste0(dt$variables[my_i],collapse='+')))
+	var_a_croiser <- names(get_all_vars(formul,data))
+	data_a_croiser <- data[,colnames(data)%in%var_a_croiser]
+	if ((nrow(na.omit(data_a_croiser))==0)|(min(apply(data_a_croiser,2,function(x){length(unique(x,na.rm=T))}))<2)) {
+		next
+	}
     if (family == "lm") {
       reg <- try(lm(formula=formul,data=data))
 	  if (is(reg)[1]=="lm") {
@@ -429,9 +444,9 @@ if (is(formul)[1]=="try-error"){
 #			distance <- 10000
 #		}
       if ((global > bornage_global)|(bic_temp < globalBIC))  { # | (distance<distance_global))
-#if (verbose==TRUE){print("Un modèle enfant ressort.") ; print(formula(reg));print(formula(super_reg))}
+#print("Un modèle enfant ressort.") ; print(paste0(formula(reg)," vs ",formula(super_reg)))
         if (family == "lm") {
-          reg <- lm(formul,data=data)
+          reg <- try(lm(formul,data=data))
           pvals <- summary(reg)[[4]][,4]
         } else if (family=="logit") {
           # Encore du data3 à nettoyer
@@ -442,20 +457,24 @@ if (is(formul)[1]=="try-error"){
 		if (any(is.na(reg$coefficients))==FALSE) {
         if (any(is.na(pvals))==FALSE) {
           if (any(pvals>0.05)==FALSE) {
-            #print("Modèle acceptable en termes de pvals")
 			#if (verbose==TRUE){print("Un modèle enfant ressort.") ; print(formula(reg));print(formula(super_reg))}
             # Si BON BIC identifié, faire bootstrap, sauf si modèle déjà sorti !
             if (identical(sort(my_i),sort(my_i_model))==FALSE) {
-if (verbose==TRUE){print("my_i") ; print(sort(my_i));print(sort(my_i_model))}
+			#if (verbose==TRUE){print("my_i") ; print(sort(my_i));print(sort(my_i_model))}
 			if (formula(reg) != formula(super_reg)){
-              if (verbose==TRUE){print(formula(reg));print(formula(super_reg))}
+              #if (verbose==TRUE){print(formula(reg));print(formula(super_reg))}
               #print("On se retrouve dans un modèle à bootstraper")
               resultat <- c()
-              if (verbose == TRUE) {print("bootstrap")}
+              #if (verbose == TRUE) {print("Bootstrap d'un modèle enfant potentiellement meilleur...")}
               for (i in 1:500) {
                 apprentissage <- sample(1:nrow(data),replace=T)
                 test <- c()
                 test <- setdiff(1:nrow(data),apprentissage)
+				var_a_croiser <- names(get_all_vars(formul,data))
+				data_a_croiser <- data[apprentissage,colnames(data)%in%var_a_croiser]
+				if ((nrow(na.omit(data_a_croiser))==0)|(min(apply(data_a_croiser,2,function(x){length(unique(x,na.rm=T))}))<2)) {
+					next
+				}
                 if (family == "lm") {
                   reg <- try(lm(formul,data=data[apprentissage,]))
                   #prediction <- predict(reg,newdata=data3[test,])
@@ -486,10 +505,10 @@ if (verbose==TRUE){print("my_i") ; print(sort(my_i));print(sort(my_i_model))}
 					}
                 }
               }
-              if (quantile(resultat,probs=0.05,na.rm=T)>=resultat_min){
-				if (verbose==TRUE){print("A new model identified for its better minimum capacities\n")}
+              if (round(quantile(resultat,probs=0.05,na.rm=T),2)>=round(resultat_min,2)){
+				if (verbose==TRUE){print("A new model identified for its better minimum capacities.")}
 				  if (family == "lm") {
-					reg <- lm(formul,data=data)
+					reg <- try(lm(formul,data=data))
 				  } else if (family=="logit") {
 					reg <- glm(formul,data=data3,family=binomial(logit))
 				  }
@@ -506,13 +525,19 @@ if (verbose==TRUE){print("my_i") ; print(sort(my_i));print(sort(my_i_model))}
 				  if (family == "lm") {
 				  } else if (family=="logit") {
 					modelG <- naiveBayes(form,data=data3)
-					prediction <- predict(model,data)
+					prediction <- predict(modelG,data)
 					tempdf <- data.frame("test" = data[,which(colnames(data)%in%Y)],prediction)
 					tempdf <- table(tempdf)
 					tempdf <- round(prop.table(tempdf ), 2) ;
 					tempdf_save <- tempdf
 				  }
 				  if ((verbose==TRUE)&(bornage_global == 0)&(bornage_global!=global)) {print("At least one significant model identified.")}
+				  if (verbose==TRUE) {
+						cat("Modèle sur enfants avec R2 : ",round(global,2),"\n")
+						print(paste("BIC ",BIC(reg)))
+						print(paste("Performance inf 95%",round(resultat_min,2)))
+						print(formule)
+				   }
 				}
 			}}
           }}}}
@@ -597,9 +622,9 @@ if (verbose==TRUE){print("my_i") ; print(sort(my_i));print(sort(my_i_model))}
   if (verbose==TRUE) {
     print("Meilleur modèle sélectionné :")
     print(formule)
-    cat("Capacité de prédiction brute : ",super_reg_global,"\n")
-    cat("Capacité de prédiction médiane (bootstrap): ",resultat_global,"\n")
-    cat("Capacité de prédiction inférieure 95% : ",resultat_min,"\n")
+    cat("Capacité de prédiction brute : ",round(super_reg_global,2),"\n")
+    cat("Capacité de prédiction médiane (bootstrap): ",round(resultat_global,2),"\n")
+    cat("Capacité de prédiction inférieure 95% : ",round(resultat_min,2),"\n")
     #cat("Prédiction obtenue (détails)\n")
     #print(tempdf_save
   }
