@@ -97,6 +97,7 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
       }
     }
   }
+ #return(variables)
   weight <- rep(1,length(var_i))
   dt <- data.frame(var_i,variables,type,p.value,weight)
   #	print(head(dt))
@@ -146,6 +147,8 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     # Autre scenario
     stop()
   }
+  #
+#return(dt)
   # A controler
   if (multix == TRUE) {
     variables <- c()
@@ -166,7 +169,7 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     variables <- c(variables, formule0[ind_noNA])
     #			print("variables")
     #			print(variables)
-    type <- c(type,rep("Ynum_vs_log",length(ind_noNA)))
+    type <- c(type,rep("Ynum_transfo",length(ind_noNA)))
     p.value <- c(p.value,pvals[ind_noNA])
     weight	<- weight<-c(rep(1,length(ind_noNA)))
 	if (verbose==TRUE) {print("x^2")}
@@ -178,7 +181,7 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     #		print(var_i)
     variables <- c(variables, formule0[ind_noNA])
     #		print(variables)
-    type <- c(type,rep("Ynum_vs_log",length(ind_noNA)))
+    type <- c(type,rep("Ynum_transfo",length(ind_noNA)))
     p.value <- c(p.value,pvals[ind_noNA])
     weight	<- weight<-c(weight,c(rep(1,length(ind_noNA))))
     #	cat("1",length(p.value),"2",length(var_i),"3",length(variables),"4",length(weight))
@@ -191,7 +194,7 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     #		print(var_i)
     variables <- c(variables, formule0[ind_noNA])
     #		print(variables)
-    type <- c(type,rep("Ynum_vs_log",length(ind_noNA)))
+    type <- c(type,rep("Ynum_transfo",length(ind_noNA)))
     p.value <- c(p.value,pvals[ind_noNA])
     weight	<- weight<-c(weight,c(rep(1,length(ind_noNA))))
     dt_inter <- data.frame(var_i,variables,type,p.value,weight)
@@ -204,8 +207,8 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     var_i <- c()
     p.value <- c()
 	if (verbose==TRUE) {print("Interaction j/i & i/j")}
-    for (i in which(dt$type=="Ynum_vs_num"|dt$type=="Ynum_vs_log")) {
-      for (j in setdiff(which(dt$type=="Ynum_vs_num"|dt$type=="Ynum_vs_log"),i)) {
+    for (i in which(dt$type=="Ynum_vs_num"|dt$type=="Ynum_transfo")) {
+      for (j in setdiff(which(dt$type=="Ynum_vs_num"|dt$type=="Ynum_transfo"),i)) {
         # INTERACTION i/j
         #print("Interaction i/j")
         #print(dt$variables[j])
@@ -246,10 +249,10 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
         }
       }
     }
+	weight <- rep(1,length(var_i))
+	dt_inter <- data.frame(var_i,variables,type,p.value,weight)
+	dt <- rbind(dt,dt_inter)
   }
-  weight <- rep(1,length(var_i))
-  dt_inter <- data.frame(var_i,variables,type,p.value,weight)
-  dt <- rbind(dt,dt_inter)
   if (multix == TRUE) {
     variables <- c()
     type <- c()
@@ -276,14 +279,12 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     variables <- c(variables, formule0[ind_noNA])
     #			print("variables")
     #			print(variables)
-    type <- c(type,rep("Ynum_vs_log",length(ind_noNA)))
+    type <- c(type,rep("Ynum_transfo",length(ind_noNA)))
     p.value <- c(p.value,pvals[ind_noNA])
     weight	<- weight<-c(weight,rep(1,length(ind_noNA)))
     #
     #	cat("1",length(p.value),"2",length(var_i),"3",length(variables),"4",length(weight))
 	if (verbose==TRUE) {print("poly")}
-#print("A")
-#return(data[,X_i_num])
     X_i_num_poly <- apply(data[,X_i_num],2,function(x){return(any(is.na(x)))})
     X_i_num_poly <- which(X_i_num_poly==FALSE)
     X_i_num_temp <- X_i_num[X_i_num_poly]
@@ -372,7 +373,7 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     p.value <- c()
     #			for (i in dt$var_i[dt$type=="Ynum_vs_num"|dt$type=="Ynum_vs_log"][1:(length(dt$var_i[dt$type=="Ynum_vs_num"|dt$type=="Ynum_vs_log"])-1)]) {
     #				for (j in dt$var_i[dt$type=="Ynum_vs_num"|dt$type=="Ynum_vs_log"][2:length(dt$var_i[dt$type=="Ynum_vs_num"|dt$type=="Ynum_vs_log"])]) {
-    X_i_num_for_inter <- which((dt$type=="Ynum_vs_num")|(dt$type=="Ynum_vs_log"))
+    X_i_num_for_inter <- which((dt$type=="Ynum_vs_num")|(dt$type=="Ynum_transfo"))
     #print(dt$variables[X_i_num_for_inter])
     #print(length(X_i_num_for_inter))
     #print((length(X_i_num_for_inter)-1))

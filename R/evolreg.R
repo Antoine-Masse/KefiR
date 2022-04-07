@@ -88,7 +88,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
   my_i_model <- 0 ; formul <- NA ; formule <- NA ; global <- 0
   '%notin%' <- Negate('%in%')
   individuals <- nrow(dt)*(ceiling(40/log(nrow(dt))))^2;
-  individuals <- ifelse(individuals>10000,10000,individuals)
+  individuals <- ifelse(individuals>20000,20000,individuals)
   if(length(nbind)>0){if (nbind>individuals){individuals <- nbind}}
   nb <- c()
   #print("la")
@@ -109,6 +109,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
       formul <- c(formul,dt$variables[ind])
       my_i <- c(my_i,ind)
     }
+	breaker <- 0
     while(nvar_temp <= nb_temp) { # nb_temp : nombre de var à atteindre, nvar_temp : nombre réel
       #print(nb_temp)
       ind <- sample(nrow(dt),1)
@@ -117,18 +118,38 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
       if (nvar_temp<= nb_temp){
         formul <- c(formul,dt$variables[ind])
         my_i <- c(my_i,ind)
+		if (nvar_temp == nb_temp) {break}
       } else if ((nvar_temp>nb_temp)&(length(formul)==0)){
         nvar_temp <- 0
+		breaker <- breaker+1
+		if ((breaker>3)&(nvar_temp<=(nb_temp+1))) {
+			formul <- c(formul,dt$variables[ind])
+			my_i <- c(my_i,ind)		
+			break
+		}
       }
+	  if (breaker>5) {
+		formul <- c(formul,dt$variables[ind])
+        my_i <- c(my_i,ind)  
+		break}
     }
-    formul <- formula(paste(Y,"~",paste(formul,collapse='+')))
+	ssave <- formul
+	formul_temp <- paste0(Y,"~",paste0(formul,collapse='+'))
+    formul <- try(formula(formul_temp))
+if (is(formul)[1]=="try-error"){
+	print("La formule a planté")
+			print(formul_temp)
+			print(ssave)
+			return(ssave)
+}
     if (family == "lm") {
       reg <- try(lm(formula=formul,data=data))
-	  #if (is(reg)=="try-error"){
-			#print(formul)
-			#print(colnames(data))
+	  if (is(reg)[1]=="try-error"){
+			print(dt$variables[my_i])
+			print(formul)
+			print(colnames(data))
 			#return(data)
-		#}
+		}
 	  if (is(reg)[1]=="lm") {
 		  global <- summary(reg)$adj.r.squared
 		  bic_temp <- BIC(reg)
@@ -337,20 +358,24 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
         }
       }
     }
+	breaker <- 0
     while((poids>nb_temp)|(poids>nvar)){
       my_i_temp<-sample(my_i)[-1]
       poids <- sum(dt$weight[my_i_temp])
       if (length(my_i_temp)>=1) {
         my_i <- my_i_temp
-      } else { poids <- 0
+      } else { poids <- 0 ; breaker <- breaker+1
       }
+	  if (breaker > 3) {break}
     }
-    formul <- formula(paste(Y,"~",paste(dt$variables[my_i],collapse='+')))
+    formul <- formula(paste0(Y,"~",paste0(dt$variables[my_i],collapse='+')))
     if (family == "lm") {
-      reg <- lm(formula=formul,data=data)
-      global <- summary(reg)$adj.r.squared
-      bic_temp <- BIC(reg)
-	  if (length(bic_temp)==0) {bic_temp<- 1E6}
+      reg <- try(lm(formula=formul,data=data))
+	  if (is(reg)[1]=="lm") {
+		global <- summary(reg)$adj.r.squared
+		bic_temp <- BIC(reg)
+		if (length(bic_temp)==0) {bic_temp<- 1E6}
+	  } else {global <- 0 ; bic_temp<- 1E6}
     } else if (family=="logit") {
       # Là aussi du data3 à remplacer par data
       data3[,1] <- as.factor(data3[,1]) # Mettre en facteur
@@ -404,6 +429,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
 #			distance <- 10000
 #		}
       if ((global > bornage_global)|(bic_temp < globalBIC))  { # | (distance<distance_global))
+#if (verbose==TRUE){print("Un modèle enfant ressort.") ; print(formula(reg));print(formula(super_reg))}
         if (family == "lm") {
           reg <- lm(formul,data=data)
           pvals <- summary(reg)[[4]][,4]
@@ -417,10 +443,12 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
         if (any(is.na(pvals))==FALSE) {
           if (any(pvals>0.05)==FALSE) {
             #print("Modèle acceptable en termes de pvals")
+			#if (verbose==TRUE){print("Un modèle enfant ressort.") ; print(formula(reg));print(formula(super_reg))}
             # Si BON BIC identifié, faire bootstrap, sauf si modèle déjà sorti !
             if (identical(sort(my_i),sort(my_i_model))==FALSE) {
+if (verbose==TRUE){print("my_i") ; print(sort(my_i));print(sort(my_i_model))}
 			if (formula(reg) != formula(super_reg)){
-              if (verbose==TRUE){print(formul)}
+              if (verbose==TRUE){print(formula(reg));print(formula(super_reg))}
               #print("On se retrouve dans un modèle à bootstraper")
               resultat <- c()
               if (verbose == TRUE) {print("bootstrap")}
