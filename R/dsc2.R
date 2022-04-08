@@ -40,13 +40,6 @@ dsc2 <- function(data,reg,dsc,iter=500,plot=TRUE,return=FALSE) {
 		}
 	}
 	reg <- reg2
-	# Progress bar
-	#pb <- txtProgressBar(min = 0,      # Minimum value of the progress bar
-    #                 max = iter, # Maximum value of the progress bar
-    ##                 style = 3,    # Progress bar style (also available style = 1 and style = 2)
-     #                width = 50,   # Progress bar width. Defaults to getOption("width")
-     #                char = "=")   # Character used to create the bar
-#print("là")
 	for (i in 1:length(reg)) {
 		Y_predict_temp <-c()
 		temp <- reg[[i]]
@@ -55,17 +48,21 @@ dsc2 <- function(data,reg,dsc,iter=500,plot=TRUE,return=FALSE) {
 		my_Y <-my_names[1]
 		ind_without_NA <- which(!is.na(data[,which(colnames(data)%in%my_Y)]))
 		data2 <- data[ind_without_NA,]
-		#print(my_Y)
-		#print(nrow(data2))
-		#print(temp_formula)
+		if (nrow(data2)==0) {error("Too much missing values.")}
 		for (j in 1:iter) {
-			temp_reg <- lm(temp_formula,data=data2[sample(1:nrow(data2),nrow(data2),replace=TRUE),])
-			prediction <- try(predict(temp_reg,dsc[1,]))		
-			if (is(Y_predict_temp[length(Y_predict_temp)])[1]=="try-error"){
-				Y_predict_temp <- c(Y_predict_temp,NA)	
-			} else{Y_predict_temp <- c(Y_predict_temp,prediction)	
-			}
+		#if (i==1) {print("A")}
+			temp_reg <- try(lm(temp_formula,data=data2[sample(1:nrow(data2),nrow(data2),replace=TRUE),]))
+		#if (i==1) {print("B")}
+			if (is(temp_reg)[1]!="try-error") {
+		#if (i==1) {print("C")}
+				prediction <- try(predict(temp_reg,dsc[1,]))		
+				if (is(prediction)[1]=="try-error"){
+					Y_predict_temp <- c(Y_predict_temp,NA)	
+				} else{Y_predict_temp <- c(Y_predict_temp,prediction)	
+				}
+			} else {Y_predict_temp <- c(Y_predict_temp,NA)}
 		}
+		#if (i==1) {print(Y_predict_temp)}
 		if (i==1) {
 			output <- data.frame(Y_predict_temp)
 			colnames(output) <- my_Y
@@ -75,11 +72,9 @@ dsc2 <- function(data,reg,dsc,iter=500,plot=TRUE,return=FALSE) {
 		}
 		#setTxtProgressBar(pb, i)
 	}
-	#print("boucle")
-	#return(output)
-	for (i in 1:length(reg)) {
-		print(c(min(data[,colnames(data)%in%colnames(output)[i]],na.rm=T),max(data[,colnames(data)%in%colnames(output)[i]],na.rm=T)))
-	}
+	#for (i in 1:length(reg)) {
+	#	print(c(min(data[,colnames(data)%in%colnames(output)[i]],na.rm=T),max(data[,colnames(data)%in%colnames(output)[i]],na.rm=T)))
+	#}
 	if (plot==TRUE) {
 		layout(matrix(1:ncol(output),1,ncol(output)))
 		for (i in 1:length(reg)) {
