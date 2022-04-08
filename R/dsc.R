@@ -31,7 +31,7 @@
 #' } ; parco(output,"Distance")
 #' # With filtration of min and max y.
 #' output <- dsc(mtcars,reg,Y=c(15,5),ymin=c(14,4),ymax=c(15,6),pop=5000,iter=10000)
-dsc <- function(data,reg,Y=c(),ymin=c(),ymax=c(),pop=iter/20,iter=4000,wash=pop/2,plot=T,verbose=T,save=F,file="file.html") {
+dsc <- function(data,reg,Y=c(),ymin=c(),ymax=c(),pop=iter/20,iter=4000,wash=pop/2,plot=T,verbose=F,save=F,file="file.html") {
 	# Mise au format list()
 	if (is(reg)[1]=="lm") {
 		temp <- reg ; reg = list()
@@ -44,15 +44,19 @@ dsc <- function(data,reg,Y=c(),ymin=c(),ymax=c(),pop=iter/20,iter=4000,wash=pop/
   if (length(Y)==0){stop("Y must have the same number of values as models in reg.")}
 	# Suppression des variables inutiles
 	# Ajouter le nettoyage des Ymin et Ymax ; à implémenter
-	reg2 <- list() ; j<-1 ; Y2 <- c()
+	reg2 <- list() ; j<-1 ; Y2 <- c() ; ymin2=c() ; ymax2=c()
 	for (i in 1:length(reg)) {
 		if (!is.null(reg[[i]])) {
 			reg2[[j]] <- reg[[i]]
+			if ((length(ymin)==length(Y))&(length(ymax)==length(Y))) {
+				ymin2 <- c(ymin2,ymin[i])
+				ymax2 <- c(ymax2,ymax[i])
+			}
 			Y2 <- c(Y2,Y[i])
 			j <- j+1
 		}
 	}
-	reg <- reg2 ; Y <- Y2
+	reg <- reg2 ; Y <- Y2 ; ymin <- ymin2 ; ymax <- ymax2
 	my_colnames <- c() ; my_Y <- c()
 	for (i in 1:length(reg)) {
 		temp <- reg[[i]]

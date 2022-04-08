@@ -7,6 +7,7 @@
 #' @param pval Maximum value accepted for the p-values of the model and its coefficients.
 #' @param conf.level Confidence interval accepted to validate the regression model by bootstrap.
 #' @param plot For seeing the graphical analysis of bootreg() (FALSE or TRUE)
+#' @param data optional, the data.frame of data if complex model.
 #' @param raintest_pval Minimal value of p-value accepted for Rainbow test
 #' @param dwtest_pval Minimal value of p-value accepted for Durbin-Watson test
 #' @param shapiro_pval Minimal value of p-value accepted for Shapiro-Wilk test
@@ -42,7 +43,7 @@
 #' corrigraph(mtcars,"cyl");
 #' valreg(reg, verbose=TRUE, plot=TRUE)
 valreg <- function(reg,verbose=TRUE,nvar=5,boot=TRUE,pval=0.05,conf.level=0.95,
-                   plot=TRUE,
+                   plot=TRUE,data=c(),
                    raintest_pval=0.05,dwtest_pval=0.03,shapiro_pval=0.05,bptest_pval=0.05) {
   if (plot==T) {boot<-TRUE}
   error <- TRUE
@@ -69,8 +70,9 @@ valreg <- function(reg,verbose=TRUE,nvar=5,boot=TRUE,pval=0.05,conf.level=0.95,
 	} else {if(verbose==TRUE){cat("\tRainbow test (raintest()) - Good adequacy. p.value : ",pvalt,"\n")}}
 	# Durbin-Watson test
 	if (verbose==TRUE) {cat("03- Analysis of independence of the residuals.\n")}
-	ypred <- predict(reg, reg$model)
-    dwtest(reg,ypred)$p.value -> pvalt # Independence of DurbinWatson residuals
+	if (length(data)>0) {ypred <- predict(reg, data)
+	}else{ypred <- predict(reg, reg$model)}
+    try(dwtest(reg,ypred)$p.value) -> pvalt # Independence of DurbinWatson residuals
     if (pvalt < dwtest_pval) {if(verbose==TRUE){cat("\tWarning!\n\tDurbin-Watson test (dwtest()) - Bad independence of the residuals. p.value : ",pvalt,"\n")};error = FALSE
 	} else {if(verbose==TRUE){cat("\tDurbin-Watson test (dwtest()) - Good independence of the residuals. p.value : ",pvalt,"\n")}}
 	# Shapiro-test : distribution of residuals
@@ -92,7 +94,8 @@ valreg <- function(reg,verbose=TRUE,nvar=5,boot=TRUE,pval=0.05,conf.level=0.95,
 	} else {if(verbose==TRUE){cat("\tCook's distance (cooks.distance()) - No leverage effect. max(cooks.distance())",max(cooksd,na.rm=TRUE),"\n")}}
     if (boot == TRUE) {
 		if (verbose==TRUE) {cat("07- Analysis of solidity of model by boostrap.\n")}
-		bootreg(reg,verbose=FALSE,pval=pval,conf.level=conf.level,plot=plot) -> bootres
+		if (length(data)>0) {bootreg(reg,verbose=FALSE,pval=pval,conf.level=conf.level,plot=plot,data=data) -> bootres
+		}else{bootreg(reg,verbose=FALSE,pval=pval,conf.level=conf.level,plot=plot) -> bootres}
 		if (bootres==FALSE) {if(verbose==TRUE){cat("\tWarning!\n\tBootstrap (bootreg()) - Fragility of the model in boostrap. Please, use bootreg()\n")};error = FALSE
 		} else {if(verbose==TRUE){cat("\tBootstrap (bootreg()) - Solidity of the model in boostrap.\n")}}
     }

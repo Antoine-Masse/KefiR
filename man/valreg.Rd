@@ -12,6 +12,7 @@ valreg(
   pval = 0.05,
   conf.level = 0.95,
   plot = TRUE,
+  data = c(),
   raintest_pval = 0.05,
   dwtest_pval = 0.03,
   shapiro_pval = 0.05,
@@ -32,6 +33,8 @@ valreg(
 \item{conf.level}{Confidence interval accepted to validate the regression model by bootstrap.}
 
 \item{plot}{For seeing the graphical analysis of bootreg() (FALSE or TRUE)}
+
+\item{data}{optional, the data.frame of data if complex model.}
 
 \item{raintest_pval}{Minimal value of p-value accepted for Rainbow test}
 

@@ -14,7 +14,7 @@ dsc(
   iter = 4000,
   wash = pop/2,
   plot = T,
-  verbose = T,
+  verbose = F,
   save = F,
   file = "file.html"
 )

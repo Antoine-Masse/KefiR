@@ -79,7 +79,6 @@ bootreg <- function(reg,data=c(),plot=TRUE,verbose=TRUE,conf.level=0.95,pval=0.0
   coeff <- na.omit(coeff) ; p_values <- na.omit(p_values)
   predverity <- data.frame(predictions ,verity); predverity <- na.omit(predverity)
   predictions  <- predverity[,1] ; verity  <- predverity[,2]
- print("b")
   confiance <- function(x,conf.level=0.99) { # seuil
     temp = sort(x) ; valeur_seuil = round(length(x)*conf.level)
     temp <- temp[valeur_seuil]

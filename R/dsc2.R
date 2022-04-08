@@ -41,12 +41,12 @@ dsc2 <- function(data,reg,dsc,iter=500,plot=TRUE,return=FALSE) {
 	}
 	reg <- reg2
 	# Progress bar
-	pb <- txtProgressBar(min = 0,      # Minimum value of the progress bar
-                     max = iter, # Maximum value of the progress bar
-                     style = 3,    # Progress bar style (also available style = 1 and style = 2)
-                     width = 50,   # Progress bar width. Defaults to getOption("width")
-                     char = "=")   # Character used to create the bar
-
+	#pb <- txtProgressBar(min = 0,      # Minimum value of the progress bar
+    #                 max = iter, # Maximum value of the progress bar
+    ##                 style = 3,    # Progress bar style (also available style = 1 and style = 2)
+     #                width = 50,   # Progress bar width. Defaults to getOption("width")
+     #                char = "=")   # Character used to create the bar
+#print("là")
 	for (i in 1:length(reg)) {
 		Y_predict_temp <-c()
 		temp <- reg[[i]]
@@ -60,7 +60,11 @@ dsc2 <- function(data,reg,dsc,iter=500,plot=TRUE,return=FALSE) {
 		#print(temp_formula)
 		for (j in 1:iter) {
 			temp_reg <- lm(temp_formula,data=data2[sample(1:nrow(data2),nrow(data2),replace=TRUE),])
-			Y_predict_temp <- c(Y_predict_temp,predict(temp_reg,dsc[1,]))
+			prediction <- try(predict(temp_reg,dsc[1,]))		
+			if (is(Y_predict_temp[length(Y_predict_temp)])[1]=="try-error"){
+				Y_predict_temp <- c(Y_predict_temp,NA)	
+			} else{Y_predict_temp <- c(Y_predict_temp,prediction)	
+			}
 		}
 		if (i==1) {
 			output <- data.frame(Y_predict_temp)
@@ -69,12 +73,17 @@ dsc2 <- function(data,reg,dsc,iter=500,plot=TRUE,return=FALSE) {
 			output <- cbind(output,Y_predict_temp)
 			colnames(output)[i] <- my_Y
 		}
-		setTxtProgressBar(pb, i)
+		#setTxtProgressBar(pb, i)
+	}
+	#print("boucle")
+	#return(output)
+	for (i in 1:length(reg)) {
+		print(c(min(data[,colnames(data)%in%colnames(output)[i]],na.rm=T),max(data[,colnames(data)%in%colnames(output)[i]],na.rm=T)))
 	}
 	if (plot==TRUE) {
 		layout(matrix(1:ncol(output),1,ncol(output)))
 		for (i in 1:length(reg)) {
-			boxplot(output[,i],main=colnames(output)[i])
+			boxplot(output[,i],main=colnames(output)[i],ylim=c(min(data[,colnames(data)%in%colnames(output)[i]],na.rm=T),max(data[,colnames(data)%in%colnames(output)[i]],na.rm=T)))
 		}
 	}
 	if (return==TRUE) {return(output)}
