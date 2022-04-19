@@ -8,7 +8,7 @@ evolreg(
   data,
   Y,
   X = c(),
-  pval = 0.05,
+  alpha = 0.05,
   nvar = 0,
   iter = 4000,
   multix = TRUE,
@@ -30,7 +30,7 @@ evolreg(
 
 \item{X}{vector of variables whose presence we want to force in the model.}
 
-\item{pval}{0 to 1. If there are too many variables and the argument wash=TRUE, use this p-value threshold to eliminate the variables whose effect is too insignificant (Risk of eliminating the variables that will have an effect once transformed or in interaction).}
+\item{alpha}{0 to 1. If there are too many variables and the argument wash=TRUE, use this p-value threshold to eliminate the variables whose effect is too insignificant (Risk of eliminating the variables that will have an effect once transformed or in interaction).}
 
 \item{nvar}{Maximum number of variables in the model. A default value is proposed according to the number of individuals.}
 

@@ -10,7 +10,7 @@ bootreg(
   plot = TRUE,
   verbose = TRUE,
   conf.level = 0.95,
-  pval = 0.05,
+  alpha = 0.05,
   iter = 1000
 )
 }
@@ -23,7 +23,7 @@ bootreg(
 
 \item{conf.level}{Confidence level for validation of the model}
 
-\item{pval}{Minimal value accepted for validation of the model and his coefficients}
+\item{alpha}{Minimal value accepted for validation of the model and his coefficients}
 
 \item{iter}{Number of iterations}
 

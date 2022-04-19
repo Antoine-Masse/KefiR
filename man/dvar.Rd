@@ -8,7 +8,7 @@ dvar(
   data,
   Y,
   X = c(),
-  pval = 0.05,
+  alpha = 0.05,
   family = "lm",
   wash = TRUE,
   NAfreq = 1,
@@ -25,7 +25,7 @@ dvar(
 
 \item{X}{variables whose presence we want to force in the model.}
 
-\item{pval}{0 to 1. If there are too many variables and the argument wash=TRUE, use this p-value threshold to eliminate the variables whose effect is too insignificant (Risk of eliminating the variables that will have an effect once transformed or in interaction).}
+\item{alpha}{0 to 1. If there are too many variables and the argument wash=TRUE, use this p-value threshold to eliminate the variables whose effect is too insignificant (Risk of eliminating the variables that will have an effect once transformed or in interaction).}
 
 \item{family}{"lm", "logical" or "lmer". Type of regression}
 

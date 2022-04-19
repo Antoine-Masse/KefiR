@@ -8,7 +8,7 @@ pairwise(
   x,
   g,
   type = "mean",
-  pval = 0.05,
+  alpha = 0.05,
   control = c(),
   pool.sd = FALSE,
   silent = TRUE,
@@ -24,7 +24,7 @@ pairwise(
 
 \item{type}{'mean' for pairwise.t.test(p.adjust.method="holm"), 'median' for pairwise.wilcox.test(p.adjust.method="BH"), 'ks' for ks.test(), 'lincon' for lincon() of {WSR2}}
 
-\item{pval}{threshold value of p-value to establish the groups.}
+\item{alpha}{threshold value of p-value to establish the groups.}
 
 \item{control}{name of the category that will be used as a control to establish differences with '\emph{', '\strong{' and '}}'.}
 
@@ -51,7 +51,7 @@ Automation function for pairwise calculations.
 \examples{
 data(iris)
 pairwise(iris[,1],iris[,5],type="mean")# t.test
-pairwise(iris[,1],iris[,5],type="median",pval=0.01,boot=TRUE)#wilcox
+pairwise(iris[,1],iris[,5],type="median",alpha=0.01,boot=TRUE)#wilcox
 pairwise(iris[,1],iris[,5],type="ks")
 pairwise(iris[,1],iris[,5],type="lincon")
 }

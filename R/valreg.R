@@ -4,14 +4,14 @@
 #' @param verbose To see the detailed balance sheet
 #' @param nvar The maximum number of variables allowed.
 #' @param boot For checking the model by bootstrap with bootreg() (FALSE or TRUE)
-#' @param pval Maximum value accepted for the p-values of the model and its coefficients.
+#' @param alpha Maximum value accepted for the p-values of the model and its coefficients.
 #' @param conf.level Confidence interval accepted to validate the regression model by bootstrap.
 #' @param plot For seeing the graphical analysis of bootreg() (FALSE or TRUE)
 #' @param data optional, the data.frame of data if complex model.
-#' @param raintest_pval Minimal value of p-value accepted for Rainbow test
-#' @param dwtest_pval Minimal value of p-value accepted for Durbin-Watson test
-#' @param shapiro_pval Minimal value of p-value accepted for Shapiro-Wilk test
-#' @param bptest_pval Minimal value of p-value accepted for Breush-Pagan test
+#' @param raintest_alpha Minimal value of p-value accepted for Rainbow test
+#' @param dwtest_alpha Minimal value of p-value accepted for Durbin-Watson test
+#' @param shapiro_alpha Minimal value of p-value accepted for Shapiro-Wilk test
+#' @param bptest_alpha Minimal value of p-value accepted for Breush-Pagan test
 #'
 #' @return This function allows to run all the tests necessary to validate a regression model (check the normal distribution of the residuals, avoid leverage effects, control the variance of the residuals...).
 #' @return valreg will therefore validate the regression model, control the p-values and, possibly (boot argument), control the reliability by bootstrap with the bootreg function.
@@ -42,9 +42,9 @@
 #' reg<- lm(cyl~disp+hp,data=mtcars);
 #' corrigraph(mtcars,"cyl");
 #' valreg(reg, verbose=TRUE, plot=TRUE)
-valreg <- function(reg,verbose=TRUE,nvar=5,boot=TRUE,pval=0.05,conf.level=0.95,
+valreg <- function(reg,verbose=TRUE,nvar=5,boot=TRUE,alpha=0.05,conf.level=0.95,
                    plot=TRUE,data=c(),
-                   raintest_pval=0.05,dwtest_pval=0.03,shapiro_pval=0.05,bptest_pval=0.05) {
+                   raintest_alpha=0.05,dwtest_alpha=0.03,shapiro_alpha=0.05,bptest_alpha=0.05) {
   if (plot==T) {boot<-TRUE}
   error <- TRUE
   nvar1 <- length(coef(reg))
@@ -55,17 +55,17 @@ valreg <- function(reg,verbose=TRUE,nvar=5,boot=TRUE,pval=0.05,conf.level=0.95,
 	# p-values of the model
 	if (verbose==TRUE) {cat("01- Analysis of the p-values of the model and its coefficients.\n")}
     pval_mdl <- pf(summary(reg)$fstatistic[1],summary(reg)$fstatistic[2],summary(reg)$fstatistic[3],lower.tail=FALSE)
-    if (pval_mdl > pval) {if(verbose==TRUE){cat("\tWarning!\n\tBad significance of the model. p-value:",pval_mdl,"\n")};error = FALSE
+    if (pval_mdl > alpha) {if(verbose==TRUE){cat("\tWarning!\n\tBad significance of the model. p-value:",pval_mdl,"\n")};error = FALSE
 	} else {if(verbose==TRUE){cat("\tGood significance of the model. p-value:",pval_mdl,"\n")}}
     pval_coeff <- summary(reg)[[4]][,4]
-    if (max(pval_coeff) > pval) {if(verbose==TRUE){cat("\tWarning!\n\tBad significance of the coefficients. max(p.value) :",max(pval_coeff),"\n")};error = FALSE
+    if (max(pval_coeff) > alpha) {if(verbose==TRUE){cat("\tWarning!\n\tBad significance of the coefficients. max(p.value) :",max(pval_coeff),"\n")};error = FALSE
 	} else {if(verbose==TRUE){cat("\tGood significance of the coefficients. max(pval_coeff) :",max(pval_coeff),"\n")}}
 	# Rainbow test - Adequacy
 	if (verbose==TRUE) {cat("02- Analysis of the adequacy of model (Equivalence between the global model and the model established on the best points.).\n")}
 	raintest(reg,order.by="mahalanobis")$p.value -> pvalt # test de rainbow Adequacy
 	#cooks.distance(reg)->cooksd
 	#raintest(reg,order.by=cooksd)$p.value -> pvalt2
-    if (pvalt < raintest_pval) {if(verbose==TRUE){cat("\tWarning!\n\tRainbow test ordered by mahalanobis (raintest()) - Bad adequacy. p.value : ",pvalt,"\n")};error = FALSE
+    if (pvalt < raintest_alpha) {if(verbose==TRUE){cat("\tWarning!\n\tRainbow test ordered by mahalanobis (raintest()) - Bad adequacy. p.value : ",pvalt,"\n")};error = FALSE
 	#} else if (pvalt2 < raintest_pval){if(verbose==TRUE){cat("\tWarning!\n\tRainbow test ordered by Cook's distance (raintest()) - Bad adequacy. p.value : ",pvalt2,"\n")};error = FALSE
 	} else {if(verbose==TRUE){cat("\tRainbow test (raintest()) - Good adequacy. p.value : ",pvalt,"\n")}}
 	# Durbin-Watson test
@@ -73,18 +73,18 @@ valreg <- function(reg,verbose=TRUE,nvar=5,boot=TRUE,pval=0.05,conf.level=0.95,
 	if (length(data)>0) {ypred <- predict(reg, data)
 	}else{ypred <- predict(reg, reg$model)}
     try(dwtest(reg,ypred)$p.value) -> pvalt # Independence of DurbinWatson residuals
-    if (pvalt < dwtest_pval) {if(verbose==TRUE){cat("\tWarning!\n\tDurbin-Watson test (dwtest()) - Bad independence of the residuals. p.value : ",pvalt,"\n")};error = FALSE
+    if (pvalt < dwtest_alpha) {if(verbose==TRUE){cat("\tWarning!\n\tDurbin-Watson test (dwtest()) - Bad independence of the residuals. p.value : ",pvalt,"\n")};error = FALSE
 	} else {if(verbose==TRUE){cat("\tDurbin-Watson test (dwtest()) - Good independence of the residuals. p.value : ",pvalt,"\n")}}
 	# Shapiro-test : distribution of residuals
 	if (verbose==TRUE) {cat("04- Analysis of distribution of residuals.\n")}
     shapiro.test(residuals(reg))$p.value->pvalt # Normal distribution of residuals
-    if (pvalt < shapiro_pval) {if(verbose==TRUE){cat("\tWarning!\n\tShapiro-Wilk test (shapiro.test()) - Non-normal distribution of residuals. p.value : ",pvalt,"\n")};error = FALSE
+    if (pvalt < shapiro_alpha) {if(verbose==TRUE){cat("\tWarning!\n\tShapiro-Wilk test (shapiro.test()) - Non-normal distribution of residuals. p.value : ",pvalt,"\n")};error = FALSE
 	} else {if(verbose==TRUE){cat("\tShapiro-Wilk test (shapiro.test()) - Normal distribution of residuals. p.value : ",pvalt,"\n")}}
 	# Variance of residuals
 	if (verbose==TRUE) {cat("05- Analysis of variance of residuals.\n")}
     if (length(coef(reg))>=2) {
       bptest(reg)$p.value -> pvalt # Breush Pagan: constant variance of residuals
-      if (pvalt < bptest_pval) {if(verbose==TRUE){cat("\tWarning!\n\tBreush-Pagan test (bptest()) - Non-constant variance of the residuals. p.value : ",pvalt,"\n")};error = FALSE
+      if (pvalt < bptest_alpha) {if(verbose==TRUE){cat("\tWarning!\n\tBreush-Pagan test (bptest()) - Non-constant variance of the residuals. p.value : ",pvalt,"\n")};error = FALSE
 	  } else {if(verbose==TRUE){cat("\tBreush-Pagan test (bptest()) - Constant variance of the residuals. p.value : ",pvalt,"\n")}}
     }
 	# Cooks's distance Leverage effect
@@ -94,8 +94,8 @@ valreg <- function(reg,verbose=TRUE,nvar=5,boot=TRUE,pval=0.05,conf.level=0.95,
 	} else {if(verbose==TRUE){cat("\tCook's distance (cooks.distance()) - No leverage effect. max(cooks.distance())",max(cooksd,na.rm=TRUE),"\n")}}
     if (boot == TRUE) {
 		if (verbose==TRUE) {cat("07- Analysis of solidity of model by boostrap.\n")}
-		if (length(data)>0) {bootreg(reg,verbose=FALSE,pval=pval,conf.level=conf.level,plot=plot,data=data) -> bootres
-		}else{bootreg(reg,verbose=FALSE,pval=pval,conf.level=conf.level,plot=plot) -> bootres}
+		if (length(data)>0) {bootreg(reg,verbose=FALSE,alpha=alpha,conf.level=conf.level,plot=plot,data=data) -> bootres
+		}else{bootreg(reg,verbose=FALSE,alpha=alpha,conf.level=conf.level,plot=plot) -> bootres}
 		if (bootres==FALSE) {if(verbose==TRUE){cat("\tWarning!\n\tBootstrap (bootreg()) - Fragility of the model in boostrap. Please, use bootreg()\n")};error = FALSE
 		} else {if(verbose==TRUE){cat("\tBootstrap (bootreg()) - Solidity of the model in boostrap.\n")}}
     }

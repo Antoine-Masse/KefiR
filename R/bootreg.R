@@ -5,7 +5,7 @@
 #' @param plot Enable or disable the display of graphical analysis
 #' @param verbose Enable or disable the display of the commented analysis
 #' @param conf.level Confidence level for validation of the model
-#' @param pval Minimal value accepted for validation of the model and his coefficients
+#' @param alpha Minimal value accepted for validation of the model and his coefficients
 #' @param iter Number of iterations
 #'
 #' @details bootreg allows to validate a model by bootstrap.
@@ -19,7 +19,7 @@
 #' corrigraph(mtcars);
 #' reg<- lm(cyl~disp+hp,data=mtcars);
 #' bootreg(reg, verbose=TRUE, plot=TRUE)
-bootreg <- function(reg,data=c(),plot=TRUE,verbose=TRUE,conf.level=0.95,pval=0.05,iter=1000) {
+bootreg <- function(reg,data=c(),plot=TRUE,verbose=TRUE,conf.level=0.95,alpha=0.05,iter=1000) {
   if (length(data)>1) {
 	dt <- data
   } else {
@@ -141,7 +141,7 @@ bootreg <- function(reg,data=c(),plot=TRUE,verbose=TRUE,conf.level=0.95,pval=0.0
   rownames(synth)[1] <- "Model"
   if (verbose==T){return(synth)
   } else {
-    if (max(synth[,2])>pval) {return(FALSE)
+    if (max(synth[,2])>alpha) {return(FALSE)
     } else {return(TRUE)}
   }
 }

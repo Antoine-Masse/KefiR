@@ -4,14 +4,14 @@
 \alias{catego}
 \title{Determining groups based on the results of a pairwise function}
 \usage{
-catego(result, control = c(), pval = 0.05)
+catego(result, control = c(), alpha = 0.05)
 }
 \arguments{
 \item{result}{output results of the pairwise(), pairwise.t.test() or pairwise.wilcox.test() function}
 
 \item{control}{name of the category that will be used as a control to establish differences with '\emph{', '\strong{' and '}}'.}
 
-\item{pval}{threshold of p-value to establish groups of averages or medians of type "a", "ab", "b" ...}
+\item{alpha}{threshold of p-value to establish groups of averages or medians of type "a", "ab", "b" ...}
 }
 \value{
 catego() can be used to establish groups with significantly different mean/median values relative to each other or to a reference control. It exploits the results of the functions pairwise.t.test(), pairwise.wilcox.test() and pairwise(type = "median" or "mean").

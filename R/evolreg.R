@@ -3,7 +3,7 @@
 #' @param data a dataframe.
 #' @param Y the y to predict.
 #' @param X vector of variables whose presence we want to force in the model.
-#' @param pval 0 to 1. If there are too many variables and the argument wash=TRUE, use this p-value threshold to eliminate the variables whose effect is too insignificant (Risk of eliminating the variables that will have an effect once transformed or in interaction).
+#' @param alpha 0 to 1. If there are too many variables and the argument wash=TRUE, use this p-value threshold to eliminate the variables whose effect is too insignificant (Risk of eliminating the variables that will have an effect once transformed or in interaction).
 #' @param nvar Maximum number of variables in the model. A default value is proposed according to the number of individuals.
 #' @param iter Number of iterations.
 #' @param NAfreq from 0 to 1. NA part allowed in the variables. 1 by default (100% of NA tolerate).
@@ -25,7 +25,7 @@
 #' @examples
 #' data(mtcars)
 #' evolreg(mtcars,"mpg",plot=TRUE)
-evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
+evolreg <- function(data,Y, X=c(),alpha=0.05, nvar = 0,
                     iter = 4000,multix=TRUE, interaction = TRUE, multidiv=TRUE,nbind=c(),wash=TRUE,NAfreq=1,
                     family = "lm",plot=FALSE,verbose=TRUE,fast=TRUE) {
   # Identification des variables d'intérêt
@@ -37,7 +37,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
   if (length(ind_Y)==0){stop("Impossible to find Y.")} 
   data <- data[which(!is.na(data[,ind_Y])),]
   #
-  data_glob <- dvar(data,Y,pval=0.05,X=X,NAfreq=NAfreq,wash=wash,interaction=interaction,verbose=FALSE)
+  data_glob <- dvar(data,Y,alpha=0.05,X=X,NAfreq=NAfreq,wash=wash,interaction=interaction,verbose=FALSE)
   data <- data_glob$data
   dt <- data_glob$variables
   if (verbose==TRUE) {print(head(dt))}
@@ -45,7 +45,7 @@ evolreg <- function(data,Y, X=c(),pval=0.05, nvar = 0,
   #
   # Ainsi qu'une élimination optionnelle des var quantitatives
   ###########
-  #	Changer la valeur de pval proportionnellement à l'augmentation des variables par interaction
+  #	Changer la valeur de alpha proportionnellement à l'augmentation des variables par interaction
   ###########
   #print(head(data))
   #return(data)

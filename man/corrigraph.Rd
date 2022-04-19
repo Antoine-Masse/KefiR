@@ -9,7 +9,7 @@ corrigraph(
   colY = c(),
   colX = c(),
   type = "x",
-  pval = 0.05,
+  alpha = 0.05,
   exclude = c(0, 0, 0),
   ampli = 4,
   return = FALSE,
@@ -34,7 +34,7 @@ corrigraph(
 
 \item{type}{"x" or "y". To force the display in correlogram mode (colX, type = "x") or in prediction mode (colY, type = "y").}
 
-\item{pval}{the maximum permissible p-value for the display}
+\item{alpha}{the maximum permissible p-value for the display}
 
 \item{exclude}{the minimum threshold of displayed correlations - or a vector of threshold in this order : c(cor,mu,prop)}
 

@@ -4,7 +4,7 @@
 #' @param x numerical vector
 #' @param g category vector
 #' @param type 'mean' for pairwise.t.test(p.adjust.method="holm"), 'median' for pairwise.wilcox.test(p.adjust.method="BH"), 'ks' for ks.test(), 'lincon' for lincon() of {WSR2}
-#' @param pval threshold value of p-value to establish the groups.
+#' @param alpha threshold value of p-value to establish the groups.
 #' @param control name of the category that will be used as a control to establish differences with '*', '**' and '***'.
 #' @param pool.sd switch to allow/disallow the use of a pooled SD.
 #' @param silent for displaying or not warnings.
@@ -21,21 +21,10 @@
 #' @examples
 #' data(iris)
 #' pairwise(iris[,1],iris[,5],type="mean")# t.test
-#' pairwise(iris[,1],iris[,5],type="median",pval=0.01,boot=TRUE)#wilcox
+#' pairwise(iris[,1],iris[,5],type="median",alpha=0.01,boot=TRUE)#wilcox
 #' pairwise(iris[,1],iris[,5],type="ks")
 #' pairwise(iris[,1],iris[,5],type="lincon")
-pairwise <- function(x,g,type="mean",pval=0.05,control=c(),pool.sd=FALSE,silent=TRUE,boot=FALSE,iter=500,conf=0.95) {
-  onoff <- function(x,silent=FALSE,oldw="") {
-    if (silent==TRUE) {
-      if (x == "on") {
-        oldw <- getOption("warn")
-        options(warn = -1)
-      } else if (x == "off") {
-        options(warn = oldw)
-      }
-    }
-    return(oldw)
-  }
+pairwise <- function(x,g,type="mean",alpha=0.05,control=c(),pool.sd=FALSE,silent=TRUE,boot=FALSE,iter=500,conf=0.95) {
   g <- factor(g)
   init_order <- levels(g)
   which(levels(g)%in%control)-> ind_control
@@ -75,7 +64,7 @@ pairwise <- function(x,g,type="mean",pval=0.05,control=c(),pool.sd=FALSE,silent=
 		  indices <- order(mu)
 		  g <- ordered(g, levels = categories[indices])
 		  pairwise.t.test(x,g,pool.sd=pool.sd,p.adjust.method="holm")-> result
-		  groups <- catego(result,pval=pval)
+		  groups <- catego(result,alpha=alpha)
 		  if (boot==TRUE) {
 			mymat <- groups$p.value
 			mydim <- dim(mymat)
@@ -97,7 +86,7 @@ pairwise <- function(x,g,type="mean",pval=0.05,control=c(),pool.sd=FALSE,silent=
 			apply(mymat,c(2,3),quantile,probs=conf,na.rm=T)->output$p.value
 			colnames(output$p.value) <- colnames(groups$p.value)
 			rownames(output$p.value) <- rownames(groups$p.value)
-			groups$bootstrap <- catego(output,pval=pval)
+			groups$bootstrap <- catego(output,alpha=alpha)
 		  }
 		}
 		match(init_order,levels(g))-> indices
@@ -142,7 +131,7 @@ pairwise <- function(x,g,type="mean",pval=0.05,control=c(),pool.sd=FALSE,silent=
 		  indices <- order(mu)
 		  g <- ordered(g, levels = categories[indices])
 		  pairwise.wilcox.test(x,g,p.adjust.method="BH")-> result
-		  groups <- catego(result,pval=pval)
+		  groups <- catego(result,alpha=alpha)
 		  if (boot==TRUE) {
 			#print(groups$p.value)
 			mymat <- groups$p.value
@@ -165,7 +154,7 @@ pairwise <- function(x,g,type="mean",pval=0.05,control=c(),pool.sd=FALSE,silent=
 			apply(mymat,c(2,3),quantile,probs=conf,na.rm=T)->output$p.value
 			colnames(output$p.value) <- colnames(groups$p.value)
 			rownames(output$p.value) <- rownames(groups$p.value)
-			groups$bootstrap <- catego(output,pval=pval)
+			groups$bootstrap <- catego(output,alpha=alpha)
 		  }
 		}
 		match(init_order,levels(g))-> indices
@@ -198,8 +187,7 @@ pairwise <- function(x,g,type="mean",pval=0.05,control=c(),pool.sd=FALSE,silent=
 			}
 			return(mymat)
 		}
-		onoff("on",silent)->oldw
-		if (boot == FALSE) {mymat <- ks_func(x,g,mymat,unique_g) ; output <- list() ; output$p.value <- mymat
+		if (boot == FALSE) {mymat <- suppressWarnings(ks_func(x,g,mymat,unique_g)) ; output <- list() ; output$p.value <- mymat
 		} else if (boot==TRUE) {
 		  mydim <- dim(mymat)
 		  myarray <- array(rep(NA,iter*mydim[1]*mydim[2]),c(iter,mydim))
@@ -208,7 +196,7 @@ pairwise <- function(x,g,type="mean",pval=0.05,control=c(),pool.sd=FALSE,silent=
 			for (j in levels(g)) {
 			  x_temp[g==j] <- sample(x_temp[g==j],replace=TRUE)
 			}
-			temp <- ks_func(x_temp,g,mymat,unique_g)
+			temp <- suppressWarnings(ks_func(x_temp,g,mymat,unique_g))
 			myarray[k,,] <- temp
 		  }
 		  output <- list()
@@ -216,7 +204,6 @@ pairwise <- function(x,g,type="mean",pval=0.05,control=c(),pool.sd=FALSE,silent=
 		  colnames(output$p.value) <- colnames(mymat)
 		  rownames(output$p.value) <- rownames(mymat)
 		}
-		onoff("off",silent,oldw)
 		return(output)
 	} else if (type == "lincon" ){
 		if (length(ind_control)==1) {
@@ -243,7 +230,7 @@ pairwise <- function(x,g,type="mean",pval=0.05,control=c(),pool.sd=FALSE,silent=
 			mymat[(t1$comp[i,2]-1),t1$comp[i,1]] <- t1$comp[i,6]
 		  }
 		  result <- list() ; result$p.value <- mymat
-		  groups <- catego(result,pval=pval)
+		  groups <- catego(result,alpha=alpha)
 		}
 		match(init_order,levels(g))-> indices
 		groups$groups <- groups$groups[indices,]
@@ -260,7 +247,7 @@ pairwise <- function(x,g,type="mean",pval=0.05,control=c(),pool.sd=FALSE,silent=
 			indices <- order(mu)
 			g <- ordered(g, levels = categories[indices])
 			pairwise.boot(x,g,iter=iter)-> result
-			groups <- catego(result,pval=pval)
+			groups <- catego(result,alpha=alpha)
 		}
 		match(init_order,levels(g))-> indices
 		groups$groups <- groups$groups[indices,]

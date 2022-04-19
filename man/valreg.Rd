@@ -9,14 +9,14 @@ valreg(
   verbose = TRUE,
   nvar = 5,
   boot = TRUE,
-  pval = 0.05,
+  alpha = 0.05,
   conf.level = 0.95,
   plot = TRUE,
   data = c(),
-  raintest_pval = 0.05,
-  dwtest_pval = 0.03,
-  shapiro_pval = 0.05,
-  bptest_pval = 0.05
+  raintest_alpha = 0.05,
+  dwtest_alpha = 0.03,
+  shapiro_alpha = 0.05,
+  bptest_alpha = 0.05
 )
 }
 \arguments{
@@ -28,7 +28,7 @@ valreg(
 
 \item{boot}{For checking the model by bootstrap with bootreg() (FALSE or TRUE)}
 
-\item{pval}{Maximum value accepted for the p-values of the model and its coefficients.}
+\item{alpha}{Maximum value accepted for the p-values of the model and its coefficients.}
 
 \item{conf.level}{Confidence interval accepted to validate the regression model by bootstrap.}
 
@@ -36,13 +36,13 @@ valreg(
 
 \item{data}{optional, the data.frame of data if complex model.}
 
-\item{raintest_pval}{Minimal value of p-value accepted for Rainbow test}
+\item{raintest_alpha}{Minimal value of p-value accepted for Rainbow test}
 
-\item{dwtest_pval}{Minimal value of p-value accepted for Durbin-Watson test}
+\item{dwtest_alpha}{Minimal value of p-value accepted for Durbin-Watson test}
 
-\item{shapiro_pval}{Minimal value of p-value accepted for Shapiro-Wilk test}
+\item{shapiro_alpha}{Minimal value of p-value accepted for Shapiro-Wilk test}
 
-\item{bptest_pval}{Minimal value of p-value accepted for Breush-Pagan test}
+\item{bptest_alpha}{Minimal value of p-value accepted for Breush-Pagan test}
 }
 \value{
 This function allows to run all the tests necessary to validate a regression model (check the normal distribution of the residuals, avoid leverage effects, control the variance of the residuals...).

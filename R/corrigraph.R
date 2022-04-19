@@ -4,7 +4,7 @@
 #' @param colX a vector of indices or variables to follow. We will only keep the variables that are connected to them on 1 or more levels (level parameter).
 #' @param colY a vector of indices or variables to predict. To force the correlogram to display only the variables correlated to a selection of Y.
 #' @param type "x" or "y". To force the display in correlogram mode (colX, type = "x") or in prediction mode (colY, type = "y").
-#' @param pval the maximum permissible p-value for the display
+#' @param alpha the maximum permissible p-value for the display
 #' @param exclude the minimum threshold of displayed correlations - or a vector of threshold in this order : c(cor,mu,prop)
 #' @param ampli coefficient of amplification of vertices
 #' @param return if return=T, returns the correlation matrix of significant correlation.
@@ -56,7 +56,7 @@
 #' # Example 6
 #' data(airquality)
 #' corrigraph(airquality,c("Ozone","Wind"),type="x")
-corrigraph <- function(data,colY=c(),colX=c(),type="x",pval=0.05,exclude=c(0,0,0), ampli=4,return=FALSE,wash="stn",multi=TRUE,
+corrigraph <- function(data,colY=c(),colX=c(),type="x",alpha=0.05,exclude=c(0,0,0), ampli=4,return=FALSE,wash="stn",multi=TRUE,
 					   mu=FALSE,prop=FALSE,layout="fr",verbose=FALSE,NAfreq=1,NAcat=TRUE,level=2,evolreg=FALSE) {
   # Fonction réalisée par Antoine Massé
   # Ctrl Alt Shift R
@@ -152,7 +152,7 @@ if ((type=="y")&(length(colY)>0)){
 		nb_subset2 <- nrow(data_temp2)
 		if ((min(apply(data_temp2,2,var))!=0)&(nb_subset2>3)) {
 		  temp2 <- cor.test(temp_tab[,1],temp_tab[,2],na.rm=T)
-		  temp2 <- ifelse(temp2$p.value<= pval,abs(temp2$estimate),0)
+		  temp2 <- ifelse(temp2$p.value<= alpha,abs(temp2$estimate),0)
 		  options(warn=-1)
 		  if (temp2 != 0 ) {
 			temp2 <- mean(c(summary(lm(temp_tab[,1]~temp_tab[,2]))$adj.r.squared,summary(lm(temp_tab[,2]~temp_tab[,1]))$adj.r.squared))
@@ -174,18 +174,18 @@ if ((type=="y")&(length(colY)>0)){
 		}else {synthese2 <- data.frame(R2 = NA,BIC = NA, R2_2 = NA, BIC_2 = NA)}
 		# Agglomeration of datas
 		if (any(is.na(pvalsA))){	rbind(synthese,data.frame(R2 = NA,BIC = NA, R2_2 = NA, BIC_2 = NA))
-		} else if (max(pvalsA)>pval){rbind(synthese,data.frame(R2 = NA,BIC = NA, R2_2 = NA, BIC_2 = NA))
+		} else if (max(pvalsA)>alpha){rbind(synthese,data.frame(R2 = NA,BIC = NA, R2_2 = NA, BIC_2 = NA))
 		} else {
 		  tablo <- data.frame(R2 = abs(summary(regA)$adj.r.squared),BIC = BIC(regA))
 		  synthese <- rbind(synthese,cbind(tablo,synthese2))}
 		if (any(is.na(pvalsB))){	rbind(synthese,data.frame(R2 = NA,BIC = NA, R2_2 = NA, BIC_2 = NA))
-		} else if (max(pvalsB)>pval){rbind(synthese,data.frame(R2 = NA,BIC = NA, R2_2 = NA, BIC_2 = NA))
+		} else if (max(pvalsB)>alpha){rbind(synthese,data.frame(R2 = NA,BIC = NA, R2_2 = NA, BIC_2 = NA))
 		} else {
 		  tablo <- data.frame(R2 = abs(summary(regB)$adj.r.squared),BIC = BIC(regB))
 		  synthese <- rbind(synthese,cbind(tablo,synthese2))
 		}
 		if (any(is.na(pvalsC))){	rbind(synthese,data.frame(R2 = NA,BIC = NA, R2_2 = NA, BIC_2 = NA))
-		} else if (max(pvalsC)>pval){rbind(synthese,data.frame(R2 = NA,BIC = NA, R2_2 = NA, BIC_2 = NA))
+		} else if (max(pvalsC)>alpha){rbind(synthese,data.frame(R2 = NA,BIC = NA, R2_2 = NA, BIC_2 = NA))
 		} else {
 		  tablo <- data.frame(R2 = abs(summary(regC)$adj.r.squared),BIC = BIC(regC))
 		  synthese <- rbind(synthese,cbind(tablo,synthese2))}
@@ -226,8 +226,8 @@ if ((type=="y")&(length(colY)>0)){
 			nb_subset <- nrow(temp_tab)
 			if ((min(apply(temp_tab,2,var)) != 0)&(nb_subset>3)&(seuil_NA<=NAfreq)) {
 				temp <- cor.test(data[,i],data[,j],na.rm=T)
-				temp_save <- ifelse(temp$p.value<= pval,temp$estimate,0) # saving cor neg or pos
-				temp <- ifelse(temp$p.value<= pval,abs(temp$estimate),0) # saving abs(cor)
+				temp_save <- ifelse(temp$p.value<= alpha,temp$estimate,0) # saving cor neg or pos
+				temp <- ifelse(temp$p.value<= alpha,abs(temp$estimate),0) # saving abs(cor)
 				options(warn=-1)
 				if (temp != 0) {
 					temp <- mean(c(summary(lm(data[,i]~data[,j]))$adj.r.squared,summary(lm(data[,j]~data[,i]))$adj.r.squared))
@@ -411,7 +411,7 @@ if ((type=="y")&(length(colY)>0)){
 			  options(warn = oldw)
 			  #print(pvals)
 			  #cat("Test entre",colnames(data)[i],"&",colnames(data)[j],"pval",pvals,"\n")
-			  if (pvals <= pval) {
+			  if (pvals <= alpha) {
 				#print(pvals)
 				log10(1/pvals)/10 -> temp ; ifelse(temp>1 ,1 ,temp)-> temp
 				mymat[i,j] <- temp ; mymat[j,i] <- temp
@@ -445,8 +445,8 @@ if ((type=="y")&(length(colY)>0)){
 			if (NAcat==TRUE) {
 				data_temp[which(is.na(data_temp[,1])),1]<-"MANQUANTES"
 			}
-			pvals <- m.test(data_temp[,2],data_temp[,1],pval=pval,return=FALSE,verbose=FALSE,plot=FALSE,boot=FALSE)
-			if (pvals < pval) {
+			pvals <- m.test(data_temp[,2],data_temp[,1],alpha=alpha,return=FALSE,verbose=FALSE,plot=FALSE,boot=FALSE)
+			if (pvals < alpha) {
 			  log10(1/pvals)/10 -> temp ; ifelse(temp>1 ,1 ,temp)-> temp
 			  mymat[i,j] <- temp ; mymat[j,i] <- temp
 			  mymat2[i,j] <- pvals ; mymat2[j,i] <- pvals
@@ -484,8 +484,8 @@ if ((type=="y")&(length(colY)>0)){
 
 		  if ((var(temp_tab[,1])!=0)&(var(temp_tab[,2])!=0)&(nrow(temp_tab)>2)&(seuil_NA<=NAfreq)){
 			tempA <- cor.test(data[,i],data[,j],na.rm=T)
-			#temp <- ifelse(temp$p.value<= pval,temp$estimate,0) # Working with correlation
-			pvals  <- ifelse(tempA$p.value<= pval,tempA$p.value,1) # Working with p-value
+			#temp <- ifelse(temp$p.value<= alpha,temp$estimate,0) # Working with correlation
+			pvals  <- ifelse(tempA$p.value<= alpha,tempA$p.value,1) # Working with p-value
 			log10(1/pvals)/10 -> temp ; ifelse(temp>1 ,1 ,temp)-> temp
 			ifelse(tempA$estimate<0,-temp,temp)->temp
 		  }else{

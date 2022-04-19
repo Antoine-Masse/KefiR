@@ -3,7 +3,7 @@
 #' @param data a dataframe.
 #' @param Y the y to predict.
 #' @param X variables whose presence we want to force in the model.
-#' @param pval 0 to 1. If there are too many variables and the argument wash=TRUE, use this p-value threshold to eliminate the variables whose effect is too insignificant (Risk of eliminating the variables that will have an effect once transformed or in interaction).
+#' @param alpha 0 to 1. If there are too many variables and the argument wash=TRUE, use this p-value threshold to eliminate the variables whose effect is too insignificant (Risk of eliminating the variables that will have an effect once transformed or in interaction).
 #' @param family "lm", "logical" or "lmer". Type of regression
 #' @param wash TRUE or FALSE.To select the best variables when there are too many.
 #' @param NAfreq from 0 to 1. NA part allowed in the variables. 1 by default (100% of NA tolerate).
@@ -18,7 +18,7 @@
 #' @examples
 #' data(iris)
 #' dvar(iris,"Sepal.Length")
-dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, interaction=TRUE,
+dvar <- function(data, Y, X=c(), alpha=0.05, family="lm", wash=TRUE, NAfreq=1, interaction=TRUE,
                  multix=TRUE,multidiv=FALSE, verbose=FALSE){
   # Compilation of numerical var
   X_i_num <- c()
@@ -333,9 +333,9 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
     ########################
     #if (length(wash)>0) {
     if (nrow(dt) > 40) {
-      var_alea <- qbinom(0.95,nrow(dt),pval)
-      dt0 <- dt[dt$p.value<pval,]
-      dt1 <- dt[dt$p.value<pval/nrow(dt),]
+      var_alea <- qbinom(0.95,nrow(dt),alpha)
+      dt0 <- dt[dt$p.value<alpha,]
+      dt1 <- dt[dt$p.value<alpha/nrow(dt),]
       ind <- order(dt0$p.value)
       if (var_alea < length(ind)) {
         dt2 <- dt[ind[1:(length(ind)-var_alea)],]
@@ -430,9 +430,9 @@ dvar <- function(data, Y, X=c(), pval=0.05, family="lm", wash=TRUE, NAfreq=1, in
       print("Nettoyage")
       print(nrow(dt))
 	  }
-      var_alea <- qbinom(0.95,nrow(dt),pval)
-      dt0 <- dt[dt$p.value<pval,]
-      dt1 <- dt[dt$p.value<pval/nrow(dt),]
+      var_alea <- qbinom(0.95,nrow(dt),alpha)
+      dt0 <- dt[dt$p.value<alpha,]
+      dt1 <- dt[dt$p.value<alpha/nrow(dt),]
       ind <- order(dt0$p.value)
       if (var_alea < length(ind)) {
         dt2 <- dt[ind[1:(length(ind)-var_alea)],]

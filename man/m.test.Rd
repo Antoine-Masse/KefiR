@@ -7,19 +7,20 @@
 m.test(
   data,
   cat,
-  pval = 0.05,
+  alpha = 0.05,
   verbose = TRUE,
   return = TRUE,
   paired = FALSE,
   control = c(),
-  pval_ks = 0.01,
+  alpha_ks = 0.01,
   maxcat = 50,
   plot = TRUE,
   silent = TRUE,
   boot = TRUE,
   iter = 500,
   conf = 0.95,
-  code = FALSE
+  code = FALSE,
+  debug = FALSE
 )
 }
 \arguments{
@@ -27,7 +28,7 @@ m.test(
 
 \item{cat}{category vector}
 
-\item{pval}{p-value threshold value for all the tests (except ks.test() which is too sensitive).}
+\item{alpha}{p-value threshold value for all the tests (except ks.test() which is too sensitive).}
 
 \item{verbose}{to display the full reasoning of the analysis.}
 
@@ -36,8 +37,6 @@ m.test(
 \item{paired}{(under development) to allow the analysis of matched data.}
 
 \item{control}{name of the category that will eventually be used as a control.}
-
-\item{pval_ks}{minimal p-value of automatic analyse of distribution by ks.test(). The minimum p-value of the ks.test() also fluctuates when boot=TRUE.}
 
 \item{maxcat}{maximum number of categories allowed. When this number is high, some tests may return an error message.}
 
@@ -52,6 +51,8 @@ m.test(
 \item{conf}{confidence level of bootstrap.}
 
 \item{code}{allows to display the simplified R source code to be able to do the same R study step by step.}
+
+\item{debug}{when m.test return error.}
 }
 \value{
 m.test() runs a decision tree to choose the most appropriate test series for sample comparison.
@@ -68,6 +69,7 @@ Automatic average/median/variance comparison function.
 \examples{
 data(iris)
 m.test(iris[,1],iris[,5],verbose=TRUE, return=TRUE)
+m.test(iris[1:100,1],iris[1:100,5],verbose=TRUE, return=TRUE)
 m.test(iris[,2],iris[,5],verbose=TRUE, return=TRUE)
 m.test(iris[,3],iris[,5],verbose=TRUE, return=TRUE)
 m.test(iris[,4],iris[,5],verbose=TRUE, plot=FALSE, return=FALSE, boot=FALSE)
