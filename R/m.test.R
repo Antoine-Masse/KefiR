@@ -118,6 +118,7 @@ catego <- function(result,control=c(),alpha=0.05) {
 #' @importFrom normtest skewness.norm.test
 #' @importFrom normtest kurtosis.norm.test
 #' @importFrom normtest jb.norm.test
+#' @importFrom DescTools DunnettTest
 #' @import methods
 #' @export
 #'
@@ -140,7 +141,7 @@ m.test <- function (data, cat, alpha=0.05, verbose=TRUE, return=TRUE, paired=FAL
   if (debug==TRUE) {print("Compilation des fonctions de base")}
   discret.test <- function(vector) {
     return(length(unique(vector))/length(vector))
-  }  
+  }
   boots <- function(data,cat,ctrl=FALSE,type="mean",var.equal=FALSE,conf=0.95,iter=500,alpha=alpha) {
     pvals <- c()
     for (i in 1:iter) {
@@ -200,7 +201,7 @@ m.test <- function (data, cat, alpha=0.05, verbose=TRUE, return=TRUE, paired=FAL
   skew2 <- function(vector) {return(skewness.norm.test(vector)$p.value)}
   kurto <- function(vector) {if (is.na(abs(kurtosis(vector)))){return(10)} ; return(abs(kurtosis(vector)))}
   kurto2 <- function(vector) {return(kurtosis.norm.test(vector)$p.value)}
-  if (debug==TRUE) {print("Detection of NA, Inf or unvariabilities.")}  
+  if (debug==TRUE) {print("Detection of NA, Inf or unvariabilities.")}
   if (paired==TRUE) {stop("Error! The paired analysis is not developped.\n")}
   if (any((is.na(data)))|(any((is.na(cat))))){
     if (verbose==TRUE) {cat("Warning! Missing values.\n")}
@@ -220,7 +221,7 @@ m.test <- function (data, cat, alpha=0.05, verbose=TRUE, return=TRUE, paired=FAL
 	warning("Warning! Some levels do not have corresponding data.")
 	cat <- factor(cat)
 	if (length(unique(cat))<2) {stop("Not enough levels presenting data.")}
-  } 
+  }
   if(min(by(data,cat,length),na.rm=T)<3) {
     if (verbose==TRUE) {warning("Warning! No enough values for some samples. The categories concerned are ignored.")}
     which(by(data,cat,length)<3)-> ind_temp
@@ -235,7 +236,7 @@ m.test <- function (data, cat, alpha=0.05, verbose=TRUE, return=TRUE, paired=FAL
     return(1)
   }
   data2 <- data
-  cat2 <- cat 
+  cat2 <- cat
   if(min(by(data,cat,var,na.rm=T),na.rm=T)==0) {
     if (verbose==TRUE) {warning("Warning! Some samples do not vary. Non-variable categories are ignored.")}
     which(by(data,cat,var,na.rm=T)==0)-> ind_temp
@@ -254,7 +255,7 @@ m.test <- function (data, cat, alpha=0.05, verbose=TRUE, return=TRUE, paired=FAL
     return(1)
   }
   if (plot==TRUE) {
-	if (debug==TRUE) {print("Plot.")}   
+	if (debug==TRUE) {print("Plot.")}
     boxplot(data~cat,col="cyan")
     vioplot(data~cat,col="#00AA0077",add=TRUE)
     stripchart(data~cat,col="#FF000088",pch=16,vertical=TRUE,add=T,method="jitter",jitter=1/(length(unique(cat))+2))
@@ -263,7 +264,7 @@ m.test <- function (data, cat, alpha=0.05, verbose=TRUE, return=TRUE, paired=FAL
   pvals <- normality(data,cat)
   ##########################
   # Correction de Sidak
-  if (debug==TRUE) {print("Sidak's correction . Bonferroni would be more secure.")}   
+  if (debug==TRUE) {print("Sidak's correction . Bonferroni would be more secure.")}
   pval <- 1-(1-alpha)^(1/length(unique(cat)))
   ##########################
   if (code==TRUE){
@@ -271,9 +272,9 @@ m.test <- function (data, cat, alpha=0.05, verbose=TRUE, return=TRUE, paired=FAL
 	if (min(by(data,cat,length))<=100) {
 		cat("by(data,cat,shapiro.test)#1) Control of the normality of small samples (<100)\n")
 	}
-	if (any((by(data,cat,length)<=1000)&(by(data,cat,length)>100))) { 
+	if (any((by(data,cat,length)<=1000)&(by(data,cat,length)>100))) {
 		cat("library(normtest)#1A)\nby(data,cat,jb.norm.test)#1B) Control of the normality of big samples (<1000)\n")
-	} 
+	}
 	if (max(by(data,cat,length))>1000) {
 		cat("#1) Central limit theory: enough values for some samples to not have to check normality.\n")
 	}
@@ -659,7 +660,7 @@ m.test <- function (data, cat, alpha=0.05, verbose=TRUE, return=TRUE, paired=FAL
           } else {
             if ((sk2<pval)|(ku2<pval)|(tt<100)) { # (jb<alpha)
               cat("3) Skweness & Kurtosis limits and Length of sample (swkeness() & skewness.norm.test() & kurtosis() & kurtosis.norm.test() & length()) - Bad distribution of data (asymmetry, spread) or insufficient length.\n")
-			  cat("\tJarque-Bera test - normality acceptable (min(p.value)) :",jb,"\n")
+			  #cat("\tJarque-Bera test - normality acceptable (min(p.value)) :",jb,"\n")
 			  cat("\tSkweness limite (max and absolute):",sk,"\n")
 			  cat("\tSkweness bootstrapped (min(p.value)):",sk2,"to compare to Sidak's corrected alpha ",pval,"\n")
 			  cat("\tKurtosis limite (max and absolute):",ku,"\n")

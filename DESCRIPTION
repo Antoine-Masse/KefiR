@@ -19,7 +19,7 @@ Imports: stats, lmtest,
      rgl, plotly, igraph, plot3Drgl, plot3D,
      htmlwidgets, WRS2, agricolae, fda.usc, lawstat,normtest, 
      onewaytests, vioplot, MASS, graphics, foreach,
-     utils, methods, e1071, stringr, knitr
+     utils, methods, e1071, stringr, knitr, DescTools
 ImportsFrom:
 Suggests: 
     dplyr,
