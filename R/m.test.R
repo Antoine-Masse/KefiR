@@ -87,7 +87,7 @@ catego <- function(result,control=c(),alpha=0.05) {
 #'
 #' @param data numerical vector
 #' @param cat category vector
-#' @param alpha p-value threshold value for all the tests (except ks.test() which is too sensitive).
+#' @param alpha p-value threshold value for all the tests.
 #' @param verbose to display the full reasoning of the analysis.
 #' @param return allows to return the results of pairwise analysis (p-values and groups).
 #' @param paired (under development) to allow the analysis of matched data.
@@ -115,9 +115,6 @@ catego <- function(result,control=c(),alpha=0.05) {
 #' @importFrom WRS2 lincon
 #' @importFrom onewaytests bf.test
 #' @importFrom vioplot vioplot
-#' @importFrom normtest skewness.norm.test
-#' @importFrom normtest kurtosis.norm.test
-#' @importFrom normtest jb.norm.test
 #' @importFrom DescTools DunnettTest
 #' @import methods
 #' @export
@@ -134,7 +131,7 @@ catego <- function(result,control=c(),alpha=0.05) {
 #' m.test(iris[,3],iris[,5],verbose=TRUE, return=TRUE,control="setosa")
 #' m.test(iris[,4],iris[,5],verbose=TRUE, return=TRUE,control="setosa")
 m.test <- function (data, cat, alpha=0.05, verbose=TRUE, return=TRUE, paired=FALSE,control=c(),
-                    alpha_ks = 0.01, maxcat=50, plot=TRUE,silent=TRUE,boot=TRUE,iter=500,conf=0.95,
+                    maxcat=50, plot=TRUE,silent=TRUE,boot=TRUE,iter=500,conf=0.95,
                     code=FALSE,debug=FALSE){
   if (code==TRUE) {verbose <- FALSE}
   if (debug==TRUE) {verbose <- FALSE ; code=FALSE}
@@ -152,8 +149,8 @@ m.test <- function (data, cat, alpha=0.05, verbose=TRUE, return=TRUE, paired=FAL
       } else if (type=="ks") {
         ech1 <- sample(data[cat==unique(cat)[1]],replace=TRUE)
         ech2 <- sample(data[cat==unique(cat)[2]],replace=TRUE)
-        ech1 <- (ech1 - mean(ech1))/sd(ech1)
-        ech2 <- (ech2 - mean(ech2))/sd(ech2)
+        ech1 <- (ech1 - median(ech1))/sd(ech1)
+        ech2 <- (ech2 - median(ech2))/sd(ech2)
         temp <- ks.test(ech1,ech2)$p.value
       }
       pvals <- c(pvals,temp)
@@ -273,7 +270,7 @@ m.test <- function (data, cat, alpha=0.05, verbose=TRUE, return=TRUE, paired=FAL
 		cat("by(data,cat,shapiro.test)#1) Control of the normality of small samples (<100)\n")
 	}
 	if (any((by(data,cat,length)<=1000)&(by(data,cat,length)>100))) {
-		cat("library(normtest)#1A)\nby(data,cat,jb.norm.test)#1B) Control of the normality of big samples (<1000)\n")
+		cat("#1A)\nby(data,cat,jb.norm.test)#1B) Control of the normality of big samples (<1000)\n")
 	}
 	if (max(by(data,cat,length))>1000) {
 		cat("#1) Central limit theory: enough values for some samples to not have to check normality.\n")
@@ -536,8 +533,13 @@ m.test <- function (data, cat, alpha=0.05, verbose=TRUE, return=TRUE, paired=FAL
     #			NON-NORMAL
     ###################################################
   } else { 												#
-    if (verbose==TRUE) {cat("1) Control of normality - Shapiro-Wilk test (<=100), Jarque-Bera (<=1000) or nothing (>1000).\n\tAnalyse of values by sample (shapiro.test() & jb.norm.test()) -  One or more non-normal samples. min(p-value) : ",min(pvals),"with Sidak correction of alpha to ",pval,"\n")}
-    temp <- pairwise(data,cat,type="ks",silent=silent,boot=FALSE)
+    if (verbose==TRUE) {cat("1) Control of normality - Shapiro-Wilk test (<=100), Jarque-Bera (<=1000) or nothing (>1000).\n\tAnalyse of values by sample (shapiro.test() & jb.norm.test()) -\t\nOne or more non-normal samples. min(p-value) : ",min(pvals),"with Sidak correction of alpha to ",pval,"\n")}
+	sd_cr <- by(data,cat,sd,na.rm=T) ; median_cr <- by(data,cat,median,na.rm=T)
+	data_cr <- data
+	for (i in names(median_cr)) {
+		data_cr[cat==i] <- (data_cr[cat==i]-median_cr[which(names(median_cr)==i)])/sd_cr[which(names(sd_cr)==i)]
+	}
+    temp <- pairwise(data_cr,cat,type="ks",silent=silent,boot=FALSE)
     ks_result <- min(unlist(temp$p.value),na.rm=T)
     if (code==TRUE){cat("length(unique(cat))#2)\n")}
     ###################################################
@@ -551,7 +553,7 @@ m.test <- function (data, cat, alpha=0.05, verbose=TRUE, return=TRUE, paired=FAL
 	  ku2 <- min(by(data,cat,kurto2))
 	  #jb <- min(by(data,cat,jarquebare))
       tt <- min(by(data,cat,length))
-      if (code==TRUE){cat("library(normtest)\nlibrary(agricolae)\nby(data,cat,skewness)\nby(data,cat,skewness.norm.test)\nby(data,cat,kurtosis)\nby(data,cat,kurtosis.norm.test)\nby(data,cat,length)#3)\n")}
+      if (code==TRUE){cat("library(agricolae)\nby(data,cat,skewness)\nby(data,cat,skewness.norm.test)\nby(data,cat,kurtosis)\nby(data,cat,kurtosis.norm.test)\nby(data,cat,length)#3)\n")}
       ###################################################
       #			NON-NORMAL		2 categories		Acceptable for t.test()
       ###################################################
@@ -668,9 +670,9 @@ m.test <- function (data, cat, alpha=0.05, verbose=TRUE, return=TRUE, paired=FAL
 			  cat("\tSample length (minimal):",tt,"\n")
             }
             if (ks_result < pval) {
-              cat("4) Kolmogorov-Smirnov test (ks.test()) -  Warning! the data do not have the same distribution. p-value: ",ks_result," by comparing with Sidak corrected alpha ",pval,"\n\tThe Mann-Whitney-Wilcoxon test will be less reliable.\n\tWarning! For wilcox.test() : Please, check graphically that the samples have the same distribution.\n")
+              cat("4) Kolmogorov-Smirnov test (ks.test()) on median-centered and reduced data -\n\tWarning! the data do not have the same distribution. p-value: ",ks_result,"\n\tby comparing with Sidak corrected alpha ",pval,"\n\tThe Mann-Whitney-Wilcoxon test will be less reliable.\n\tWarning! For wilcox.test() : Please, check graphically that the samples have the same distribution.\n")
             } else {
-              cat("4) Kolmogorov-Smirnov test (ks.test()) - The samples have the same distribution. p-value: ",ks_result," by comparing with Sidak corrected alpha ",pval,"\n\tThe Mann-Whitney-Wilcoxon test will be reliable.\n")
+              cat("4) Kolmogorov-Smirnov test (ks.test()) on median-centered and reduced data -\n\tThe samples have the same distribution. p-value: ",ks_result,"\n\tby comparing with Sidak corrected alpha ",pval,"\n\tThe Mann-Whitney-Wilcoxon test will be reliable.\n")
             }
           }
         }
@@ -752,8 +754,8 @@ m.test <- function (data, cat, alpha=0.05, verbose=TRUE, return=TRUE, paired=FAL
 	  ku2 <- min(by(data,cat,kurto2))
 	  #jb <- min(by(data,cat,jarquebare))
       if (code==TRUE){
-        #cat("library(normtest)#3a)\nby(data,cat,jb.norm.test)#3b)\nlibrary(agricolae)#3c)\nby(data,cat,skewness)#3d)\nby(data,cat,skewness.norm.test)#3e)\nby(data,cat,kurtosis)#3f)\nby(data,cat,kurtosis.norm.test)#3g)\nby(data,cat,length)#3h)\n")
-		cat("#library(normtest) ; library(agricolae)#3a)\nby(data,cat,skewness)#3b)\nby(data,cat,skewness.norm.test)#3c)\nby(data,cat,kurtosis)#3d)\nby(data,cat,kurtosis.norm.test)#3e)\nby(data,cat,length)#3f)\n")
+        #cat("#3a)\nby(data,cat,jb.norm.test)#3b)\nlibrary(agricolae)#3c)\nby(data,cat,skewness)#3d)\nby(data,cat,skewness.norm.test)#3e)\nby(data,cat,kurtosis)#3f)\nby(data,cat,kurtosis.norm.test)#3g)\nby(data,cat,length)#3h)\n")
+		cat("#library(agricolae)#3a)\nby(data,cat,skewness)#3b)\nby(data,cat,skewness.norm.test)#3c)\nby(data,cat,kurtosis)#3d)\nby(data,cat,kurtosis.norm.test)#3e)\nby(data,cat,length)#3f)\n")
         cat("library(lawstat)#4a)\nlevene.test(data,cat)#4b)\n")
         cat("library(onewaytests)#5a)\nbf.test(data~cat,data=data.frame(data,'cat'=factor(cat)))#5b)\n")
       }
@@ -862,9 +864,9 @@ m.test <- function (data, cat, alpha=0.05, verbose=TRUE, return=TRUE, paired=FAL
           #temp <- pairwise(data,cat,type="ks",silent=silent,boot=boot)$p.value
           #ks_result <- min(unlist(temp),na.rm=TRUE)
           if (ks_result < pval) {
-            cat("6) Kolmogorov-Smirnov test (ks.test()) -  Warning! the samples do not have the same distribution. min(p-value) : ",ks_result," by comparing with Sidak corrected alpha ",pval,"\n\tThe Kruskal-Wallis test and Mann-Whitney-Wilcoxon test will be less reliable.\n\tPlease, check graphically the samples distributions.\n")
+            cat("6) Kolmogorov-Smirnov test (ks.test()) on median-centered and reduced data -\n\tWarning! the samples do not have the same distribution. min(p-value) : ",ks_result,"\n\tby comparing with Sidak corrected alpha ",pval,"\n\tThe Kruskal-Wallis test and Mann-Whitney-Wilcoxon test will be less reliable.\n\tPlease, check graphically the samples distributions.\n")
           } else {
-            cat("6) Kolmogorov-Smirnov test (ks.test()) -  The samples have the same distribution. min(p-value) : ",ks_result," by comparing with Sidak corrected alpha ",pval,"\n\tGood accuracy expected on the tests of Kruskal-Wallis and Mann-Whitney-Wilcoxon\n")
+            cat("6) Kolmogorov-Smirnov test (ks.test()) on median-centered and reduced data -\n\tThe samples have the same distribution. min(p-value) : ",ks_result,"\n\tby comparing with Sidak corrected alpha ",pval,"\n\tGood accuracy expected on the tests of Kruskal-Wallis and Mann-Whitney-Wilcoxon\n")
           }
           if (pvals3 <= alpha) {
             cat("7) Kruskal-Wallis test (kruskal.test()) - At least one sample appears to show a difference. p-value:",pvals3,"\n")

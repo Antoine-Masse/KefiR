@@ -12,7 +12,6 @@ m.test(
   return = TRUE,
   paired = FALSE,
   control = c(),
-  alpha_ks = 0.01,
   maxcat = 50,
   plot = TRUE,
   silent = TRUE,
@@ -28,7 +27,7 @@ m.test(
 
 \item{cat}{category vector}
 
-\item{alpha}{p-value threshold value for all the tests (except ks.test() which is too sensitive).}
+\item{alpha}{p-value threshold value for all the tests.}
 
 \item{verbose}{to display the full reasoning of the analysis.}
 
