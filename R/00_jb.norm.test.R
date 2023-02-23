@@ -7,8 +7,9 @@
 #' @return Performs Jarque Bera test for the composite hypothesis of normality, see Jarque and Bera (1987).
 #'
 #' @examples
-#' #jb.norm.test(rnorm(100))
-jb.norm.test <- function(x, nrepl = 2000) {
+#' #x <- rnorm(100)
+#' # jb.normtest(x)
+jb.normtest <- function(x, nrepl = 2000) {
     DNAME <- deparse(substitute(x))
     l <- 0
     n <- length(x)

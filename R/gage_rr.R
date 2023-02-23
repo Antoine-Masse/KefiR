@@ -1,20 +1,20 @@
 #' Gage R&R
 #'
-#' @param Var : Measures
-#' @param optr : Identifiers of the three operators
-#' @param app : Identifiers of the 10 pieces
-#' @param sigma : Tolerated variations (multiplication factor of the standard deviation)
+#' @param Var : measures.
+#' @param optr : identifiers of the three operators.
+#' @param app : identifiers of the 10 pieces.
+#' @param sigma : tolerated variations (multiplication factor of the standard deviation).
 #'
 #' @return This function calculates the GageR&R.
 #' @return It is used to check the reliability of a measuring system.
 #' @return
 #' @return The following command is used to calculate the following parameters:
 #' @return
-#' @return   σrepetability: repeatability - variability due to the measuring equipment
-#' @return σreproductibility: reproducibility - variability due to operators
-#' @return R&R: Gage - R_R - combined effect of repeatability and reproducibility
-#' @return Vp - Part - variability due to the measured parts
-#' @return Vt - total variability
+#' @return repeatability - variability due to the measuring equipment.
+#' @return reproducibility - variability due to operators.
+#' @return R&R: Gage - R_R - combined effect of repeatability and reproducibility.
+#' @return Vp - Part - variability due to the measured parts.
+#' @return Vt - total variability.
 #' @return It also directly infers the percentage of the total variability that each of these variabilities represents :
 #' @return Equipment share: Share_Equipment - Percentage of total variability due to measuring equipment
 #' @return Operator share: share_Operators - Percentage of total variability due to operators

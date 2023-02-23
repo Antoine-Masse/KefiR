@@ -1,12 +1,12 @@
 #' Validating a bootstrap linear regression model
 #'
-#' @param reg Linear model
-#' @param optional A data.frame is formula is complex with I() function
-#' @param plot Enable or disable the display of graphical analysis
-#' @param verbose Enable or disable the display of the commented analysis
-#' @param conf.level Confidence level for validation of the model
-#' @param alpha Minimal value accepted for validation of the model and his coefficients
-#' @param iter Number of iterations
+#' @param reg linear model.
+#' @param data a data.frame of values if formula is complex with I() function (Optional).
+#' @param plot enable or disable the display of graphical analysis.
+#' @param verbose enable or disable the display of the commented analysis.
+#' @param conf.level confidence level for validation of the model.
+#' @param alpha minimal value accepted for validation of the model and his coefficients.
+#' @param iter number of iterations.
 #'
 #' @details bootreg allows to validate a model by bootstrap.
 #' @details It will draw several times in the values of the model in order to test its robustness.
@@ -33,7 +33,7 @@ bootreg <- function(reg,data=c(),plot=TRUE,verbose=TRUE,conf.level=0.95,alpha=0.
     indices_training <- sample(indices,size=numind ,replace=T)
     indices_test <- setdiff(indices ,indices_training)
     if (length(indices_test) > 0) {
-      training  <- dt[indices_training,]	 
+      training  <- dt[indices_training,]
       test   <- 	 dt[indices_test,]
       #formula_ <- eval(reg$call[[2]])
 	  formula_ <- formula(reg)
@@ -57,7 +57,7 @@ bootreg <- function(reg,data=c(),plot=TRUE,verbose=TRUE,conf.level=0.95,alpha=0.
           options(warn = oldw)
           #verity <- c(verity,test[,1])
 		  verity <- c(verity,test[[names(get_all_vars(formula(reg$terms),dt))[1]]])
-		  
+
         }
       } else {
         pval_mdl <- pf(summary(reg1)$fstatistic[1],summary(reg1)$fstatistic[2],summary(reg1)$fstatistic[3],lower.tail=FALSE)

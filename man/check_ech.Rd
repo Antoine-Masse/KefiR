@@ -23,8 +23,6 @@ check_ech(n, mean, sd, conf.level = 0.99, conf = 0.95, iter = 200, cut = 100)
 }
 \value{
 If I have a sample of which I know the size, what effect would I be able to see?
-
-
 }
 \description{
 Determine the differences in mean that I can detect for a known sample size

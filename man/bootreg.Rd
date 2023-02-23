@@ -15,19 +15,19 @@ bootreg(
 )
 }
 \arguments{
-\item{reg}{Linear model}
+\item{reg}{linear model.}
 
-\item{plot}{Enable or disable the display of graphical analysis}
+\item{data}{a data.frame of values if formula is complex with I() function (Optional).}
 
-\item{verbose}{Enable or disable the display of the commented analysis}
+\item{plot}{enable or disable the display of graphical analysis.}
 
-\item{conf.level}{Confidence level for validation of the model}
+\item{verbose}{enable or disable the display of the commented analysis.}
 
-\item{alpha}{Minimal value accepted for validation of the model and his coefficients}
+\item{conf.level}{confidence level for validation of the model.}
 
-\item{iter}{Number of iterations}
+\item{alpha}{minimal value accepted for validation of the model and his coefficients.}
 
-\item{optional}{A data.frame is formula is complex with I() function}
+\item{iter}{number of iterations.}
 }
 \value{
 A graph of analysis.

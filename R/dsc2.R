@@ -5,7 +5,7 @@
 #' @param dsc A dataframe line containing the X's to be predicted (ideally a dsc() output).
 #' @param iter Number of iterations in the scalable approach (should ideally be much greater than the popupulation (pop) of settings.
 #' @param plot If TRUE, displays interactive parallel coordinates (plot_ly) to identify the best possible settings.
-#' @param retun If TRUE, return the data.frame of values predicted by bootstrapping.
+#' @param return If TRUE, return the data.frame of values predicted by bootstrapping.
 #'
 #' @return A dataframe containing all the selected settings sorted from best (top) to worst (bottom).
 #' @export
@@ -32,7 +32,7 @@ dsc2 <- function(data,reg,dsc,iter=500,plot=TRUE,return=FALSE) {
   if (length(data)==0){stop("data is null.")}
   if (is(data)[1]!="data.frame"){stop("data is not data.frame.")}
 	if (is(dsc)[1]!="data.frame"){stop("dsc is not data.frame. Try dsc() function for making it.")}
-	reg2 <- list() ; j<-1 
+	reg2 <- list() ; j<-1
 	for (i in 1:length(reg)) {
 		if (!is.null(reg[[i]])) {
 			reg2[[j]] <- reg[[i]]
@@ -55,10 +55,10 @@ dsc2 <- function(data,reg,dsc,iter=500,plot=TRUE,return=FALSE) {
 		#if (i==1) {print("B")}
 			if (is(temp_reg)[1]!="try-error") {
 		#if (i==1) {print("C")}
-				prediction <- try(predict(temp_reg,dsc[1,]))		
+				prediction <- try(predict(temp_reg,dsc[1,]))
 				if (is(prediction)[1]=="try-error"){
-					Y_predict_temp <- c(Y_predict_temp,NA)	
-				} else{Y_predict_temp <- c(Y_predict_temp,prediction)	
+					Y_predict_temp <- c(Y_predict_temp,NA)
+				} else{Y_predict_temp <- c(Y_predict_temp,prediction)
 				}
 			} else {Y_predict_temp <- c(Y_predict_temp,NA)}
 		}

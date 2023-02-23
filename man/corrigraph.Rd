@@ -69,8 +69,6 @@ When mu is TRUE or prop : we see the connexion with mean effect (orange) and chi
 
 The size of orange edge and pink edge depend of p-values (-1*log10(p-value)/10) of kruskal.test() and chisq.test().
 
-
-
 When indicating Y's in colY, the correlogram will identify the correlated X's, then the remaining X's correlated to these X's, and so on.
 
 X's not related to these Y's are excluded.

@@ -17,7 +17,7 @@ dsc2(data, reg, dsc, iter = 500, plot = TRUE, return = FALSE)
 
 \item{plot}{If TRUE, displays interactive parallel coordinates (plot_ly) to identify the best possible settings.}
 
-\item{retun}{If TRUE, return the data.frame of values predicted by bootstrapping.}
+\item{return}{If TRUE, return the data.frame of values predicted by bootstrapping.}
 }
 \value{
 A dataframe containing all the selected settings sorted from best (top) to worst (bottom).

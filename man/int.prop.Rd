@@ -4,7 +4,7 @@
 \alias{int.prop}
 \title{Confidence interval of a proportion}
 \usage{
-int.prop(proportion, n, conf.level)
+int.prop(proportion, n, conf.level = 0.95)
 }
 \arguments{
 \item{proportion}{: One or more proportions between 0 and 1.}
