@@ -18,6 +18,7 @@ corrigraph(
   mu = FALSE,
   prop = FALSE,
   layout = "fr",
+  cluster = TRUE,
   verbose = FALSE,
   NAfreq = 1,
   NAcat = TRUE,
@@ -51,6 +52,8 @@ corrigraph(
 \item{prop}{to display the dependencies between categorical variables identified by GTest().}
 
 \item{layout}{to choose the network organization method - choose "fr", "circle", "kk" or "3d".}
+
+\item{cluster}{to make automatic clustering of variables or not.}
 
 \item{verbose}{to see the comments.}
 

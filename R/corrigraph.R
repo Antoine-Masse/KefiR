@@ -13,6 +13,7 @@
 #' @param mu to display the effect on median/mean identified by m.test().
 #' @param prop to display the dependencies between categorical variables identified by GTest().
 #' @param layout to choose the network organization method - choose "fr", "circle", "kk" or "3d".
+#' @param cluster to make automatic clustering of variables or not.
 #' @param verbose to see the comments.
 #' @param NAfreq from 0 to 1. NA part allowed in the variables. 1 by default (100% of NA tolerate).
 #' @param NAcat TRUE or FALSE. Requires recognition of missing data as categories.
@@ -34,6 +35,7 @@
 #' @rawNamespace import(igraph, except = c(decompose,spectrum))
 #' @importFrom stats na.omit
 #' @importFrom stats cor
+#' @importFrom DescTools GTest
 #'
 #' @export
 #'
@@ -57,7 +59,7 @@
 #' data(airquality)
 #' corrigraph(airquality,c("Ozone","Wind"),type="x")
 corrigraph <- function(data,colY=c(),colX=c(),type="x",alpha=0.05,exclude=c(0,0,0), ampli=4,return=FALSE,wash="stn",multi=TRUE,
-					   mu=FALSE,prop=FALSE,layout="fr",verbose=FALSE,NAfreq=1,NAcat=TRUE,level=2,evolreg=FALSE) {
+					   mu=FALSE,prop=FALSE,layout="fr",cluster=TRUE,verbose=FALSE,NAfreq=1,NAcat=TRUE,level=2,evolreg=FALSE) {
   # Fonction réalisée par Antoine Massé
   # Ctrl Alt Shift R
   # Version 04
@@ -379,9 +381,9 @@ if ((type=="y")&(length(colY)>0)){
 
 
 			if (identical(which(is.na(data[,i])),which(is.na(data[,j])))==TRUE) {
-				cat("na omit")
+				#cat("na omit")
 				data_temp <- na.omit(data_temp)
-				print(table(data_temp))
+				#print(table(data_temp))
 			}
 			if (NAcat==TRUE) {
 				for (k in 1:2){
@@ -409,6 +411,7 @@ if ((type=="y")&(length(colY)>0)){
 			  options(warn = -1)
 			  pvals <- try(GTest(tablo)$p.value,silent=TRUE)
 			  options(warn = oldw)
+			  #print("GTEST")
 			  #print(pvals)
 			  #cat("Test entre",colnames(data)[i],"&",colnames(data)[j],"pval",pvals,"\n")
 			  if (pvals <= alpha) {
@@ -645,7 +648,7 @@ if ((type=="y")&(length(colY)>0)){
 	  E(net)$weight <- abs(E(net)$weight)
 	  #print(E(net_interconnect)$weight)
 	  E(net)$colour <- ifelse(E(net_interconnect)$weight<0,"red",
-							  ifelse(E(net_interconnect)$weight==2,"pink",
+							  ifelse(E(net_interconnect)$weight==2,"#FF99BB",
 									 ifelse(E(net_interconnect)$weight==3,"orange","blue")))
 	  # Mise en place de la layout
 	  if (layout=="circle") {l <- layout_in_circle(net)
@@ -664,7 +667,7 @@ if ((type=="y")&(length(colY)>0)){
 		#	 edge.arrow.size =0,arrow.mode=0,edge.width=(abs(E(net)$weight)*2)^2, edge.color =E(net)$colour)
 		# Matrice de distances
 		as.dist(mymat2) -> mydi
-		if (length(mydi)>1) {
+		if ((length(mydi)>1)&(cluster==TRUE)) {
 			# Clustering
 			myclust <- hclust(mydi, method="ward.D2")
 			inertie <- sort(myclust$height, decreasing = TRUE)
