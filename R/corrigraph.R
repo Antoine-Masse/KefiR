@@ -11,7 +11,7 @@
 #' @param wash automatically eliminates variables using differnts methods when there are too many variables (method = NA, stn (signal-to-noise ratio), sum, length).
 #' @param multi to ignore multiple regressions and control only single regressions.
 #' @param mu to display the effect on median/mean identified by m.test().
-#' @param prop to display the dependencies between categorical variables identified by chisq.test().
+#' @param prop to display the dependencies between categorical variables identified by GTest().
 #' @param layout to choose the network organization method - choose "fr", "circle", "kk" or "3d".
 #' @param verbose to see the comments.
 #' @param NAfreq from 0 to 1. NA part allowed in the variables. 1 by default (100% of NA tolerate).
@@ -20,8 +20,8 @@
 #' @param evolreg TRUE or FALSE. Not yet available. Allows you to use the evolreg function to improve the predictive ability (R squared) for the variables specified in colY.
 #'
 #' @return Correlation graph network (igraph) of the variables of a data.frame. Pay attention to the possible presence of non-numeric variables or missing data. Grouping of correlated variables: the vertices (circles) correspond to the variables. The more a variable is connected, the larger it appears. The color of the lines reflects the nature of the correlation (positive or negative).  The size of the lines is the value of the correlation from 0 to 1. All these correlations are significant (pval < 0.01). The coloured groupings reflect families of inter-correlated variables. BLUE: positive correlation - RED: negative correlation
-#' @return When mu is TRUE or prop : we see the connexion with mean effect (orange) and chisq effect (pink)
-#' @return The size of orange edge and pink edge depend of p-values (-1*log10(p-value)/10) of kruskal.test() and chisq.test().
+#' @return When mu is TRUE or prop : we see the connexion with mean effect (orange) and G (~chisq) effect (pink)
+#' @return The size of orange edge and pink edge depend of p-values (-1*log10(p-value)/10) of kruskal.test() and GTest().
 #' @return
 #' @return  When indicating Y's in colY, the correlogram will identify the correlated X's, then the remaining X's correlated to these X's, and so on.
 #' @return X's not related to these Y's are excluded.
@@ -407,7 +407,7 @@ if ((type=="y")&(length(colY)>0)){
 			  }
 			  oldw <- getOption("warn")
 			  options(warn = -1)
-			  pvals <- try(chisq.test(tablo)$p.value,silent=TRUE)
+			  pvals <- try(GTest(tablo)$p.value,silent=TRUE)
 			  options(warn = oldw)
 			  #print(pvals)
 			  #cat("Test entre",colnames(data)[i],"&",colnames(data)[j],"pval",pvals,"\n")

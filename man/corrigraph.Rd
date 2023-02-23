@@ -48,7 +48,7 @@ corrigraph(
 
 \item{mu}{to display the effect on median/mean identified by m.test().}
 
-\item{prop}{to display the dependencies between categorical variables identified by chisq.test().}
+\item{prop}{to display the dependencies between categorical variables identified by GTest().}
 
 \item{layout}{to choose the network organization method - choose "fr", "circle", "kk" or "3d".}
 
@@ -65,9 +65,9 @@ corrigraph(
 \value{
 Correlation graph network (igraph) of the variables of a data.frame. Pay attention to the possible presence of non-numeric variables or missing data. Grouping of correlated variables: the vertices (circles) correspond to the variables. The more a variable is connected, the larger it appears. The color of the lines reflects the nature of the correlation (positive or negative).  The size of the lines is the value of the correlation from 0 to 1. All these correlations are significant (pval < 0.01). The coloured groupings reflect families of inter-correlated variables. BLUE: positive correlation - RED: negative correlation
 
-When mu is TRUE or prop : we see the connexion with mean effect (orange) and chisq effect (pink)
+When mu is TRUE or prop : we see the connexion with mean effect (orange) and G (~chisq) effect (pink)
 
-The size of orange edge and pink edge depend of p-values (-1*log10(p-value)/10) of kruskal.test() and chisq.test().
+The size of orange edge and pink edge depend of p-values (-1*log10(p-value)/10) of kruskal.test() and GTest().
 
 When indicating Y's in colY, the correlogram will identify the correlated X's, then the remaining X's correlated to these X's, and so on.
 
