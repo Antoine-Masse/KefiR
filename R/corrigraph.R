@@ -62,14 +62,18 @@ corrigraph <- function(data,colY=c(),colX=c(),type="x",alpha=0.05,exclude=c(0,0,
 					   mu=FALSE,prop=FALSE,layout="fr",cluster=TRUE,verbose=FALSE,NAfreq=1,NAcat=TRUE,level=2,evolreg=FALSE) {
   # Fonction réalisée par Antoine Massé
   # Ctrl Alt Shift R
-  # Version 04
-  # December 2021
+  # Version 05
+  # May 2023
   #igraph::graph_from_adjacency_matrix
   databrut<-data # saving
+  # Eviter les tableaux au format matrice
+  if (class(data)[1]=="matrix"){data<-data.frame(data)}
   # Control 1 - is.numeric ?
   which(sapply(data, is.numeric)) -> temp_id_num ; temp_id_factor <- c()
   if ((mu==FALSE)&(prop==FALSE)){
 	if (length(temp_id_num)<2) {stop("Error! Not enough numerical variable. Try mu=TRUE or prop=TRUE ?\n")}
+	print("temp_id_num")
+	print(temp_id_num)
 	data <- data[,temp_id_num]
 	which(sapply(data, is.numeric)) -> temp_id_num
 	if (length(temp_id_num)!=length(1:ncol(data))) {warning("Warning! Presence of non-numeric variables that cannot be taken into account.\n")}
