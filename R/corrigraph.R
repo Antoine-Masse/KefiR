@@ -62,7 +62,7 @@ corrigraph <- function(data,colY=c(),colX=c(),type="x",alpha=0.05,exclude=c(0,0,
 					   mu=FALSE,prop=FALSE,layout="fr",cluster=TRUE,verbose=FALSE,NAfreq=1,NAcat=TRUE,level=2,evolreg=FALSE) {
   # Fonction réalisée par Antoine Massé
   # Ctrl Alt Shift R
-  # Version 05
+  # Version 06
   # May 2023
   #igraph::graph_from_adjacency_matrix
   databrut<-data # saving
@@ -406,9 +406,9 @@ if ((type=="y")&(length(colY)>0)){
 				#cat("Effectif insuffisant\n")
 				if (quantile(tablo,probs=c(0.2))<5) {
 				  if (verbose==TRUE) {
-				    cat("\nNot enough individuals per category.\n")
+				    cat("\nNot many individuals per category.\n")
 				  }
-				  next
+				  #next
 				}
 			  }
 			  oldw <- getOption("warn")
