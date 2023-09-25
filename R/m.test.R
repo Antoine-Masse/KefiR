@@ -145,7 +145,8 @@ m.test <- function (data, cat, alpha=0.05, verbose=TRUE, return=TRUE, paired=FAL
       if (type=="mean") {
         temp <- t.test(sample(data[cat==unique(cat)[1]],replace=TRUE),sample(data[cat==unique(cat)[2]],replace=TRUE),var.equal=var.equal)$p.value
       } else if (type=="median") {
-        temp <- wilcox.test(sample(data[cat==unique(cat)[1]],replace=TRUE),sample(data[cat==unique(cat)[2]],replace=TRUE))$p.value
+		#temp <- wilcox.test(sample(data[cat==unique(cat)[1]],replace=TRUE),sample(data[cat==unique(cat)[2]],replace=TRUE))$p.value
+		temp <- wilcox.test(sample(data[cat==unique(cat)[1]],replace=TRUE),sample(data[cat==unique(cat)[2]],replace=TRUE),exact=FALSE)$p.value
       } else if (type=="ks") {
         ech1 <- sample(data[cat==unique(cat)[1]],replace=TRUE)
         ech2 <- sample(data[cat==unique(cat)[2]],replace=TRUE)

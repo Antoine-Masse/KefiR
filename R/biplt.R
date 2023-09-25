@@ -20,7 +20,7 @@
 #' data(iris)
 #' a <- prcomp(iris[,1:4])
 #' biplt(a,col=iris$Species,threshold=0.8,choices=c(1,3))
-biplt <- function(pca,  choices=c(1,2), col="blue", threshold=0.25,xlab="cps",ylab="cps",cex=2,pch=16) {
+biplt <- function(pca,  choices=c(1,2), col="blue", threshold=0.25,xlab="cps",ylab="cps",cex=2,pch=16,labels=rownames(pca$x)) {
 	# Récupérer la description donnant la corrélation de chaque variable par composante
 	# 1 et 2 pour composantes 1 et 2
 	poids_var_x <- pca$rotation[,choices[1]]
@@ -29,7 +29,7 @@ biplt <- function(pca,  choices=c(1,2), col="blue", threshold=0.25,xlab="cps",yl
 	#OPTIONNEL
 	poids_var_global <- sqrt(poids_var_x^2+poids_var_y^2)
 	# FILTRER : Ex : les variables dont le poids est > 0.25
-	barplot(poids_var_global,names.arg=vecnames) ; x11()
+	#barplot(poids_var_global,names.arg=vecnames) ; x11()
 	threshold= threshold
 	poids_var_x <- poids_var_x[poids_var_global>threshold]
 	poids_var_y <-poids_var_y[poids_var_global>threshold]
@@ -53,7 +53,7 @@ biplt <- function(pca,  choices=c(1,2), col="blue", threshold=0.25,xlab="cps",yl
 	if (ylab=="cps") {ylab=paste("Composante",choices[2])}
 	axeX <- pca$x[,choices[1]] ; axeY <- pca$x[,choices[2]] 
 	plot(axeX,axeY,pch=pch,cex=cex,col=col,xlab=xlab,ylab=ylab);grid()
-	text(axeX,axeY-5,rownames(pca$x))
+	text(axeX,axeY-5,labels)
 	# Pour superposition des 2 graphiques
 	par(new = T)
 	# Graphique issu de l'étape 5 

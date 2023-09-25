@@ -25,6 +25,11 @@ bootreg <- function(reg,data=c(),plot=TRUE,verbose=TRUE,conf.level=0.95,alpha=0.
   } else {
 	dt <- reg$model
   }
+  # Contrôler la présence de $
+  if (any(unlist(sapply(formula(reg), function(x) grepl("\\$", x))))) {
+	options(warn = 0)
+    warning("Warning! The character '$' has been detected in the formula. Prefer the syntax lm(Y~x, data=data) over lm(data$Y~data$x), which may cause bootreg() to fail.")
+  }
   numind <- nrow(dt)
   indices <- c(1:numind ) # num if individus
   enregistrement <- 0
@@ -39,9 +44,10 @@ bootreg <- function(reg,data=c(),plot=TRUE,verbose=TRUE,conf.level=0.95,alpha=0.
 	  formula_ <- formula(reg)
       oldw <- getOption("warn")
       options(warn = -1)
-      #reg1 <- lm(formula=formula(formula),data=training,subset=indices_training)
+      #reg1 <- lm(formula=formula(formula_),data=training,subset=indices_training)
+	  #reg1 <- lm(formula = formula(formula_), data = training, subset = (1:nrow(training)) %in% indices_training)
 	  reg1 <- lm(formula=formula(formula_),data=training)
-      #reg1 <- update(reg1,subset=indices_training)
+      #reg1 <- update(reg1, subset = (1:nrow(training)) %in% indices_training)
       options(warn = oldw)
       if (enregistrement == 0) {
         pval_mdl <- pf(summary(reg1)$fstatistic[1],summary(reg1)$fstatistic[2],summary(reg1)$fstatistic[3],lower.tail=FALSE)
@@ -51,12 +57,18 @@ bootreg <- function(reg,data=c(),plot=TRUE,verbose=TRUE,conf.level=0.95,alpha=0.
           p_values <- c(pval_mdl,summary(reg1)[[4]][,4])  # p_values correspond aux valeurs Pr récupérés pour chaque variable et chaque cycle du bootstrap (ici 1000)
           # Pour extraction des p-values sur glm() : mettre cela : coef(summary(model2))[,4]
           coeff <- reg1$coefficients
+		  #print(coeff)
           oldw <- getOption("warn")
           options(warn = -1)
           predictions <- c(predictions,predict(reg1,dt)[indices_test])
           options(warn = oldw)
           #verity <- c(verity,test[,1])
-		  verity <- c(verity,test[[names(get_all_vars(formula(reg$terms),dt))[1]]])
+		  if (length(all.vars(reg$terms))==length(names(get_all_vars(formula(reg$terms),dt)))){
+			verity <- c(verity,test[[names(get_all_vars(formula(reg$terms),dt))[1]]])
+		  } else {
+			Ynames <- trimws(strsplit(deparse(reg$call[[2]]), "[~+]")[[1]][1])
+			verity <- c(verity,test[[Ynames]])
+		  }
 
         }
       } else {
@@ -64,12 +76,34 @@ bootreg <- function(reg,data=c(),plot=TRUE,verbose=TRUE,conf.level=0.95,alpha=0.
         if (length(c(pval_mdl,summary(reg1)[[4]][,4])) == (length(reg$coefficients)+1)) {
           p_values <- rbind(p_values,c(pval_mdl,summary(reg1)[[4]][,4]))
           coeff <- rbind(coeff,reg1$coefficients) # Coeff correspond aux coefficients récupérés pour chaque variable et chaque cycle du bootstrap (ici 1000)
+		  #print(reg1$coefficients)
           oldw <- getOption("warn")
           options(warn = -1)
+		  # Prédiction sur les données test (not training)
           predictions <- c(predictions,predict(reg1,dt)[indices_test])
           options(warn = oldw)
           #verity <- c(verity,test[,1])
-		  verity <- c(verity,test[[names(get_all_vars(formula(reg$terms),dt))[1]]])
+		  # Données réelles
+		  if (length(all.vars(reg$terms))==length(names(get_all_vars(formula(reg$terms),dt)))){
+			verity <- c(verity,test[[names(get_all_vars(formula(reg$terms),dt))[1]]])
+		  } else {
+			Ynames <- trimws(strsplit(deparse(reg$call[[2]]), "[~+]")[[1]][1])
+			verity <- c(verity,test[[Ynames]])
+		  }
+		#cat("npred",nrow(predictions),"nverity",nrow(verity))
+		#cat(length(predictions),"\n")
+		#	if (length(predict(reg1,dt)[indices_test])!=length(test[[names(get_all_vars(formula(reg$terms),dt))[1]]])) {
+		#		cat("prediction\n")
+		#		print(predict(reg1,dt)[indices_test])
+		#		cat("réalité\n")
+		#		print(test[[names(get_all_vars(formula(reg$terms),dt))[1]]])
+		#		print(names(get_all_vars(formula(reg$terms),dt)))
+		#		break
+		#	} 
+			#else {
+		#		print(names(get_all_vars(formula(reg$terms),dt)))
+		#		break
+		#	}
         }
       }
       # Test sur les predictions

@@ -13,7 +13,8 @@ biplt(
   xlab = "cps",
   ylab = "cps",
   cex = 2,
-  pch = 16
+  pch = 16,
+  labels = rownames(pca$x)
 )
 }
 \arguments{
