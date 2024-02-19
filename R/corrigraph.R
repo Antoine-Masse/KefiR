@@ -59,7 +59,7 @@
 #' data(airquality)
 #' corrigraph(airquality,c("Ozone","Wind"),type="x")
 corrigraph <- function(data,colY=c(),colX=c(),type="x",alpha=0.05,exclude=c(0,0,0), ampli=4,return=FALSE,wash="stn",multi=TRUE,
-					   mu=FALSE,prop=FALSE,layout="fr",cluster=TRUE,verbose=FALSE,NAfreq=1,NAcat=TRUE,level=2,evolreg=FALSE) {
+					   mu=FALSE,prop=FALSE,layout="fr",cluster=TRUE,verbose=FALSE,NAfreq=1,NAcat=FALSE,level=2,evolreg=FALSE) {
   # Fonction réalisée par Antoine Massé
   # Ctrl Alt Shift R
   # Version 06

@@ -21,7 +21,7 @@ corrigraph(
   cluster = TRUE,
   verbose = FALSE,
   NAfreq = 1,
-  NAcat = TRUE,
+  NAcat = FALSE,
   level = 2,
   evolreg = FALSE
 )

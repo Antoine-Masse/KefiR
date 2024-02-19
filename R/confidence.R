@@ -89,8 +89,10 @@ int.prop = function(proportion,n,conf.level=0.95) {
 int.prop.table = function(x,margin=NULL,conf.level=0.95) {
     if (is.null(margin)) {
       myIC <- int.prop(prop.table(x),sum(x),conf.level=conf.level)
-      myIC <- matrix(myIC,nc=ncol(x),nr=nrow(x))
-      myIC <- matrix(myIC,nc=ncol(x),nr=nrow(x))
+	  if (length(dim(x))>1) {
+		myIC <- matrix(myIC,nc=ncol(x),nr=nrow(x))
+		myIC <- matrix(myIC,nc=ncol(x),nr=nrow(x))
+	  }
     } else if (margin==1) {
       contingent <- prop.table(x,1)
       effectifs <- apply(x,1,sum)

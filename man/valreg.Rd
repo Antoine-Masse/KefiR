@@ -11,7 +11,7 @@ valreg(
   boot = TRUE,
   alpha = 0.05,
   conf.level = 0.95,
-  plot = TRUE,
+  plot = FALSE,
   data = c(),
   raintest_alpha = 0.05,
   dwtest_alpha = 0.03,

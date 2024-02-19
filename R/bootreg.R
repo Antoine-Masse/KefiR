@@ -133,23 +133,9 @@ bootreg <- function(reg,data=c(),plot=TRUE,verbose=TRUE,conf.level=0.95,alpha=0.
       abline(h=0.01,col="orange",lwd=2)
       abline(h=0.001,col="green",lwd=2)
     }
-    hist_decrypt <- function(x,breaks=20,main="",sub="",conf.level=0.95) {
-      densite <- density(x,na.rm=T) # créer une liste des densités
-      hist(x,freq=F,col="#AAFFAA",ylim=c(0,max(densite$y)),breaks=breaks,main=main,cex=0.5,sub=sub) # il faut que freq=F
-      lines(densite, col = "red",lwd=3) # Superposer la ligne
-      abline(v=confiance(x,conf.level),col="black",lwd=5)
-      abline(v=mean(x),col="red",lwd=3)
-      abline(v=median(x),col="orange",lwd=2)
-      abline(v=mode(x),col="green",lwd=1)
-      legend("topright",col=c("black","red","orange","green"),
-             c("p-value max in the confidence interval","mean","median","mode"),
-             lwd=c(5,3,2,1))
-    }
-    layout(matrix(1:4,2,2))
+    layout(matrix(1:3,1,3))
     # p-value of the model
     #return(p_values)
-    hist_decrypt(p_values[,1],sub="If the repartition is uniform:\ninsignificant model",breaks=20,
-                 main="Distribution of the p-values of the model",conf.level=conf.level)
     # p-value of the model & coefficients
     boxplot_Pr(p_values,main="Distribution of the p-values of\nthe model and its coefficients")
     apply(coeff,2,function(x) {(x-median(x))/median(x)*100}) -> percent_coeff
@@ -161,7 +147,7 @@ bootreg <- function(reg,data=c(),plot=TRUE,verbose=TRUE,conf.level=0.95,alpha=0.
     plot(as.numeric(names(MOY)),CONF,type="l",lwd=3,col="red",
          xlim=c(min(x),max(x)),ylim=c(0,max(CONF)),
          xlab="Experimental values",ylab="Predictions",
-         main="Average prediction error and\nmaximum error in the confidence interval")
+         main="Average prediction error (blackà and\nmaximum error in the confidence interval (red)")
     points(as.numeric(names(MOY)),MOY,type="l",lwd=2,col="black")
   }
   apply(p_values,2,median) -> p.values_median
