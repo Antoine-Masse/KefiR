@@ -17,30 +17,30 @@ identify_ech(
 )
 }
 \arguments{
-\item{mean1}{: Sample Average 1}
+\item{mean1}{Sample Average 1}
 
-\item{mean2}{: Sample Average 2}
+\item{mean2}{Sample Average 2}
 
-\item{sd1}{: Sample standard deviation 1}
+\item{sd1}{Sample standard deviation 1}
 
-\item{sd2}{: Sample standard deviation 2}
+\item{sd2}{Sample standard deviation 2}
 
-\item{iter}{: Number of iterations per bootstrap}
+\item{iter}{Number of iterations per bootstrap}
 
-\item{conf.level}{: Expected confidence on Student's test when I compare 2 samples (0 to 1)}
+\item{conf.level}{Expected confidence on Student's test when comparing 2 samples (0 to 1)}
 
-\item{conf}{: Percentage of times I expect to have a p-value that responds to my test if there is an effect when I compare 2 samples}
+\item{conf}{Percentage of times I expect to have a p-value that responds to my test if there is an effect when comparing 2 samples}
 
-\item{nmin}{: Minimum number of individuals accepted for the sample.}
+\item{nmin}{Minimum number of individuals accepted for the sample.}
 
-\item{nmax}{: Maximum number of individuals attainable for the sample.}
+\item{nmax}{Maximum number of individuals attainable for the sample.}
 }
 \value{
-: This function will tell you what the size of your two (supposedly normal) samples should be in order to be able to detect their difference in mean by a Student test with the desired significance (conf.level) and in a minimum number of cases (conf).
+The required sample size to detect a difference in means by a Student test with the desired significance (\code{conf.level}) and in a minimum number of cases (\code{conf}). If the required sample size exceeds \code{nmax}, a warning message is printed.
 }
 \description{
 Identify the sample size needed to detect a difference between two samples
 }
 \examples{
-identify_ech(mean1=100,mean2=101,sd1=2,sd2=3,nmax=10000)
+identify_ech(mean1=100, mean2=101, sd1=2, sd2=3, nmax=10000)
 }

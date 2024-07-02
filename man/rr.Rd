@@ -7,40 +7,27 @@
 rr(Var = c(), optr = c(), app = c(), sigma = 5.15)
 }
 \arguments{
-\item{Var}{: measures.}
+\item{Var}{measures.}
 
-\item{optr}{: identifiers of the three operators.}
+\item{optr}{identifiers of the three operators.}
 
-\item{app}{: identifiers of the 10 pieces.}
+\item{app}{identifiers of the 10 pieces.}
 
-\item{sigma}{: tolerated variations (multiplication factor of the standard deviation).}
+\item{sigma}{tolerated variations (multiplication factor of the standard deviation).}
 }
 \value{
-This function calculates the GageR&R.
-
-It is used to check the reliability of a measuring system.
-
-The following command is used to calculate the following parameters:
-
-repeatability - variability due to the measuring equipment.
-
-reproducibility - variability due to operators.
-
-R&R: Gage - R_R - combined effect of repeatability and reproducibility.
-
-Vp - Part - variability due to the measured parts.
-
-Vt - total variability.
-
-It also directly infers the percentage of the total variability that each of these variabilities represents :
-
-Equipment share: Share_Equipment - Percentage of total variability due to measuring equipment
-
-Operator share: share_Operators - Percentage of total variability due to operators
-
-Share of R&R (\%R&R): share_R_R - Percentage of total variability due to the combination repeatability&reproducibility
-
-Part_Part - Percentage of total variability due to the measured parts
+A list containing the following elements:
+\describe{
+\item{repeatability}{Variability due to the measuring equipment.}
+\item{reproducibility}{Variability due to operators.}
+\item{RR}{Combined effect of repeatability and reproducibility.}
+\item{Vp}{Part - variability due to the measured parts.}
+\item{Vt}{Total variability.}
+\item{part_Equipement}{Percentage of total variability due to measuring equipment.}
+\item{part_Operators}{Percentage of total variability due to operators.}
+\item{part_R_R}{Percentage of total variability due to the combination of repeatability and reproducibility.}
+\item{part_Pieces}{Percentage of total variability due to the measured parts.}
+}
 }
 \description{
 Gage R&R

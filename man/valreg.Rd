@@ -24,13 +24,13 @@ valreg(
 
 \item{verbose}{To see the detailed balance sheet}
 
-\item{nvar}{The maximum number of variables allowed.}
+\item{nvar}{The maximum number of variables allowed}
 
 \item{boot}{For checking the model by bootstrap with bootreg() (FALSE or TRUE)}
 
-\item{alpha}{Maximum value accepted for the p-values of the model and its coefficients.}
+\item{alpha}{Maximum value accepted for the p-values of the model and its coefficients}
 
-\item{conf.level}{Confidence interval accepted to validate the regression model by bootstrap.}
+\item{conf.level}{Confidence interval accepted to validate the regression model by bootstrap}
 
 \item{plot}{For seeing the graphical analysis of bootreg() (FALSE or TRUE)}
 
@@ -53,26 +53,14 @@ valreg will therefore validate the regression model, control the p-values and, p
 Function to validate a regression model
 }
 \examples{
-#Example 1
+# Example 1: Linear model
 data(iris)
 reg <- lm(Sepal.Length~.,data=iris[,1:4])
 valreg(reg,verbose=TRUE)
-#Example 2
-data(airquality)
-reg <- lm(Wind~Temp,data=airquality)
-valreg(reg,verbose=TRUE)
-#Example 3
-data(mtcars)
-reg <- lm(cyl~gear,data=mtcars)
-valreg(reg,verbose=TRUE,boot=TRUE)
-#Example 4
-data(iris)
-reg <- lm(Petal.Width~Petal.Length,data=iris[iris$Species=="virginica",])
-valreg(reg,verbose=TRUE,boot=TRUE,plot=TRUE)
-plot(reg)
-#Example 5
-data(mtcars);
-reg<- lm(cyl~disp+hp,data=mtcars);
-corrigraph(mtcars,"cyl");
-valreg(reg, verbose=TRUE, plot=TRUE)
+
+# Example 2: Mixed model
+library(lme4)
+data(sleepstudy)
+reg_mixed <- lmer(Reaction ~ Days + (Days | Subject), data = sleepstudy)
+valreg(reg_mixed, verbose=TRUE)
 }

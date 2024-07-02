@@ -1,6 +1,6 @@
 Package: KefiR
 Title: KefiR Package
-Version: 0.0.0.9
+Version: 0.0.1.0
 Authors@R: 
     person(given = "Antoine",
            family = "Massé",
@@ -9,17 +9,41 @@ Authors@R:
            comment = c(ORCID = "YOUR-ORCID-ID"))
 Description: Useful functions under R for many topics (statistics, graphics, data mining, engineering, image analysis, bootstrap, sampling).
 Depends: R (>= 4.3.0)
-License: `GPL-3`
+License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.2
 VignetteBuilder: knitr
-Imports: stats, lmtest,
-     rgl, plotly, igraph, plot3Drgl, plot3D,
-     htmlwidgets, WRS2, agricolae, fda.usc, lawstat,
-     onewaytests, vioplot, MASS, graphics, foreach,
-     utils, methods, e1071, stringr, tseries, knitr, DescTools, plotrix
+Imports: 
+    stats, 
+    lmtest,
+    rgl, 
+    plotly, 
+    igraph, 
+    plot3Drgl, 
+    plot3D, 
+    car,
+    htmlwidgets, 
+    WRS2, 
+    agricolae, 
+    fda.usc, 
+    lawstat,
+    onewaytests, 
+    vioplot, 
+    MASS, 
+    graphics, 
+    foreach, 
+    lme4,
+    utils, 
+    methods, 
+    e1071, 
+    stringr, 
+    tseries, 
+    knitr, 
+    DescTools, 
+    plotrix,
+    MHTdiscrete
 ImportsFrom:
 Suggests: 
     dplyr,

@@ -7,27 +7,27 @@
 check_ech(n, mean, sd, conf.level = 0.99, conf = 0.95, iter = 200, cut = 100)
 }
 \arguments{
-\item{n}{: Size of my sample.}
+\item{n}{Size of my sample.}
 
-\item{mean}{: Average of my reference sample.}
+\item{mean}{Average of my reference sample.}
 
-\item{sd}{: Standard deviation of my sample.}
+\item{sd}{Standard deviation of my sample.}
 
-\item{conf.level}{: Expected confidence on Student's test when I compare 2 samples (0 to 1)}
+\item{conf.level}{Expected confidence on Student's test when comparing 2 samples (0 to 1)}
 
-\item{conf}{: Frequency of times we wish to have the desired p-value defined}
+\item{conf}{Frequency of times we wish to have the desired p-value defined}
 
-\item{iter}{: Number of iterations per bootstrap}
+\item{iter}{Number of iterations per bootstrap}
 
-\item{cut}{: Resolution (number of steps)}
+\item{cut}{Resolution (number of steps)}
 }
 \value{
-If I have a sample of which I know the size, what effect would I be able to see?
+The minimum detectable effect size (mean difference) that can be identified with the given sample size, confidence level, and other parameters. If it is not possible to find a significant variation with the provided sample size, a message will be printed.
 }
 \description{
 Determine the differences in mean that I can detect for a known sample size
 }
 \examples{
 # What minimum variation could I detect for a sample of 20 individuals (mean 170, sd 20)?
-check_ech(n=20,mean = 170,sd = 20)
+check_ech(n=20, mean = 170, sd = 20)
 }

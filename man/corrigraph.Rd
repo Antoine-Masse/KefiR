@@ -41,9 +41,9 @@ corrigraph(
 
 \item{ampli}{coefficient of amplification of vertices}
 
-\item{return}{if return=T, returns the correlation matrix of significant correlation.}
+\item{return}{if return=TRUE, returns the correlation matrix of significant correlation.}
 
-\item{wash}{automatically eliminates variables using differnts methods when there are too many variables (method = NA, stn (signal-to-noise ratio), sum, length).}
+\item{wash}{automatically eliminates variables using differents methods when there are too many variables (method = NA, stn (signal-to-noise ratio), sum, length).}
 
 \item{multi}{to ignore multiple regressions and control only single regressions.}
 
@@ -66,23 +66,15 @@ corrigraph(
 \item{evolreg}{TRUE or FALSE. Not yet available. Allows you to use the evolreg function to improve the predictive ability (R squared) for the variables specified in colY.}
 }
 \value{
-Correlation graph network (igraph) of the variables of a data.frame. Pay attention to the possible presence of non-numeric variables or missing data. Grouping of correlated variables: the vertices (circles) correspond to the variables. The more a variable is connected, the larger it appears. The color of the lines reflects the nature of the correlation (positive or negative).  The size of the lines is the value of the correlation from 0 to 1. All these correlations are significant (pval < 0.01). The coloured groupings reflect families of inter-correlated variables. BLUE: positive correlation - RED: negative correlation
-
-When mu is TRUE or prop : we see the connexion with mean effect (orange) and G (~chisq) effect (pink)
-
-The size of orange edge and pink edge depend of p-values (-1*log10(p-value)/10) of kruskal.test() and GTest().
-
-When indicating Y's in colY, the correlogram will identify the correlated X's, then the remaining X's correlated to these X's, and so on.
-
-X's not related to these Y's are excluded.
-
-The blue always displays the positive correlations and the red, negative correlations. When the display is green, it means that the predictive (~correlation) capacity of the variable can be reinforced by adding a 2nd variable in a multiple regression model (interaction X1+X2, X1*X2 or X1+X1:X2) better than X1 or X2 alone.
-
-Correlations between X or Y of the same level are neglected.
-
-The color of the vertices makes it possible to identify the correlated variables alone in a significant way (blue: positive, red: negative, purple: positive or negative depending on the Y).
-
-The values displayed to the right of the Ys (colY) correspond to the maximum predictive capacity of these Ys by one or two variables.
+Depending on the parameters:
+\describe{
+\item{igraph}{A correlation graph network (igraph) of the variables of a data.frame. Non-numeric variables or missing data may be present. Vertices (circles) represent variables, with size indicating connectivity. The color of the edges reflects the nature of the correlation (positive in blue, negative in red). The width of the edges represents the strength of the correlation.}
+\item{mu/prop}{If \code{mu} is TRUE or \code{prop} is specified: Connections display mean effects (orange) and dependencies between categorical variables (pink). The edge sizes depend on p-values from kruskal.test() and GTest().}
+\item{Y specification}{When \code{colY} is specified: The correlogram identifies X variables correlated to Y, iterating through layers specified by \code{level}. X variables not related to Y are excluded.}
+\item{vertex colors}{The color of vertices indicates significant correlations (blue for positive, red for negative, purple for both).}
+\item{max predictive capacity}{Values displayed next to Y variables (\code{colY}) indicate the maximum predictive capacity by one or two variables.}
+\item{correlation matrix}{If \code{return} is TRUE, the function returns the correlation matrix of significant correlations.}
+}
 }
 \description{
 igraph of correlated variables global or in relation to y

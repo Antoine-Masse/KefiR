@@ -1,20 +1,21 @@
 #' Identify the sample size needed to detect a difference between two samples
 #'
-#' @param mean1 : Sample Average 1
-#' @param mean2 : Sample Average 2
-#' @param sd1 : Sample standard deviation 1
-#' @param sd2 : Sample standard deviation 2
-#' @param iter : Number of iterations per bootstrap
-#' @param conf.level : Expected confidence on Student's test when I compare 2 samples (0 to 1)
-#' @param conf  : Percentage of times I expect to have a p-value that responds to my test if there is an effect when I compare 2 samples
-#' @param nmin : Minimum number of individuals accepted for the sample.
-#' @param nmax : Maximum number of individuals attainable for the sample.
+#' @param mean1 Sample Average 1
+#' @param mean2 Sample Average 2
+#' @param sd1 Sample standard deviation 1
+#' @param sd2 Sample standard deviation 2
+#' @param iter Number of iterations per bootstrap
+#' @param conf.level Expected confidence on Student's test when comparing 2 samples (0 to 1)
+#' @param conf Percentage of times I expect to have a p-value that responds to my test if there is an effect when comparing 2 samples
+#' @param nmin Minimum number of individuals accepted for the sample.
+#' @param nmax Maximum number of individuals attainable for the sample.
 #'
-#' @return : This function will tell you what the size of your two (supposedly normal) samples should be in order to be able to detect their difference in mean by a Student test with the desired significance (conf.level) and in a minimum number of cases (conf).
+#' @return The required sample size to detect a difference in means by a Student test with the desired significance (\code{conf.level}) and in a minimum number of cases (\code{conf}). If the required sample size exceeds \code{nmax}, a warning message is printed.
+#' 
 #' @export
 #'
 #' @examples
-#' identify_ech(mean1=100,mean2=101,sd1=2,sd2=3,nmax=10000)
+#' identify_ech(mean1=100, mean2=101, sd1=2, sd2=3, nmax=10000)
 identify_ech <- function(mean1,mean2,sd1,sd2,iter=500,conf.level = 0.99,conf=0.95,nmin=2,nmax=1000) {
   # Version 02 - 17/11/2020
   # par Antoine Masse
@@ -55,21 +56,21 @@ identify_ech <- function(mean1,mean2,sd1,sd2,iter=500,conf.level = 0.99,conf=0.9
 
 #' Determine the differences in mean that I can detect for a known sample size
 #'
-#' @param n : Size of my sample.
-#' @param mean : Average of my reference sample.
-#' @param sd : Standard deviation of my sample.
-#' @param conf.level : Expected confidence on Student's test when I compare 2 samples (0 to 1)
-#' @param conf  : Frequency of times we wish to have the desired p-value defined
-#' @param iter : Number of iterations per bootstrap
-#' @param cut : Resolution (number of steps)
+#' @param n Size of my sample.
+#' @param mean Average of my reference sample.
+#' @param sd Standard deviation of my sample.
+#' @param conf.level Expected confidence on Student's test when comparing 2 samples (0 to 1)
+#' @param conf Frequency of times we wish to have the desired p-value defined
+#' @param iter Number of iterations per bootstrap
+#' @param cut Resolution (number of steps)
 #'
-#' @return If I have a sample of which I know the size, what effect would I be able to see?
-#' @return
+#' @return The minimum detectable effect size (mean difference) that can be identified with the given sample size, confidence level, and other parameters. If it is not possible to find a significant variation with the provided sample size, a message will be printed.
+#' 
 #' @export
 #'
 #' @examples
 #' # What minimum variation could I detect for a sample of 20 individuals (mean 170, sd 20)?
-#' check_ech(n=20,mean = 170,sd = 20)
+#' check_ech(n=20, mean = 170, sd = 20)
 check_ech <- function(n, mean,sd,conf.level=0.99,conf=0.95, iter=200,cut=100){
   # Version 02 - 17 novembre 2020
   # Author : Antoine Masse
@@ -130,13 +131,14 @@ check_ech <- function(n, mean,sd,conf.level=0.99,conf=0.95, iter=200,cut=100){
 
 
 
-#' Anticipate the sample size that will be needed to detect a correlation (if there is one)
+#' Anticipate the sample size needed to detect a correlation (if there is one)
 #'
-#' @param x : The values of my x variable
-#' @param y : The values of my x variable
-#' @param iter : Number of iterations of bootstrapping
+#' @param x The values of my x variable
+#' @param y The values of my y variable
+#' @param iter Number of iterations of bootstrapping
 #'
-#' @return : When I do a regression/correlation, I may have an insignificant p-value due to the fact that I don't have enough values. This function exercises a bootstrap that will suggest how many values it would take to have a significant correlation (if any).
+#' @return The minimum sample size needed to detect a significant correlation with the given data, if a significant correlation exists. The function returns this sample size.
+#' 
 #' @export
 #' @importFrom stats cor.test
 #'

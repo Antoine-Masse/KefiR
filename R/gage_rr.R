@@ -1,28 +1,25 @@
 #' Gage R&R
 #'
-#' @param Var : measures.
-#' @param optr : identifiers of the three operators.
-#' @param app : identifiers of the 10 pieces.
-#' @param sigma : tolerated variations (multiplication factor of the standard deviation).
+#' @param Var measures.
+#' @param optr identifiers of the three operators.
+#' @param app identifiers of the 10 pieces.
+#' @param sigma tolerated variations (multiplication factor of the standard deviation).
 #'
-#' @return This function calculates the GageR&R.
-#' @return It is used to check the reliability of a measuring system.
-#' @return
-#' @return The following command is used to calculate the following parameters:
-#' @return
-#' @return repeatability - variability due to the measuring equipment.
-#' @return reproducibility - variability due to operators.
-#' @return R&R: Gage - R_R - combined effect of repeatability and reproducibility.
-#' @return Vp - Part - variability due to the measured parts.
-#' @return Vt - total variability.
-#' @return It also directly infers the percentage of the total variability that each of these variabilities represents :
-#' @return Equipment share: Share_Equipment - Percentage of total variability due to measuring equipment
-#' @return Operator share: share_Operators - Percentage of total variability due to operators
-#' @return Share of R&R (%R&R): share_R_R - Percentage of total variability due to the combination repeatability&reproducibility
-#' @return Part_Part - Percentage of total variability due to the measured parts
-#' @return
+#' @return A list containing the following elements:
+#' \describe{
+#'   \item{repeatability}{Variability due to the measuring equipment.}
+#'   \item{reproducibility}{Variability due to operators.}
+#'   \item{RR}{Combined effect of repeatability and reproducibility.}
+#'   \item{Vp}{Part - variability due to the measured parts.}
+#'   \item{Vt}{Total variability.}
+#'   \item{part_Equipement}{Percentage of total variability due to measuring equipment.}
+#'   \item{part_Operators}{Percentage of total variability due to operators.}
+#'   \item{part_R_R}{Percentage of total variability due to the combination of repeatability and reproducibility.}
+#'   \item{part_Pieces}{Percentage of total variability due to the measured parts.}
+#' }
+#'
 #' @export
-
+#'
 #' @examples
 #' set.seed(2)
 #' data <- data.frame("Measures"=rep(rnorm(10,20,0.007),9)*abs(rnorm(90,1,0.025)),
