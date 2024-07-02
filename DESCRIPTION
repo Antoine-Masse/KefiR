@@ -18,6 +18,7 @@ VignetteBuilder: knitr
 Imports: 
     stats, 
     lmtest,
+    lmerTest,
     rgl, 
     plotly, 
     igraph, 

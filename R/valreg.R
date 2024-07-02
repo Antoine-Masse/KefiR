@@ -23,6 +23,7 @@
 #' @importFrom graphics plot
 #' @importFrom MHTdiscrete Sidak.p.adjust
 #' @importFrom MASS fitdistr
+#' @importFrom lmerTest ranova
 #' @export
 #'
 #' @examples
@@ -372,7 +373,7 @@ valreg <- function(reg, verbose=TRUE, nvar=5, boot=TRUE, alpha=0.05, conf.level=
 
     if (count_terms_excluding_intercept(reg) >= 2) {
       counter <- counter + 1
-      car::vif(reg) -> vif_reg
+      vif(reg) -> vif_reg
       if (verbose) cat(counter, msg("- Multicollinearity test (VIF).\n", "- Test de multicolinéarité (VIF).\n"))
       if (max(vif_reg, na.rm = TRUE) > 5) {
         if (verbose) cat(msg("\tWarning!\n\tThe variance inflation factor (VIF) indicates collinear variables with car::vif(). max(vif()):", "\tAttention !\n\tLe facteur d'inflation de la variance (VIF) indique des variables collinéaires avec car::vif(). max(vif()) :"), max(vif_reg, na.rm = TRUE), "\n")
