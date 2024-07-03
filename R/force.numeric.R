@@ -12,9 +12,9 @@
 #' 
 force.numeric <- function(data) {
 	temp1 <- as.numeric(as.character(data[,1]))
-	if (all(is.na(temp))) {temp1 <- data[,1]}
+	if (all(is.na(temp1))) {temp1 <- data[,1]}
 	temp2 <- as.numeric(as.character(data[,2]))
-	if (all(is.na(temp))) {temp2 <- data[,2]}
+	if (all(is.na(temp2))) {temp2 <- data[,2]}
 	dt <- data.frame(temp1,temp2)
 	colnames(dt) <- colnames(data)[1:2]
 	if (ncol(data)>2) {

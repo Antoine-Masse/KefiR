@@ -1,53 +1,33 @@
-#' Plot data.frame and titles
-#'
-#' To help print graphics in M.test()
-#' @author Julien Bousquet (2021)
-#' @param x abscisse position of print
-#' @param y ordinate position of print
-#' @param info the information to print, a data.frame or a character string
-#' @param title a character string title printed in bald font. If only title is given, print in bald and italic
-device.print <- function(x, y, info=NULL, title=NULL){
-  police <- police.title <- "monospace"
-  linespace <- 2.25
-  font <- 1 # 1 =plain, 2=bold, 4=bold+italic
-  if(is.character(title)) {
-    text(x,y, title, family=police.title,   adj=c(0.5-0.5*is.null(info),1), font=2+2*is.null(info))
-    y <- y+linespace 
-  }
-
-  if(is.vector(info)){
-     text(x, y, info,  family=police,   adj=c(0.5,1))
-     y <- y+linespace 
-  }else if(is.data.frame(info)){
-        #Print dataframe info  into the current graphic device
-         text(x,y, paste(capture.output(print(info, digits=4, row.names=FALSE)), collapse='\n'),  family=police,   adj=c(0.5,1))
-         y <- y+linespace*(nrow(info)+1)
-  }
- return(c(x,y))
-}
-
-
 #' Automatic mean/median comparison
 #'
-#' `M.test()` do all the possible tests of comparison of mean, even not mathematically corrects and even
-#' if hypothesis are wrong. Execute tests to verify hypothesis. The results are summarised in a graph. The user need
-#' to choose the good path, which is can be done automatically by `m.test()`. By default, find the path the more to the left.
-#' @author Julien Bousquet (2021)
-#' @param x the values : a vector of values, with the samples to be compared.
-#' @param group categories : a vector of less (than maxcat) factors
-#' @param pval the usual level on confidence, 0.05 by default.
-#' @param verbose `FALSE` by defaul. Increase information. 
-#' @param return to be completed
-#' @param paired FALSE by default, but can be passed to TRUE if each value of x in categories are paired and in the same order.
-#' @param pval_ks The p-value for repartitions tests like Kolmogorov-Smirnov or Shapiro :  0.01 by default.
-#' @param maxcat The maximum number of categories : 50 by default.
+#' `mm.test()` performs all possible mean comparison tests, even if not mathematically correct and even if hypotheses are wrong. It executes tests to verify hypotheses, and the results are summarized in a graph. The user needs to choose the correct path, which can be done automatically by `m.test()`. By default, it finds the path that is more to the left.
+#' @author Julien BOUSQUET (2021)
+#'
+#' @param x The values: a vector of values, with the samples to be compared.
+#' @param group Categories: a vector of factors with fewer than maxcat categories.
+#' @param pval The usual confidence level, 0.05 by default.
+#' @param verbose `FALSE` by default. Increase information.
+#' @param return Logical. Should the results be returned? Default is `TRUE`.
+#' @param paired `FALSE` by default, but can be set to `TRUE` if each value of x in categories are paired and in the same order.
+#' @param pval_ks The p-value for distribution tests like Kolmogorov-Smirnov or Shapiro: 0.01 by default.
+#' @param maxcat The maximum number of categories: 50 by default.
 #' @param plot `TRUE` to plot the graph with all the results.
-#' @param silent `TRUE` to keep the function silent : no warning
-#' @param bootstrap `FALSE` by default, dont do bootstrap. `TRUE` to make `iter` sampling
-#' @param iter 100 by default, number of iterations in the bootstrap.
-#' @param conf Confidence of the bootstrap, 0.95 by default.
-#' @param code if `TRUE`, return the code that makes the different tests. `FALSE` by default
-#' @export
+#' @param silent `TRUE` to keep the function silent: no warnings.
+#' @param boot `FALSE` by default. If `TRUE`, perform bootstrap sampling with `iter` iterations.
+#' @param iter Number of iterations in the bootstrap, 100 by default.
+#' @param conf Confidence level of the bootstrap, 0.95 by default.
+#' @param code If `TRUE`, return the code that performs the different tests. `FALSE` by default.
+#' @param debug. `FALSE` by default. If `TRUE`, print debugging information.
+#' @return A list containing the results of the tests.
+#' @import foreach
+#' @import doParallel
+#' @importFrom stats var.test t.test wilcox.test fligner.test aov oneway.test kruskal.test bartlett.test
+#' @importFrom graphics arrows par plot.new points text
+#' @importFrom grDevices dev.new
+#' @examples
+#' # Example 1
+#' data(iris)
+#' #mm.test(iris$Sepal.Length, iris$Species)
 mm.test <- function(x, 
 	group, 
 	pval=0.05, 

@@ -44,9 +44,12 @@ Imports:
     knitr, 
     DescTools, 
     plotrix,
-    MHTdiscrete
-ImportsFrom:
+    MHTdiscrete,
+    broom,
+    doParallel,
+    grDevices
 Suggests: 
     dplyr,
     parallel,
-    knitr
+    rmarkdown,
+    testthat

@@ -8,6 +8,7 @@
 #' @param ylab label if y
 #' @param cex length of points
 #' @param pch pitch type
+#' @param labels labels for the points
 #' @return a graphic biplot more esthetic of biplot() function
 #'
 #' @import utils

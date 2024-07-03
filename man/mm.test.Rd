@@ -23,39 +23,47 @@ mm.test(
 )
 }
 \arguments{
-\item{x}{the values : a vector of values, with the samples to be compared.}
+\item{x}{The values: a vector of values, with the samples to be compared.}
 
-\item{group}{categories : a vector of less (than maxcat) factors}
+\item{group}{Categories: a vector of factors with fewer than maxcat categories.}
 
-\item{pval}{the usual level on confidence, 0.05 by default.}
+\item{pval}{The usual confidence level, 0.05 by default.}
 
-\item{verbose}{\code{FALSE} by defaul. Increase information.}
+\item{verbose}{\code{FALSE} by default. Increase information.}
 
-\item{return}{to be completed}
+\item{return}{Logical. Should the results be returned? Default is \code{TRUE}.}
 
-\item{paired}{FALSE by default, but can be passed to TRUE if each value of x in categories are paired and in the same order.}
+\item{paired}{\code{FALSE} by default, but can be set to \code{TRUE} if each value of x in categories are paired and in the same order.}
 
-\item{pval_ks}{The p-value for repartitions tests like Kolmogorov-Smirnov or Shapiro :  0.01 by default.}
+\item{pval_ks}{The p-value for distribution tests like Kolmogorov-Smirnov or Shapiro: 0.01 by default.}
 
-\item{maxcat}{The maximum number of categories : 50 by default.}
+\item{maxcat}{The maximum number of categories: 50 by default.}
 
 \item{plot}{\code{TRUE} to plot the graph with all the results.}
 
-\item{silent}{\code{TRUE} to keep the function silent : no warning}
+\item{silent}{\code{TRUE} to keep the function silent: no warnings.}
 
-\item{iter}{100 by default, number of iterations in the bootstrap.}
+\item{boot}{\code{FALSE} by default. If \code{TRUE}, perform bootstrap sampling with \code{iter} iterations.}
 
-\item{conf}{Confidence of the bootstrap, 0.95 by default.}
+\item{iter}{Number of iterations in the bootstrap, 100 by default.}
 
-\item{code}{if \code{TRUE}, return the code that makes the different tests. \code{FALSE} by default}
+\item{conf}{Confidence level of the bootstrap, 0.95 by default.}
 
-\item{bootstrap}{\code{FALSE} by default, dont do bootstrap. \code{TRUE} to make \code{iter} sampling}
+\item{code}{If \code{TRUE}, return the code that performs the different tests. \code{FALSE} by default.}
+
+\item{debug.}{\code{FALSE} by default. If \code{TRUE}, print debugging information.}
+}
+\value{
+A list containing the results of the tests.
 }
 \description{
-\code{M.test()} do all the possible tests of comparison of mean, even not mathematically corrects and even
-if hypothesis are wrong. Execute tests to verify hypothesis. The results are summarised in a graph. The user need
-to choose the good path, which is can be done automatically by \code{m.test()}. By default, find the path the more to the left.
+\code{mm.test()} performs all possible mean comparison tests, even if not mathematically correct and even if hypotheses are wrong. It executes tests to verify hypotheses, and the results are summarized in a graph. The user needs to choose the correct path, which can be done automatically by \code{m.test()}. By default, it finds the path that is more to the left.
+}
+\examples{
+# Example 1
+data(iris)
+#mm.test(iris$Sepal.Length, iris$Species)
 }
 \author{
-Julien Bousquet (2021)
+Julien BOUSQUET (2021)
 }

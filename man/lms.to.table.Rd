@@ -2,31 +2,29 @@
 % Please edit documentation in R/lms.to.table.R
 \name{lms.to.table}
 \alias{lms.to.table}
-\title{Make a table to summary coefficients of a list of linear models}
+\title{Make a table to summarize coefficients of a list of linear models}
 \usage{
 lms.to.table(L)
 }
 \arguments{
-\item{x}{vector of names of the columns to test in data, or dataframe of the vectors to test, or  a name of data column}
+\item{L}{A list of linear model objects.}
 }
 \value{
-a dataframe with all the terms of the different linear models and their coefficient.
-The minus sign - is set for absence of the term in the model
+A dataframe with all the terms of the different linear models and their coefficients.
+The minus sign '-' is set for absence of the term in the model.
 }
 \description{
-Make a table to summary coefficients of a list of linear models
+Make a table to summarize coefficients of a list of linear models
 }
 \details{
-The different linear models must be computed separetely, and then
-pass to the argument in a list format, using function list().
+The different linear models must be computed separately, and then
+passed to the argument in a list format, using the function list().
 }
 \examples{
 # Simple example
-
-# Call with numbers of columns 
-#wilcoxon.cut.test(x=2:4, group='FEF2', data=X, prop=0.2, boot=50) 
-# Call data with vectors and data.frame :
-#wilcoxon.cut.test(X[,2:3], group=X$FEF2, prop=0.1)
+# Assuming lm1, lm2, and lm3 are linear models
+# lm_list <- list(lm1, lm2, lm3)
+# lms.to.table(L=lm_list)
 
 }
 \author{

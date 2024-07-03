@@ -1,5 +1,7 @@
 #' Function to validate a regression model
 #'
+#' @author Antoine MASSE (2024)
+#' 
 #' @param reg A regression model
 #' @param verbose To see the detailed balance sheet
 #' @param nvar The maximum number of variables allowed
@@ -17,13 +19,14 @@
 #' @return valreg will therefore validate the regression model, control the p-values and, possibly (boot argument), control the reliability by bootstrap with the bootreg function.
 #' @import lmtest
 #' @import tseries
+#' @import lmerTest
 #' @importFrom stats cooks.distance
 #' @importFrom lme4 lmer ranef
 #' @importFrom car vif
 #' @importFrom graphics plot
 #' @importFrom MHTdiscrete Sidak.p.adjust
 #' @importFrom MASS fitdistr
-#' @importFrom lmerTest ranova
+#' @importFrom stats as.formula model.frame anova AIC resid fitted lm pf shapiro.test ks.test sd predict
 #' @export
 #'
 #' @examples
@@ -37,6 +40,12 @@
 #' data(sleepstudy)
 #' reg_mixed <- lmer(Reaction ~ Days + (Days | Subject), data = sleepstudy)
 #' valreg(reg_mixed, verbose=TRUE)
+#' 
+#' # Example 3: Mixed model
+#' library(lme4)
+#' data(iris)
+#' reg_mixed <- lmer(Sepal.Length ~ Petal.Length + (1|Species), data = iris)
+#' valreg(reg_mixed, verbose=TRUE)
 valreg <- function(reg, verbose=TRUE, nvar=5, boot=TRUE, alpha=0.05, conf.level=0.95,
                    plot=FALSE, data=c(), raintest_alpha=0.05, dwtest_alpha=0.03,
                    shapiro_alpha=0.05, bptest_alpha=0.05) {
@@ -46,9 +55,13 @@ valreg <- function(reg, verbose=TRUE, nvar=5, boot=TRUE, alpha=0.05, conf.level=
   locale <- Sys.getlocale("LC_MESSAGES")
   lang <- ifelse(grepl("fr", locale), "fr", "en")
 
-  msg <- function(en, fr) {
-    if (lang == "fr") fr else en
-  }
+	msg <- function(en, fr) {
+		sys_locale <- Sys.getlocale("LC_CTYPE")
+		# Extraire la langue principale (avant le premier point ou tiret bas)
+		lang <- sub("_.*", "", sys_locale)
+		lang <- sub("\\..*", "", lang)
+	  if (grepl("French", lang)) fr else en
+	}
 
   lrt <- function(model) {
     formula <- formula(model)
@@ -226,7 +239,7 @@ valreg <- function(reg, verbose=TRUE, nvar=5, boot=TRUE, alpha=0.05, conf.level=
         error <- FALSE
       } else {
         if (verbose) cat(msg("\tThe random effect improves the model compared to fixed effects alone.\n", "\tL'effet aléatoire améliore le modèle par rapport aux effets fixes seuls.\n"))
-        pval_of_ranova <- max(suppressMessages(suppressWarnings({ranova(model)}))$`Pr(>Chisq)`, na.rm = TRUE)
+        pval_of_ranova <- max(suppressMessages(suppressWarnings({ranova(reg)}))$`Pr(>Chisq)`, na.rm = TRUE)
         if (pval_of_ranova < alpha) {
           if (verbose) cat(msg("\t\tConfirmation by ranova().\n", "\t\tConfirmation par ranova().\n"))
         } else {
@@ -236,7 +249,22 @@ valreg <- function(reg, verbose=TRUE, nvar=5, boot=TRUE, alpha=0.05, conf.level=
       }
     }
 
-    pval_coeff <- summary(reg)$coefficients[, "Pr(>|t|)"]
+	# Fonction pour obtenir les p-values des coefficients
+	get_pvals <- function(model) {
+		summary_lmerModLmerTest <- lmerTest:::summary.lmerModLmerTest
+		if (inherits(reg, "lm")) {
+		  pvals <- summary(model)$coefficients[, "Pr(>|t|)"]
+		} else {
+		    # Supprimer les messages de coercition
+			suppressMessages({
+				model <- lmerTest:::as_lmerModLmerTest(model)
+			})
+			pvals <- summary_lmerModLmerTest(model)$coefficients[, "Pr(>|t|)"]
+		}
+		return(pvals)
+	}
+
+    pval_coeff <- get_pvals(reg)
     if (max(pval_coeff) > alpha) {
       if (verbose) cat(msg("\tWarning!\n\tBad significance of the coefficients. max(p.value):", "\tAttention !\n\tMauvaise signification des coefficients. max(p.value) :"), max(pval_coeff), "\n")
       error <- FALSE
@@ -255,7 +283,7 @@ valreg <- function(reg, verbose=TRUE, nvar=5, boot=TRUE, alpha=0.05, conf.level=
         if (verbose) cat(msg("\tShapiro-Wilk test (shapiro.test()) - Normal distribution of residuals. p.value:", "\tTest de Shapiro-Wilk (shapiro.test()) - Distribution normale des résidus. p.value :"), pvalt, "\n")
       }
     } else if (length(resid(reg)) <= 1000) {
-      cat(msg("Warning! No Shapiro-Wilk test because more than 50 values.\n", "Attention ! Pas de test de Shapiro-Wilk car plus de 50 valeurs.\n"))
+      cat(msg("\tWarning! No Shapiro-Wilk test because more than 50 values.\n", "\tAttention ! Pas de test de Shapiro-Wilk car plus de 50 valeurs.\n"))
       jarque.bera.test(residuals(reg))$p.value -> pvalt
       if (pvalt < shapiro_alpha) {
         if (verbose) cat(msg("\tWarning!\n\tJarque-Bera test (jarque.bera.test() of {tseries}) - Non-normal distribution of residuals. p.value:", "\tAttention !\n\tTest de Jarque-Bera (jarque.bera.test() de {tseries}) - Distribution non normale des résidus. p.value :"), pvalt, "\n")

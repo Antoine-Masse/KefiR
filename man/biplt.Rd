@@ -33,6 +33,8 @@ biplt(
 \item{cex}{length of points}
 
 \item{pch}{pitch type}
+
+\item{labels}{labels for the points}
 }
 \value{
 a graphic biplot more esthetic of biplot() function

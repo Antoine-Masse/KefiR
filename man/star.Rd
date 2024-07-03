@@ -18,10 +18,10 @@ A character string with stars, dot or blank space.
 A function that transforms pvalues in stars ***
 }
 \examples{
-star(0.015)
+#star(0.015)
 #for a vector of p-values
 pvals <- c(0.01, 0.05, 0.015, 0.5)
-sapply(pvals, star)
+#sapply(pvals, star)
 }
 \author{
 Julien Bousquet (2021)

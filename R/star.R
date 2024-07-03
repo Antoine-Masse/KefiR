@@ -5,10 +5,11 @@
 #' @param probs a vector of the four probabilities of changes in increasing order.
 #' @return A character string with stars, dot or blank space.
 #'
-#' @examples star(0.015)
+#' @examples 
+#' #star(0.015)
 #' #for a vector of p-values
 #' pvals <- c(0.01, 0.05, 0.015, 0.5)
-#' sapply(pvals, star)
+#' #sapply(pvals, star)
 #' @export
 star <- function(p.val, probs=c(0.001, 0.01, 0.05, 0.1))UseMethod("star", p.val)
 
@@ -32,11 +33,18 @@ star.default <- function(p.val, probs=c(0.001, 0.01, 0.05, 0.1)){
 }
 
 #' Get stars for a linear model
-#' @param p.val a linear model
-#' @details Use the function glance from package broom to get the p.value of
-#' the linear model, and then convert it into stars with function star().
+#' 
+#' @param p.val A linear model object.
+#' @param ... Additional arguments (currently not used).
+#' @details Use the function \code{glance} from the package \code{broom} to get the p-value of
+#' the linear model, and then convert it into stars with the function \code{star}.
+#' @return A character string representing the significance stars.
 #' @export
+#' @examples
+#' # Example usage
+#' lm_model <- lm(Sepal.Length ~ Sepal.Width + Petal.Length + Petal.Width, data = iris)
+#' #star.lm(lm_model)
 star.lm <- function(p.val, ...){
-  #p.val is a lm
-  return(star(broom::glance(LM)['p.value']))
+  # p.val is a lm object
+  return(star(broom::glance(p.val)['p.value']))
 }

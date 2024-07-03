@@ -63,4 +63,13 @@ library(lme4)
 data(sleepstudy)
 reg_mixed <- lmer(Reaction ~ Days + (Days | Subject), data = sleepstudy)
 valreg(reg_mixed, verbose=TRUE)
+
+# Example 3: Mixed model
+library(lme4)
+data(iris)
+reg_mixed <- lmer(Sepal.Length ~ Petal.Length + (1|Species), data = iris)
+valreg(reg_mixed, verbose=TRUE)
+}
+\author{
+Antoine MASSE (2024)
 }
