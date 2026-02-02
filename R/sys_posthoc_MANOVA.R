@@ -1,0 +1,391 @@
+#' Post-hoc analyses for MANOVA
+#'
+#' Performs appropriate follow-up analyses after a significant MANOVA result.
+#' Includes discriminant analysis to identify which dependent variables
+#' separate the groups, and protected univariate ANOVAs with Bonferroni correction.
+#'
+#' @param x Matrix of dependent variables (p columns = p DVs)
+#' @param g Factor vector of group memberships
+#' @param manova_result The MANOVA result object from .manova_analysis()
+#' @param alpha Significance level (default = 0.05)
+#' @param method Method for post-hoc: "discriminant" (default), "protected_anova", or "both"
+#' @param verbose Logical, print detailed messages
+#' @param debug Logical, print debug messages
+#' @param k Message counter
+#'
+#' @return List containing:
+#'   \itemize{
+#'     \item discriminant_analysis: Results from discriminant analysis (if requested)
+#'     \item protected_anovas: Results from protected univariate ANOVAs (if requested)
+#'     \item interpretation: Text interpretation of results
+#'   }
+#'
+#' @details
+#' **APPROPRIATE POST-HOC METHODS FOR MANOVA**
+#'
+#' After a significant MANOVA, standard univariate post-hocs (Tukey, etc.) are
+#' inappropriate because they ignore the multivariate structure and correlations
+#' between dependent variables.
+#'
+#' **Recommended approaches** (Huberty & Olejnik, 2006):
+#'
+#' 1. **Discriminant Analysis** (Primary recommendation)
+#'    - Identifies which linear combination of DVs best separates groups
+#'    - Shows which DVs contribute most to group separation
+#'    - Provides canonical discriminant functions
+#'    - Reference: Huberty & Olejnik (2006). Applied MANOVA and Discriminant Analysis, 2nd ed.
+#'
+#' 2. **Protected Univariate ANOVAs**
+#'    - Perform separate ANOVA on each DV
+#'    - Apply Bonferroni correction: alpha_adjusted = alpha / p (p = number of DVs)
+#'    - Only valid if MANOVA was significant (protection against Type I error inflation)
+#'    - Reference: Stevens, J. P. (2009). Applied Multivariate Statistics for the Social Sciences, 5th ed.
+#'
+#' 3. **Roy-Bargmann Stepdown Analysis** (Advanced, not implemented yet)
+#'    - Tests DVs sequentially in order of theoretical importance
+#'    - Controls for previously tested DVs
+#'    - Reference: Roy, S. N., & Bargmann, R. E. (1958). Tests of multiple independence
+#'
+#' **NOT recommended:**
+#' - Pairwise multivariate comparisons (complex, low power)
+#' - Univariate post-hocs without MANOVA protection (inflates Type I error)
+#'
+#' @note
+#' This function should only be called after a significant MANOVA result.
+#' The MANOVA provides protection against Type I error inflation when
+#' examining individual dependent variables.
+#'
+#' @references
+#' Huberty, C. J., & Olejnik, S. (2006). Applied MANOVA and Discriminant Analysis (2nd ed.). Wiley.
+#' Stevens, J. P. (2009). Applied Multivariate Statistics for the Social Sciences (5th ed.). Routledge.
+#' Tabachnick, B. G., & Fidell, L. S. (2019). Using Multivariate Statistics (7th ed.). Pearson.
+#'
+#' @examples
+#' \dontrun{
+#' # After significant MANOVA
+#' manova_res <- .manova_analysis(cbind(A,B,C) ~ Group, data=data)
+#' if (manova_res$test_statistics["Wilks", "p.value"] < 0.05) {
+#'   posthoc <- .posthoc_MANOVA(
+#'     x = manova_res$x,
+#'     g = manova_res$g,
+#'     manova_result = manova_res,
+#'     method = "both",
+#'     verbose = TRUE
+#'   )
+#' }
+#' }
+#'
+.posthoc_MANOVA <- function(x = NULL,
+                            g = NULL,
+                            manova_result = NULL,
+                            alpha = 0.05,
+                            method = "both",
+                            verbose = FALSE,
+                            code = FALSE,
+                            debug = FALSE,
+                            k = NULL) {
+
+  # =============================================================================
+  # VALIDATION
+  # =============================================================================
+
+  if (is.null(x) || is.null(g)) {
+    .exit("x and g are required for MANOVA post-hoc analysis",
+          "x et g sont requis pour les post-hocs MANOVA")
+  }
+
+  if (!is.matrix(x)) {
+    .exit("x must be a matrix for MANOVA post-hoc (multiple dependent variables)",
+          "x doit être une matrice pour post-hocs MANOVA (plusieurs variables dépendantes)")
+  }
+
+  if (!is.factor(g)) {
+    g <- as.factor(g)
+  }
+
+  # Vérifier que MANOVA était significative
+  if (!is.null(manova_result) && !is.null(manova_result$test_statistics)) {
+    # Extraire p-value de Wilks (peut être matrice ou data.frame)
+    wilks_p <- tryCatch({
+      if (is.matrix(manova_result$test_statistics) || is.data.frame(manova_result$test_statistics)) {
+        manova_result$test_statistics["Wilks", "p.value"]
+      } else if (is.list(manova_result$test_statistics) && !is.null(manova_result$test_statistics$Wilks)) {
+        manova_result$test_statistics$Wilks$p.value
+      } else {
+        NA
+      }
+    }, error = function(e) NA)
+
+    # Vérifier que wilks_p est valide avant comparaison
+    if (!is.na(wilks_p) && is.numeric(wilks_p) && wilks_p >= alpha) {
+      k <- .vbse(
+        paste0("WARNING: MANOVA was not significant (Wilks p=", round(wilks_p, 4),
+               "). Post-hoc analyses may not be appropriate."),
+        paste0("ATTENTION: La MANOVA n'était pas significative (Wilks p=", round(wilks_p, 4),
+               "). Les post-hocs peuvent ne pas être appropriés."),
+        verbose = verbose, code = code, k = k, cpt = "on"
+      )
+    }
+  }
+
+  # =============================================================================
+  # PARAMÈTRES
+  # =============================================================================
+
+  n <- nrow(x)
+  p <- ncol(x)  # Nombre de variables dépendantes
+  n_groups <- length(levels(g))
+
+  k <- .vbse(
+    paste0("POST-HOC MANOVA ANALYSIS\n",
+           "\t", n, " observations, ", p, " DVs, ", n_groups, " groups\n",
+           "\tMethod: ", method),
+    paste0("ANALYSE POST-HOC MANOVA\n",
+           "\t", n, " observations, ", p, " VDs, ", n_groups, " groupes\n",
+           "\tMéthode : ", method),
+    verbose = verbose, code = code, k = k, cpt = "on"
+  )
+
+  result <- list()
+
+  # =============================================================================
+  # 1. ANALYSE DISCRIMINANTE
+  # =============================================================================
+
+  if (method %in% c("discriminant", "both")) {
+
+    .dbg("Performing discriminant analysis...",
+         "Analyse discriminante en cours...", debug = debug)
+
+    # Vérifier si package MASS disponible
+    if (requireNamespace("MASS", quietly = TRUE)) {
+
+      # Créer data frame pour lda()
+      df <- as.data.frame(x)
+      colnames(df) <- paste0("DV", 1:p)
+      df$Group <- g
+
+      # Analyse discriminante linéaire
+      lda_result <- tryCatch({
+        MASS::lda(Group ~ ., data = df)
+      }, error = function(e) {
+        k <<- .vbse(
+          paste0("ERROR in discriminant analysis: ", e$message),
+          paste0("ERREUR dans l'analyse discriminante: ", e$message),
+          verbose = verbose, code = code, k = k, cpt = "on"
+        )
+        return(NULL)
+      })
+
+      if (!is.null(lda_result)) {
+
+        # Proportions de variance expliquée par chaque fonction discriminante
+        prop_trace <- lda_result$svd^2 / sum(lda_result$svd^2)
+
+        # Coefficients standardisés (structure matrix)
+        # Corrélations entre DVs et fonctions discriminantes
+        lda_predict <- predict(lda_result)
+        correlations <- cor(x, lda_predict$x)
+
+        # Message d'en-tête compact
+        n_functions <- length(lda_result$svd)
+        k <- .vbse(
+          paste0("DISCRIMINANT ANALYSIS:\n",
+                 "\tNumber of discriminant functions: ", n_functions),
+          paste0("ANALYSE DISCRIMINANTE :\n",
+                 "\tNombre de fonctions discriminantes : ", n_functions),
+          verbose = verbose, code = code, k = k, cpt = "on"
+        )
+
+        # Afficher proportion de variance pour chaque fonction (max 3)
+        if (n_functions > 0) {
+          prop_messages_en <- character()
+          prop_messages_fr <- character()
+          for (i in 1:min(n_functions, 3)) {
+            prop_messages_en <- c(prop_messages_en,
+                                  paste0("\tLD", i, ": ", round(prop_trace[i] * 100), "%"))
+            prop_messages_fr <- c(prop_messages_fr,
+                                  paste0("\tFD", i, " : ", round(prop_trace[i] * 100), "%"))
+          }
+
+          k <- .vbse(
+            paste0("Proportion of between-group variance explained:\n",
+                   paste(prop_messages_en, collapse = "\n")),
+            paste0("Proportion de variance inter-groupes expliquée :\n",
+                   paste(prop_messages_fr, collapse = "\n")),
+            verbose = verbose, code = code, k = k, cpt = "off"
+          )
+        }
+
+        # Identifier les DVs les plus importantes pour chaque fonction (max 2)
+        for (i in 1:min(ncol(correlations), 2)) {
+          max_idx <- which.max(abs(correlations[, i]))
+          max_cor <- correlations[max_idx, i]
+          dv_name <- if (!is.null(colnames(x))) colnames(x)[max_idx] else paste0("DV", max_idx)
+
+          k <- .vbse(
+            paste0("\tLD", i, ": Main variable = ", dv_name, " (r = ", round(max_cor, 3), ")"),
+            paste0("\tFD", i, " : Variable la plus importante = ", dv_name, " (r = ", round(max_cor, 3), ")"),
+            verbose = verbose, code = code, k = k, cpt = "off"
+          )
+        }
+
+        # Stocker SEULEMENT les résumés (pas les objets complets)
+        # Pour éviter un retour trop verbeux
+        result$discriminant_analysis <- list(
+          n_functions = n_functions,
+          prop_variance = prop_trace,
+          structure_matrix = correlations
+          # NOTE: lda et predictions disponibles en relançant MASS::lda() si besoin
+        )
+      }
+
+    } else {
+      k <- .vbse(
+        "Package 'MASS' not available. Discriminant analysis skipped.\n\tInstall with: install.packages('MASS')",
+        "Package 'MASS' non disponible. Analyse discriminante ignorée.\n\tInstaller avec: install.packages('MASS')",
+        verbose = verbose, code = code, k = k, cpt = "on"
+      )
+    }
+  }
+
+  # =============================================================================
+  # 2. ANOVAS UNIVARIÉES PROTÉGÉES (Bonferroni)
+  # =============================================================================
+
+  if (method %in% c("protected_anova", "both")) {
+
+    .dbg("Performing protected univariate ANOVAs...",
+         "ANOVAs univariées protégées en cours...", debug = debug)
+
+    # Ajustement Bonferroni
+    alpha_adjusted <- alpha / p
+
+    k <- .vbse(
+      paste0("PROTECTED UNIVARIATE ANOVAs (Bonferroni correction):\n",
+             "\tOriginal alpha: ", alpha, "\n",
+             "\tAdjusted alpha: ", round(alpha_adjusted, 3), " (alpha / ", p, " DVs)"),
+      paste0("ANOVAs UNIVARIÉES PROTÉGÉES (correction Bonferroni) :\n",
+             "\tAlpha original : ", alpha, "\n",
+             "\tAlpha ajusté : ", round(alpha_adjusted, 3), " (alpha / ", p, " VDs)"),
+      verbose = verbose, code = code, k = k, cpt = "on"
+    )
+
+    anova_results <- list()
+    sig_dvs <- character()
+    nonsig_dvs <- character()
+
+    for (i in 1:p) {
+      dv_name <- if (!is.null(colnames(x))) colnames(x)[i] else paste0("DV", i)
+
+      # ANOVA pour cette DV
+      dv_data <- x[, i]
+      aov_result <- aov(dv_data ~ g)
+      aov_summary <- summary(aov_result)
+
+      f_stat <- aov_summary[[1]]["g", "F value"]
+      p_value <- aov_summary[[1]]["g", "Pr(>F)"]
+      df1 <- aov_summary[[1]]["g", "Df"]
+      df2 <- aov_summary[[1]]["Residuals", "Df"]
+
+      # Test de significativité avec alpha ajusté
+      is_sig <- p_value < alpha_adjusted
+
+      # Collecter pour synthèse
+      dv_result <- paste0(dv_name, ": F(", df1, ",", df2, ")=", round(f_stat, 2),
+                          ", p=", .format_pval(p_value))
+      if (is_sig) {
+        sig_dvs <- c(sig_dvs, dv_result)
+      } else {
+        nonsig_dvs <- c(nonsig_dvs, dv_result)
+      }
+
+      # Stocker SEULEMENT les statistiques (pas le modèle complet)
+      # Pour éviter un retour trop verbeux
+      anova_results[[dv_name]] <- list(
+        F = f_stat,
+        df1 = df1,
+        df2 = df2,
+        p_value = p_value,
+        significant = is_sig,
+        alpha_adjusted = alpha_adjusted
+        # NOTE: model aov disponible en relançant aov() si besoin
+      )
+    }
+
+    result$protected_anovas <- anova_results
+
+    # Synthèse des résultats
+    n_sig <- length(sig_dvs)
+
+    # Afficher SEULEMENT les DVs significatives (standard post-hoc)
+    if (n_sig > 0) {
+      for (dv_info in sig_dvs) {
+        k <- .vbse(
+          paste0("\t", dv_info, " *SIGNIFICANT*"),
+          paste0("\t", dv_info, " *SIGNIFICATIF*"),
+          verbose = verbose, code = code, k = k, cpt = "off"
+        )
+      }
+    }
+
+    # Message de résumé final (cpt = "off" car c'est une suite de l'étape précédente)
+    k <- .vbse(
+      paste0("Summary: ", n_sig, "/", p, " dependent variables show significant differences\n",
+             "\t(after Bonferroni correction)"),
+      paste0("Résumé : ", n_sig, "/", p, " variables dépendantes montrent des différences significatives\n",
+             "\t(après correction Bonferroni)"),
+      verbose = verbose, code = code, k = k, cpt = "off"
+    )
+  }
+
+  # =============================================================================
+  # 3. RETOUR - Nettoyage des champs internes
+  # =============================================================================
+
+  # Conformément à bp.log section 7.4.6 : Supprimer champs internes
+  result$k <- NULL         # Compteur .vbse() (usage interne uniquement)
+  result$verbose <- NULL   # Paramètres internes
+  result$debug <- NULL     # Paramètres internes
+
+  # =============================================================================
+  # 4. NORMALISATION AU FORMAT .posthoc() STANDARD
+  # =============================================================================
+  # Ajouter $groups et $p.value pour compatibilité avec le standard KefiR
+  # Référence: Format standard défini dans .posthoc.R
+
+  if (!is.null(result$protected_anovas) && length(result$protected_anovas) > 0) {
+    # Créer dataframe $groups avec lettres de significativité
+    dv_names <- names(result$protected_anovas)
+    sig_status <- sapply(result$protected_anovas, function(x) x$significant)
+
+    # Lettres : 'a' si non significatif, 'b' si significatif (simplifié)
+    # Note: Pour MANOVA, les "groupes" sont en fait les DVs
+    groups_df <- data.frame(
+      dependent_variable = dv_names,
+      significance = ifelse(sig_status, "significant", "ns"),
+      p_value = sapply(result$protected_anovas, function(x) x$p_value),
+      stringsAsFactors = FALSE
+    )
+
+    result$groups <- groups_df
+
+    # Créer matrice $p.value (simplifié : p-values des ANOVAs protégées)
+    pval_vec <- sapply(result$protected_anovas, function(x) x$p_value)
+    names(pval_vec) <- dv_names
+    result$p.value <- pval_vec
+  } else {
+    # Si pas d'ANOVAs protégées, format minimal
+    result$groups <- data.frame(
+      dependent_variable = character(0),
+      significance = character(0),
+      stringsAsFactors = FALSE
+    )
+    result$p.value <- numeric(0)
+  }
+
+  # Ajouter classe "posthoc" pour cohérence
+  class(result) <- c("posthoc_manova", "posthoc", "list")
+
+  return(result)
+}

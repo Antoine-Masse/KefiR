@@ -3,3 +3,15 @@
 ^devtools_history\.Rproj$
 ^devtools_history\.R$
 ^comment-utiliser-mon-package\.Rmd$
+^\.git$
+^\.gitignore$
+^kefir\.log$
+^bp\.log$
+^R/poubelle$
+^R/audit.*\.R$
+^R/move_to_poubelle\.sh$
+^R/RAPPORT_AUDIT.*\.md$
+^Rplots\.pdf$
+^\.Rhistory$
+^R_poubelle$
+^Save$

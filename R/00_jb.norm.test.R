@@ -23,12 +23,13 @@ jb.normtest <- function(x, nrepl = 2000) {
         a1 <- sqrt(n) * (sum((z - z1)^3))/((sum((z - z1)^2))^(3/2))
         a2 <- n * (sum((z - z1)^4))/((sum((z - z1)^2))^2)
         T <- (n/6) * ((a1)^2 + ((a2 - 3)^2)/4)
-        if (T > t) 
+        if (T > t)
             l = l + 1
     }
     p.value <- l/nrepl
-    RVAL <- list(statistic = c(JB = t), p.value = p.value, method = "Jarque-Bera test for normality", 
+    RVAL <- list(statistic = c(JB = t), p.value = p.value, method = "Jarque-Bera test for normality",
         data.name = DNAME)
     class(RVAL) <- "htest"
     return(RVAL)
-	}
+}
+jb.norm.test <- jb.normtest

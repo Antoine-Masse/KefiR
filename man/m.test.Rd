@@ -5,12 +5,12 @@
 \title{Automatic average/median/variance comparison function.}
 \usage{
 m.test(
-  data,
-  cat,
+  formula,
+  data = NULL,
   alpha = 0.05,
   verbose = TRUE,
   return = TRUE,
-  paired = FALSE,
+  id = NULL,
   control = c(),
   maxcat = 50,
   plot = TRUE,
@@ -23,9 +23,9 @@ m.test(
 )
 }
 \arguments{
-\item{data}{numerical vector}
+\item{formula}{a formula of the form response ~ group (e.g., A~F or I~G)}
 
-\item{cat}{category vector}
+\item{data}{an optional data frame containing the variables in the formula}
 
 \item{alpha}{p-value threshold value for all the tests.}
 
@@ -33,7 +33,7 @@ m.test(
 
 \item{return}{allows to return the results of pairwise analysis (p-values and groups).}
 
-\item{paired}{(under development) to allow the analysis of matched data.}
+\item{id}{name of the column containing subject identifiers for repeated measures analysis}
 
 \item{control}{name of the category that will eventually be used as a control.}
 

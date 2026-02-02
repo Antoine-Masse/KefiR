@@ -14,7 +14,14 @@ biplt(
   ylab = "cps",
   cex = 2,
   pch = 16,
-  labels = rownames(pca$x)
+  labels = rownames(pca$x),
+  main = "",
+  legend = FALSE,
+  legend.labels = NULL,
+  legend.pos = "topright",
+  legend.pch = NULL,
+  legend.title = "",
+  legend.col = NULL
 )
 }
 \arguments{
@@ -35,6 +42,20 @@ biplt(
 \item{pch}{pitch type}
 
 \item{labels}{labels for the points}
+
+\item{main}{main title for the plot}
+
+\item{legend}{logical, whether to display a legend}
+
+\item{legend.labels}{character vector of labels for the legend}
+
+\item{legend.pos}{position of the legend (e.g., "topright", "topleft")}
+
+\item{legend.pch}{pch symbols for the legend}
+
+\item{legend.title}{title for the legend}
+
+\item{legend.col}{colors for the legend}
 }
 \value{
 a graphic biplot more esthetic of biplot() function

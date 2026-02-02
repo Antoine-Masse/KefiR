@@ -4,7 +4,16 @@
 \alias{pairwise.boot}
 \title{Calculate an pairwise difference between samples by bootstrap without encountering a central-limit problem}
 \usage{
-pairwise.boot(x, g, iter = 500, mu = "meanbp")
+pairwise.boot(
+  x,
+  g,
+  iter = 500,
+  mu = "meanbp",
+  debug = FALSE,
+  p.adjust.method = "holm",
+  conf.level = 0.95,
+  alternative = "two.sided"
+)
 }
 \arguments{
 \item{x}{numerical vector}
@@ -14,6 +23,14 @@ pairwise.boot(x, g, iter = 500, mu = "meanbp")
 \item{iter}{number of iteration}
 
 \item{mu}{comparison criterion, by default 'meanbp' (moving average per iteration: an automatic compromise between mean and median), otherwise 'mean', 'median' or 'sd'.}
+
+\item{debug}{logical, if TRUE enables debug mode for troubleshooting}
+
+\item{p.adjust.method}{method for p-value adjustment (default: "holm")}
+
+\item{conf.level}{confidence level for statistical tests (default: 0.95)}
+
+\item{alternative}{alternative hypothesis: "two.sided", "less", or "greater" (default: "two.sided")}
 }
 \value{
 This function returns an array of p-values like the other peerwise functions.

@@ -13,6 +13,7 @@ valreg(
   conf.level = 0.95,
   plot = FALSE,
   data = c(),
+  code = FALSE,
   raintest_alpha = 0.05,
   dwtest_alpha = 0.03,
   shapiro_alpha = 0.05,
@@ -35,6 +36,8 @@ valreg(
 \item{plot}{For seeing the graphical analysis of bootreg() (FALSE or TRUE)}
 
 \item{data}{optional, the data.frame of data if complex model.}
+
+\item{code}{allows to display the simplified R source code to be able to do the same R study step by step.}
 
 \item{raintest_alpha}{Minimal value of p-value accepted for Rainbow test}
 

@@ -1,0 +1,343 @@
+#' Génère ou adapte une formule R pour différents types de modèles (ANOVA, Friedman, aovp, etc.)
+#'
+#' La fonction \code{formulator} prend en entrée une \code{\link[stats]{formula}} (ou un objet
+#' convertible en formule) ainsi qu'un mode de traitement \code{c("aov", "friedman", "aovp")}.
+#' Elle renvoie une nouvelle formule adaptée au contexte du modèle choisi, en gérant notamment :
+#' \itemize{
+#'   \item La présence éventuelle d'effets aléatoires de type \code{(1|random)} ou
+#'         \code{(var|random)}, qu'elle transforme en \code{Error(random)} ou
+#'         \code{Error(random/var)} pour \code{aov}.
+#'   \item La structure d'erreur explicite via \code{Error(...)}.
+#'   \item La détection de la barre verticale \code{|} pour séparer des prédicteurs
+#'         ou gérer des blocs (cas \code{friedman}).
+#' }
+#'
+#' @param formula Une formule R (e.g. \code{y ~ x1 + x2}), un objet \code{call} ou une chaîne de
+#'   caractères convertible en formule.
+#' @param mode Chaîne de caractères. Indique le modèle visé parmi \code{"aov"} (modèle linéaire
+#'   ou ANOVA via \code{\link[stats]{aov}}), \code{"friedman"} (test de Friedman) ou \code{"aovp"}
+#'   (modèle permuté via \code{aovp} de \pkg{lmPerm}, par exemple).
+#' @param debug Logique. \code{TRUE} pour afficher des messages de débogage détaillés,
+#'   \code{FALSE} sinon (par défaut).
+#'
+#' @details
+#' \enumerate{
+#'   \item \strong{Conversion en formule} : si \code{formula} n'est pas déjà une formule,
+#'   la fonction tente de la convertir via \code{\link[base]{as.formula}}.
+#'
+#'   \item \strong{Détection et transformation des effets aléatoires} :
+#'     \itemize{
+#'       \item Les syntaxes \code{(1|random)} ou \code{(X|random)} sont repérées.
+#'       \item Elles sont transformées en \code{Error(random)} ou \code{Error(random/X)}
+#'             afin d'être compatibles avec \code{\link[stats]{aov}}.
+#'       \item Si d'autres formes d'effets aléatoires (\code{|}) sont détectées en dehors
+#'             d'un contexte \code{aov}, un message d'erreur est levé (mode \code{friedman}
+#'             ou \code{aovp} ne les prenant pas en charge).
+#'     \itemize{}
+#'
+#'   \item \strong{Gestion de la structure d'erreur} : si la formule comporte déjà un \code{Error(...)}
+#'   explicite, celui-ci est conservé et adapté selon le mode demandé (principalement \code{aov}).
+#'
+#'   \item \strong{Mode \code{friedman}} : pour un test de Friedman standard, on attend un seul prédicteur
+#'   répétable (\code{response ~ factor | bloc}). Ainsi, s'il y a plusieurs prédicteurs, la fonction
+#'   lève une erreur pour signaler l'usage non prévu de \code{friedman.test}.
+#'
+#'   \item \strong{Mode \code{aovp}} : similaire à \code{aov}, mais ne gère pas d'effets aléatoires via \code{|}.
+#'   Si \code{|} est détecté, on arrête la fonction et signale que l'utilisateur devrait recourir
+#'   à un modèle mixte ou à \code{aov} + \code{Error(...)}.
+#' }
+#'
+#' @return
+#' Une nouvelle \code{\link[stats]{formula}} ajustée au \code{mode} sélectionné,
+#' éventuellement avec une structure d'erreur ou des effets aléatoires transformés pour
+#' convenir à \code{aov}.
+#'
+#' @examples
+#' \dontrun{
+#' ## Exemple 1 : Formule simple, mode "aov"
+#' f <- formulator(y ~ x1 + x2, mode = "aov", debug = TRUE)
+#' f
+#'
+#' ## Exemple 2 : Formule avec effets aléatoires, mode "aov"
+#' # (1|Sujet) est transformé en Error(Sujet)
+#' formulator(y ~ x1 + x2 + (1|Sujet), mode = "aov", debug = TRUE)
+#'
+#' ## Exemple 3 : Test de Friedman
+#' # Doit être du type y ~ factor | bloc
+#' #   => "bloc" ici est ajouté arbitrairement si la formule n'en contient qu'un prédicteur
+#' formulator(y ~ traitement, mode = "friedman")
+#'
+#' ## Exemple 4 : "aovp" (modèle permuté)
+#' # => Les effets aléatoires ne sont pas pris en charge
+#' formulator(y ~ x1 + x2, mode = "aovp")
+#' }
+#'
+#' @seealso
+#' \itemize{
+#'   \item \code{\link[stats]{aov}} pour l'ANOVA classique,
+#'   \item \code{\link[stats]{friedman.test}} pour le test de Friedman,
+#'   \item \code{\link[lmPerm]{aovp}} pour l'ANOVA avec permutations (s'il est installé),
+#'   \item \code{\link[lme4]{lmer}} pour un modèle mixte prenant en charge les effets aléatoires.
+#' }
+#'
+#' @export
+.formulator <- function(formula, mode = c("aov", "friedman", "aovp", "linear", "simple", "lmer"), debug=FALSE, verbose=TRUE, return=TRUE) {
+    mode <- match.arg(mode)
+    .dbg(paste0(".formulator() - Input received for 'formula': ", deparse(formula)),
+		paste0(".formulator() - Entrée reçue pour 'formula': ",deparse(formula)),
+		debug=debug)
+    # Capture et préservation de la formule exacte avec ses références
+  #  if (!is.character(formula)) {
+  #      formula <- Reduce(function(e1, e2) substitute(e1, list(e1 = e2)),
+  #                       list(formula, substitute(formula)))
+  #  }
+ # Si `formula` est une expression appelée depuis une autre fonction, on évalue proprement
+if (inherits(formula, "call")) {
+    formula <- eval(formula, parent.frame())  # Évaluation dans l'environnement appelant
+}
+
+# Vérification si la conversion en formule est nécessaire
+if (!inherits(formula, "formula")) {
+    formula <- tryCatch(as.formula(formula), error = function(e) {
+        stop("L'entrée ne peut pas être convertie en une formule valide.")
+    })
+}
+
+    .dbg(paste0(".formulator() - Input received for 'formula': ", deparse(substitute(formula))),
+		paste0(".formulator() - Entrée reçue pour 'formula': ",deparse(substitute(formula))),
+		debug=debug)
+
+    # Vérification/Conversion en formule
+    if (!inherits(formula, "formula")) {
+        .dbg(".formulator() - The formula is not of class 'formula'. Attempting conversion...",
+             ".formulator() - La formule n'est pas de classe 'formula'. Tentative de conversion...",
+             debug=debug)
+        if (is.character(formula) || is.call(formula)) {
+            formula <- tryCatch(
+                as.formula(formula),
+                error = function(e) stop("L'entrée ne peut pas être convertie en une formule valide.")
+            )
+        } else {
+            .exit("The input must be a formula or convertible to a formula.",
+                  "L'entrée doit être une formule ou convertible en formule.",
+                  verbose=verbose,return=return)
+        }
+    }
+
+    # Détection effets aléatoires et structure Error()
+    random_effects <- any(grepl("\\([^~]*\\|[^~]*\\)", deparse(formula)))
+    error_structure <- any(grepl("Error", deparse(formula)))
+    .dbg(paste(".formulator() - Random effects detected: ", random_effects),
+         paste(".formulator() - Effets aléatoires détectés:", random_effects),
+         debug = debug)
+    .dbg(paste(".formulator() - Random effects detected: ", random_effects),
+         paste(".formulator() - Effets aléatoires détectés:", random_effects),
+         debug = debug)
+    .dbg(paste(".formulator() - Error structure detected: ", error_structure),
+         paste(".formulator() - Structure d'erreur détectée:", error_structure),
+         debug = debug)
+    .dbg(paste(".formulator() - Formula after conversion: ", deparse(formula)),
+         paste(".formulator() - Formule après conversion:", deparse(formula)),
+         debug = debug)
+
+    # Gestion spécifique pour le symbole '|'
+    if (grepl("\\|", deparse(formula))) {
+        .dbg("Debug vertical bar: Detection of the structure with '|'",
+             "Debug barre verticale : Détection de la structure avec '|'",
+             debug=debug)
+
+        # Mode "lmer" : préserver la syntaxe lmer native (1|id), ne pas transformer en Error()
+        if (mode == "lmer") {
+            .dbg(".formulator() - Mode lmer: preserving native lmer syntax (1|id), no transformation",
+                 ".formulator() - Mode lmer : préservation de la syntaxe lmer native (1|id), pas de transformation",
+                 debug=debug)
+            # Ne rien faire, retourner la formule telle quelle
+        } else if (random_effects) {
+            transform_random_effects <- function(expr) {
+                if (is.call(expr) && length(expr) == 3 && as.character(expr[[1]]) == "|") {
+                    lhs <- expr[[2]]  # gauche : (1) ou (factor)
+                    rhs <- expr[[3]]  # droite : random_effect
+
+                    lhs_txt <- deparse(lhs)
+                    rhs_txt <- deparse(rhs)
+
+                    if (lhs_txt == "1") {
+                        return(as.call(list(as.name("Error"), rhs)))
+                    } else {
+                        return(as.call(list(as.name("Error"),
+                                          as.call(list(as.name("/"), rhs, lhs)))))
+                    }
+                }
+                if (is.call(expr)) {
+                    expr[] <- lapply(expr, transform_random_effects)
+                }
+                return(expr)
+            }
+
+            formula[[3]] <- transform_random_effects(formula[[3]])
+
+            clean_formula <- function(f) {
+                fs <- deparse(f)
+                fs <- sub("\\((Error\\(.+\\))\\)", "\\1", fs)
+                as.formula(fs)
+            }
+
+            formula <- clean_formula(formula)
+
+            .dbg(paste(".formulator() - Debug vertical bar: Random effect transformed for aov: ",
+                      deparse(formula)),
+                 paste(".formulator() - Debug barre verticale : Effet aléatoire transformé pour aov:",
+                       deparse(formula)),
+                 debug=debug)
+
+        } else {
+            terms <- strsplit(deparse(formula[[3]]), "\\|")[[1]]
+            .dbg(paste(".formulator() - Debug vertical bar: Extracted terms: ", terms),
+                 paste(".formulator() - Debug barre verticale : Termes extraits :", terms),
+                 debug=debug)
+
+            predictors <- paste0(trimws(terms[2]), " + ", trimws(terms[1]))
+            .dbg(paste(".formulator() - Debug vertical bar: Transformed predictors: ", predictors),
+                 paste(".formulator() - Debug barre verticale : Prédicteurs transformés :", predictors),
+                 debug=debug)
+
+            formula <- as.formula(paste(deparse(formula[[2]]), "~", predictors))
+            .dbg(paste(".formulator() - Debug vertical bar: Formula transformed for '|': ",
+                      deparse(formula)),
+                 paste(".formulator() - Debug barre verticale : Formule transformée pour '|' :",
+                       deparse(formula)),
+                 debug=debug)
+        }
+    }
+
+    # Fonctions utilitaires
+    preserve_transformations <- function(expr) {
+        if (is.call(expr)) {
+            func_name <- as.character(expr[[1]])
+
+            if (func_name == "[") {
+                obj <- deparse(expr[[2]])
+                indices <- paste(sapply(expr[-(1:2)], deparse), collapse = ", ")
+                return(paste0(obj, "[", indices, "]"))
+            }
+
+            if (func_name == "cbind") {
+                args <- sapply(as.list(expr)[-1], deparse)
+                return(paste0("cbind(", paste(args, collapse = ", "), ")"))
+            } else if (func_name %in% c("I", "log", "exp", "sqrt", "sin", "cos", "tan")) {
+                return(deparse(expr))
+            } else if (func_name == "$") {
+                # Préservation explicite des références dataframe
+                return(paste(deparse(expr[[2]]), "$", as.character(expr[[3]]), sep=""))
+            }
+
+            return(paste(sapply(as.list(expr), preserve_transformations), collapse = " "))
+        }
+
+        return(deparse(expr))
+    }
+
+    compile_predictors <- function(expr) {
+        .dbg(paste0("Compiling predictors: ", deparse(expr)),
+             paste0("Compilation des prédicteurs: ", deparse(expr)),
+             debug=debug)
+        if (is.call(expr) && as.character(expr[[1]]) %in% c("*", "+", ":")) {
+            operator <- as.character(expr[[1]])
+            parts <- sapply(as.list(expr)[-1], compile_predictors)
+            return(paste(parts, collapse = paste0(" ", operator, " ")))
+        }
+        return(preserve_transformations(expr))  # Utilise preserve_transformations ici aussi
+    }
+
+    # Extraction et compilation
+    response <- preserve_transformations(formula[[2]])
+    predictors <- compile_predictors(formula[[3]])
+
+    if (debug) {
+        .dbg(paste0("Response: ", response),
+             paste0("Réponse: ", response),
+             debug=debug)
+        .dbg(paste0("Predictors: ", predictors),
+             paste0("Prédicteurs: ", predictors),
+             debug=debug)
+    }
+
+    # Re-détection après modifications potentielles
+    error_structure <- any(grepl("Error", deparse(formula)))
+    random_effects  <- any(grepl("\\|", deparse(formula)))
+    .dbg(paste(".formulator() - Error structure detected: ", error_structure),
+         paste(".formulator() - Structure d'erreur détectée:", error_structure),
+         debug = debug)
+    .dbg(paste(".formulator() - Random effects detected: ", random_effects),
+         paste(".formulator() - Effets aléatoires détectés:", random_effects),
+         debug = debug)
+
+    # Construction finale selon le mode
+    rewritten_formula <- switch(
+        mode,
+        "aov" = {
+            if (random_effects) {
+                if (error_structure) {
+                    formula
+                } else {
+                    as.formula(paste(response, "~", predictors))
+                }
+            } else {
+                if (error_structure) {
+                    formula
+                } else {
+                    as.formula(paste(response, "~", predictors))
+                }
+            }
+        },
+        "friedman" = {
+            if (random_effects) {
+                .exit("Random effects are not supported by friedman.test.",
+                      "Les effets aléatoires ne sont pas pris en charge par friedman.test.",
+                      verbose=verbose,return=return)
+            }
+            n_pred <- strsplit(predictors, "[+*:]")[[1]]
+            if (length(n_pred) > 1) {
+                .exit("friedman.test only accepts a single predictor (in its basic usage).",
+                      "friedman.test n'accepte qu'un seul prédicteur (dans son utilisation basique).",
+                      verbose=verbose, return=return)
+            }
+            as.formula(paste(response, "~", predictors, "| paire"))
+        },
+        "aovp" = {
+            if (random_effects) {
+                .exit("Random effects are not supported by aovp. Use lmer if needed.",
+                      "Les effets aléatoires ne sont pas pris en charge par aovp. Utilisez lmer si nécessaire.",
+                      verbose=verbose, return=return)
+            }
+            as.formula(paste(response, "~", predictors))
+        },
+        "linear" = {
+            response <- deparse(formula[[2]])
+            all_vars <- setdiff(all.vars(formula), all.vars(formula[[2]]))
+            predictors <- paste(all_vars, collapse = " + ")
+            as.formula(paste(response, "~", predictors))
+        },
+        "simple" = {
+            all_vars <- all.vars(formula)
+            predictors <- paste(all_vars[-1], collapse = " + ")
+            response <- all_vars[1]
+            as.formula(paste(response, "~", predictors))
+        },
+        "lmer" = {
+            # Mode lmer : retourner la formule TELLE QUELLE, sans transformation
+            # La syntaxe (1|id) est préservée pour usage avec lme4::lmer()
+            formula
+        }
+    )
+
+    .dbg(paste(".formulator() - Rewritten formula: ", deparse(rewritten_formula)),
+         paste(".formulator() - Formule réécrite: ", deparse(rewritten_formula)),
+         debug = debug)
+
+    .dbg(".formulator() - end .formulator().",
+         ".formulator()- Fin de .formulator().",
+         debug = debug)
+
+    return(rewritten_formula)
+}

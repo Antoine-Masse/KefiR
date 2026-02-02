@@ -20,11 +20,34 @@
 #' reg<- lm(cyl~disp+hp,data=mtcars);
 #' bootreg(reg, verbose=TRUE, plot=TRUE)
 bootreg <- function(reg, data=c(), plot=TRUE, verbose=TRUE, conf.level=0.95, alpha=0.05, iter=1000) {
+
+#  clean_formula <- function(formula, data) {
+#    # Convertir la formule en texte pour manipulation
+#    formula_text <- deparse(formula)#
+
+    # Remplacer toutes les formes d'accès (data$var, data[["var"]], dt$var, etc.)
+#    formula_text <- gsub("([a-zA-Z0-9._]+)\\$([a-zA-Z0-9._]+)", "\\2", formula_text) # data$densite -> densite
+#    formula_text <- gsub("([a-zA-Z0-9._]+)\\[\\[\"([a-zA-Z0-9._]+)\"\\]\\]", "\\2", formula_text) # data[["densite"]] -> densite
+
+    # Reconstruire la formule sans préfixes
+#    new_formula <- as.formula(formula_text)
+#  print(new_formula)
+    # Vérifier que les variables existent dans les données
+ #   vars <- all.vars(new_formula)
+#    if (!all(vars %in% colnames(data))) {
+#      stop("Certaines variables n'existent pas dans le tableau de données fourni.")
+#    }
+
+ #   return(new_formula)
+#  }
+
   if (length(data) > 1) {
     dt <- data
   } else {
-    dt <- reg$model
+    #dt <- reg$model
+    dt <- eval(getCall(reg)$data,environment(formula(reg)))
   }
+  #dt <- na.omit(dt)  # Supprime les lignes avec NA
 
   # Control the presence of $
   if (any(unlist(sapply(formula(reg), function(x) grepl("\\$", x))))) {
@@ -46,9 +69,12 @@ bootreg <- function(reg, data=c(), plot=TRUE, verbose=TRUE, conf.level=0.95, alp
       training <- dt[indices_training,]
       test <- dt[indices_test,]
       formula_ <- formula(reg)
+      #print(formula_)
+      #print(colnames(training))
+      #formula_ <- clean_formula(formula_, training)  # Appliquer le nettoyage
       oldw <- getOption("warn")
       options(warn = -1)
-      reg1 <- lm(formula_=formula_, data=training)
+      reg1 <- lm(formula=formula_, data=training)
       options(warn = oldw)
       if (enregistrement == 0) {
         pval_mdl <- pf(summary(reg1)$fstatistic[1], summary(reg1)$fstatistic[2], summary(reg1)$fstatistic[3], lower.tail=FALSE)
@@ -60,10 +86,11 @@ bootreg <- function(reg, data=c(), plot=TRUE, verbose=TRUE, conf.level=0.95, alp
           coeff <- reg1$coefficients
           oldw <- getOption("warn")
           options(warn = -1)
-          predictions <- c(predictions, predict(reg1, dt)[indices_test])
+          predictions <- c(predictions, predict(reg1, newdata=test))
           options(warn = oldw)
-          if (length(all.vars(reg$terms)) == length(names(get_all_vars(formula(reg$terms), dt)))) {
-            verity <- c(verity, test[[names(get_all_vars(formula(reg$terms), dt))[1]]])
+          #if (length(all.vars(reg$terms)) == length(names(get_all_vars(formula(reg$terms), reg$model))) {
+          if (length(all.vars(reg$terms)) == length(names(model.frame(reg)))) {
+            verity <- c(verity, test[[names(get_all_vars(formula(reg$terms), test))[1]]])
           } else {
             Ynames <- trimws(strsplit(deparse(reg$call[[2]]), "[~+]")[[1]][1])
             verity <- c(verity, test[[Ynames]])
@@ -77,10 +104,11 @@ bootreg <- function(reg, data=c(), plot=TRUE, verbose=TRUE, conf.level=0.95, alp
           coeff <- rbind(coeff, reg1$coefficients) # Coeff corresponds to the coefficients retrieved for each variable and each bootstrap cycle (here 1000)
           oldw <- getOption("warn")
           options(warn = -1)
-          predictions <- c(predictions, predict(reg1, dt)[indices_test])
+          predictions <- c(predictions, predict(reg1, newdata=test))
           options(warn = oldw)
-          if (length(all.vars(reg$terms)) == length(names(get_all_vars(formula(reg$terms), dt)))) {
-            verity <- c(verity, test[[names(get_all_vars(formula(reg$terms), dt))[1]]])
+          #if (length(all.vars(reg$terms)) == length(names(get_all_vars(formula(reg$terms), dt)))) {
+          if (length(all.vars(reg$terms)) == length(names(model.frame(reg)))) {
+            verity <- c(verity, test[[names(get_all_vars(formula(reg$terms), test))[1]]])
           } else {
             Ynames <- trimws(strsplit(deparse(reg$call[[2]]), "[~+]")[[1]][1])
             verity <- c(verity, test[[Ynames]])
@@ -130,7 +158,7 @@ bootreg <- function(reg, data=c(), plot=TRUE, verbose=TRUE, conf.level=0.95, alp
     boxplot(percent_coeff, main="Fluctuation of coefficients (in %)")
     abs(predictions - verity) -> temp
     by(temp, verity, confiance, conf.level=conf.level) -> CONF
-    by(temp, verity, mean) -> MOY
+    by(temp, verity, base::mean) -> MOY
     x <- as.numeric(names(MOY))
     plot(as.numeric(names(MOY)), CONF, type="l", lwd=3, col="red",
          xlim=c(min(x), max(x)), ylim=c(0, max(CONF)),

@@ -1,118 +1,161 @@
-#' Determining groups based on the results of a pairwise function
-#'
-#' @param result output results of the pairwise(), pairwise.t.test() or pairwise.wilcox.test() function
-#' @param control name of the category that will be used as a control to establish differences with '*', '**' and '***'.
-#' @param alpha threshold of p-value to establish groups of averages or medians of type "a", "ab", "b" ...
-#'
-#' @importFrom stringr str_sort
-#'
-#' @return catego() can be used to establish groups with significantly different mean/median values relative to each other or to a reference control. It exploits the results of the functions pairwise.t.test(), pairwise.wilcox.test() and pairwise(type = "median" or "mean").
-#' @export
-#'
-#' @examples
-#' data(iris)
-#' output <- pairwise.t.test(iris[,1],iris$Species)
-#' catego(output)
-#' catego(output,control="setosa")
-catego <- function(result,control=c(),alpha=0.05) {
-  result$p.value -> mymat
-  categories <- c(colnames(mymat),rownames(mymat)[nrow(mymat)])
-  #print("a") ; print(categories)
-  #print("b") ; print(control)
-  # ERREUR A CORRIGER : no match.
-  which(categories%in%control)-> ind_control
-  #which(control%in%levels(categories))-> ind_control
-  if (length(ind_control)==1) {
-    c(1,mymat[,1]) -> cats
-    ifelse(cats<=0.001,"***",ifelse(cats<=0.01,"**",ifelse(cats<=0.05,"*","")))->cats
-  } else {
-    possibility <- letters[seq( from = 1, to = length(categories))]
-    start = 0 ; pos=1 ; cats <- c("a") ; change <- 0
-    for (i in 1:ncol(mymat)) {
-      #cat("Passage",start,"\n")
-      for (j in i:nrow(mymat)) {
-        pvals <- mymat[j,i]
-        #print(pvals)
-        if (start==0) {
-          if (pvals > alpha){
-            #print("non-signif")
-            cats <- c(cats,possibility[pos])
-          } else {
-            #print("signif")
-            cats <- c(cats,possibility[pos+1])
-            change <- 1
-          }
-        } else {
-          if (pvals <= alpha){
-            #print(length(intersect(strsplit(cats[i],"")[[1]],strsplit(cats[j+1],"")[[1]])))
-            if (length(intersect(strsplit(cats[i],"")[[1]],strsplit(cats[j+1],"")[[1]]))>0){
-              #print("signif avec changement de cat.")
-              # a on avait b vs b, l'autre b devient c
-              cats[j+1]<- possibility[pos+1]
-              change <- 1
+################################################################################
+#
+#                           m.test() - VERSION 18 CORRECTED
+#
+################################################################################
 
-            } else {
-              #print("signif")
-              next
-            }
-          } else {
-            if (length(intersect(strsplit(cats[i],"")[[1]],strsplit(cats[j+1],"")[[1]]))>0) {
-              #print("non-signif")
-              next
-            } else {
-              #print("signif mais sensé être de cat différente (situation intermédiaire)")
-			  if (str_sort(c(cats[i],cats[j+1]))[1] == cats[i]) {
-				cats[i] <- paste0(str_sort(c(cats[i],cats[j+1])),collapse="")
-			  } else {
-				cats[i+1] <- paste0(str_sort(c(cats[i],cats[j+1])),collapse="")
-			  }
-            }
-          }
-        }
+################################################################################
+# FONCTION AUXILIAIRE : .n_levels_g()
+################################################################################
+
+#' Calculate the number of levels in grouping variable(s)
+#' @param g A factor, vector, or data.frame of factors
+#' @return Integer representing the number of levels (or combinations for data.frame)
+#' @keywords internal
+#' @note For data.frames, only categorical/factor variables are counted.
+#'       Numeric variables (covariates) are excluded to avoid false positives
+#'       in "too many groups" checks when ANCOVA models are used.
+.n_levels_g <- function(g) {
+  if (is.data.frame(g)) {
+    # Pour data.frame : produit du nombre de niveaux UNIQUEMENT pour les variables catégorielles
+    # Les variables numériques (covariables ANCOVA) sont EXCLUES du comptage
+    categorical_cols <- sapply(g, function(col) {
+      is.factor(col) || is.character(col)
+    })
+
+    if (!any(categorical_cols)) {
+      # Aucune variable catégorielle : retourner 1 (pas de groupes)
+      return(1)
+    }
+
+    # Calculer le produit uniquement pour les colonnes catégorielles
+    prod(sapply(g[, categorical_cols, drop = FALSE], function(col) {
+      if (is.factor(col)) {
+        nlevels(droplevels(col))
+      } else {
+        length(unique(na.omit(col)))
       }
-      #print(cats)
-      #print("########")
-      start <- start+1
-      if (change == 1) {pos <- pos+1}
+    }))
+  } else {
+    # Pour vecteur simple : comportement inchangé
+    if (is.factor(g)) {
+      nlevels(droplevels(g))
+    } else {
+      length(unique(na.omit(g)))
     }
   }
-  synth <- list()
-  groups <- cbind(categories,groups=cats) ; rownames(groups) <- rep("",nrow(groups))
-  synth$groups <- groups
-  synth$p.value <- result$p.value
-  return(synth)
 }
 
-#' Automatic average/median/variance comparison function.
+################################################################################
+# FONCTION AUXILIAIRE : .normalize_from_formula()
+################################################################################
+
+#' Extract and normalize x, g, and model.frame from formula
+#' @param formula Model formula
+#' @param data Data frame
+#' @param id Subject identifier (optional)
+#' @param wt_names Within-subject factor names (optional)
+#' @param na_strategy How to handle NA: "preserve" or "omit"
+#' @return List with x, g, and mf (model.frame)
+#' @keywords internal
+.normalize_from_formula <- function(formula, data, id = NULL, wt_names = NULL,
+                                    na_strategy = "preserve") {
+
+  # Supprimer Error() pour model.frame
+  f_tmp <- .drop_error_term(formula)
+
+  # Créer model.frame
+  mf <- model.frame(
+    f_tmp,
+    data = data,
+    na.action = if(na_strategy == "preserve") na.pass else na.omit,
+    drop.unused.levels = TRUE
+  )
+
+  # Extraire x (réponse)
+  x <- model.response(mf)
+
+  # Extraire g (prédicteurs, sans id)
+  pred_cols <- colnames(mf)[-1]
+
+  if (!is.null(id) && id %in% pred_cols) {
+    pred_cols <- setdiff(pred_cols, id)
+  }
+
+  if (length(pred_cols) == 1) {
+    g <- mf[[pred_cols[1]]]
+    if (!is.factor(g)) g <- factor(g)
+  } else if (length(pred_cols) > 1) {
+    g <- mf[, pred_cols, drop = FALSE]
+  } else {
+    g <- NULL
+  }
+
+  return(list(x = x, g = g, mf = mf))
+}
+
+################################################################################
+# FONCTION PRINCIPALE : m.test()
+################################################################################
+
+#' Automatic statistical comparison for means, medians, and variances
 #'
-#' @param data numerical vector
-#' @param cat category vector
-#' @param alpha p-value threshold value for all the tests.
-#' @param verbose to display the full reasoning of the analysis.
-#' @param return allows to return the results of pairwise analysis (p-values and groups).
-#' @param paired (under development) to allow the analysis of matched data.
-#' @param control name of the category that will eventually be used as a control.
-#' @param maxcat maximum number of categories allowed. When this number is high, some tests may return an error message.
-#' @param plot to display the distribution of the data.
-#' @param silent for displaying or not warnings.
-#' @param boot to activate the boostrap on 'mean' and 'median'.
-#' @param iter number f iterations (boot==TRUE).
-#' @param conf confidence level of bootstrap.
-#' @param code allows to display the simplified R source code to be able to do the same R study step by step.
-#' @param debug when m.test return error.
+#' @description
+#' This function performs automatic statistical analysis by selecting the most
+#' appropriate tests based on data structure and statistical assumptions. It handles:
+#' \itemize{
+#'   \item One-factor and multi-factor designs (ANOVA, ANCOVA)
+#'   \item Univariate and multivariate responses (MANOVA)
+#'   \item Paired and unpaired data (repeated measures)
+#'   \item Covariates and random effects (mixed models)
+#'   \item Parametric and non-parametric tests
+#'   \item Post-hoc comparisons and bootstrap validation
+#' }
 #'
-#' @return m.test() runs a decision tree to choose the most appropriate test series for sample comparison.
-#' @return She chooses the tests, justifies her choices.
-#' @return It can output groups of means or a comparison to a control.
-#' @return Finally, it will measure the robustness of the results by bootstrap.
+#' @param formula A model formula such as \code{Y ~ G1 + G2} (or
+#'   \code{cbind(Y1, Y2, ...) ~ ...} for MANOVA). Notation \code{Y ~ G | id} is internally
+#'   converted to \code{Y ~ G + Error(id/...)} for repeated-measures designs.
+#'   Covariates can be included as numeric predictors.
+#' @param data A data frame that contains the variables referenced by \code{formula}. If omitted, symbols are looked up in the calling
+#'   environment. Formulas like \code{data$Y ~ data$G} are also accepted provided
+#'   the object \code{data} is visible.
+#' @param alpha Global p-value threshold (default \code{0.05}).
+#' @param verbose Logical. Print the step-by-step reasoning.
+#' @param return Logical. If \code{TRUE}, returns a summary object (p-values, compact
+#'   letter displays, etc.). If \code{FALSE}, returns raw model output.
+#' @param id Subject identifier (a column name or index in \code{data}, or a vector
+#'   the same length as response). Supplying \code{id} implies paired/repeated analysis
+#'   and enables mixed models with random effects.
+#' @param control Name of the category used as control in directed post-hoc
+#'   procedures (e.g., Dunnett-type comparisons), when applicable.
+#' @param maxcat Maximum number of allowed groups; beyond this, some procedures
+#'   may fail.
+#' @param plot Logical. Draw distribution plots (boxplots, violins, etc.).
+#' @param silent Logical. Suppress secondary warnings.
+#' @param boot Logical. Enable bootstrap for means/medians where relevant.
+#' @param iter Number of bootstrap iterations when \code{boot = TRUE}. If \code{0},
+#'   a default is chosen as \code{iter <- 1/alpha * 5}.
+#' @param conf Confidence level for bootstrap intervals.
+#' @param code Logical. Print a simplified R "recipe" that reproduces the analysis
+#'   (disables \code{verbose}).
+#' @param debug Logical. Emit detailed diagnostic messages (forces \code{code = FALSE}).
+#'
+#' @return
+#' A list containing test results, p-values, group comparisons, and optionally
+#' bootstrap confidence intervals. The exact structure depends on the analysis type.
+#'
+#' @details
+#' \strong{NA Handling:}
+#' \itemize{
+#'   \item For one-factor analyses: Listwise deletion (complete cases only)
+#'   \item For multi-factor analyses: NA preserved (may be handled by mixed models)
+#' }
+#'
 #' @importFrom fda.usc fanova.hetero
-#' @importFrom agricolae kurtosis
-#' @importFrom agricolae skewness
-#' @importFrom agricolae SNK.test
+#' @importFrom agricolae kurtosis skewness SNK.test
 #' @importFrom lawstat levene.test
-#' @importFrom WRS2 med1way
-#' @importFrom WRS2 t1way
-#' @importFrom WRS2 lincon
+#' @importFrom WRS2 med1way medpb2 t1way lincon
+#' @importFrom FSA dunnTest
 #' @importFrom onewaytests bf.test
 #' @importFrom vioplot vioplot
 #' @importFrom DescTools DunnettTest
@@ -120,833 +163,1765 @@ catego <- function(result,control=c(),alpha=0.05) {
 #' @export
 #'
 #' @examples
-#' data(iris)
-#' m.test(iris[,1],iris[,5],verbose=TRUE, return=TRUE)
-#' m.test(iris[1:100,1],iris[1:100,5],verbose=TRUE, return=TRUE)
-#' m.test(iris[,2],iris[,5],verbose=TRUE, return=TRUE)
-#' m.test(iris[,3],iris[,5],verbose=TRUE, return=TRUE)
-#' m.test(iris[,4],iris[,5],verbose=TRUE, plot=FALSE, return=FALSE, boot=FALSE)
-#' m.test(iris[,1],iris[,5],verbose=TRUE, return=TRUE,control="setosa")
-#' m.test(iris[,2],iris[,5],verbose=TRUE, return=TRUE,control="virginica")
-#' m.test(iris[,3],iris[,5],verbose=TRUE, return=TRUE,control="setosa")
-#' m.test(iris[,4],iris[,5],verbose=TRUE, return=TRUE,control="setosa")
-m.test <- function (data, cat, alpha=0.05, verbose=TRUE, return=TRUE, paired=FALSE,control=c(),
-                    maxcat=50, plot=TRUE,silent=TRUE,boot=TRUE,iter=500,conf=0.95,
-                    code=FALSE,debug=FALSE){
-  if (code==TRUE) {verbose <- FALSE}
-  if (debug==TRUE) {verbose <- FALSE ; code=FALSE}
-  if (debug==TRUE) {print("Compilation des fonctions de base")}
-  discret.test <- function(vector) {
-    return(length(unique(vector))/length(vector))
+#' \dontrun{
+#' # Example 1: One-factor unpaired
+#' data1 <- .simul(n = 12, k_H = 3, seed = 123)
+#' m.test(A ~ F, data = data1, verbose = TRUE)
+#'
+#' # Example 2: Repeated measures
+#' data2 <- .simul(n = 12, seed = 456)
+#' m.test(A ~ G, data = data2, id = "idG", verbose = TRUE)
+#'
+#' # Example 3: Mixed design
+#' data3 <- .simul(n = 20, seed = 789)
+#' m.test(A ~ F * Temps + Error(id/Temps), data = data3, verbose = TRUE)
+#' }
+#'
+m.test <- function(formula, data = NULL, alpha = 0.05, verbose = TRUE,
+                   return = TRUE, id = NULL, control = c(), maxcat = 50,
+                   plot = TRUE, silent = TRUE, boot = TRUE, iter = 500,
+                   conf = 0.95, code = FALSE, debug = FALSE) {
+
+  ################################################################################
+  # BLOC 1 : INITIALISATION
+  ################################################################################
+
+  call_expr <- match.call()
+  k <- 0
+
+  # NOTE PERSO: Ajustement des paramètres par défaut selon return
+  # Si return=FALSE et verbose/plot non spécifiés → mettre à FALSE par défaut
+  # (cf. Cahier des charges priorité 2)
+  if (return == FALSE) {
+    if (!("verbose" %in% names(call_expr))) {
+      verbose <- FALSE
+    }
+    if (!("plot" %in% names(call_expr))) {
+      plot <- FALSE
+    }
   }
-  boots <- function(data,cat,ctrl=FALSE,type="mean",var.equal=FALSE,conf=0.95,iter=500,alpha=alpha) {
-    pvals <- c()
-    for (i in 1:iter) {
-      if (type=="mean") {
-        temp <- t.test(sample(data[cat==unique(cat)[1]],replace=TRUE),sample(data[cat==unique(cat)[2]],replace=TRUE),var.equal=var.equal)$p.value
-      } else if (type=="median") {
-		#temp <- wilcox.test(sample(data[cat==unique(cat)[1]],replace=TRUE),sample(data[cat==unique(cat)[2]],replace=TRUE))$p.value
-		temp <- wilcox.test(sample(data[cat==unique(cat)[1]],replace=TRUE),sample(data[cat==unique(cat)[2]],replace=TRUE),exact=FALSE)$p.value
-      } else if (type=="ks") {
-        ech1 <- sample(data[cat==unique(cat)[1]],replace=TRUE)
-        ech2 <- sample(data[cat==unique(cat)[2]],replace=TRUE)
-        ech1 <- (ech1 - median(ech1))/sd(ech1)
-        ech2 <- (ech2 - median(ech2))/sd(ech2)
-        temp <- ks.test(ech1,ech2)$p.value
-      }
-      pvals <- c(pvals,temp)
+
+  if (code == TRUE) verbose <- FALSE
+  if (debug == TRUE) {
+    verbose <- FALSE
+    code <- FALSE
+  }
+
+  if (iter == 0) iter <- 1/alpha * 5
+
+  ################################################################################
+  # BLOC 2 : VALIDATION DES PARAMÈTRES PRINCIPAUX
+  ################################################################################
+
+  if (!is.null(data) && !is.data.frame(data)) {
+    .exit("'data' must be a data.frame.",
+          "'data' doit être un data.frame.",
+          verbose = verbose, code = code, return = return)
+  }
+
+  ################################################################################
+  # BLOC 3 : DÉTECTION ET NORMALISATION DE LA FORMULE
+  ################################################################################
+
+  check_manova <- FALSE
+  check_anova <- FALSE
+
+  # NOTE PERSO: Robustesse pour syntaxes non-standard (Cahier des charges priorité 2)
+  # Cas 1: m.test(A ~ F, data) → formule capturée dans x, data dans g
+  # Cas 2: m.test(A ~ data$F, data) → formule capturée dans x
+  # Cas 3: m.test(formula, data) → géré automatiquement
+
+  if (is.null(formula) && inherits(x, "formula")) {
+    .dbg("x appears to be a formula. Transferring to formula.",
+         "`x` semble être une formule. Transfert vers `formula`.",
+         debug = debug)
+    formula <- x
+    x <- NULL
+
+    # Si g contient un data.frame, c'est probablement l'argument data mal positionné
+    if (!is.null(g) && is.data.frame(g) && is.null(data)) {
+      .dbg("Detected data argument in 'g' position. Transferring to 'data'.",
+           "Argument 'data' détecté en position 'g'. Transfert vers 'data'.",
+           debug = debug)
+      data <- g
+      g <- NULL
     }
-    pvals <- quantile(pvals,probs=conf,na.rm=T)
-    if (ctrl == TRUE) {
-      if (pvals <= alpha) {
-        synth <- list()
-        starss <- c("","")
-        starss[-ind_control] <- ifelse(pvals <=0.001,"***",ifelse(pvals <=0.01,"**",
-                                                                  ifelse(pvals <=0.05,"*","")))
-        synth$groups <- data.frame(categories=unique(cat),group=starss)
-        synth$p.value <- pvals
-      } else {
-        synth <- list()
-        synth$groups <- data.frame(categories=unique(cat),group=c("",""))
-        synth$p.value <- pvals
-      }
-    } else if (ctrl==FALSE) {
-      synth <- list()
-      if (pvals <= alpha) {
-        synth$groups <- data.frame(categories=unique(cat),groups=c("a","b"))
-        synth$p.value <- pvals
-      } else {
-        synth$groups <- data.frame(categories=unique(cat),groups=c("a","a"))
-        synth$p.value <- pvals
+  }
+
+  # Cas supplémentaire : formule a été passée via argument nommé
+  if ("formula" %in% names(call_expr)) {
+    formula <- call_expr$formula
+  }
+
+  # Cas formule avec data$ : essayer d'extraire le data.frame depuis l'environnement parent
+  if (!is.null(formula) && is.null(data)) {
+    .dbg("Formula without data argument detected. Attempting to extract data from formula environment.",
+         "Formule sans argument data détectée. Tentative d'extraction depuis l'environnement de la formule.",
+         debug = debug)
+
+    # Vérifier si la formule contient des références du type data$var
+    formula_str <- deparse(formula)
+    if (grepl("\\$", formula_str)) {
+      # Extraire le nom du data.frame (avant le $)
+      data_name <- gsub("^.*?([a-zA-Z_][a-zA-Z0-9_.]*)\\$.*$", "\\1", formula_str)
+
+      # Essayer de récupérer le data.frame depuis l'environnement parent
+      parent_env <- parent.frame()
+      if (exists(data_name, envir = parent_env)) {
+        data_candidate <- get(data_name, envir = parent_env)
+        if (is.data.frame(data_candidate)) {
+          .dbg(paste0("Found data.frame '", data_name, "' in parent environment. Using it as data."),
+               paste0("Data.frame '", data_name, "' trouvé dans environnement parent. Utilisation comme data."),
+               debug = debug)
+          data <- data_candidate
+
+          # Nettoyer la formule pour enlever les data$
+          formula_clean <- as.formula(gsub(paste0(data_name, "\\$"), "", formula_str))
+          formula <- formula_clean
+        }
       }
     }
+  }
+
+  ################################################################################
+  # BLOC 4 : ANALYSE DE LA VARIABLE RÉPONSE 'x'
+  ################################################################################
+
+  if (!is.null(x)) {
+
+    if (is.data.frame(x) || is.matrix(x)) {
+
+      num_cols <- sapply(x, is.numeric)
+      if (!all(num_cols)) {
+        .exit("'x' contains non-numeric columns.",
+              "'x' présente des colonnes non numériques.",
+              verbose = verbose, code = code, return = return)
+      }
+
+      if (is.data.frame(g) && nrow(g) != nrow(x)) {
+        .exit("'x' and 'g' length differ.",
+              "'x' et 'g' n'ont pas les mêmes dimensions.",
+              verbose = verbose, code = code, return = return)
+      }
+
+      if (ncol(x) == 1) {
+        x <- as.vector(x[, 1])
+      } else {
+        check_manova <- TRUE
+      }
+
+    } else if (is.vector(x) && is.null(data)) {
+
+      if (!is.numeric(x)) {
+        .exit("'x' non-numeric.",
+              "'x' non numérique.",
+              verbose = verbose, code = code, return = return)
+      }
+
+      if (is.vector(g) && length(g) != length(x)) {
+        .exit("'x' and 'g' length differ.",
+              "'x' et 'g' n'ont pas la même taille.",
+              verbose = verbose, code = code, return = return)
+      }
+
+      if (is.data.frame(g) && nrow(g) != length(x)) {
+        .exit("'x' and 'g' length differ.",
+              "'x' et 'g' n'ont pas les mêmes dimensions.",
+              verbose = verbose, code = code, return = return)
+      }
+
+    } else if (!is.null(data)) {
+
+      if (is.numeric(x)) {
+        if (!all(x %in% seq_len(ncol(data)))) {
+          .exit("x contains invalid indices for data.",
+                "x contient des indices invalides pour data.",
+                verbose = verbose, code = code, return = return)
+        }
+        x <- data[, x, drop = FALSE]
+
+      } else if (is.character(x)) {
+        if (!all(x %in% colnames(data))) {
+          .exit("x contains column names that do not exist in data.",
+                "x contient des noms de colonnes qui n'existent pas dans data.",
+                verbose = verbose, code = code, return = return)
+        }
+        x <- data[, x, drop = FALSE]
+
+      } else {
+        .exit("When 'data' is provided, 'x' must be numeric indices or column names.",
+              "Quand 'data' est fourni, 'x' doit être des indices ou des noms de colonnes.",
+              verbose = verbose, code = code, return = return)
+      }
+
+      if (ncol(x) == 1) {
+        x <- as.vector(x[, 1])
+      } else {
+        check_manova <- TRUE
+      }
+    }
+  }
+
+  ################################################################################
+  # BLOC 5 : ANALYSE DE LA VARIABLE GROUPANTE 'g'
+  ################################################################################
+
+  if (!is.null(g) && is.null(formula)) {
+
+    if (is.data.frame(g)) {
+      check_anova <- TRUE
+
+      for (i in seq_along(g)) {
+        if (!is.factor(g[[i]])) {
+          g[[i]] <- factor(g[[i]])
+        }
+      }
+
+    } else if (!is.null(data)) {
+
+      if (is.numeric(g) && length(g) == 1) {
+        if (!g %in% seq_len(ncol(data))) {
+          .exit("g contains an invalid index for data.",
+                "g contient un indice invalide pour data.",
+                verbose = verbose, code = code, return = return)
+        }
+        g <- data[, g]
+
+      } else if (is.character(g) && length(g) == 1) {
+        if (!g %in% colnames(data)) {
+          .exit("g does not exist in data.",
+                "g n'existe pas dans data.",
+                verbose = verbose, code = code, return = return)
+        }
+        g <- data[, g]
+
+      } else if ((is.numeric(g) || is.character(g)) && length(g) > 1) {
+
+        if (is.numeric(g)) {
+          if (!all(g %in% seq_len(ncol(data)))) {
+            .exit("g contains invalid indices for data.",
+                  "g contient des indices invalides pour data.",
+                  verbose = verbose, code = code, return = return)
+          }
+          g <- data[, g, drop = FALSE]
+        } else {
+          if (!all(g %in% colnames(data))) {
+            .exit("g contains column names that do not exist in data.",
+                  "g contient des noms de colonnes qui n'existent pas dans data.",
+                  verbose = verbose, code = code, return = return)
+          }
+          g <- data[, g, drop = FALSE]
+        }
+
+        check_anova <- TRUE
+      }
+
+      if (!is.data.frame(g) && !is.factor(g)) {
+        g <- factor(g)
+      }
+    }
+
+    if (!is.data.frame(g) && !is.factor(g)) {
+      g <- factor(g)
+    }
+  }
+
+  ################################################################################
+  # BLOC 6 : GESTION DES ALIAS DE PARAMÈTRES
+  ################################################################################
+
+  if (!is.null(within)) {
+    if (!is.null(wt)) {
+      .exit("Cannot specify both 'wt' and 'within'.",
+            "Impossible de spécifier à la fois 'wt' et 'within'.",
+            verbose = verbose, code = code, return = return)
+    }
+    wt <- within
+  }
+
+  ################################################################################
+  # BLOC 7 : NORMALISATION DU PARAMÈTRE 'wt'
+  ################################################################################
+
+  wt_names <- NULL
+
+  if (!is.null(wt)) {
+
+    if (is.data.frame(wt)) {
+      wt_names <- colnames(wt)
+      if (!is.null(data)) {
+        data <- cbind(data, wt)
+      } else {
+        data <- wt
+      }
+
+    } else if (!is.null(data)) {
+
+      if (is.numeric(wt)) {
+        if (!all(wt %in% seq_len(ncol(data)))) {
+          .exit("wt contains invalid indices for data.",
+                "wt contient des indices invalides pour data.",
+                verbose = verbose, code = code, return = return)
+        }
+        wt_names <- colnames(data)[wt]
+
+      } else if (is.character(wt)) {
+        if (!all(wt %in% colnames(data))) {
+          .exit("wt contains column names that do not exist in data.",
+                "wt contient des noms de colonnes qui n'existent pas dans data.",
+                verbose = verbose, code = code, return = return)
+        }
+        wt_names <- wt
+      }
+
+    } else {
+      wt_temp_name <- paste0("wt_", sample(1000:9999, 1))
+      if (is.null(data)) {
+        data <- data.frame(temp_wt = wt)
+      } else {
+        data[[wt_temp_name]] <- wt
+      }
+      wt_names <- wt_temp_name
+    }
+
+    if (!is.null(wt_names)) paired <- TRUE
+  }
+
+  ################################################################################
+  # BLOC 8 : NORMALISATION DU PARAMÈTRE 'id'
+  ################################################################################
+
+  pair_vector <- NULL
+
+  if (!is.null(id)) {
+
+    paired <- TRUE
+
+    if (is.null(data)) {
+      pair_temp_name <- paste0("id_", sample(1000:9999, 1))
+      data <- data.frame(temp_id = id)
+      colnames(data)[1] <- pair_temp_name
+      id <- pair_temp_name
+
+    } else {
+
+      if (is.numeric(id) && length(id) == 1) {
+        if (!id %in% seq_len(ncol(data))) {
+          .exit("id contains an invalid index for data.",
+                "id contient un indice invalide pour data.",
+                verbose = verbose, code = code, return = return)
+        }
+        id <- colnames(data)[id]
+
+      } else if (is.character(id) && length(id) == 1) {
+        if (!id %in% colnames(data)) {
+          .exit("id does not exist in data.",
+                "id n'existe pas dans data.",
+                verbose = verbose, code = code, return = return)
+        }
+
+      } else if (length(id) > 1) {
+        if (is.null(data)) {
+          data <- data.frame(pair_id = id)
+        } else if (nrow(data) != length(id)) {
+          .exit("Length of 'id' does not match data rows.",
+                "La longueur de 'id' ne correspond pas au nombre de lignes de data.",
+                verbose = verbose, code = code, return = return)
+        } else {
+          pair_temp_name <- paste0("id_", sample(1000:9999, 1))
+          data[[pair_temp_name]] <- id
+          id <- pair_temp_name
+        }
+      }
+    }
+  }
+
+  ################################################################################
+  # BLOC 9 : TRAITEMENT DU CAS FORMULE
+  ################################################################################
+
+  if (!is.null(formula)) {
+
+    if (!inherits(formula, "formula")) {
+      .exit("The 'formula' parameter must be a valid formula.",
+            "Le paramètre 'formula' doit être une formule valide.",
+            verbose = verbose, code = code, return = return)
+    }
+
+    # --- 9.1 : Détection MANOVA ---
+    lhs <- deparse(formula[[2]])
+    if (grepl("cbind\\(", lhs)) {
+      check_manova <- TRUE
+      .dbg("Multivariate response detected (cbind).",
+           "Réponse multivariée détectée (cbind).",
+           debug = debug)
+    }
+
+    # --- 9.2 : Détection multi-facteurs ---
+    rhs <- attr(terms(formula), "term.labels")
+    rhs_clean <- rhs[!grepl("^Error\\(", rhs)]
+
+    if (length(rhs_clean) > 1 || any(grepl("[*:]", rhs_clean))) {
+      check_anova <- TRUE
+      .dbg("Multi-factor design detected.",
+           "Design multi-facteurs détecté.",
+           debug = debug)
+    }
+
+    # --- 9.3 : Gestion notation | ---
+    # DISTINGUER 2 syntaxes avec | :
+    #   1) Syntaxe lmer : Y ~ F + (1|Subject) ou Y ~ F + (var|Subject) → PRÉSERVER
+    #   2) Syntaxe simple : Y ~ F | Bloc → TRANSFORMER en Y ~ F + Error(Bloc)
+    formula_str_9_3 <- deparse(formula)
+    is_lmer_syntax <- grepl("[(][^)]+[|][^)]+[)]", formula_str_9_3)  # (1|id), (var|id)
+
+    if (grepl("\\|", formula_str_9_3) && !is_lmer_syntax) {
+      # Syntaxe simple Y ~ F | Bloc : transformer en Error()
+      split_formula <- strsplit(formula_str_9_3, "\\|")[[1]]
+
+      if (length(split_formula) == 2) {
+        left_side <- trimws(split_formula[1])
+        right_side <- trimws(split_formula[2])
+
+        formula <- as.formula(paste(left_side, "+ Error(", right_side, ")"))
+
+        .dbg(paste0("Formula adjusted with 'Error()': ", deparse(formula)),
+             paste0("Formule ajustée avec 'Error()' : ", deparse(formula)),
+             debug = debug)
+      } else {
+        .exit("The formula contains a malformed '|'.",
+              "La formule contient un '|' mal formé.",
+              return = return, verbose = verbose)
+      }
+    } else if (is_lmer_syntax) {
+      # Syntaxe lmer native (1|Subject) : extraire Subject comme id et simplifier la formule
+      # Cette syntaxe indique des mesures répétées/appariées, pas nécessairement un modèle mixte
+      # Équivalent à : m.test(Y ~ Group, id = "Subject")
+
+      # Extraire l'id depuis (1|id) ou (var|id)
+      lmer_match <- regmatches(formula_str_9_3, regexpr("[|][^)]+[)]", formula_str_9_3))
+      if (length(lmer_match) > 0) {
+        extracted_id <- trimws(gsub("[|)]", "", lmer_match[1]))
+
+        if (!is.null(data) && extracted_id %in% names(data)) {
+          # Assigner id si non déjà défini
+          if (is.null(id)) {
+            id <- extracted_id
+            k <- .vbse(
+              paste0("lmer syntax (1|", id, ") detected: treating as repeated measures with id='", id, "'"),
+              paste0("Syntaxe lmer (1|", id, ") détectée : traitement comme mesures répétées avec id='", id, "'"),
+              verbose = verbose, code = code, k = k, cpt = "on"
+            )
+          }
+
+          # Simplifier la formule en retirant le terme (1|id)
+          formula_clean <- gsub("\\s*\\+\\s*[(][^)]+[|][^)]+[)]", "", formula_str_9_3)
+          formula_clean <- gsub("[(][^)]+[|][^)]+[)]\\s*\\+\\s*", "", formula_clean)
+          formula_clean <- gsub("[(][^)]+[|][^)]+[)]", "", formula_clean)
+          formula <- as.formula(formula_clean)
+
+          .dbg(paste0("Formula simplified from '", formula_str_9_3, "' to '", deparse(formula), "'"),
+               paste0("Formule simplifiée de '", formula_str_9_3, "' à '", deparse(formula), "'"),
+               debug = debug)
+        } else {
+          k <- .vbse(
+            paste0("Warning: Variable '", extracted_id, "' from lmer syntax not found in data. Keeping formula as-is."),
+            paste0("Attention : Variable '", extracted_id, "' de la syntaxe lmer non trouvée dans data. Conservation de la formule."),
+            verbose = verbose, code = code, k = k, cpt = "on"
+          )
+        }
+      }
+    }
+
+    # --- 9.4 : EXTRACTION id depuis Error() si présent dans formule ---
+    # Idée : Si formule contient Error(var), extraire var comme id
+    # APA : Maxwell et al. (2018). Designing Experiments, 3rd ed. Chapter 11.
+    # DOI : https://doi.org/10.4324/9781315642956
+    # Le terme Error() spécifie la variable de groupement (sujet) pour plans appariés
+
+    has_error_already <- grepl("Error\\(", deparse(formula))
+
+    if (has_error_already && is.null(id)) {
+      # Extraire la variable dans Error()
+      error_match <- regmatches(deparse(formula), regexpr("Error\\(([^/)]+)", deparse(formula)))
+      if (length(error_match) > 0) {
+        id_from_error <- gsub("Error\\(", "", error_match)
+        id_from_error <- trimws(id_from_error)
+
+        .dbg(paste0("Extracted id='", id_from_error, "' from Error() term in formula."),
+             paste0("Extraction de id='", id_from_error, "' depuis le terme Error() dans la formule."),
+             debug = debug)
+
+        # --- DISTINCTION Error(ID_sujet) vs Error(facteur) ---
+        # Idée : Error(var) peut signifier 2 choses:
+        #   1) var = ID sujet (beaucoup de modalités, peu d'obs par modalité) => mesures répétées
+        #   2) var = facteur catégoriel (peu de modalités, beaucoup d'obs) => strate d'erreur aov()
+        # APA : Maxwell & Delaney (2004). Designing Experiments, 2nd ed. Ch 11-12.
+        # DOI : https://doi.org/10.4324/9781315642956
+
+        is_subject_id <- TRUE  # Par défaut, supposer ID sujet
+
+        if (!is.null(data) && id_from_error %in% colnames(data)) {
+          n_levels <- nlevels(as.factor(data[[id_from_error]]))
+          n_obs <- nrow(data)
+          ratio <- n_levels / n_obs
+
+          # Heuristique : ratio élevé (>5%) => ID sujet, ratio faible (<5%) => facteur
+          if (ratio < 0.05) {
+            # Cas facteur catégoriel : GARDER Error() dans formule, NE PAS extraire comme id
+            is_subject_id <- FALSE
+
+            .dbg(paste0("Error(", id_from_error, ") has ", n_levels, " levels (",
+                       round(ratio*100, 2), "% of observations).\n",
+                       "\tThis appears to be a CATEGORICAL FACTOR, not a subject ID.\n",
+                       "\t==> Keeping Error() term in formula for standard RM-ANOVA with aov().\n",
+                       "\t==> NOT extracting as id parameter (paired will remain FALSE unless explicitly set)."),
+                 paste0("Error(", id_from_error, ") a ", n_levels, " niveaux (",
+                       round(ratio*100, 2), "% des observations).\n",
+                       "\tCeci semble être un FACTEUR CATÉGORIEL, pas un ID sujet.\n",
+                       "\t==> Conservation du terme Error() dans la formule pour RM-ANOVA standard avec aov().\n",
+                       "\t==> PAS d'extraction comme paramètre id (paired restera FALSE sauf si défini explicitement)."),
+                 debug = debug)
+          } else {
+            # Cas ID sujet : extraire comme id
+            .dbg(paste0("Error(", id_from_error, ") has ", n_levels, " levels (",
+                       round(ratio*100, 2), "% of observations).\n",
+                       "\tThis appears to be a SUBJECT ID variable.\n",
+                       "\t==> Extracting as id parameter for paired analysis."),
+                 paste0("Error(", id_from_error, ") a ", n_levels, " niveaux (",
+                       round(ratio*100, 2), "% des observations).\n",
+                       "\tCeci semble être une variable ID SUJET.\n",
+                       "\t==> Extraction comme paramètre id pour analyse appariée."),
+                 debug = debug)
+          }
+        }
+
+        # Assigner à id SEULEMENT si c'est un vrai ID sujet
+        if (is_subject_id) {
+          id <- id_from_error
+          paired <- TRUE
+        } else {
+          # Facteur catégoriel : ne PAS extraire, laisser dans Error()
+          id_from_error <- NULL
+          # Ne PAS définir paired=TRUE ici
+          # (paired peut être TRUE si défini explicitement par l'utilisateur)
+
+          # IMPORTANT: Marquer pour router vers RM-ANOVA avec aov()
+          # Idée : Error(facteur) doit être traité par aov(), pas par t-test/Wilcoxon
+          # APA : Maxwell & Delaney (2004). Designing Experiments, 2nd ed. Ch 11.
+          # DOI : https://doi.org/10.4324/9781315642956
+          # Le terme Error(facteur) spécifie strates d'erreur = RM-ANOVA obligatoire
+          has_error_term_factor <- TRUE
+        }
+      }
+    }
+
+    # --- 9.4b : VALIDATION Error() TERM (AVANT model.frame) ---
+    # Idée : Error() doit porter sur variable de groupement (facteur ou ID discret)
+    #        REJETER les variables continues (beaucoup de valeurs uniques)
+    # APA : Maxwell, Delaney & Kelley (2018). Designing Experiments and Analyzing Data, 3rd ed.
+    #       Chapitre 11-12 : "Error term must specify grouping factor (subjects, blocks)"
+    # DOI : https://doi.org/10.4324/9781315642956
+    # Référence : Barr et al. (2013). J Mem Lang 68(3):255-278. DOI: 10.1016/j.jml.2012.11.001
+
+    # Fonction helper pour vérifier si variable est groupement valide
+    .is_valid_grouping_var <- function(var_data, var_name) {
+      # Si déjà facteur ou character => OK
+      if (is.factor(var_data) || is.character(var_data)) {
+        return(list(valid = TRUE, convert = FALSE))
+      }
+
+      # Si numérique, vérifier si c'est un ID discret ou une variable continue
+      if (is.numeric(var_data) || is.integer(var_data)) {
+        n_total <- length(var_data)
+        n_unique <- length(unique(var_data))
+        pct_unique <- n_unique / n_total
+
+        # Critère : si >50% valeurs uniques OU >50 valeurs uniques => variable continue
+        if (pct_unique > 0.5 || n_unique > 50) {
+          return(list(
+            valid = FALSE,
+            reason_en = paste0("Variable '", var_name, "' appears to be a CONTINUOUS variable (",
+                              n_unique, " unique values out of ", n_total, " observations = ",
+                              round(pct_unique*100, 1), "%).\n",
+                              "\tError() term requires a GROUPING variable (subject ID, block, etc.), not a continuous measure.\n",
+                              "\tSolution: Use a categorical grouping variable (subject ID, block) for Error() term."),
+            reason_fr = paste0("La variable '", var_name, "' semble être une variable CONTINUE (",
+                              n_unique, " valeurs uniques sur ", n_total, " observations = ",
+                              round(pct_unique*100, 1), "%).\n",
+                              "\tLe terme Error() nécessite une variable de GROUPEMENT (ID sujet, bloc, etc.), pas une mesure continue.\n",
+                              "\tSolution : Utiliser une variable de groupement catégorielle (ID sujet, bloc) pour Error().")
+          ))
+        }
+
+        # Sinon, c'est probablement un ID discret => OK, convertir en facteur
+        return(list(valid = TRUE, convert = TRUE, n_groups = n_unique))
+      }
+
+      # Autre type => invalide
+      return(list(
+        valid = FALSE,
+        reason_en = paste0("Variable '", var_name, "' has unsupported type for Error() term: ", class(var_data)[1]),
+        reason_fr = paste0("La variable '", var_name, "' a un type non supporté pour le terme Error() : ", class(var_data)[1])
+      ))
+    }
+
+    # Validation et conversion de id (si déjà extrait)
+    if (!is.null(id) && !is.null(data) && id %in% colnames(data)) {
+      check_result <- .is_valid_grouping_var(data[[id]], id)
+
+      if (!check_result$valid) {
+        .exit(
+          check_result$reason_en,
+          check_result$reason_fr,
+          return = return, verbose = verbose
+        )
+      }
+
+      if (check_result$convert) {
+        data[[id]] <- factor(data[[id]])
+        .dbg(paste0("Converted '", id, "' to factor for Error() term (", check_result$n_groups, " groups)."),
+             paste0("Conversion de '", id, "' en facteur pour Error() (", check_result$n_groups, " groupes)."),
+             debug = debug)
+      }
+    }
+
+    # --- 9.5 : Environnement ---
+    if (!is.null(data) && is.data.frame(data)) {
+      env <- new.env(parent = parent.frame())
+      list2env(data, env)
+
+      vars <- all.vars(formula)
+      for (variable in vars) {
+        if (!exists(variable, envir = env, inherits = FALSE)) {
+          assign(variable, get(variable, envir = parent.frame(), inherits = TRUE),
+                 envir = env)
+        }
+      }
+      environment(formula) <- env
+
+    } else if (!is.null(data) && !is.data.frame(data)) {
+      .exit("The 'data' parameter must be a valid data frame.",
+            "Le paramètre 'data' doit être un data.frame valide.",
+            verbose = verbose, code = code, return = return)
+    }
+
+    # --- 9.5 : EXTRACTION x et g (AVANT modification Error) ---
+    # Extraire avec formule SANS modifications id/Error
+    formula_for_extraction <- formula
+
+    # Supprimer Error() s'il existe pour l'extraction
+    f_tmp <- if (!is.null(data)) .strip_data_dollar_safe(formula_for_extraction, data) else formula_for_extraction
+    f_mf  <- .drop_error_term(f_tmp)
+
+    mf <- tryCatch(
+      model.frame(
+        f_mf,
+        data = if (!is.null(data)) data else parent.frame(),
+        na.action = na.pass,
+        drop.unused.levels = TRUE
+      ),
+      error = function(e) {
+        # Extraire le message d'erreur original
+        error_msg <- conditionMessage(e)
+
+        # Cas spécial: erreur liée à Error()
+        if (grepl("Error", error_msg, ignore.case = FALSE)) {
+          .exit(
+            paste0("The Error() term in your formula could not be processed.\n",
+                   "\tOriginal error: ", error_msg, "\n",
+                   "\tPlease ensure:\n",
+                   "\t- The variable inside Error() exists in your data\n",
+                   "\t- The variable is a grouping factor (subject ID, block, etc.)\n",
+                   "\t- Example: Error(subject_id) where subject_id is a column in your data"),
+            paste0("Le terme Error() dans votre formule n'a pas pu être traité.\n",
+                   "\tErreur originale : ", error_msg, "\n",
+                   "\tAssurez-vous que :\n",
+                   "\t- La variable dans Error() existe dans vos données\n",
+                   "\t- La variable est un facteur de groupement (ID sujet, bloc, etc.)\n",
+                   "\t- Exemple : Error(id_sujet) où id_sujet est une colonne de vos données"),
+            return = return, verbose = verbose
+          )
+        }
+
+        # Créer un message plus informatif pour autres erreurs
+        .exit(
+          paste0("Error evaluating the formula.\n",
+                 "\tOriginal error: ", error_msg, "\n",
+                 "\tPlease check:\n",
+                 "\t- All variables exist in your data\n",
+                 "\t- Variable names are spelled correctly\n",
+                 "\t- Data types are appropriate for the formula"),
+          paste0("Erreur lors de l'évaluation de la formule.\n",
+                 "\tErreur originale : ", error_msg, "\n",
+                 "\tVérifiez s'il vous plaît :\n",
+                 "\t- Toutes les variables existent dans vos données\n",
+                 "\t- Les noms de variables sont correctement orthographiés\n",
+                 "\t- Les types de données sont appropriés pour la formule"),
+          return = return, verbose = verbose
+        )
+      }
+    )
+
+    # NE PAS TRIER - garder l'ordre original de data comme v17
+    # Le tri peut perturber la détection des patterns dans .multi_factor_analysis()
+
+    # Extraire x
+    x <- model.response(mf)
+
+    if (is.matrix(x) && ncol(x) > 1) {
+      check_manova <- TRUE
+    }
+
+    # Extraire g (SANS id)
+    pred_cols <- colnames(mf)[-1]
+
+    if (!is.null(id) && id %in% pred_cols) {
+      pred_cols <- setdiff(pred_cols, id)
+    }
+
+    if (length(pred_cols) == 1) {
+      g <- mf[[pred_cols[1]]]
+      if (!is.factor(g)) g <- factor(g)
+    } else if (length(pred_cols) > 1) {
+      g <- mf[, pred_cols, drop = FALSE]
+      check_anova <- TRUE
+    } else {
+      .exit("No predictors found in formula after excluding id.",
+            "Aucun prédicteur trouvé dans la formule après exclusion de id.",
+            verbose = verbose, code = code, return = return)
+    }
+
+    # --- 9.6 : CONSTRUCTION FORMULE POUR ANALYSE (AVEC Error si nécessaire) ---
+    formula_for_analysis <- formula
+
+    if (!is.null(id) && !has_error_already) {
+
+      if (!is.null(wt_names)) {
+        # Cas avec wt
+        for (wt_var in wt_names) {
+          if (!wt_var %in% colnames(data)) {
+            .exit(paste0("The specified variable `", wt_var, "` does not exist in data."),
+                  paste0("La variable spécifiée `", wt_var, "` n'existe pas dans `data`."),
+                  verbose = verbose, code = code, return = return)
+          }
+        }
+
+        for (wt_var in wt_names) {
+          if (!wt_var %in% all.vars(formula_for_analysis)) {
+            formula_for_analysis <- update(formula_for_analysis, paste0(". ~ . + ", wt_var))
+          }
+        }
+
+        if (length(wt_names) > 1) {
+          interaction_terms <- paste(wt_names, collapse = " * ")
+          formula_for_analysis <- update(formula_for_analysis,
+                                         paste0(". ~ . + Error(", id, "/(", interaction_terms, "))"))
+        } else {
+          formula_for_analysis <- update(formula_for_analysis,
+                                         paste0(". ~ . + Error(", id, "/", wt_names[1], ")"))
+        }
+
+      } else {
+        # Cas sans wt : plan apparié simple
+        # Référence académique : Maxwell, Delaney & Kelley (2018), Chapter 11-12
+        # Pour un plan apparié (within-subject), chaque id doit apparaître dans TOUTES
+        # les modalités du/des facteur(s) intra-sujet.
+        #
+        # SYNTAXE CORRECTE :
+        # - Plan apparié (within-subject) : Error(id)
+        #   Chaque sujet traverse tous les niveaux => pas d'emboîtement
+        #
+        # SYNTAXE INCORRECTE :
+        # - Error(id/F) décrit un effet IMBRIQUÉ (nested) : id dans F
+        #   Cela impliquerait un plan ENTRE-sujets (between-subject)
+        #   où chaque id n'apparaît que dans UN niveau de F
+        #   => INCOMPATIBLE avec un plan apparié
+        #
+        # DONC : Toujours utiliser Error(id) pour un plan apparié,
+        # indépendamment du nombre de facteurs intra-sujet
+
+        formula_for_analysis <- update(formula_for_analysis,
+                                       paste0(". ~ . + Error(", id, ")"))
+      }
+
+      .dbg(paste0("Formula for analysis: ", deparse(formula_for_analysis)),
+           paste0("Formule pour l'analyse : ", deparse(formula_for_analysis)),
+           debug = debug)
+    }
+
+    # Mettre à jour formula vers formula_for_analysis
+    formula <- formula_for_analysis
+  }
+
+  ################################################################################
+  # BLOC 10 : CONTRÔLES FINAUX
+  ################################################################################
+
+  if (is.null(x) || (is.null(g) && is.null(formula))) {
+    .exit("Both 'x' and 'g' (or 'formula') must be specified.",
+          "'x' et 'g' (ou 'formula') doivent être spécifiés.",
+          verbose = verbose, code = code, return = return)
+  }
+
+  lev_g <- .n_levels_g(g)
+
+  if (lev_g > maxcat) {
+    .exit(paste0("Too many groups (", lev_g, " > ", maxcat, ")."),
+          paste0("Trop de groupes (", lev_g, " > ", maxcat, ")."),
+          verbose = verbose, code = code, return = return)
+  }
+
+  if (lev_g < 2) {
+    .exit("At least 2 groups are required for comparison.",
+          "Au moins 2 groupes sont nécessaires pour une comparaison.",
+          verbose = verbose, code = code, return = return)
+  }
+
+  # Note: Si des doublons (id, group) existent, ils seront gérés par les sous-fonctions
+  # d'analyse qui peuvent agréger ou prendre la première observation automatiquement.
+
+  ################################################################################
+  # BLOC 11 : GESTION DES NA
+  ################################################################################
+
+  if (!check_anova && !check_manova) {
+    if (is.vector(x) && is.vector(g)) {
+      complete_cases <- complete.cases(x, g)
+      n_na <- sum(!complete_cases)
+
+      if (n_na > 0) {
+        if (verbose && !silent) {
+          .vbse(
+            paste0("Warning: ", n_na, " observations with missing values removed (listwise deletion)."),
+            paste0("Attention : ", n_na, " observations avec valeurs manquantes supprimées (suppression listwise)."),
+            verbose = verbose, code = code, k = k, cpt = "off"
+          ) -> k
+        }
+
+        x <- x[complete_cases]
+        g <- g[complete_cases]
+
+        if (!is.null(data)) {
+          data <- data[complete_cases, , drop = FALSE]
+        }
+      }
+    }
+  }
+
+  if (check_anova || check_manova) {
+    .dbg("NA values preserved for multi-factor/MANOVA analysis.",
+         "Valeurs NA conservées pour analyse multi-facteurs/MANOVA.",
+         debug = debug)
+  }
+
+  ################################################################################
+  # BLOC 11B : FILTRAGE DES GROUPES AVEC EFFECTIFS INSUFFISANTS
+  ################################################################################
+  # Référence : Pour des tests statistiques fiables (bartlett.test, bootstrap, etc.),
+  # chaque groupe doit avoir au moins min_group_size observations.
+  # Les groupes trop petits sont écartés AVANT l'analyse pour éviter les erreurs.
+
+  min_group_size <- 3  # Minimum requis par groupe
+
+  # Identifier les variables factorielles pour le filtrage
+  filter_factor_vars <- character(0)
+
+  if (is.data.frame(g)) {
+    # Cas multi-facteurs : identifier les colonnes factorielles
+    for (col in names(g)) {
+      if (is.factor(g[[col]]) || is.character(g[[col]])) {
+        filter_factor_vars <- c(filter_factor_vars, col)
+      }
+    }
+  } else if (is.factor(g) || is.character(g)) {
+    # Cas un seul facteur : créer un nom temporaire
+    filter_factor_vars <- ".group_var"
+  }
+
+  # Appliquer le filtrage si nous avons des facteurs
+  if (length(filter_factor_vars) > 0) {
+
+    # Préparer data pour le filtrage
+    if (!is.null(data)) {
+      data_for_filter <- data
+    } else {
+      # Créer un data.frame temporaire si data est NULL
+      data_for_filter <- data.frame(.x_temp = x)
+    }
+
+    # Si g est un vecteur simple, l'ajouter temporairement à data
+    if (length(filter_factor_vars) == 1 && filter_factor_vars[1] == ".group_var") {
+      data_for_filter$.group_var <- g
+    }
+
+    # Appeler la fonction de filtrage
+    filter_result <- .filter_small_groups(
+      data = data_for_filter,
+      factor_vars = filter_factor_vars,
+      min_n = min_group_size,
+      verbose = verbose,
+      k = k,
+      code = code
+    )
+
+    k <- filter_result$k
+
+    # Si des groupes ont été filtrés, mettre à jour les données
+    if (filter_result$filtered) {
+
+      if (!is.null(data)) {
+        data <- filter_result$data
+
+        # Supprimer la colonne temporaire si créée
+        if (".group_var" %in% names(data)) {
+          data$.group_var <- NULL
+        }
+
+        # Recalculer x et g à partir des données filtrées si formule présente
+        if (!is.null(formula)) {
+          # Re-extraire x et g depuis les données filtrées
+          f_tmp <- .strip_data_dollar_safe(formula, data)
+          f_mf  <- .drop_error_term(f_tmp)
+
+          mf <- model.frame(
+            f_mf,
+            data = data,
+            na.action = na.pass,
+            drop.unused.levels = TRUE
+          )
+
+          x <- model.response(mf)
+          pred_cols <- colnames(mf)[-1]
+
+          if (!is.null(id) && id %in% pred_cols) {
+            pred_cols <- setdiff(pred_cols, id)
+          }
+
+          if (length(pred_cols) == 1) {
+            g <- mf[[pred_cols[1]]]
+            if (!is.factor(g)) g <- factor(g)
+          } else if (length(pred_cols) > 1) {
+            g <- mf[, pred_cols, drop = FALSE]
+          }
+        }
+      } else {
+        # Sans data, mettre à jour x et g directement depuis filter_result
+        filtered_data <- filter_result$data
+        x <- filtered_data$.x_temp
+        g <- droplevels(filtered_data$.group_var)
+      }
+
+      # Recalculer le nombre de niveaux après filtrage
+      lev_g <- .n_levels_g(g)
+
+      # Vérifier qu'il reste au moins 2 groupes
+      if (lev_g < 2) {
+        .exit("After removing groups with insufficient observations, fewer than 2 groups remain.",
+              "Après suppression des groupes avec effectifs insuffisants, il reste moins de 2 groupes.",
+              verbose = verbose, code = code, return = return)
+      }
+    }
+  }
+
+  ################################################################################
+  # BLOC 12 : VÉRIFICATION DES CROISEMENTS
+  ################################################################################
+
+  if (check_anova == TRUE && check_manova == FALSE) {
+
+    if (debug) {
+      cat("\n")
+      cat("===========================\n")
+      cat("BLOC 12 : Vérification des croisements\n")
+      cat("===========================\n")
+    }
+
+    data_model <- model.frame(.formulator_safe(formula, mode = "linear", debug = debug),
+                              data = data)
+
+    f_lin2 <- .formulator_safe(formula, mode = "linear", debug = debug)
+    f_lin2_noErr <- .drop_error_term(f_lin2)
+    variables_explicatives <- attr(terms(f_lin2_noErr), "term.labels")
+
+    non_numeriques <- variables_explicatives[
+      !sapply(variables_explicatives, function(var) is.numeric(data_model[[var]]))
+    ]
+
+    if (length(non_numeriques) > 0) {
+      variables_categoriques <- non_numeriques
+      combinaisons <- table(data_model[variables_categoriques])
+
+      if (min(combinaisons) == 0) {
+        .dbg("Some crossed categories are not specified. Check your data.",
+             "Certaines catégories croisées ne sont pas renseignées. Vérifiez vos données.",
+             debug = debug)
+      } else {
+        .dbg("The crossed categories are correctly specified.",
+             "Les catégories croisées sont bien renseignées.",
+             debug = debug)
+      }
+    } else {
+      .dbg("All explanatory variables are numeric.",
+           "Toutes les variables explicatives sont numériques.",
+           debug = debug)
+    }
+  }
+
+  ################################################################################
+  # BLOC 13 : DÉTECTION TYPE D'ANALYSE
+  ################################################################################
+
+  lev_g <- .n_levels_g(g)
+  has_error <- (!is.null(formula) && grepl("Error\\(", deparse(formula)))
+
+  if (isTRUE(paired) && (has_error || (!is.null(id) && lev_g > 2))) {
+    check_anova <- TRUE
+  }
+
+  # --- ROUTAGE SPÉCIAL POUR Error(facteur) ---
+  # Idée : Si Error(facteur_catégoriel) détecté (ratio < 5%), forcer vers RM-ANOVA
+  # APA : Maxwell & Delaney (2004). Error() spécifie strates → aov() obligatoire
+  # DOI : https://doi.org/10.4324/9781315642956
+  if (exists("has_error_term_factor") && has_error_term_factor && has_error) {
+    .dbg(paste0("Error(categorical_factor) detected with formula: ", deparse(formula), "\n",
+                "\tForcing routing to RM-ANOVA analysis (aov with Error term).\n",
+                "\tThis is NOT a simple comparison - Error() defines strata structure."),
+         paste0("Error(facteur_catégoriel) détecté avec formule : ", deparse(formula), "\n",
+                "\tForçage du routage vers analyse RM-ANOVA (aov avec terme Error).\n",
+                "\tCe n'est PAS une simple comparaison - Error() définit la structure en strates."),
+         debug = debug)
+
+    # Forcer vers .multi_factor_analysis() qui sait gérer aov() avec Error()
+    check_anova <- TRUE
+    # paired reste FALSE (aov() gère Error() directement)
+  }
+
+  # Détection préliminaire des réplicats pour forcer routage vers .multi_factor_analysis()
+  # Idée : Si plan apparié avec réplicats, forcer check_anova=TRUE pour routage correct
+  # APA : Barr et al. (2013). Random effects structure for confirmatory hypothesis testing.
+  #       J Mem Lang 68(3):255-278. DOI: 10.1016/j.jml.2012.11.001
+  # Note : RM-ANOVA suppose UNE obs par sujet×condition; avec réplicats => modèle mixte requis
+  if (isTRUE(paired) && !is.null(id) && !is.null(data) && id %in% colnames(data)) {
+    # Compter observations par sujet
+    id_counts <- table(data[[id]])
+    n_subjects <- length(id_counts)
+
+    if (is.vector(g) || is.factor(g)) {
+      # Cas simple : un facteur
+      n_conditions <- length(unique(g))
+      expected_obs_per_subject <- n_conditions
+
+      # Si obs par sujet > nombre de conditions => réplicats
+      if (all(id_counts > expected_obs_per_subject)) {
+        .dbg(paste0("Replicates detected: ", unique(id_counts)[1], " obs per subject, ",
+                   n_conditions, " conditions => ", unique(id_counts)[1] / n_conditions, " replicates."),
+             paste0("Réplicats détectés: ", unique(id_counts)[1], " obs par sujet, ",
+                   n_conditions, " conditions => ", unique(id_counts)[1] / n_conditions, " réplicats."),
+             debug = debug)
+
+        # Forcer vers .multi_factor_analysis() pour gestion modèle mixte
+        check_anova <- TRUE
+
+        .dbg("Forcing check_anova=TRUE to route to .multi_factor_analysis() for mixed model handling.",
+             "Forçage check_anova=TRUE pour router vers .multi_factor_analysis() pour modèle mixte.",
+             debug = debug)
+      }
+    }
+  }
+
+  if (debug) {
+    cat("\n")
+    cat("===========================\n")
+    cat("BLOC 13 : Flags de routage\n")
+    cat("===========================\n")
+    cat("check_manova  = ", check_manova, "\n")
+    cat("check_anova   = ", check_anova, "\n")
+    cat("paired        = ", paired, "\n")
+    cat("lev_g         = ", lev_g, "\n")
+    cat("has_error     = ", has_error, "\n")
+    cat("\n")
+  }
+
+  ################################################################################
+  # BLOC 14 : ROUTAGE
+  ################################################################################
+
+  .dbg(NULL, "========================", debug = debug)
+  .dbg(NULL, "   ROUTAGE ANALYSE", debug = debug)
+  .dbg(NULL, "========================", debug = debug)
+
+  route <- NULL
+
+  if (isTRUE(paired)) {
+
+    if (isTRUE(check_manova) || isTRUE(check_anova)) {
+      route <- if (isTRUE(check_manova)) "MANOVA(repeated)" else "ANOVA multi-facteurs (repeated)"
+
+      .dbg(paste0("Routing: ", route),
+           paste0("Routage : ", route),
+           debug = debug)
+
+      if (isTRUE(check_manova)) {
+        bilan <- .manova_analysis(x = x, g = g, formula = formula, data = data,
+                                  alpha = alpha, paired = TRUE, id = id, between = between,
+                                  k = k, code = code, debug = debug, verbose = verbose)
+      } else {
+        bilan <- .multi_factor_analysis(x = x, g = g, formula = formula, data = data,
+                                        alpha = alpha, paired = TRUE, id = id, between = between,
+                                        k = k, code = code, debug = debug, verbose = verbose)
+      }
+
+    } else {
+      lev <- nlevels(droplevels(factor(g)))
+
+      if (lev > 2 && is.null(id)) {
+        .exit("For paired designs with >2 levels, 'id' is required.",
+              "Pour un plan apparié avec >2 modalités, 'id' est requis.",
+              verbose = verbose, code = code, return = return)
+      }
+
+      route <- if (lev == 2) "Paired (2 levels)" else "Paired (k>2 levels)"
+
+      .dbg(paste0("Routing: ", route),
+           paste0("Routage : ", route),
+           debug = debug)
+
+      bilan <- .one_factor_analysis(x = x, g = g, formula = formula, data = data,
+                                    alpha = alpha, paired = TRUE, id = id,
+                                    k = k, code = code, debug = debug, verbose = verbose)
+    }
+
+  } else {
+
+    if (isTRUE(check_manova)) {
+      .dbg("Routing: MANOVA",
+           "Routage : MANOVA",
+           debug = debug)
+
+      bilan <- .manova_analysis(x = x, g = g, formula = formula, data = data,
+                                alpha = alpha, paired = FALSE, id = id, between = between,
+                                k = k, code = code, debug = debug, verbose = verbose)
+
+    } else if (isTRUE(check_anova)) {
+      .dbg("Routing: multi-factor ANOVA",
+           "Routage : ANOVA multi-facteurs",
+           debug = debug)
+
+      bilan <- .multi_factor_analysis(x = x, g = g, formula = formula, data = data,
+                                      alpha = alpha, paired = FALSE, id = id, between = between,
+                                      k = k, code = code, debug = debug, verbose = verbose)
+
+    } else {
+      .dbg("Routing: one-factor (unpaired)",
+           "Routage : 1 facteur (non apparié)",
+           debug = debug)
+
+      bilan <- .one_factor_analysis(x = x, g = g, formula = formula, data = data,
+                                    alpha = alpha, paired = FALSE, id = id,
+                                    k = k, code = code, debug = debug, verbose = verbose)
+    }
+  }
+
+  ################################################################################
+  # BLOC 15 : RÉCUPÉRATION RÉSULTATS
+  ################################################################################
+
+  x <- bilan[[1]]
+  g <- bilan[[2]]
+  check_normality <- bilan[[3]]
+  check_variance_equal <- bilan[[4]]
+  k <- bilan$k
+  chosen_test <- bilan$chosen_test  # Quel test non-paramétrique a été utilisé (med1way, t1way, kruskal, ou NULL)
+
+  ################################################################################
+  # BLOC 16 : GRAPHIQUES (DÉPLACÉ APRÈS POST-HOCS - voir BLOC 18)
+  ################################################################################
+
+  # NOTE PERSO: Priorité 5 - Graphiques avec lettres de significativité
+  # L'ancien code graphique (boxplot simple) a été déplacé APRÈS les post-hocs
+  # pour permettre la superposition des lettres de significativité.
+  # Voir BLOC 18 ci-dessous pour la nouvelle implémentation.
+
+  ################################################################################
+  # BLOC 17 : POST-HOC
+  ################################################################################
+
+  .dbg(NULL, "Tests posts-hocs.", debug = debug)
+
+  # NOTE PERSO: Gestion return=FALSE (Cahier des charges priorité 2)
+  # Si return=FALSE → renvoyer UNIQUEMENT p-value globale, PAS de post-hocs
+  if (return == FALSE) {
+    # Extraire la p-value globale du bilan
+    global_pvalue <- bilan$global_pvalue
+
+    # Si global_pvalue manquant, essayer de l'extraire du modèle
+    if (is.null(global_pvalue) || is.na(global_pvalue)) {
+      .dbg("Warning: global_pvalue not found in bilan, trying to extract from model.",
+           "Attention : global_pvalue introuvable dans bilan, extraction depuis le modèle.",
+           debug = debug)
+
+      # Tentative d'extraction depuis le modèle
+      if (!is.null(bilan$model) && inherits(bilan$model, c("aov", "lm"))) {
+        tryCatch({
+          anova_table <- car::Anova(bilan$model, type = "III")
+          # Prendre la p-value de la première ligne (facteur principal)
+          if (nrow(anova_table) >= 1) {
+            # Chercher la colonne Pr(>F) ou p.value
+            pval_col <- which(colnames(anova_table) %in% c("Pr(>F)", "p.value", "P(>|t|)"))
+            if (length(pval_col) > 0) {
+              # Exclure les lignes Residuals/Intercept
+              row_names <- rownames(anova_table)
+              valid_rows <- which(!grepl("Residuals|Intercept|^\\(Intercept\\)", row_names, ignore.case = TRUE))
+              if (length(valid_rows) > 0) {
+                global_pvalue <- anova_table[valid_rows[1], pval_col[1]]
+              }
+            }
+          }
+        }, error = function(e) {
+          .dbg(paste0("Could not extract p-value from model: ", e$message),
+               paste0("Impossible d'extraire p-value du modèle : ", e$message),
+               debug = debug)
+        })
+      }
+
+      # Si toujours NA, essayer depuis robust_results
+      if ((is.null(global_pvalue) || is.na(global_pvalue)) && !is.null(bilan$robust_results)) {
+        if (!is.null(bilan$robust_results$p_value)) {
+          global_pvalue <- bilan$robust_results$p_value
+        }
+      }
+
+      # Dernier recours : NA
+      if (is.null(global_pvalue) || is.na(global_pvalue)) {
+        global_pvalue <- NA
+      }
+    }
+    return(as.numeric(global_pvalue))
+  }
+
+  # SINON (return == TRUE): Faire les post-hocs et retourner bilan complet
+
+  # Post-hocs: For MANOVA, use specialized multivariate post-hocs
+  if (is.matrix(x)) {
+    .dbg("Running MANOVA post-hocs (discriminant analysis + protected ANOVAs).",
+         "Exécution des post-hocs MANOVA (analyse discriminante + ANOVAs protégées).",
+         debug = debug)
+
+    # Appeler .posthoc_MANOVA() pour analyses post-hoc multivariées appropriées
+    posthoc_manova <- tryCatch({
+      .posthoc_MANOVA(
+        x = x,
+        g = g,
+        manova_result = bilan,
+        alpha = alpha,
+        method = "both",  # Discriminant + protected ANOVAs
+        verbose = verbose, code = code,
+        debug = debug,
+        k = k
+      )
+    }, error = function(e) {
+      k <<- .vbse(
+        paste0("Note: MANOVA post-hocs skipped due to error: ", e$message),
+        paste0("Note: Post-hocs MANOVA ignorés en raison d'une erreur: ", e$message),
+        verbose = verbose, code = code, k = k, cpt = "on"
+      )
+      return(NULL)
+    })
+
+    # Ajouter les résultats post-hocs au bilan
+    if (!is.null(posthoc_manova)) {
+      bilan$posthoc_manova <- posthoc_manova
+    }
+
+    # NOTE PERSO: Priorité 5 - Graphics MANOVA
+    # Pour MANOVA, créer graphiques séparés pour chaque variable dépendante
+    if (plot == TRUE) {
+      # Gérer le cas où g est un data.frame (multi-facteurs)
+      g_for_plot <- if (is.data.frame(g)) {
+        # Créer facteur combiné pour graphique
+        interaction(g, drop = TRUE, sep = ":")
+      } else {
+        g
+      }
+
+      n_groups_plot <- length(unique(g_for_plot))
+
+      if (n_groups_plot < maxcat) {
+        .dbg("Creating MANOVA plots (one per dependent variable).",
+             "Création graphiques MANOVA (un par variable dépendante).",
+             debug = debug)
+
+        # Créer un graphique par colonne de x (variable dépendante)
+        n_vars <- ncol(x)
+        var_names <- colnames(x)
+        if (is.null(var_names)) {
+          var_names <- paste0("V", seq_len(n_vars))
+        }
+
+        # Layout pour plusieurs graphiques (2 colonnes)
+        old_par <- par(no.readonly = TRUE)
+        on.exit(par(old_par), add = TRUE)
+
+        n_rows <- ceiling(n_vars / 2)
+        par(mfrow = c(n_rows, 2), mar = c(4, 4, 3, 1))
+
+        for (i in seq_len(n_vars)) {
+          # Extraire post-hocs pour cette VD si disponibles
+          posthoc_i <- NULL
+          if (!is.null(posthoc_manova) && !is.null(posthoc_manova$protected_anovas)) {
+            if (!is.null(posthoc_manova$protected_anovas[[var_names[i]]])) {
+              posthoc_i <- posthoc_manova$protected_anovas[[var_names[i]]]
+            }
+          }
+
+          # Appeler .plot_with_letters() pour cette VD
+          .plot_with_letters(
+            x = x[, i],
+            g = g_for_plot,
+            posthoc_result = posthoc_i,
+            main = paste0("MANOVA - ", var_names[i]),
+            ylab = var_names[i],
+            xlab = "Groupes",
+            verbose = verbose, code = code,
+            debug = debug
+          )
+        }
+      } else {
+        .dbg(paste0("MANOVA plots skipped: too many groups (", n_groups_plot, " >= ", maxcat, ")"),
+             paste0("Graphiques MANOVA ignorés : trop de groupes (", n_groups_plot, " >= ", maxcat, ")"),
+             debug = debug)
+      }
+    }
+
+    # Message de version final (MANOVA)
+    if (verbose == TRUE) {
+      cat("\n")
+      cat(.msg(
+        "m.test() - version 02 beta 2025 - report any issues to antoine.masse@u-bordeaux.fr.\n",
+        "m.test() - version 02 bêta 2025 - envoyer ce bilan à antoine.masse@u-bordeaux.fr en cas d'anomalie.\n"
+      ))
+    } else if (code == TRUE && !is.null(bilan)) {
+      # En mode code, ajouter le message en commentaire
+      cat("# m.test() - version 02 bêta 2025 - envoyer ce bilan à antoine.masse@u-bordeaux.fr en cas d'anomalie.\n")
+    }
+
+    # Nettoyage du bilan MANOVA : conserver uniquement les éléments utiles à l'utilisateur
+    # Supprimer les éléments internes et restructurer pour cohérence avec autres retours
+    if (!is.null(bilan)) {
+      # Éléments à conserver pour MANOVA
+      manova_result <- list(
+        groups = if (!is.null(bilan$posthoc_manova$groups)) bilan$posthoc_manova$groups else NULL,
+        p.value = if (!is.null(bilan$posthoc_manova$p.value)) bilan$posthoc_manova$p.value else NULL,
+        test_statistics = bilan$test_statistics,
+        global_pvalue = bilan$global_pvalue,
+        discriminant_analysis = if (!is.null(bilan$posthoc_manova$discriminant_analysis))
+                                  bilan$posthoc_manova$discriminant_analysis else NULL,
+        protected_anovas = if (!is.null(bilan$posthoc_manova$protected_anovas))
+                             bilan$posthoc_manova$protected_anovas else NULL,
+        method = "MANOVA (Wilks' Lambda)"
+      )
+      class(manova_result) <- "posthoc"
+      return(manova_result)
+    }
+
+    return(bilan)
+
+  } else{
+    # Univariate case: check if mixed model, ANCOVA, or regular ANOVA/t-test
+
+    ############################################################################
+    # BLOC 17.5 : ANNONCE DES POST-HOCS (Étape 8)
+    ############################################################################
+
+    # NOTE PERSO: Routage vers .posthoc_mixed_model() si modèle mixte utilisé
+    is_mixed_model <- !is.null(bilan$robust_results) &&
+                      !is.null(bilan$robust_results$method) &&
+                      bilan$robust_results$method == "Mixed_Model_lmer"
+
+    # NOTE PERSO: Routage vers .posthoc_ANCOVA() si ANCOVA détectée
+    # (cf. Cahier des charges priorité 3)
+    is_ancova <- !is.null(bilan$check_ancova) && isTRUE(bilan$check_ancova)
+
+    # NOTE BP-008: Afficher le message uniquement pour les ANOVA/t-tests standards avec >2 groupes
+    # Pour 2 groupes, la comparaison a déjà été présentée dans l'analyse principale
+    # Les fonctions spécialisées (.posthoc_ANCOVA, .posthoc_mixed_model) créent leur propre étape
+    # NOTE IMPORTANTE: Dans KefiR, les post-hocs sont TOUJOURS effectués, même si test global non significatif
+    # Cela donne une vue complète à l'utilisateur qui peut juger par lui-même
+    # Note: Le titre "Posthoc - Tests post-hoc..." est affiché par .posthoc() lui-même
+
+    if (is_mixed_model) {
+      .dbg("Mixed model detected, routing to .posthoc_mixed_model()",
+           "Modèle mixte détecté, routage vers .posthoc_mixed_model()",
+           debug = debug)
+
+      # Extraire le modèle et les effets significatifs
+      mixed_model <- bilan$robust_results$model
+      sig_effects <- bilan$robust_results$significant_effects
+
+      synth <- .posthoc_mixed_model(
+        mixed_model = mixed_model,
+        significant_effects = sig_effects,
+        alpha = alpha,
+        method = "tukey",
+        conf.level = conf,
+        verbose = verbose, code = code,
+        debug = debug,
+        code = code,
+        k = k
+      )
+
+    } else if (is_ancova) {
+      .dbg("ANCOVA detected, routing to .posthoc_ANCOVA()",
+           "ANCOVA détectée, routage vers .posthoc_ANCOVA()",
+           debug = debug)
+
+      # Pour ANCOVA, on a besoin du modèle aov
+      # Extraire ou reconstruire le modèle depuis le bilan
+      ancova_model <- NULL
+
+      if (!is.null(bilan$model)) {
+        ancova_model <- bilan$model
+      } else if (!is.null(formula) && !is.null(data)) {
+        # Reconstruire le modèle
+        ancova_model <- tryCatch({
+          aov(formula, data = data)
+        }, error = function(e) {
+          k <<- .vbse(
+            paste0("Warning: Could not reconstruct ANCOVA model for post-hocs: ", e$message),
+            paste0("Attention : Impossible de reconstruire le modèle ANCOVA pour post-hocs : ", e$message),
+            verbose = verbose, code = code, k = k, cpt = "on"
+          )
+          NULL
+        })
+      }
+
+      if (!is.null(ancova_model)) {
+        synth <- .posthoc_ANCOVA(
+          ancova_model = ancova_model,
+          factor_name = NULL,  # Auto-détection du premier facteur
+          alpha = alpha,
+          method = "tukey",  # Défaut académique
+          conf.level = conf,
+          verbose = verbose,
+          debug = debug,
+          code = code,
+          k = k
+        )
+      } else {
+        # Fallback si modèle non disponible
+        k <- .vbse(
+          paste0("Warning: ANCOVA model not available for post-hocs.\n",
+                 "Falling back to standard post-hoc tests (may be inappropriate for ANCOVA).\n",
+                 "Consider using emmeans package directly for proper ANCOVA comparisons."),
+          paste0("Attention : Modèle ANCOVA non disponible pour post-hocs.\n",
+                 "Utilisation des tests post-hoc standards (peut être inapproprié pour ANCOVA).\n",
+                 "Considérez l'usage direct du package emmeans pour comparaisons ANCOVA appropriées."),
+          verbose = verbose, code = code, k = k, cpt = "on"
+        )
+
+        synth <- tryCatch({
+          .posthoc(x, g, alpha = alpha, normal = check_normality,
+                   var.equal = check_variance_equal,
+                   control = control, debug = debug,
+                   verbose = verbose, code = code, paired = paired,
+                   boot = boot, boot_type = boot_type, iter = iter, conf = conf, k = k,
+                   chosen_test = chosen_test)
+        }, error = function(e) {
+          k <<- .vbse(
+            paste0("Note: Post-hoc comparisons skipped: ", e$message),
+            paste0("Note : Comparaisons post-hoc ignorées : ", e$message),
+            verbose = verbose, code = code, k = k, cpt = "on"
+          )
+          return(NULL)
+        })
+      }
+    } else {
+      # Standard ANOVA/t-test post-hocs
+      .dbg("Using standard post-hoc tests (.posthoc)",
+           "Utilisation des tests post-hoc standards (.posthoc)",
+           debug = debug)
+
+      # Appeler .posthoc() même pour 2 groupes (en mode silencieux) pour obtenir
+      # l'objet complet avec bootstrap, p-values, etc.
+      # Les messages ont déjà été affichés par .one_factor_analysis()
+      number_of_groups <- length(unique(g))
+
+      if (number_of_groups == 2) {
+        # Pour 2 groupes, les comparaisons sont déjà affichées dans .one_factor_analysis()
+        # MAIS on appelle quand même .posthoc() en mode silencieux (verbose=FALSE)
+        # pour obtenir l'objet complet avec bootstrap, p-values, etc.
+        .dbg("Calling .posthoc() for 2 groups in silent mode (messages already displayed in .one_factor_analysis())",
+             "Appel de .posthoc() pour 2 groupes en mode silencieux (messages déjà affichés dans .one_factor_analysis())",
+             debug = debug)
+
+        synth <- tryCatch({
+          .posthoc(x, g, alpha = alpha, normal = check_normality,
+                   var.equal = check_variance_equal,
+                   control = control, code = FALSE, debug = debug,
+                   verbose = FALSE,  # MODE SILENCIEUX pour éviter réaffichage (et code=FALSE pour éviter duplication)
+                   paired = paired,
+                   boot = boot, boot_type = boot_type, iter = iter, conf = conf, k = k,
+                   chosen_test = chosen_test)
+        }, error = function(e) {
+          k <<- .vbse(
+            paste0("Note: Post-hoc analysis failed for 2 groups: ", e$message),
+            paste0("Note : Analyse post-hoc échouée pour 2 groupes : ", e$message),
+            verbose = verbose, code = code, k = k, cpt = "on"
+          )
+          return(NULL)
+        })
+      } else {
+        # Plus de 2 groupes : appeler .posthoc() TOUJOURS (même si test global non significatif)
+        synth <- tryCatch({
+          .posthoc(x, g, alpha = alpha, normal = check_normality,
+                   var.equal = check_variance_equal,
+                   control = control, debug = debug,
+                   verbose = verbose, code = code, paired = paired,
+                   boot = boot, boot_type = boot_type, iter = iter, conf = conf, k = k,
+                   chosen_test = chosen_test)
+        }, error = function(e) {
+          k <<- .vbse(
+            paste0("Note: Post-hoc comparisons skipped: ", e$message),
+            paste0("Note : Comparaisons post-hoc ignorées : ", e$message),
+            verbose = verbose, code = code, k = k, cpt = "on"
+          )
+          return(NULL)
+        })
+      }
+
+      # Synchroniser global_pvalue pour le retour
+      # .posthoc() définit synth$p.value mais pas synth$global_pvalue
+      # IMPORTANT: global_pvalue doit être un SCALAIRE, pas une matrice
+      if (!is.null(synth) && is.null(synth$global_pvalue)) {
+        if (!is.null(synth$p.value)) {
+          # Si p.value est une matrice, extraire le minimum (hors diagonale)
+          if (is.matrix(synth$p.value)) {
+            pmat <- synth$p.value
+            diag(pmat) <- NA
+            synth$global_pvalue <- min(pmat, na.rm = TRUE)
+          } else if (length(synth$p.value) == 1) {
+            synth$global_pvalue <- as.numeric(synth$p.value)
+          } else {
+            # Vecteur de p-values : prendre le minimum
+            synth$global_pvalue <- min(synth$p.value, na.rm = TRUE)
+          }
+        } else if (!is.null(pvals) && !is.na(pvals)) {
+          synth$global_pvalue <- as.numeric(pvals)
+        }
+      }
+    }
+
+    ############################################################################
+    # BLOC 18 : GRAPHIQUES AVEC LETTRES (Priorité 5)
+    ############################################################################
+
+    # NOTE PERSO: Graphics placés APRÈS post-hocs pour superposer lettres
+    # Univariate case: un seul graphique avec lettres de significativité
+
+    if (plot == TRUE) {
+      # Gérer le cas où g est un data.frame (multi-facteurs)
+      g_for_plot <- if (is.data.frame(g)) {
+        # Créer facteur combiné pour graphique
+        interaction(g, drop = TRUE, sep = ":")
+      } else {
+        g
+      }
+
+      n_groups_plot <- length(unique(g_for_plot))
+
+      if (n_groups_plot < maxcat) {
+        .dbg("Creating plot with significance letters.",
+             "Création graphique avec lettres de significativité.",
+             debug = debug)
+
+        # Déterminer titre selon type d'analyse
+        plot_title <- ""
+        if (is_ancova) {
+          plot_title <- "ANCOVA (adjusted means)"
+        } else if (paired) {
+          plot_title <- "Paired comparisons"
+        } else if (is_mixed_model) {
+          plot_title <- "Mixed Model (EMMs)"
+        } else {
+          plot_title <- "ANOVA"
+        }
+
+        # Gérer format multi-effets de .posthoc_mixed_model()
+        # Si synth contient $note et plusieurs sous-listes : extraire le premier effet
+        posthoc_for_plot <- synth
+        if (!is.null(synth$note) && !inherits(synth, "posthoc")) {
+          # Multi-effets : extraire le premier effet significatif
+          effect_names <- setdiff(names(synth), c("k", "note"))
+          if (length(effect_names) > 0) {
+            posthoc_for_plot <- synth[[effect_names[1]]]
+            plot_title <- paste0(plot_title, " - ", effect_names[1])
+          }
+        }
+
+        # Appeler .plot_with_letters() avec résultats post-hocs
+        .plot_with_letters(
+          x = x,
+          g = g_for_plot,
+          posthoc_result = posthoc_for_plot,
+          main = plot_title,
+          ylab = "Value",
+          xlab = "Groups",
+          verbose = verbose, code = code,
+          debug = debug
+        )
+      } else {
+        k <- .vbse(
+          paste0("Plot skipped: too many groups (", n_groups_plot, " >= ", maxcat, ")"),
+          paste0("Graphique ignoré : trop de groupes (", n_groups_plot, " >= ", maxcat, ")"),
+          verbose = verbose, code = code, k = k, cpt = "on"
+        )
+      }
+    }
+
+    # Ajouter chosen_test à l'objet synth pour le retour
+    if (!is.null(synth)) {
+      synth$chosen_test <- chosen_test  # NULL=parametric, "med1way", "t1way", or "kruskal"
+
+      # ========================================================================
+      # STANDARDISATION DU RETOUR : Ajouter descriptive_stats si absent
+      # ========================================================================
+      # Structure standard : groups, p.value, global_pvalue, descriptive_stats, method
+
+      # 1. Ajouter global_pvalue si absent
+      if (is.null(synth$global_pvalue)) {
+        if (!is.null(bilan$global_pvalue)) {
+          synth$global_pvalue <- bilan$global_pvalue
+        } else if (!is.null(synth$p.value) && is.matrix(synth$p.value)) {
+          # Prendre la plus petite p-value non-diagonale
+          pmat <- synth$p.value
+          diag(pmat) <- NA
+          synth$global_pvalue <- min(pmat, na.rm = TRUE)
+        }
+      }
+
+      # 2. Créer descriptive_stats si absent (harmonisation)
+      if (is.null(synth$descriptive_stats)) {
+        # Déterminer le type de statistique selon le test utilisé
+        stat_type <- if (!is.null(chosen_test) && chosen_test %in% c("med1way", "kruskal")) {
+          "median"  # Tests non-paramétriques
+        } else {
+          "mean"    # Tests paramétriques
+        }
+
+        # Si ANCOVA avec adjusted_means, utiliser celles-ci
+        if (!is.null(synth$adjusted_means)) {
+          synth$descriptive_stats <- data.frame(
+            group = synth$adjusted_means$group,
+            adjusted_mean = synth$adjusted_means$adjusted_mean,
+            SE = synth$adjusted_means$SE,
+            type = "adjusted_mean"
+          )
+        } else if (!is.data.frame(g)) {
+          # Calculer statistiques descriptives par groupe
+          g_factor <- droplevels(factor(g))
+          levels_g <- levels(g_factor)
+
+          if (stat_type == "median") {
+            stats_vals <- tapply(x, g_factor, median, na.rm = TRUE)
+            stats_iqr <- tapply(x, g_factor, IQR, na.rm = TRUE)
+            synth$descriptive_stats <- data.frame(
+              group = levels_g,
+              median = as.numeric(stats_vals[levels_g]),
+              IQR = as.numeric(stats_iqr[levels_g]),
+              type = "median"
+            )
+          } else {
+            stats_mean <- tapply(x, g_factor, mean, na.rm = TRUE)
+            stats_sd <- tapply(x, g_factor, sd, na.rm = TRUE)
+            stats_n <- tapply(x, g_factor, function(z) sum(!is.na(z)))
+            stats_se <- stats_sd / sqrt(stats_n)
+            synth$descriptive_stats <- data.frame(
+              group = levels_g,
+              mean = as.numeric(stats_mean[levels_g]),
+              SD = as.numeric(stats_sd[levels_g]),
+              SE = as.numeric(stats_se[levels_g]),
+              n = as.numeric(stats_n[levels_g]),
+              type = "mean"
+            )
+          }
+        }
+      }
+
+      # 3. Ajouter method si absent
+      if (is.null(synth$method)) {
+        synth$method <- if (!is.null(chosen_test)) {
+          switch(chosen_test,
+            "med1way" = "Robust ANOVA (med1way)",
+            "t1way" = "Robust ANOVA (t1way)",
+            "kruskal" = "Kruskal-Wallis",
+            "Parametric ANOVA/t-test"
+          )
+        } else {
+          "Parametric ANOVA/t-test"
+        }
+      }
+
+      # Nettoyage des éléments internes (pas utiles à l'utilisateur)
+      synth$k <- NULL           # Compteur interne .vbse()
+      synth$verbose <- NULL     # Paramètre interne
+      synth$debug <- NULL       # Paramètre interne
+      synth$code <- NULL        # Paramètre interne
+
+      # Supprimer adjusted_means du niveau principal (déjà dans descriptive_stats)
+      # Garder dans $details pour utilisateurs avancés si besoin
+      if (!is.null(synth$adjusted_means) && !is.null(synth$descriptive_stats)) {
+        if (is.null(synth$details)) synth$details <- list()
+        synth$details$adjusted_means <- synth$adjusted_means
+        synth$adjusted_means <- NULL
+      }
+
+      # Supprimer les éléments ANCOVA spécifiques du niveau principal
+      # (pairwise_comparisons, emm_result, pairs_result, note → déjà dans $details)
+      synth$pairwise_comparisons <- NULL
+      synth$emm_result <- NULL
+      synth$pairs_result <- NULL
+      synth$note <- NULL
+
+      # ========================================================================
+      # RÉORDONNER les éléments pour structure cohérente
+      # ========================================================================
+      # Ordre standard : groups, p.value, global_pvalue, descriptive_stats, method, [bootstrap], [details], [chosen_test]
+
+      synth_ordered <- list(
+        groups = synth$groups,
+        p.value = synth$p.value,
+        global_pvalue = synth$global_pvalue,
+        descriptive_stats = synth$descriptive_stats,
+        method = synth$method
+      )
+
+      # Ajouter éléments optionnels s'ils existent
+      if (!is.null(synth$bootstrap)) synth_ordered$bootstrap <- synth$bootstrap
+      if (!is.null(synth$details)) synth_ordered$details <- synth$details
+      if (!is.null(synth$chosen_test)) synth_ordered$chosen_test <- synth$chosen_test
+
+      # Conserver la classe
+      class(synth_ordered) <- class(synth)
+      synth <- synth_ordered
+    }
+
+    # Message de version final
+    if (verbose == TRUE) {
+      cat("\n")
+      cat(.msg(
+        "m.test() - version 02 beta 2025 - report any issues to antoine.masse@u-bordeaux.fr.\n",
+        "m.test() - version 02 bêta 2025 - envoyer ce bilan à antoine.masse@u-bordeaux.fr en cas d'anomalie.\n"
+      ))
+    } else if (code == TRUE && !is.null(synth)) {
+      # En mode code, ajouter le message en commentaire
+      cat("# m.test() - version 02 bêta 2025 - envoyer ce bilan à antoine.masse@u-bordeaux.fr en cas d'anomalie.\n")
+    }
+
     return(synth)
   }
-  normality <- function(data,cat) {
-	subnormality <- function(vector) {
-		if (length(vector)<=100) {
-			return(shapiro.test(as.numeric(vector))$p.value)
-		} else if (length(vector)<=1000) {
-			return(jb.norm.test(vector)$p.value)
-		} else {
-			return(1)
-		}
-	}
-	pvals <- by(data,cat,subnormality)
-	return(pvals)
-  }
-  skew <- function(vector) {return(abs(skewness(vector)))}
-  skew2 <- function(vector) {return(skewness.norm.test(vector)$p.value)}
-  kurto <- function(vector) {if (is.na(abs(kurtosis(vector)))){return(10)} ; return(abs(kurtosis(vector)))}
-  kurto2 <- function(vector) {return(kurtosis.norm.test(vector)$p.value)}
-  if (debug==TRUE) {print("Detection of NA, Inf or unvariabilities.")}
-  if (paired==TRUE) {stop("Error! The paired analysis is not developped.\n")}
-  if (any((is.na(data)))|(any((is.na(cat))))){
-    if (verbose==TRUE) {cat("Warning! Missing values.\n")}
-    temp <- data.frame(data,cat)
-    temp <- na.omit(temp)
-    data <- temp[,1]
-    cat <- temp[,2]
-  }
-  if(max(by(data,cat,length),na.rm=T)<3) {
-    if (verbose==TRUE) {cat("Error! No enough values in the samples.\n")}
-    return(1)
-  }
-  if(any(!is.finite(data))) {
-	stop("Error! Infinite values in data. Analysis impossible.\n")
-  }
-  if (any(is.na(by(data,cat,length)))) {
-	warning("Warning! Some levels do not have corresponding data.")
-	cat <- factor(cat)
-	if (length(unique(cat))<2) {stop("Not enough levels presenting data.")}
-  }
-  if(min(by(data,cat,length),na.rm=T)<3) {
-    if (verbose==TRUE) {warning("Warning! No enough values for some samples. The categories concerned are ignored.")}
-    which(by(data,cat,length)<3)-> ind_temp
-    '%notin%' <- Negate('%in%')
-    data <- data[cat%notin%names(ind_temp)]
-    cat <- cat[cat%notin%names(ind_temp)]
-	cat <- as.factor(cat)
-	droplevels(cat)->cat
-  }
-  if(max(by(data,cat,var,na.rm=T),na.rm=T)==0) {
-    if (verbose==TRUE) {stop("Error! No variability in samples.")}
-    return(1)
-  }
-  data2 <- data
-  cat2 <- cat
-  if(min(by(data,cat,var,na.rm=T),na.rm=T)==0) {
-    if (verbose==TRUE) {warning("Warning! Some samples do not vary. Non-variable categories are ignored.")}
-    which(by(data,cat,var,na.rm=T)==0)-> ind_temp
-    '%notin%' <- Negate('%in%')
-    data <- data[cat%notin%names(ind_temp)]
-    cat <- cat[cat%notin%names(ind_temp)]
-	cat <- as.factor(cat)
-	droplevels(cat)->cat
-  }
-  if (length(unique(cat))<=1) {
-    if (verbose==TRUE) {stop("Error! Only one category.")}
-    return(1)
-  }
-  if (length(unique(cat))>maxcat) {
-    if (verbose==TRUE) {stop("Error! Too much categories.")}
-    return(1)
-  }
-  if (plot==TRUE) {
-	if (debug==TRUE) {print("Plot.")}
-    boxplot(data~cat,col="cyan")
-    vioplot(data~cat,col="#00AA0077",add=TRUE)
-    stripchart(data~cat,col="#FF000088",pch=16,vertical=TRUE,add=T,method="jitter",jitter=1/(length(unique(cat))+2))
-  }
-  discret <- discret.test(data)
-  pvals <- normality(data,cat)
-  ##########################
-  # Correction de Sidak
-  if (debug==TRUE) {print("Sidak's correction . Bonferroni would be more secure.")}
-  pval <- 1-(1-alpha)^(1/length(unique(cat)))
-  ##########################
-  if (code==TRUE){
-	cat(paste0("alpha1 <- 1-(1-",alpha,")^(1/length(unique(cat))) # Sidak correction of alpha for test repetitions (like Shapiro, Skewness...)\n"))
-	if (min(by(data,cat,length))<=100) {
-		cat("by(data,cat,shapiro.test)#1) Control of the normality of small samples (<100)\n")
-	}
-	if (any((by(data,cat,length)<=1000)&(by(data,cat,length)>100))) {
-		cat("#1A)\nby(data,cat,jb.norm.test)#1B) Control of the normality of big samples (<1000)\n")
-	}
-	if (max(by(data,cat,length))>1000) {
-		cat("#1) Central limit theory: enough values for some samples to not have to check normality.\n")
-	}
-  }
-  if (min(pvals) > pval) { # NORMAL
-    ###################################################
-    #			NORMAL
-    ###################################################
-    if (verbose==TRUE) {cat("1) Control of normality - Shapiro-Wilk test (<=100), Jarque-Bera (<=1000) or nothing (>1000).\n\tAnalyse of values by sample (shapiro.test() & jb.norm.test()) - \n\tThe samples follow the normal law. min(p-value):",min(pvals),"with Sidak correction of alpha to ",pval,"\n")}
-    if (length(unique(cat))==2) { # 2 categories
-      if (code==TRUE){cat("length(unique(cat)) #2)\n")}
-      if (verbose==TRUE) {cat("2) Two categories.\n")}
-      formula <- formula(data~cat)
-      pvals <- var.test(formula)$p.value
-      if (code==TRUE){cat("var.test(data~cat) #3)\n")}
-      if (pvals>alpha) {
-        ###################################################
-        #			NORMAL		2 categories	homogene variance
-        ###################################################
-        if (verbose==TRUE) {cat("3) Fisher-Snedecor test (var.test()) - Identical sample variances. p-value:",pvals,"\n")}
-        pvals <- t.test(data[cat==unique(cat)[1]],data[cat==unique(cat)[2]],var.equal=TRUE)$p.value
-        if (code==TRUE){cat("t.test(data[cat==unique(cat)[1]],data[cat==unique(cat)[2]],var.equal=TRUE) #4)\n")}
-        if (pvals <= alpha) {
-          if (verbose==TRUE) {cat("4) Student test (t.test()) - Significant differences between samples. p-value:",pvals,"\n")}
-          if (return==TRUE) {
-            which(unique(cat)==control)-> ind_control
-            if (length(ind_control)!=1) {
-              synth <- list()
-              synth$groups <- data.frame(categories=unique(cat),groups=c("a","b"))
-              synth$p.value <- pvals
-              if (boot==TRUE) {
-                synth$bootstrap <- boots(data,cat,ctrl=FALSE,
-                                         type="mean",var.equal=TRUE,conf=conf,iter=iter,alpha=alpha)
-              }
-              if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-                cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
-              }
-              return(synth)
-            } else {
-              synth <- list()
-              starss <- c("","")
-              starss[-ind_control] <- ifelse(pvals <=0.001,"***",ifelse(pvals <=0.01,"**",ifelse(pvals <=0.05,"*","")))
-              synth$groups <- data.frame(categories=unique(cat),group=starss)
-              synth$p.value <- pvals
-              if (boot==TRUE) {
-                synth$bootstrap <- boots(data,cat,ctrl=TRUE,type="mean",var.equal=TRUE,conf=conf,iter=iter,alpha=alpha)
-              }
-              if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-                cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
-              }
-              return(synth)
-            }
-          } else {return(pvals)}
-        } else {
-          if (verbose==TRUE) {cat("4) Student test (t.test()) - Non-significant differences between samples. p-value:",pvals,"\n")}
-          if (return==TRUE) {
-            which(unique(cat)==control)-> ind_control
-            if (length(ind_control)!=1) {
-              synth <- list()
-              synth$groups <- data.frame(categories=unique(cat),groups=c("a","a"))
-              synth$p.value <- pvals
-              if (boot==TRUE) {
-                synth$bootstrap <- boots(data,cat,ctrl=FALSE,
-                                         type="mean",var.equal=TRUE,conf=conf,iter=iter,alpha=alpha)
-              }
-              if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-                cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
-              }
-              return(synth)
-            } else {
-              synth <- list()
-              synth$groups <- data.frame(categories=unique(cat),group=c("",""))
-              synth$p.value <- pvals
-              if (boot==TRUE) {
-                synth$bootstrap <- boots(data,cat,ctrl=TRUE,
-                                         type="mean",var.equal=TRUE,conf=conf,iter=iter,alpha=alpha)
-              }
-              if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-                cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
-              }
-              return(synth)
-            }
-          } else {return(pvals)}
-        }
-      } else {
-        ###################################################
-        #			NORMAL		2 categories	non-homogene variance
-        ###################################################
-        if (verbose==TRUE) {cat("3) Fisher-Snedecor test (var.test()) - Non-identical sample variances. p-value:",pvals,"\n")}
-        pvals <- t.test(data[cat==unique(cat)[1]],data[cat==unique(cat)[2]],,var.equal=FALSE)$p.value
-        if (code==TRUE){cat("t.test(data[cat==unique(cat)[1]],data[cat==unique(cat)[2]],var.equal=TRUE) #4)\n")}
-        if (pvals <= alpha) {
-          if (verbose==TRUE) {cat("4) Student test (t.test()) - Significant differences between samples. p-value:",pvals,"\n")}
-          if (return==TRUE) {
-            which(unique(cat)==control)-> ind_control
-            if (length(ind_control)!=1) {
-              synth <- list()
-              synth$groups <- data.frame(categories=unique(cat),groups=c("a","b"))
-              synth$p.value <- pvals
-              if (boot==TRUE) {
-                synth$bootstrap <- boots(data,cat,ctrl=FALSE,
-                                         type="mean",var.equal=FALSE,conf=conf,iter=iter,alpha=alpha)
-              }
-              if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-                cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
-              }
-              return(synth)
-            } else {
-              synth <- list()
-              starss <- c("","")
-              starss[-ind_control] <- ifelse(pvals <=0.001,"***",ifelse(pvals <=0.01,"**",                                                                       ifelse(pvals <=0.05,"*","")))
-              synth$groups <- data.frame(categories=unique(cat),group=starss)
-              synth$p.value <- pvals
-              if (boot==TRUE) {
-                synth$bootstrap <- boots(data,cat,ctrl=TRUE,
-                                         type="mean",var.equal=FALSE,conf=conf,iter=iter,alpha=alpha)
-              }
-              if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-                cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
-              }
-              return(synth)
-            }
-          } else {return(pvals)}
-        } else {
-          if (verbose==TRUE) {cat("4) Student test (t.test()) - Non-significant differences between samples. p-value:",pvals,"\n")}
-          if (return==TRUE) {
-            which(unique(cat)==control)-> ind_control
-            if (length(ind_control)!=1) {
-              synth <- list()
-              synth$groups <- data.frame(categories=unique(cat),groups=c("a","a"))
-              synth$p.value <- pvals
-              if (boot==TRUE) {
-                synth$bootstrap <- boots(data,cat,ctrl=FALSE,
-                                         type="mean",var.equal=FALSE,conf=conf,iter=iter,alpha=alpha)
-              }
-              if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-                cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
-              }
-              return(synth)
-            } else {
-              synth <- list()
-              synth$groups <- data.frame(categories=unique(cat),group=c("",""))
-              synth$p.value <- pvals
-              if (boot==TRUE) {
-                synth$bootstrap <- boots(data,cat,ctrl=TRUE,
-                                         type="mean",var.equal=FALSE,conf=conf,iter=iter,alpha=alpha)
-              }
-              if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-                cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
-              }
-              return(synth)
-            }
-          } else {return(pvals)}
-        }
-      }
-    } else { 													# > 2 categories
-      ###################################################
-      #			NORMAL		>2 categories
-      ###################################################
-      if (code==TRUE){cat("length(unique(cat))#2)\n")}
-      if (verbose==TRUE) {cat("2) More than two categories.\n")}
-      pvals <- bartlett.test(data,cat)$p.value
-      if (code==TRUE){cat("bartlett.test(data,cat) #3)\n")}
-      if (pvals > alpha) {											# Identical variances
-        if (verbose==TRUE) {cat("3) Bartlett test (bartlett.test()) - Identical sample variances. p-value:",pvals,"\n")}
-        formula <- formula(data~cat)
-        mya <- suppressWarnings(aov(data.frame(data,cat), formula=formula))
-        if (code==TRUE){cat("mya <- aov(data.frame(data,cat), formula=data~cat) #4)\n")}
-        pvals <- summary(mya)[[1]][["Pr(>F)"]][1]
-        if (pvals<=alpha) {										# Significant AOV
-          if (verbose==TRUE) {cat("4) One-way analysis of variance (aov()) - Significant differences between samples. p-value:",pvals,"\n")}
-          if (code==TRUE){cat("library(agricolae)#5a)\nSNK.test(mya,'cat',alpha=",alpha,"))#5b)\n")}
-          if (return==TRUE) {
-            mynk <- SNK.test(mya,"cat",alpha=alpha)
-            if (verbose==TRUE) {cat("5) Post-hoc Student and Newman-Keuls tests (pairwise.t.test() & SNK.test() for Newman-Keuls) \n")}
-            synth <- pairwise(data,cat,type="mean",pool.sd=TRUE, alpha=alpha,control=control,boot=boot,conf=conf,iter=iter)
-            match(synth$groups[,1],rownames(mynk$groups)) -> ind_temp
-            synth$groups <- data.frame(synth$groups , "SNK"=mynk$groups$groups[ind_temp])
-            cat1 <- unique(unlist(strsplit(synth$groups$groups,"")))
-            cat2 <- unique(unlist(strsplit(mynk$groups$groups,"")))
-            rownames(synth$groups) <- rep(c(),nrow(synth$groups))
-            which(unique(cat)==control)-> ind_control
-            # if control == TRUE
-			if (length(control)>0) {
-				synth$Dunnett <- DunnettTest(data,cat, control = control)
-				if (verbose==TRUE) {cat("6) See also post-hoc Dunnett test for the control (DunnettTest() from {DescTools}).\n")}
-				if (code==TRUE){cat("library(DescTools)#6a)\nDunnettTest(data,cat,control=",control,")#6b)\n")}
-				}
-            if ((verbose==TRUE) & (length(cat1)!=length(cat2)) & (length(ind_control)!=1)) {warning("Warning! pairwise.t.test() and SNK.test() don't return the same number of groups.")}
-            if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-              warning("Warning! Bootstrap detects weaknesses in the significance of the results.")
-            }
-            return(synth)
-          } else {return(pvals)}
-        } else {											#	 Non-significant AOV
-          if (verbose==TRUE) {cat("4) One-way analysis of variance (aov()) - Non-significant differences between samples. p-value:",pvals,"\n")}
-          if (return==TRUE) {
-            mynk <- SNK.test(mya,"cat",alpha=alpha)
-            if (verbose==TRUE) {cat("5) Post-hoc Student & Newman_Keuls test (pairwise.t.test() & SNK.test() for Newman-Keuls) \n")}
-            synth <- pairwise(data,cat,type="mean",pool.sd=TRUE,alpha=alpha,control=control,boot=boot,conf=conf,iter=iter)
-            match(synth$groups[,1],rownames(mynk$groups)) -> ind_temp
-            synth$groups <- data.frame(synth$groups , "SNK"=mynk$groups$groups[ind_temp])
-            cat1 <- unique(unlist(strsplit(synth$groups$groups,"")))
-            cat2 <- unique(unlist(strsplit(mynk$groups$groups,"")))
-            rownames(synth$groups) <- rep(c(),nrow(synth$groups))
-            which(unique(cat)==control)-> ind_control
-			if (length(control)>0) {
-				synth$Dunnett <- DunnettTest(data,cat, control = control)
-				if (verbose==TRUE) {cat("6) See also post-hoc Dunnett test for the control (DunnettTest() from {DescTools}).\n")}
-				if (code==TRUE){cat("library(DescTools)#6a)\nDunnettTest(data,cat,control=",control,")#6b)\n")}
-				}
-            if ((verbose==TRUE) & (length(cat1)!=length(cat2)) & (length(ind_control)!=1)) {cat("\tWarning! pairwise.t.test() and SNK.test() don't return the same number of groups.\n")}
-            if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-              cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
-            }
-            return(synth)
-          } else {return(pvals)}# FALSE
-        }
-      } else {												# Non-identical variances
-        if (verbose==TRUE) {cat("3) Bartlett test (bartlett.test()) - Non-identical sample variances. p-value:",pvals,"\n")}
-        pvals <- oneway.test(data~cat,var.equal=FALSE)$p.value
-        if (code==TRUE){cat("oneway.test(data~cat,var.equal=FALSE) #4)\n")}
-        myf <- try(fanova.hetero(data.frame(data,cat = as.factor(cat)),data~cat),silent=silent)
-        if (is(myf)=="try-error") {
-          #if (verbose==TRUE) {cat("Error on fanova.hetero()\n")}
-          pvals2 <- alpha
-        } else {pvals2 <- myf$ans[4]}
-        if (pvals<=alpha) {
-          if (verbose==TRUE) {cat("4) Welch’s heteroscedastic F test (oneway.test(var.equal=FALSE)) Significant differences between samples p-value:",pvals,"\n")}
-          if (pvals2 > alpha) {
-            if (verbose==TRUE) {cat("Warning! fanova.hetero() does not give the same result as oneway.test. p-value:",pvals2,"\n")}
-          }
-          if (code==TRUE){cat("result <- pairwise.t.test(data,cat,pool.sd=FALSE)#5a)\nlibrary(KefiR)#5b)\ncatego(result)#5c)\n")}
-          if (return==TRUE) {
-            synth <- pairwise(data,cat,type="mean",pool.sd=FALSE,alpha=alpha,control=control,boot=boot,conf=conf,iter=iter)
-            if (verbose==TRUE) {cat("5) Post-hoc Student test (pairwise.t.test(pool.sd=FALSE))\n")}
-            if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-              cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
-            }
-            return(synth)
-          } else {return(pvals)}# TRUE
-        } else {
-          if (verbose==TRUE) {cat("4) Welch’s heteroscedastic F test (oneway.test(var.equal=FALSE)) Non-significant differences between samples. p-value:",pvals,"\n")}
-          if (pvals2 <= alpha) {
-            if (verbose==TRUE) {cat("Warning! fanova.hetero() does not give the same result as oneway.test. p-value:",pvals,"\n")}
-          }
-          if (return==TRUE) {
-            synth <- pairwise(data,cat,type="mean",pool.sd=FALSE,alpha=alpha,control=control,boot=boot,conf=conf,iter=iter)
-            if (verbose==TRUE) {cat("5) Post-hoc Student test (pairwise.t.test(pool.sd=FALSE))\n")}
-            if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-              cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
-            }
-            return(synth)
-          } else {return(pvals)}# FALSE
-        }
-      }
-    }
-    ###################################################
-    #			NON-NORMAL
-    ###################################################
-  } else { 												#
-    if (verbose==TRUE) {cat("1) Control of normality - Shapiro-Wilk test (<=100), Jarque-Bera (<=1000) or nothing (>1000).\n\tAnalyse of values by sample (shapiro.test() & jb.norm.test()) -\t\nOne or more non-normal samples. min(p-value) : ",min(pvals),"with Sidak correction of alpha to ",pval,"\n")}
-	sd_cr <- by(data,cat,sd,na.rm=T) ; median_cr <- by(data,cat,median,na.rm=T)
-	data_cr <- data
-	for (i in names(median_cr)) {
-		data_cr[cat==i] <- (data_cr[cat==i]-median_cr[which(names(median_cr)==i)])/sd_cr[which(names(sd_cr)==i)]
-	}
-    temp <- pairwise(data_cr,cat,type="ks",silent=silent,boot=FALSE)
-    ks_result <- min(unlist(temp$p.value),na.rm=T)
-    if (code==TRUE){cat("length(unique(cat))#2)\n")}
-    ###################################################
-    #			NON-NORMAL		2 categories
-    ###################################################
-    if (length(unique(cat))==2) { 							# 2 categories
-      if (verbose==TRUE) {cat("2) Two categories.\n")}
-      sk <- max(by(data,cat,skew))
-	  sk2 <- min(by(data,cat,skew2))
-      ku <- max(by(data,cat,kurto))
-	  ku2 <- min(by(data,cat,kurto2))
-	  #jb <- min(by(data,cat,jarquebare))
-      tt <- min(by(data,cat,length))
-      if (code==TRUE){cat("library(agricolae)\nby(data,cat,skewness)\nby(data,cat,skewness.norm.test)\nby(data,cat,kurtosis)\nby(data,cat,kurtosis.norm.test)\nby(data,cat,length)#3)\n")}
-      ###################################################
-      #			NON-NORMAL		2 categories		Acceptable for t.test()
-      ###################################################
-      if ((sk2>pval)&(ku2>pval)&(tt>100)&(discret>0.05)) { #(jb>alpha)
-        if (verbose==TRUE) {cat("3) Jarque–Bera test & Skweness & Kurtosis limits and Length of sample (jb.norm.test() & swkeness() & skewness.norm.test() & kurtosis() & kurtosis.norm.test() & length()) - Distribution and length of samples acceptable.\n")
-		  #cat("\tJarque-Bera test - normality acceptable (min(p.value)) :",jb,"\n")
-          cat("\tSkweness limite (max and absolute):",sk,"\n")
-		  cat("\tSkweness bootstrapped (min(p.value)):",sk2,"\n")
-          cat("\tKurtosis limite (max and absolute):",ku,"\n")
-		  cat("\tKurtosis bootstrapped (min(p.value)):",ku2,"\n")
-          cat("\tSample length (minimal):",tt,"\n")
-        }
-        if (code==TRUE){cat("t.test(data[cat==unique(cat)[1]],data[cat==unique(cat)[2]],var.equal=FALSE)   #4)\n")}
-        pvals <- t.test(data[cat==unique(cat)[1]],data[cat==unique(cat)[2]],var.equal=FALSE)$p.value
-        if (pvals <= alpha) {
-          if (verbose==TRUE) {cat("4) Student Test (t.test())- Significant differences between samples.\n")}
-          if (return==TRUE) {
-            which(unique(cat)==control)-> ind_control
-            if (length(ind_control)!=1) {
-              synth <- list()
-              synth$groups <- data.frame(categories=unique(cat),groups=c("a","b"))
-              synth$p.value <- pvals
-              if (boot==TRUE) {
-                synth$bootstrap <- boots(data,cat,ctrl=FALSE,
-                                         type="mean",var.equal=FALSE,conf=conf,iter=iter,alpha=alpha)
-              }
-              if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-                cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
-              }
-              return(synth)
-            } else {
-              synth <- list()
-              starss <- c("","")
-              starss[-ind_control] <- ifelse(pvals <=0.001,"***",ifelse(pvals <=0.01,"**",	ifelse(pvals <=0.05,"*","")))
-              synth$groups <- data.frame(categories=unique(cat),group=starss)
-              synth$p.value <- pvals
-              if (boot==TRUE) {
-                synth$bootstrap <- boots(data,cat,ctrl=TRUE,
-                                         type="mean",var.equal=FALSE,conf=conf,iter=iter,alpha=alpha)
-              }
-              if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-                cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
-              }
-
-              return(synth)
-            }
-          } else {return(pvals)} # TRUE
-        } else {
-          if (verbose==TRUE) {cat("4) Student test (t.test()) - Non-significant differences between samples.\n")}
-          if (return==TRUE) {
-            which(unique(cat)==control)-> ind_control
-            if (length(ind_control)!=1) {
-              synth <- list()
-              synth$groups <- data.frame(categories=unique(cat),groups=c("a","a"))
-              synth$p.value <- pvals
-              if (boot==TRUE) {
-                synth$bootstrap <- boots(data,cat,ctrl=FALSE,
-                                         type="mean",var.equal=FALSE,conf=conf,iter=iter,alpha=alpha)
-              }
-              if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-                cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
-              }
-              return(synth)
-            } else {
-              synth <- list()
-              synth$groups <- data.frame(categories=unique(cat),group=c("",""))
-              synth$p.value <- pvals
-              if (boot==TRUE) {
-                synth$bootstrap <- boots(data,cat,ctrl=TRUE,
-                                         type="mean",var.equal=FALSE,conf=conf,iter=iter,alpha=alpha)
-              }
-              if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-                cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
-              }
-              return(synth)
-            }
-          } else {return(pvals)} # FALSE
-        }
-        ###################################################
-        #			NON-NORMAL		2 categories		Non acceptable for t.test()
-        ###################################################
-      } else {
-        ###################################################
-        #			NON-NORMAL		2 categories		Non acceptable for t.test()		Discret
-        ###################################################
-        if (verbose==TRUE) {
-          if (discret <= 0.05) {
-            cat("3) The number of unique values suggests the presence of discrete data : ",discret*100,"%\n")
-            pvals <- mood.test(data[cat==unique(cat)[1]],data[cat==unique(cat)[2]])$p.value
-            if (pvals <= alpha) {
-              cat("3) Brown and Mood test (mood.test()) - The medianes are different and data need to be centered on the mediane for ansari.test(). p-value : ",pvals,"\n")
-              by(data,cat,function(x){return(x-median(x))})->cent_med
-              pvals <- ansari.test(unlist(cent_med[1]),unlist(cent_med[2]))$p.value
-            } else {
-              cat("3) Brown and Mood test (mood.test()) - The medianes are the same. p-value : ",pvals,"\n")
-              pvals <- ansari.test(data[cat==unique(cat)[1]],data[cat==unique(cat)[2]])$p.value
-            }
-            if (pvals < alpha) {
-              cat("4) Ansari-Bradley test (ansari.test()) - Data do not have the same variance. p-value: ",pvals,"\n")
-            } else {
-              cat("4) Ansari-Bradley test (ansari.test()) - Data have the same variance. p-value: ",pvals,"\n")
-            }
-            ###################################################
-            #			NON-NORMAL		2 categories		Non acceptable for t.test()		Wilcox comparison
-            ###################################################
-          } else {
-            if ((sk2<pval)|(ku2<pval)|(tt<100)) { # (jb<alpha)
-              cat("3) Skweness & Kurtosis limits and Length of sample (swkeness() & skewness.norm.test() & kurtosis() & kurtosis.norm.test() & length()) - Bad distribution of data (asymmetry, spread) or insufficient length.\n")
-			  #cat("\tJarque-Bera test - normality acceptable (min(p.value)) :",jb,"\n")
-			  cat("\tSkweness limite (max and absolute):",sk,"\n")
-			  cat("\tSkweness bootstrapped (min(p.value)):",sk2,"to compare to Sidak's corrected alpha ",pval,"\n")
-			  cat("\tKurtosis limite (max and absolute):",ku,"\n")
-			  cat("\tKurtosis bootstrapped (min(p.value)):",ku2,"to compare to Sidak's corrected alpha ",pval,"\n")
-			  cat("\tSample length (minimal):",tt,"\n")
-            }
-            if (ks_result < pval) {
-              cat("4) Kolmogorov-Smirnov test (ks.test()) on median-centered and reduced data -\n\tWarning! the data do not have the same distribution. p-value: ",ks_result,"\n\tby comparing with Sidak corrected alpha ",pval,"\n\tThe Mann-Whitney-Wilcoxon test will be less reliable.\n\tWarning! For wilcox.test() : Please, check graphically that the samples have the same distribution.\n")
-            } else {
-              cat("4) Kolmogorov-Smirnov test (ks.test()) on median-centered and reduced data -\n\tThe samples have the same distribution. p-value: ",ks_result,"\n\tby comparing with Sidak corrected alpha ",pval,"\n\tThe Mann-Whitney-Wilcoxon test will be reliable.\n")
-            }
-          }
-        }
-        if (code==TRUE){cat("wilcox.test(data[cat==unique(cat)[1]],data[cat==unique(cat)[2]])  #2)\n")}
-        pvals <- suppressWarnings(wilcox.test(data[cat==unique(cat)[1]],data[cat==unique(cat)[2]]))$p.value
-        if (pvals <= alpha) {
-          if (verbose==TRUE) {cat("5) Wilcoxon-Mann-Whitney test (wilcox.test()) - Significant differences between samples. p-value: ",pvals,"\n")}
-          if (return==TRUE) {
-            which(unique(cat)==control)-> ind_control
-            if (length(ind_control)!=1) {
-              synth <- list()
-              synth$groups <- data.frame(categories=unique(cat),groups=c("a","b"))
-              synth$p.value <- pvals
-              if (boot==TRUE) {
-                synth$bootstrap <- boots(data,cat,ctrl=FALSE,
-                                         type="median",conf=conf,iter=iter,alpha=alpha)
-              }
-              if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-                cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
-              }
-              return(synth)
-            } else {
-              synth <- list()
-              starss <- c("","")
-              starss[-ind_control] <- ifelse(pvals <=0.001,"***",ifelse(pvals <=0.01,"**",
-                                                                        ifelse(pvals <=0.05,"*","")))
-              synth$groups <- data.frame(categories=unique(cat),group=starss)
-              synth$p.value <- pvals
-              if (boot==TRUE) {
-                synth$bootstrap <- boots(data,cat,ctrl=TRUE,
-                                         type="median",var.equal=FALSE,conf=conf,iter=iter,alpha=alpha)
-              }
-              if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-                cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
-              }
-              return(synth)
-            }
-          } else {return(pvals)} # TRUE
-        } else {
-          if (verbose==TRUE) {cat("5) Wilcoxon-Mann-Whitney test (wilcox.test()) - Non-significant differences between samples. p-value : ",pvals,"\n")}
-          if (return==TRUE) {
-            which(unique(cat)==control)-> ind_control
-            if (length(ind_control)!=1) {
-              synth <- list()
-              synth$groups <- data.frame(categories=unique(cat),groups=c("a","a"))
-              synth$p.value <- pvals
-              if (boot==TRUE) {
-                synth$bootstrap <- boots(data,cat,ctrl=FALSE,
-                                         type="median",var.equal=FALSE,conf=conf,iter=iter,alpha=alpha)
-              }
-              if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-                cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
-              }
-              return(synth)
-            } else {
-              synth <- list()
-              synth$groups <- data.frame(categories=unique(cat),group=c("",""))
-              synth$p.value <- pvals
-              if (boot==TRUE) {
-                synth$bootstrap <- boots(data,cat,ctrl=TRUE,
-                                         type="median",var.equal=FALSE,conf=conf,iter=iter,alpha=alpha)
-              }
-              if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-                cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
-              }
-              return(synth)
-            }
-          } else {return(pvals)} # FALSE
-        }
-      }
-      ###################################################
-      #			NON-NORMAL		>2 categories
-      ###################################################
-    } else { 											# > 2 categories
-      if (verbose==TRUE) {cat("2) More than two categories.\n")}
-      sk <- max(by(data,cat,skew))
-	  sk2 <- min(by(data,cat,skew2))
-      ku <- max(by(data,cat,kurto))
-	  ku2 <- min(by(data,cat,kurto2))
-	  #jb <- min(by(data,cat,jarquebare))
-      if (code==TRUE){
-        #cat("#3a)\nby(data,cat,jb.norm.test)#3b)\nlibrary(agricolae)#3c)\nby(data,cat,skewness)#3d)\nby(data,cat,skewness.norm.test)#3e)\nby(data,cat,kurtosis)#3f)\nby(data,cat,kurtosis.norm.test)#3g)\nby(data,cat,length)#3h)\n")
-		cat("#library(agricolae)#3a)\nby(data,cat,skewness)#3b)\nby(data,cat,skewness.norm.test)#3c)\nby(data,cat,kurtosis)#3d)\nby(data,cat,kurtosis.norm.test)#3e)\nby(data,cat,length)#3f)\n")
-        cat("library(lawstat)#4a)\nlevene.test(data,cat)#4b)\n")
-        cat("library(onewaytests)#5a)\nbf.test(data~cat,data=data.frame(data,'cat'=factor(cat)))#5b)\n")
-      }
-      pvals2 <- suppressWarnings(bf.test(data~cat,data=data.frame(data,"cat"=factor(cat)),verbose=FALSE))$p.value
-      if (verbose==TRUE) {
-        pvals <- suppressWarnings(levene.test(data,cat))$p.value
-        if (((pvals <= alpha)&(pvals2 <= alpha))|((pvals > alpha)&(pvals2 > alpha))) {
-          if (verbose==TRUE) {
-            cat("3) Consistency in testing of Levene and Brown-Forsyth results.\n")
-            cat("\tLevene p-value : ",pvals," - Brown-Forsyth p-value : ",pvals2,"\n")
-          }
-        } else {
-          if (verbose==TRUE) {
-            cat("3) Inconsistent testing of Levene and Brown-Forsyth.\n")
-            cat("\tLevene p-value : ",pvals," - Brown-Forsyth p-value : ",pvals2,"\n")
-			#cat("3') Only Jarque-Bera is taking in account.\n")
-			#cat("\tJarque-Bera test - normality acceptable (min(p.value)) :",jb,"\n")
-          }
-        }
-#		if (jb <= alpha) {
-#			if (verbose==TRUE) {
-#				cat("3') Only Jarque-Bera is taking in account.\n")
-#				cat("\tJarque-Bera test - normality non-acceptable (min(p.value)) :",jb,"\n")
-#			}
-#		} else {
-#			if (verbose==TRUE) {
-#				cat("3') Only Jarque-Bera is taking in account.\n")
-#				cat("\tJarque-Bera test - normality acceptable (min(p.value)) :",jb,"\n")
-#			}
-#		}
-      }
-      #print(pvals)
-#      if (jb>pval) {					# Acceptable non-normality
-#        if (verbose==TRUE) {cat("4) Jarque-Bare & Skweness or Kurtosis limits & Brown-Forsyth test (swkeness() & kurtosis() & bf.test()) - The distribution of values and sample variances are acceptable.\n")
-#			  cat("\tSkweness limite (max and absolute):",sk,"\n")
-#			  cat("\tSkweness bootstrapped (min(p.value)):",sk2,"\n")
-#			  cat("\tKurtosis limite (max and absolute):",ku,"\n")
-#			  cat("\tKurtosis bootstrapped (min(p.value)):",ku2,"\n")
-#        }
-#        if (code==TRUE){cat("mya <- aov(data.frame(data,cat), formula=data~cat) #6)\n")	}
-#        formula <- formula(data~cat)
-#        mya <- aov(data.frame(data,cat), formula=formula)
-#        pvals <- summary(mya)[[1]][["Pr(>F)"]][1]
-#        if (pvals<=alpha) {
-#          if (verbose==TRUE) {cat("5) Oneway analysis of variance (aov()) - Significant differences between samples. p-value:",pvals,"\n")}
-#          if (return==TRUE) {
-#            mynk <- SNK.test(mya,"cat",alpha=alpha)
-#            if (verbose==TRUE) {cat("6) Post-hoc tests Student and Newman-Keuls (pairwise.t.test() & SNK.test()) \n")}
-#            synth <- pairwise(data,cat,type="mean",pool.sd=TRUE,alpha=alpha,control=control,boot=boot,conf=conf,iter=iter)
-#            match(synth$groups[,1],rownames(mynk$groups)) -> ind_temp
-#            synth$groups <- data.frame(synth$groups , "SNK"=mynk$groups$groups[ind_temp])
-#            cat1 <- unique(unlist(strsplit(synth$groups$groups,"")))
-#            cat2 <- unique(unlist(strsplit(mynk$groups$groups,"")))
-#            rownames(synth$groups) <- rep(c(),nrow(synth$groups))
-#            which(unique(cat)==control)-> ind_control
-#            if ((verbose==TRUE) & (length(cat1)!=length(cat2)) & (length(ind_control)!=1)) {cat("\tWarning! pairwise.t.test() and SNK.test() don't return the same number of groups.\n")}
-#            if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-#              cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
-#            }
-#            return(synth)
-#          } else {return(pvals)} # TRUE
-#        } else {
-#          if (verbose==TRUE) {cat("5) Oneway test analysis of variance (aov()) - Non-significant differences between samples. p-value:",pvals,"\n")}
-#          if (code==TRUE){cat("library(agricolae)#7a)\nprint(SNK.test(mya,'cat',alpha=",alpha,"))#7b)\n")}
-#          if (return==TRUE) {
-#            mynk <- SNK.test(mya,"cat",alpha=alpha)
-#            if (verbose==TRUE) {cat("6) Post-hoc tests Student and Newman-Keuls (pairwise.t.test() & SNK.test()) \n")}
-#            synth <- pairwise(data,cat,type="mean",pool.sd=TRUE,alpha=alpha,control=control,boot=boot,conf=conf,iter=iter)
-#            match(synth$groups[,1],rownames(mynk$groups)) -> ind_temp
-#            synth$groups <- data.frame(synth$groups , "SNK"=mynk$groups$groups[ind_temp])
-#            cat1 <- unique(unlist(strsplit(synth$groups$groups,"")))
-#            cat2 <- unique(unlist(strsplit(mynk$groups$groups,"")))
-#            rownames(synth$groups) <- rep(c(),nrow(synth$groups))
-#            which(unique(cat)==control)-> ind_control
-#            if ((verbose==TRUE) & (length(cat1)!=length(cat2)) & (length(ind_control)!=1) ) {cat("\tWarning! pairwise.t.test() and SNK.test() don't return the same number of groups.\n")}
-#            if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-#              cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
-#            }
-#            return(synth)
-#          } else {return(pvals)} # FALSE
-#        }
-#     } else {
-        if (code==TRUE){cat("kruskal.test(data,cat) #6)\n")}
-        pvals3 <- kruskal.test(data,cat)$p.value
-        # Si verbose : blabla
-        if (verbose==TRUE) {
-          if ((sk2<pval)|(ku2<pval)) {
-            cat("4) Skweness & Kurtosis limits (swkeness() & kurtosis()) Bad distribution of data (asymmetry, spread).\n")
-			  cat("\tSkweness limite (max and absolute):",sk,"\n")
-			  cat("\tSkweness bootstrapped (min(p.value)):",sk2,"\n")
-			  cat("\tKurtosis limite (max and absolute):",ku,"\n")
-			  cat("\tKurtosis bootstrapped (min(p.value)):",ku2,"\n")
-          }
-        }
-        pvals <- fligner.test(data,cat)$p.value
-        if (is.na(pvals)) {
-          if (verbose==TRUE) {cat("5) Fligner-Killeen test (fligner.test()) - Error, return NA.\n")}
-          return(pvals)# FALSE
-        }
-        if (verbose==TRUE) {
-          if (pvals<=alpha) {
-            cat("5) Fligner-Killeen test (fligner.test())Significant differences of variance between samples. p-value:",pvals,"\n")
-          } else {
-            cat("5) Fligner-Killeen test (fligner.test())Non-significant differences of variance between samples. p-value",pvals,"\n")
-          }
-          #temp <- pairwise(data,cat,type="ks",silent=silent,boot=boot)$p.value
-          #ks_result <- min(unlist(temp),na.rm=TRUE)
-          if (ks_result < pval) {
-            cat("6) Kolmogorov-Smirnov test (ks.test()) on median-centered and reduced data -\n\tWarning! the samples do not have the same distribution. min(p-value) : ",ks_result,"\n\tby comparing with Sidak corrected alpha ",pval,"\n\tThe Kruskal-Wallis test and Mann-Whitney-Wilcoxon test will be less reliable.\n\tPlease, check graphically the samples distributions.\n")
-          } else {
-            cat("6) Kolmogorov-Smirnov test (ks.test()) on median-centered and reduced data -\n\tThe samples have the same distribution. min(p-value) : ",ks_result,"\n\tby comparing with Sidak corrected alpha ",pval,"\n\tGood accuracy expected on the tests of Kruskal-Wallis and Mann-Whitney-Wilcoxon\n")
-          }
-          if (pvals3 <= alpha) {
-            cat("7) Kruskal-Wallis test (kruskal.test()) - At least one sample appears to show a difference. p-value:",pvals3,"\n")
-          } else {
-            cat("7) Kruskal-Wallis test (kruskal.test()) - No different sample a priori. p-value:",pvals3,"\n")
-          }
-        }
-        if ((return==TRUE) | (verbose==TRUE)) {
-          if (pvals<=alpha) {
-            pvals <- med1way(data~cat)$p.value
-            if (is.na(pvals)) {
-              if (verbose==TRUE) {cat("8) Oneway ANOVA of medians (med1way()) - Failed, return NA. The Kruskal-Wallis test should be used for interpretation.\n")}
-            } else {
-              if (pvals <= alpha) {
-                if (verbose==TRUE) {cat("8) Oneway ANOVA of medians (med1way()) - Significant differences between the median of samples. p-value:",pvals,"\n")
-                  if (pvals3 > alpha) {
-                    cat("\tWarning! The Kruskal-Wallis test and anova on medians give contradictory results.\n")
-                  }
-                }
-                if (return==FALSE) {return(pvals)}
-              } else if (pvals > alpha) {
-                if (verbose==TRUE) {cat("8) Oneway ANOVA of medians (med1way()) - Non-significant differences between the median of samples. p-value:",pvals,"\n")
-                  if (pvals3 <= alpha) {
-                    cat("\tWarning! The Kruskal-Wallis test and anova on medians give contradictory results.\n")
-                  }
-                }
-                if (return==FALSE) {return(pvals)}
-              }
-            }
-            if (code==TRUE){cat("pairwise.wilcox.test(data,cat,p.adjust.method='BH') #7)\n")}
-            if (return==TRUE) {
-              if (verbose==TRUE) {cat("9) Wilcoxon-Mann-Whitney test (pairwise.wilcox.test()) \n")}
-              synth <- pairwise(data2,cat2,type="median",alpha=alpha,control=control,boot=boot,conf=conf,iter=iter)
-              if ((verbose==TRUE) & (boot==TRUE) & any(synth$bootstrap$groups[,2]!=synth$groups[,2])) {
-                cat("\tWarning! Bootstrap detects weaknesses in the significance of the results.\n")
-              }
-              return(synth)
-            } else {
-              if (pvals3 <= alpha) {
-                return(pvals3)
-              } else {return(pvals3)}
-            }
-          } else {
-            pvals <- t1way(data~cat)$p.value
-            if (is.na(pvals)) {
-              if (verbose==TRUE) {cat("8) One-way ANOVA on trimmed means (t1way()) - Failed, return NA. The Kruskal-Wallis test should be used for interpretation.\n")}
-            } else {
-              if (pvals <= alpha) {
-                if (verbose==TRUE) {cat("8) One-way ANOVA on trimmed means (t1way()) - Significant differences between the trimmed samples. p-value:",pvals,"\n")
-                  if (pvals3 > alpha) {
-                    cat("\tWarning! The Kruskal-Wallis test and anova on trimmed means give contradictory results.\n")
-                  }
-                }
-                if (return==FALSE) {return(pvals)}
-              } else if (pvals > alpha) {
-                if (verbose==TRUE) {cat("8) One-way ANOVA on trimmed means (t1way()) - Non-significant differences between the trimmed samples. p-value:",pvals,"\n")
-                  if (pvals3 <= alpha) {
-                    cat("\tWarning! The Kruskal-Wallis test and anova on trimmed means give contradictory results.\n")
-                  }
-                }
-                if (return==FALSE) {return(pvals)}
-              }
-            }
-            if (code==TRUE){cat("library(WRS2) #7a)\nlincon(data~cat) #7b)\n")}
-            if (return==TRUE) {
-              if (verbose==TRUE) {cat("9) Correspondance post-hoc on trimmed means (lincon())\n")}
-              synth <- pairwise(data,cat,type="lincon",alpha=alpha,control=control)
-              return(synth)
-            } else {
-              if (pvals3 <= alpha) {
-                return(pvals3)
-              } else {return(pvals3)}
-            }
-          }
-        } else if (return==FALSE) {
-          if (pvals3 <= alpha) {return(pvals3)
-          }else {return(pvals3)}
-        }
-#      }
-    }
-  }
 }
+
+################################################################################
+#                            FIN DE m.test() v18
+################################################################################

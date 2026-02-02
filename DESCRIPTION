@@ -1,55 +1,66 @@
 Package: KefiR
-Title: KefiR Package
-Version: 0.0.1.0
-Authors@R: 
+Title: Statistical Analysis with ANOVA, MANOVA, ANCOVA and Mixed Models
+Version: 0.0.2.0
+Authors@R:
     person(given = "Antoine",
            family = "Massé",
            role = c("aut", "cre"),
-           email = "antoine.masse@u-bordeaux.fr",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: Useful functions under R for many topics (statistics, graphics, data mining, engineering, image analysis, bootstrap, sampling).
-Depends: R (>= 4.3.0)
+           email = "antoine.masse@u-bordeaux.fr")
+Description: Comprehensive statistical analysis pipeline for ANOVA, MANOVA,
+    ANCOVA, and mixed models with automatic assumption checking, robust
+    alternatives, post-hoc tests with visual representations, and reproducible
+    code generation. Designed for researchers and students needing rigorous
+    statistical analysis with pedagogical support.
+Depends: R (>= 4.0.0)
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
-VignetteBuilder: knitr
-Imports: 
-    stats, 
-    lmtest,
-    lmerTest,
-    rgl, 
-    plotly, 
-    igraph, 
-    plot3Drgl, 
-    plot3D, 
-    car,
-    htmlwidgets, 
-    WRS2, 
-    agricolae, 
-    fda.usc, 
-    lawstat,
-    onewaytests, 
-    vioplot, 
-    MASS, 
-    graphics, 
-    foreach, 
+RoxygenNote: 7.3.3
+Imports:
+    stats,
+    graphics,
+    grDevices,
     lme4,
-    utils, 
-    methods, 
-    e1071, 
-    stringr, 
-    tseries, 
-    knitr, 
-    DescTools, 
-    plotrix,
+    lmerTest,
+    car,
+    agricolae,
+    emmeans,
+    lmtest,
+    lmPerm,
+    onewaytests,
+    sandwich,
+    MASS,
+    DescTools,
+    FSA,
     MHTdiscrete,
-    broom,
+    PMCMRplus,
+    WRS2,
     doParallel,
-    grDevices
-Suggests: 
-    dplyr,
-    parallel,
+    e1071,
+    fda.usc,
+    foreach,
+    htmlwidgets,
+    igraph,
+    lawstat,
+    methods,
+    plot3D,
+    plot3Drgl,
+    plotly,
+    plotrix,
+    rgl,
+    stringr,
+    tseries,
+    vioplot
+Suggests:
+    MVN,
+    biotools,
+    rrcov,
+    WRS2,
+    ez,
+    tseries,
+    knitr,
     rmarkdown,
-    testthat
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+VignetteBuilder: knitr

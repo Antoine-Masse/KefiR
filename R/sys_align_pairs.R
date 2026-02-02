@@ -1,0 +1,54 @@
+#' Align data for paired comparisons
+#'
+#' @description Reorganizes a numeric vector and group factor to ensure
+#'   proper alignment for paired comparisons based on unique identifiers.
+#'
+#' @param x Numeric vector to align.
+#' @param id Vector of unique identifiers for each individual.
+#' @param g Factor vector of groups (can be the result of an interaction).
+#'
+#' @return A list with two elements:
+#' \item{x_realigne}{Reordered numeric vector according to id and group.}
+#' \item{g_realigne}{Reordered group factor according to id and group.}
+#'
+#' @details
+#' The function sorts data by group then by identifier to guarantee
+#' that paired observations are correctly aligned. Useful for preparing
+#' data before using paired statistical tests like t.test(..., paired = TRUE).
+#'
+#' @examples
+#' # Basic example
+#' df <- data.frame(
+#'   id = c("S1", "S1", "S2", "S2"),
+#'   g = factor(c("A", "B", "A", "B")),
+#'   x = c(10, 12, 11, 13)
+#' )
+#'
+#' aligned <- .align_pairs(x = df$x, id = df$id, g = df$g)
+#'
+#' # Data is now ready for paired t-test
+#' t.test(aligned$x[aligned$g == "A"], aligned$x[aligned$g == "B"], paired = TRUE)
+#'
+#' @export
+.align_pairs <- function(x, id, g) {
+  # x : vecteur numérique
+  # id : vecteur d'identifiants uniques par individu
+  # g : vecteur/facteur de groupes (peut être le résultat d'une interaction)
+  # Créer un data.frame temporaire
+  df <- data.frame(id = id, g = g, x = x, stringsAsFactors = FALSE)
+  # S'assurer que g est un facteur
+  df$g <- as.factor(df$g)
+  # Trier par id, puis par g pour garantir l'ordre
+  df <- df[order(df$g,df$id), ]
+  # Vérifier que chaque id apparaît le même nombre de fois (sinon, pas apparié)
+  tab_id <- table(df$id)
+  #if (length(unique(tab_id)) > 1) {
+  #  stop("Chaque individu (id) doit apparaître le même nombre de fois dans chaque groupe.")
+  #}
+  # Extraire x et g réorganisés
+  x_realigne <- df$x
+  g_realigne <- df$g
+  # Retourner une liste
+  list(x = x_realigne, g = g_realigne)
+}
+#data[data$idF=="PF_catG2_11",]

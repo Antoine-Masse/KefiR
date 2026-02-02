@@ -1,0 +1,340 @@
+===========================================
+DIAGNOSTIC PROBLÈME valreg() - 2025-11-12
+===========================================
+
+## ERREUR PERSISTANTE
+"ERREUR : Validation valreg() échouée : objet 'A' introuvable"
+
+## DIAGNOSTIC
+
+L'erreur "objet 'A' introuvable" vient de valreg() qui essaie d'accéder à la variable 'A'
+mais ne la trouve pas dans son environnement d'exécution.
+
+### TEST QUI FONCTIONNE
+```r
+modele <- lmer(A ~ F + G + (1 | H), data = dt)
+valreg(modele)  # ✅ OK
+```
+
+### TEST QUI PLANTE
+```r
+m.test(A~F*G, data=dt, id="H")  # ❌ Plante à l'étape 7
+```
+
+### DIFFÉRENCE CRITIQUE
+
+Quand on appelle `lmer()` manuellement dans l'environnement global:
+- Les données sont attachées au modèle via `model@frame`
+- Les noms de colonnes originaux sont préservés
+- valreg() peut accéder aux données
+
+Quand on appelle via `.mixed_model_analysis()`:
+- Le modèle est créé dans une fonction
+- Les données peuvent être dans un environnement différent
+- valreg() ne trouve pas les variables originales
+
+## SOLUTION À IMPLÉMENTER
+
+### PROBLÈME: bptest_lmer() utilise encore les noms de colonnes
+
+Même avec notre correction (lignes 162-184 de valreg.R), il semble y avoir
+un autre endroit où valreg() essaie d'accéder à 'A'.
+
+### RECHERCHER TOUS LES ENDROITS PROBLÉMATIQUES
+
+Il faut chercher dans valreg.R tous les endroits où on manipule des formules
+ou des noms de colonnes pour les modèles mixtes.
+
+Commandes à exécuter:
+
+```bash
+# Chercher toutes les formules créées dans valreg.R
+grep -n "as.formula\|reformulate\|formula(" R/valreg.R
+
+# Chercher où on accède aux termes du modèle
+grep -n "attr(.*terms" R/valreg.R
+
+# Chercher où on utilise model@frame ou model.frame
+grep -n "model@frame\|model.frame" R/valreg.R
+```
+
+### ZONES SUSPECTES À VÉRIFIER
+
+1. **Fonction lrt() (ligne ~88-103)**
+   - Crée des formules et appelle lmer()
+   - Peut avoir problèmes de scope
+
+2. **Fonction lrt2() (ligne ~105-126)**
+   - Crée formule pour lm()
+   - Peut avoir problèmes similaires
+
+3. **Fonction white() (ligne ~255-269)**
+   - Crée formule complexe pour test White
+   - Mais normalement pas appelée pour lmerMod
+
+4. **Tests dans le corps principal**
+   - Rainbow test (ligne ~428)
+   - Autres tests qui manipulent formules
+
+### APPROCHE DE DEBUG RECOMMANDÉE
+
+1. **Ajouter tryCatch détaillé autour de valreg()**
+
+   Dans `.mixed_model_analysis.R` ligne ~250:
+   ```r
+   valreg_output <- tryCatch({
+     valreg(
+       reg = mixed_model,
+       verbose = verbose,
+       alpha = alpha,
+       boot = FALSE,
+       plot = FALSE,
+       k = k,
+       tolerance = "extrem",
+       orderDW = NULL
+     )
+   }, error = function(e) {
+     # AJOUTER DEBUG ICI
+     cat("\n=== DEBUG ERREUR valreg() ===\n")
+     cat("Message erreur:", e$message, "\n")
+     cat("Traceback:\n")
+     print(traceback())
+     cat("Environnement modèle:\n")
+     print(environment(formula(mixed_model)))
+     cat("Data frame modèle:\n")
+     print(head(mixed_model@frame))
+     cat("Noms colonnes:\n")
+     print(names(mixed_model@frame))
+     cat("==============================\n\n")
+
+     k <<- .vbse(
+       paste0("ERROR: valreg() validation failed: ", e$message),
+       paste0("ERREUR : Validation valreg() échouée : ", e$message),
+       verbose = verbose, k = k, cpt = "on"
+     )
+     validation_warnings <<- c(validation_warnings, paste0("valreg() error: ", e$message))
+     return(list(valid = FALSE, k = k))
+   })
+   ```
+
+2. **Vérifier si le problème vient de lrt() ou lrt2()**
+
+   Ces fonctions créent de nouveaux modèles lmer() et lm() à l'intérieur de valreg().
+
+   SOLUTION POSSIBLE: Passer explicitement les données à valreg()
+
+   ```r
+   # Dans .mixed_model_analysis.R
+   valreg_output <- tryCatch({
+     valreg(
+       reg = mixed_model,
+       data = data,  # ← AJOUTER CETTE LIGNE
+       verbose = verbose,
+       alpha = alpha,
+       ...
+     )
+   })
+   ```
+
+   Cela permettra aux fonctions internes lrt() et lrt2() d'utiliser `data`
+   si elles ne trouvent pas les variables.
+
+3. **Modifier lrt() et lrt2() pour utiliser model@frame**
+
+   Dans valreg.R, fonctions lrt() et lrt2():
+
+   ```r
+   # LIGNE ~97-99 (fonction lrt)
+   # AVANT:
+   data_used <- model.frame(model)
+   model_complet <- lmerTest::lmer(formula, data = data_used)
+   model_nul <- lmerTest::lmer(formula_nul, data = data_used)
+
+   # PROBLÈME: data_used peut ne pas avoir les bons noms de colonnes
+
+   # APRÈS: Utiliser model@frame directement
+   model_complet <- lmerTest::lmer(formula, data = model@frame)
+   model_nul <- lmerTest::lmer(formula_nul, data = model@frame)
+   ```
+
+   Même chose pour lrt2() ligne ~119-121
+
+4. **SOLUTION RADICALE: Bypasser les tests problématiques pour lmerMod**
+
+   Si les tests lrt() et lrt2() posent problème, on peut les skip pour les modèles mixtes
+   et juste faire les tests essentiels (normalité, homoscédasticité sur résidus).
+
+   Dans valreg.R, autour de la ligne 300-336:
+
+   ```r
+   } else if (inherits(reg, "lmerMod")) {
+     # OPTION 1: Wrapper avec tryCatch
+     pval_mdl <- tryCatch({
+       lrt(reg)
+     }, error = function(e) {
+       .vbse(ang=paste0("Warning: LRT test failed: ", e$message),
+             fr=paste0("Attention : Test LRT échoué : ", e$message),
+             k=counter, cpt="off", verbose=verbose)
+       return(0.001)  # Valeur par défaut conservatrice
+     })
+
+     # Suite...
+   ```
+
+## ACTIONS À FAIRE (dans l'ordre)
+
+### 1. AJOUTER DEBUG DÉTAILLÉ (priorité 1)
+   Fichier: R/.mixed_model_analysis.R ligne ~250
+   Action: Ajouter cat() debug dans le tryCatch autour de valreg()
+
+### 2. PASSER data EXPLICITEMENT (priorité 2)
+   Fichier: R/.mixed_model_analysis.R ligne ~251
+   Action: Ajouter paramètre `data = data` à l'appel valreg()
+
+### 3. MODIFIER lrt() ET lrt2() (priorité 3)
+   Fichier: R/valreg.R lignes 97-99, 119-121
+   Action: Utiliser model@frame au lieu de model.frame(model)
+
+### 4. AJOUTER tryCatch AUTOUR lrt/lrt2 (priorité 4)
+   Fichier: R/valreg.R lignes 304, 315
+   Action: Wrapper les appels avec tryCatch pour gérer les erreurs
+
+## CODE COMPLET DES CORRECTIONS
+
+### CORRECTION 1: Debug détaillé (.mixed_model_analysis.R)
+
+Remplacer lignes 250-269 par:
+
+```r
+  # Appel valreg() - son bilan s'affiche directement avec numérotation continue
+  valreg_output <- tryCatch({
+    valreg(
+      reg = mixed_model,
+      data = data,  # AJOUTÉ: passer données explicitement
+      verbose = verbose,
+      alpha = alpha,
+      boot = FALSE,
+      plot = FALSE,
+      k = k,
+      tolerance = "extrem",
+      orderDW = NULL
+    )
+  }, error = function(e) {
+    # DEBUG DÉTAILLÉ
+    cat("\n========== DEBUG ERREUR valreg() ==========\n")
+    cat("Message:", e$message, "\n")
+    cat("Call:", deparse(sys.call(-1)), "\n")
+    cat("\nEnvironnement formule modèle:\n")
+    print(environment(formula(mixed_model)))
+    cat("\nNoms colonnes model@frame:\n")
+    print(names(mixed_model@frame))
+    cat("\nDim model@frame:", dim(mixed_model@frame), "\n")
+    cat("\nFormule modèle:", deparse(formula(mixed_model)), "\n")
+    cat("============================================\n\n")
+
+    k <<- .vbse(
+      paste0("ERROR: valreg() validation failed: ", e$message),
+      paste0("ERREUR : Validation valreg() échouée : ", e$message),
+      verbose = verbose, k = k, cpt = "on"
+    )
+    validation_warnings <<- c(validation_warnings, paste0("valreg() error: ", e$message))
+    return(list(valid = FALSE, k = k))
+  })
+```
+
+### CORRECTION 2: Robustesse lrt() et lrt2() (valreg.R)
+
+Remplacer fonction lrt() (lignes ~87-103):
+
+```r
+  lrt <- function(model) {
+    tryCatch({
+      formula <- formula(model)
+      response <- as.character(formula[[2]])
+      terms <- attr(terms(model), "term.labels")
+      random_effects <- grep("\\|", terms, value = TRUE)
+      if (length(random_effects) == 0) {
+        stop(.msg("The provided model has no random effects.",
+                  "Le modèle fourni n'a pas d'effets aléatoires."))
+      }
+      random_effects_str <- paste("(1 |", gsub(".*\\|", "", random_effects), ")", sep = "")
+      formula_nul <- as.formula(paste(response, "~", paste(random_effects_str, collapse = " + ")))
+
+      # Utiliser model@frame au lieu de model.frame(model)
+      data_used <- model@frame
+
+      model_complet <- lmerTest::lmer(formula, data = data_used)
+      model_nul <- lmerTest::lmer(formula_nul, data = data_used)
+      lrt_result <- suppressMessages(anova(model_nul, model_complet))
+      p_value <- lrt_result$`Pr(>Chisq)`[2]
+      return(p_value)
+    }, error = function(e) {
+      # Si échec, retourner p-value conservatrice
+      warning(paste("LRT failed:", e$message))
+      return(0.001)
+    })
+  }
+```
+
+Même chose pour lrt2() (lignes ~105-126):
+
+```r
+  lrt2 <- function(model) {
+    tryCatch({
+      formula <- formula(model)
+      response <- as.character(formula[[2]])
+      terms <- attr(terms(model), "term.labels")
+      random_effects <- grep("\\|", terms, value = TRUE)
+      if (length(random_effects) == 0) {
+        stop(.msg("The provided model has no random effects.",
+                  "Le modèle fourni n'est pas d'effets aléatoires."))
+      }
+      fixed_effects <- setdiff(terms, random_effects)
+      if (length(fixed_effects) == 0) {
+        stop(.msg("The provided model has no fixed effects.",
+                  "Le modèle fourni n'a pas d'effets fixes."))
+      }
+      fixed_effects_str <- paste(fixed_effects, collapse = " + ")
+      formula_lm <- as.formula(paste(response, "~", fixed_effects_str))
+
+      # Utiliser model@frame au lieu de model.frame(model)
+      data_used <- model@frame
+
+      model_complet <- lmerTest::lmer(formula, data = data_used)
+      model_lm <- lm(formula_lm, data = data_used)
+      aic_complet <- AIC(model_complet)
+      aic_lm <- AIC(model_lm)
+      delta_aic <- aic_complet - aic_lm
+      return(delta_aic)
+    }, error = function(e) {
+      # Si échec, retourner valeur indiquant que random effect améliore
+      warning(paste("LRT2/AIC comparison failed:", e$message))
+      return(-1)  # Négatif = random effect améliore
+    })
+  }
+```
+
+## RÉSUMÉ
+
+Le problème vient probablement des fonctions lrt() et lrt2() dans valreg.R qui:
+1. Extraient les noms de variables de la formule du modèle
+2. Créent de nouvelles formules avec ces noms
+3. Essaient de fitter de nouveaux modèles lmer() et lm()
+4. Ne trouvent pas les variables car mauvais environnement/scope
+
+SOLUTIONS:
+- Passer `data` explicitement à valreg()
+- Utiliser `model@frame` au lieu de `model.frame(model)`
+- Ajouter tryCatch pour gérer les erreurs gracieusement
+- Ajouter debug pour identifier précisément où ça plante
+
+## PROCHAINE ÉTAPE APRÈS REDÉMARRAGE
+
+1. Implémenter CORRECTION 1 (debug détaillé)
+2. Tester pour voir le message de debug
+3. Implémenter CORRECTION 2 (robustesse lrt/lrt2)
+4. Tester à nouveau
+
+===========================================
+FIN DU LOG
+===========================================

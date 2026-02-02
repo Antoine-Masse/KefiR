@@ -1,0 +1,305 @@
+################################################################################
+#           CORRECTIONS SESSION 16 (SUITE) - PLAN D'ACTION COMPLET
+################################################################################
+
+Date: 2025-11-11
+Statut: 12 corrections identifiées suite aux tests utilisateur
+
+================================================================================
+PRIORITÉ 1 - BLOCANTS (à faire en premier)
+================================================================================
+
+┌─ h) ANCOVA ROBUSTE MULTIFACTEUR - ERREUR "lmp" ─────────────────────────────┐
+│ PROBLÈME: aovp() ne supporte pas ANCOVA (erreur "impossible trouver lmp")   │
+│                                                                              │
+│ CAUSE ACADÉMIQUE:                                                           │
+│   aovp() permute observations entières → brise relation covariate-DV        │
+│   Référence: Anderson & ter Braak (2003) pour ANOVA, PAS ANCOVA             │
+│                                                                              │
+│ SOLUTION ACADÉMIQUE:                                                        │
+│   Pour 2+ facteurs + covariates avec hétéroscédasticité:                    │
+│   1) MEILLEURE: Utiliser car::Anova() avec White's correction               │
+│      Référence: Long & Ervin (2000). Using heteroscedasticity consistent    │
+│      standard errors in the linear regression model.                        │
+│      DOI:10.1080/00031305.2000.10474549                                     │
+│                                                                              │
+│   2) ALTERNATIVE: Bootstrap résidus ANCOVA                                  │
+│      Référence: Davison & Hinkley (1997). Bootstrap Methods and Their       │
+│      Application. Cambridge University Press.                               │
+│                                                                              │
+│   3) PRAGMATIQUE: Avertir utilisateur + poursuivre analyse paramétrique     │
+│      avec note méthodologique sur limites                                   │
+│                                                                              │
+│ FICHIER: R/.ancova_analysis.R lignes 465-502                                │
+│                                                                              │
+│ CODE À REMPLACER:                                                           │
+│   } else if (n_factors >= 2) {                                              │
+│     # ANCIEN: aovp() non adapté ANCOVA                                      │
+│     k <- .vbse("Method: Permutation ANCOVA (lmPerm::aovp)", ...)            │
+│     perm_ancova <- lmPerm::aovp(formula, data, perm = "Prob")               │
+│                                                                              │
+│ CODE RECOMMANDÉ (Option 1 - White's correction):                            │
+│   } else if (n_factors >= 2) {                                              │
+│     k <- .vbse(                                                              │
+│       paste0("Method: ANCOVA with heteroscedasticity-robust SEs\n",         │
+│                "\tApproach: White's correction (HC3)\n",                    │
+│                "\tRationale: Permutation invalid for ANCOVA\n",             │
+│                "\tReference: Long & Ervin (2000) DOI:10.1080/..."), ...     │
+│     )                                                                        │
+│                                                                              │
+│     # Utiliser sandwich package pour SEs robustes                           │
+│     if (requireNamespace("sandwich", quietly = TRUE) &&                     │
+│         requireNamespace("lmtest", quietly = TRUE)) {                       │
+│                                                                              │
+│       # ANCOVA avec SEs robustes                                            │
+│       robust_anova <- lmtest::coeftest(model,                               │
+│                                        vcov = sandwich::vcovHC(model,       │
+│                                        type = "HC3"))                        │
+│       robust_results$method <- "ANCOVA_White_HC3"                           │
+│       robust_results$test_result <- robust_anova                            │
+│       if (verbose) print(robust_anova)                                      │
+│     } else {                                                                 │
+│       k <<- .vbse("Warning: 'sandwich' package not available...", ...)      │
+│     }                                                                        │
+│   }                                                                          │
+│                                                                              │
+│ PACKAGES REQUIS: Ajouter 'sandwich' à DESCRIPTION Imports                   │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ f) ARRÊT CONTRÔLES DÈS 1ÈRE VIOLATION ──────────────────────────────────────┐
+│ PROBLÈME: Continue contrôles linéarité/pentes alors que variance hétérogène │
+│                                                                              │
+│ JUSTIFICATION ACADÉMIQUE:                                                   │
+│   Si une assumption violée → analyse robuste requise                        │
+│   Inutile de tester autres assumptions (gain temps + clarté pédagogique)    │
+│   Référence: Maxwell et al. (2018) pp. 400-401                              │
+│                                                                              │
+│ FICHIER: R/.ancova_analysis.R                                               │
+│                                                                              │
+│ LOGIQUE À IMPLÉMENTER:                                                      │
+│   after each assumption check:                                              │
+│     if (!check_normality || !check_variance_equal || ...) {                 │
+│       k <- .vbse("VIOLATION DETECTED: Stopping checks...", ...)             │
+│       # Jump directly to robust analysis                                    │
+│       goto robust_ancova_section                                            │
+│     }                                                                        │
+│                                                                              │
+│ STRUCTURE RECOMMANDÉE:                                                      │
+│   1) Check normality                                                        │
+│      if (!normal) → robust, skip rest                                       │
+│   2) Check homoscedasticity                                                 │
+│      if (!homosced) → robust, skip rest                                     │
+│   3) Check linearity (only if 1-2 OK)                                       │
+│      if (!linear) → robust, skip rest                                       │
+│   4) Check slopes (only if 1-3 OK)                                          │
+│   5) If all OK → parametric ANCOVA                                          │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+PRIORITÉ 2 - MESSAGES PÉDAGOGIQUES (clarté pour utilisateur)
+================================================================================
+
+┌─ a) FUSIONNER ÉTAPES 1+2 (Détection + Structure) ────────────────────────────┐
+│ FICHIER: R/.ancova_analysis.R lignes 68-90                                  │
+│                                                                              │
+│ AVANT (2 messages séparés):                                                 │
+│   1) Type détecté: ANCOVA...                                                │
+│      Redirection vers pipeline...                                           │
+│   2) ANALYSE ANCOVA - Pipeline complet...                                   │
+│      Structure du modèle:                                                   │
+│        • Facteurs: X, Y                                                     │
+│        • Covariables: Z                                                     │
+│                                                                              │
+│ APRÈS (1 message fusionné):                                                 │
+│   1) Type de modèle détecté: ANCOVA (facteurs + covariables continues)      │
+│      Structure du modèle:                                                   │
+│        • Facteurs catégoriques: Variete, Fertilisant                        │
+│        • Covariables continues: Temperature                                 │
+│      ==> Ajustement d'un modèle d'ANCOVA [lm()]                             │
+│      ==> Vérification des assomptions avant de confirmer la faisabilité     │
+│                                                                              │
+│ ACTION: Fusionner messages lignes 68-72 et 82-90                            │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ b) SUPPRIMER ÉTAPE 4 (Ajustement modèle) ────────────────────────────────────┐
+│ FICHIER: R/.ancova_analysis.R lignes 132-136                                │
+│                                                                              │
+│ MESSAGE À SUPPRIMER:                                                        │
+│   4) Ajustement du modèle ANCOVA préliminaire pour vérification...          │
+│                                                                              │
+│ RAISON: Déjà annoncé en étape 1 (après fusion a)                            │
+│         Redondant et n'apporte pas de valeur pédagogique                    │
+│                                                                              │
+│ ACTION: Supprimer/commenter .vbse() lignes 132-136                          │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ c) FUSIONNER ÉTAPES 5+6 (Normalité) ─────────────────────────────────────────┐
+│ FICHIER: R/.ancova_analysis.R lignes 168-189                                │
+│                                                                              │
+│ AVANT:                                                                      │
+│   5) ASSUMPTION 2/5: Normality of residuals (ACADEMIC check)                │
+│   6) Contrôle ACADÉMIQUE de la normalité des résidus...                     │
+│      Shapiro-Wilk...                                                        │
+│      ==> Les résidus sont normaux (p=0.13)                                  │
+│                                                                              │
+│ APRÈS:                                                                      │
+│   2) ASSUMPTION 2/5: Contrôle de la normalité des résidus (ACADÉMIQUE)      │
+│      Shapiro-Wilk (n≤50), Jarque-Bera (n≥500), skewness/kurtosis (>500)    │
+│      ==> Les résidus sont normaux. (p-value: 0.13)                          │
+│                                                                              │
+│ ACTION: Fusionner header assumption + résultat .normality()                 │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ d) FUSIONNER ÉTAPES 7+8 (Homoscédasticité) ──────────────────────────────────┐
+│ FICHIER: R/.ancova_analysis.R lignes 195-227                                │
+│                                                                              │
+│ MÊME LOGIQUE QUE c)                                                         │
+│                                                                              │
+│ APRÈS:                                                                      │
+│   3) ASSUMPTION 3/5: Homoscédasticité (contrôle ACADÉMIQUE)                 │
+│      IMPORTANT: Test sur INTERACTION FACTEURS UNIQUEMENT                    │
+│      Rationale: Covariables continues non groupées                          │
+│      Test de Bartlett [bartlett.test()] - Variances hétérogènes (p=0.029)  │
+│      ==> VIOLATION DÉTECTÉE: Arrêt contrôles et passage ANCOVA ROBUSTE      │
+│                                                                              │
+│ NOTE: Inclure message f) d'arrêt si violation                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ e) CLARIFIER VD = Variable Dépendante ───────────────────────────────────────┐
+│ FICHIER: R/.ancova_analysis.R ligne ~232                                    │
+│                                                                              │
+│ AVANT:                                                                      │
+│   ASSUMPTION 4/5: Linéarité de la relation VD ~ covariable                  │
+│                                                                              │
+│ APRÈS:                                                                      │
+│   ASSUMPTION 4/5: Linéarité (Variable Dépendante ~ covariable)              │
+│                                                                              │
+│ ACTION: Remplacer "VD" par "Variable Dépendante" ou "VD (Variable Dép.)"    │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+PRIORITÉ 3 - FONCTIONNALITÉS ACADÉMIQUES MANQUANTES
+================================================================================
+
+┌─ i) TYPE I/II/III POUR ANCOVA ────────────────────────────────────────────────┐
+│ QUESTION ACADÉMIQUE:                                                        │
+│   Les types de sommes de carrés (SS) s'appliquent-ils à ANCOVA?             │
+│                                                                              │
+│ RÉPONSE: OUI, exactement comme ANOVA                                        │
+│                                                                              │
+│ RÉFÉRENCES ACADÉMIQUES:                                                     │
+│   - Maxwell et al. (2018), Chapter 9, pp. 397-400                           │
+│     "The logic of Type III SS applies equally to ANCOVA as to ANOVA"        │
+│     DOI:10.4324/9781315642956                                               │
+│                                                                              │
+│   - Huitema (2011), pp. 45-48                                               │
+│     Explains Type I vs Type III for ANCOVA with interactions                │
+│     DOI:10.1002/9781118067475                                               │
+│                                                                              │
+│   - Langsrud (2003). ANOVA for unbalanced data: Use Type II instead         │
+│     of Type III sums of squares. Statistics and Computing, 13(2), 163-167.  │
+│     DOI:10.1023/A:1023260610025                                             │
+│                                                                              │
+│ RECOMMANDATION:                                                             │
+│   - Type III par défaut (déjà implémenté via contr.sum)                     │
+│   - Afficher message pédagogique comme dans .multi_factor_analysis()        │
+│                                                                              │
+│ FICHIER: R/.ancova_analysis.R après ligne 145 (fit model)                   │
+│                                                                              │
+│ CODE À AJOUTER:                                                             │
+│   k <- .vbse(                                                               │
+│     paste0("ANCOVA Type III Sums of Squares (default for interactions)\n",  │
+│            "\tType III: Tests each effect after all others (recommended)\n",│
+│            "\tContrasts: contr.sum (effects coding) for unbiased estimates\n",│
+│            "\tReference: Maxwell et al. (2018) Chapter 9, Huitema (2011)"), │
+│     ...                                                                     │
+│   )                                                                         │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ g) CONTRÔLE NORMALITÉ TOLÉRANT (si seule violation) ────────────────────────┐
+│ CONTEXTE:                                                                   │
+│   Si SEULE normalité violée (variance OK, linéarité OK, pentes OK)          │
+│   → Possibilité de rester paramétrique si n grand (CLT)                     │
+│                                                                              │
+│ RÉFÉRENCES ACADÉMIQUES:                                                     │
+│   - Lumley et al. (2002). The importance of the normality assumption in     │
+│     large public health data sets. Annual Review of Public Health, 23,      │
+│     151-169. DOI:10.1146/annurev.publhealth.23.100901.140546               │
+│                                                                              │
+│   - Blanca et al. (2017). Non-normal data: Is ANOVA still a valid option?   │
+│     Psicothema, 29(4), 552-557. DOI:10.7334/psicothema2016.383             │
+│     → ANOVA robuste à violations normalité si n>30 par groupe               │
+│                                                                              │
+│ LOGIQUE À IMPLÉMENTER (comme dans .multi_factor_analysis.R):                │
+│   if (!check_normality && check_variance && check_linearity && ...) {       │
+│     # Contrôle tolérant                                                     │
+│     if (all(group_sizes > 30)) {                                            │
+│       k <- .vbse("Central Limit Theorem allows parametric...", ...)         │
+│       check_normality_tolerant <- TRUE                                      │
+│     }                                                                       │
+│   }                                                                         │
+│                                                                              │
+│ FICHIER: R/.ancova_analysis.R après ligne 189                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+PRIORITÉ 4 - MODÈLES MIXTES (valreg)
+================================================================================
+
+┌─ j.1) VÉRIFIER valreg() DANS .mixed_model_analysis.R ────────────────────────┐
+│ ACTION: Chercher appels valreg() dans .mixed_model_analysis.R               │
+│                                                                              │
+│ COMMANDE:                                                                   │
+│   grep -n "valreg(" R/.mixed_model_analysis.R                               │
+│                                                                              │
+│ SI ABSENT: Ajouter après fit lmer(), avant interprétation                   │
+│ SI PRÉSENT: Vérifier placement logique                                      │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ j.2) AUDIT ACADÉMIQUE valreg() ─────────────────────────────────────────────┐
+│ ASSUMPTIONS MODÈLE MIXTE (référence: Pinheiro & Bates 2000):                │
+│   1. Linéarité de la relation fixe                                          │
+│   2. Indépendance des résidus (après accounting random effects)             │
+│   3. Normalité des résidus                                                  │
+│   4. Normalité des effets aléatoires                                        │
+│   5. Homoscédasticité des résidus                                           │
+│   6. Absence de multicolinéarité (VIF)                                      │
+│                                                                              │
+│ VÉRIFIER QUE valreg() TESTE:                                                │
+│   - Normalité résidus (Shapiro sur residuals(model))                        │
+│   - Normalité random effects (Shapiro sur ranef(model))                     │
+│   - Homoscédasticité (plot résidus vs fitted)                               │
+│   - Outliers (Cook's distance ou influence.ME)                              │
+│                                                                              │
+│ RÉFÉRENCE:                                                                  │
+│   Pinheiro, J. C., & Bates, D. M. (2000). Mixed-Effects Models in S and     │
+│   S-PLUS. Springer. DOI:10.1007/978-1-4419-0318-1                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌─ j.3) MODE code=TRUE DANS valreg() ──────────────────────────────────────────┐
+│ VÉRIFIER:                                                                   │
+│   if (code) {                                                               │
+│     cat("# Validation modèle mixte\n")                                      │
+│     cat("library(lme4)\n")                                                  │
+│     cat("# Normalité résidus\n")                                            │
+│     cat("shapiro.test(residuals(model))\n")                                 │
+│     ...                                                                     │
+│   }                                                                         │
+│                                                                              │
+│ SI ABSENT: Ajouter bloc code=TRUE dans valreg()                             │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+################################################################################
+# ORDRE D'EXÉCUTION RECOMMANDÉ
+################################################################################
+
+1. h) Fix ANCOVA robuste (BLOQUANT)
+2. f) Arrêt early si violation (LOGIQUE)
+3. a,b,c,d,e) Fusions messages (CLARTÉ)
+4. i) Type SS ANCOVA (ACADÉMIQUE)
+5. g) Normalité tolérant (ACADÉMIQUE)
+6. j.1,j.2,j.3) Audit valreg (MIXTES)
+
+################################################################################
+# FIN PLAN D'ACTION
+################################################################################
