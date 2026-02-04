@@ -1,11 +1,11 @@
 #' Filtrage des groupes avec effectifs insuffisants
 #'
 #' @description
-#' Prétraitement qui détecte et filtre les groupes (ou combinaisons de facteurs)
-#' ayant moins de `min_n` observations. Retourne les données filtrées et un message
-#' informatif sur les groupes écartés.
+#' Pretraitement qui detecte et filtre les groupes (ou combinaisons de facteurs)
+#' ayant moins de `min_n` observations. Retourne les donnees filtrées et un message
+#' informatif sur les groupes ecartes.
 #'
-#' @param data Data frame contenant les données.
+#' @param data Data frame contenant les donnees.
 #' @param factor_vars Character vector. Noms des variables factorielles.
 #' @param min_n Integer. Nombre minimum d'observations par groupe (défaut: 3).
 #' @param verbose Logical. Afficher les messages (défaut: TRUE).
@@ -14,24 +14,24 @@
 #'
 #' @return Liste contenant:
 #' \itemize{
-#'   \item \code{data}: Data frame filtré (sans les groupes insuffisants).
-#'   \item \code{removed_groups}: Character vector des groupes écartés.
-#'   \item \code{removed_n}: Integer. Nombre total d'observations supprimées.
+#'   \item \code{data}: Data frame filtre (sans les groupes insuffisants).
+#'   \item \code{removed_groups}: Character vector des groupes ecartes.
+#'   \item \code{removed_n}: Integer. Nombre total d'observations supprimees.
 #'   \item \code{original_n}: Integer. Nombre d'observations avant filtrage.
-#'   \item \code{filtered}: Logical. TRUE si des données ont été filtrées.
-#'   \item \code{k}: Compteur mis à jour.
+#'   \item \code{filtered}: Logical. TRUE si des donnees ont ete filtrées.
+#'   \item \code{k}: Compteur mis a jour.
 #' }
 #'
 #' @details
-#' Cette fonction est appelée en amont de l'analyse pour éviter les erreurs
-#' ou avertissements liés aux groupes trop petits (bartlett.test, bootstrap, etc.).
+#' Cette fonction est appelee en amont de l'analyse pour eviter les erreurs
+#' ou avertissements lies aux groupes trop petits (bartlett.test, bootstrap, etc.).
 #'
-#' Pour les analyses avec plusieurs facteurs, c'est l'interaction croisée
-#' de tous les facteurs qui est utilisée pour déterminer les effectifs.
+#' Pour les analyses avec plusieurs facteurs, c'est l'interaction croisee
+#' de tous les facteurs qui est utilisee pour determiner les effectifs.
 #'
 #' @examples
 #' \dontrun{
-#' # Données avec un groupe trop petit
+#' # Donnees avec un groupe trop petit
 #' dt <- data.frame(
 #'   y = rnorm(20),
 #'   g = factor(c(rep("A", 10), rep("B", 8), rep("C", 2)))
@@ -39,7 +39,7 @@
 #'
 #' # Filtrer groupes < 3 observations
 #' result <- .filter_small_groups(dt, "g", min_n = 3)
-#' # Le groupe C sera écarté
+#' # Le groupe C sera ecarte
 #' }
 #'
 #' @keywords internal
@@ -51,7 +51,7 @@
                                   k = 0,
                                   code = FALSE) {
 
-  # Validation des entrées
+  # Validation des entrees
   if (is.null(data) || nrow(data) == 0) {
     return(list(
       data = data,
@@ -77,7 +77,7 @@
   original_n <- nrow(data)
 
 
-  # Créer le groupement (interaction si plusieurs facteurs)
+  # Creer le groupement (interaction si plusieurs facteurs)
   if (length(factor_vars) == 1) {
     group_var <- factor(data[[factor_vars[1]]])
   } else {
@@ -91,7 +91,7 @@
   # Identifier groupes avec effectifs insuffisants
   small_groups <- names(group_counts)[group_counts < min_n]
 
-  # Si aucun groupe insuffisant, retourner données inchangées
+  # Si aucun groupe insuffisant, retourner donnees inchangees
 
   if (length(small_groups) == 0) {
     return(list(
@@ -104,7 +104,7 @@
     ))
   }
 
-  # Calculer nombre d'observations à supprimer
+  # Calculer nombre d'observations a supprimer
   removed_n <- sum(group_counts[small_groups])
 
   # Construire message informatif
@@ -119,14 +119,14 @@
            "\tGroups removed from analysis: ", paste(groups_info, collapse = ", "), "\n",
            "\tObservations removed: ", removed_n, " / ", original_n, "\n",
            "\tAnalysis will continue with the remaining ", original_n - removed_n, " observations."),
-    paste0("ATTENTION : Groupes avec effectifs insuffisants détectés (n < ", min_n, ").\n",
-           "\tGroupes écartés de l'analyse : ", paste(groups_info, collapse = ", "), "\n",
-           "\tObservations supprimées : ", removed_n, " / ", original_n, "\n",
+    paste0("ATTENTION : Groupes avec effectifs insuffisants d\u00e9tect\u00e9s (n < ", min_n, ").\n",
+           "\tGroupes \u00e9cart\u00e9s de l'analyse : ", paste(groups_info, collapse = ", "), "\n",
+           "\tObservations supprim\u00e9es : ", removed_n, " / ", original_n, "\n",
            "\tL'analyse continuera avec les ", original_n - removed_n, " observations restantes."),
     verbose = verbose, code = code, k = k, cpt = "on"
   )
 
-  # Filtrer les données
+  # Filtrer les donnees
   keep_idx <- !(group_var %in% small_groups)
   data_filtered <- data[keep_idx, , drop = FALSE]
 

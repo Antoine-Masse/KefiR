@@ -2,78 +2,139 @@
 % Please edit documentation in R/m.test.R
 \name{m.test}
 \alias{m.test}
-\title{Automatic average/median/variance comparison function.}
+\title{Automatic statistical comparison for means, medians, and variances}
 \usage{
 m.test(
-  formula,
+  x = NULL,
+  g = NULL,
   data = NULL,
-  alpha = 0.05,
-  verbose = TRUE,
-  return = TRUE,
+  formula = NULL,
+  paired = FALSE,
   id = NULL,
-  control = c(),
-  maxcat = 50,
+  wt = NULL,
+  within = NULL,
+  between = NULL,
+  alpha = 0.05,
+  control = NULL,
+  verbose = TRUE,
   plot = TRUE,
-  silent = TRUE,
+  return = TRUE,
   boot = TRUE,
-  iter = 500,
+  boot_type = NULL,
+  iter = 0,
   conf = 0.95,
+  maxcat = 50,
+  silent = TRUE,
   code = FALSE,
   debug = FALSE
 )
 }
 \arguments{
-\item{formula}{a formula of the form response ~ group (e.g., A~F or I~G)}
+\item{x}{Quantitative response. Can be:
+\itemize{
+\item a numeric vector;
+\item a matrix/data frame (multivariate response for MANOVA);
+\item a character or integer vector of column names/indices if \code{data} is supplied.
+}
+Ignored when \code{formula} is used.}
 
-\item{data}{an optional data frame containing the variables in the formula}
+\item{g}{Grouping factor (or vector). May also be a data frame of factors
+(several explanatory variables) when \code{formula} is not used. Ignored when
+\code{formula} is used.}
 
-\item{alpha}{p-value threshold value for all the tests.}
+\item{data}{A data frame that contains the variables referenced by \code{x}, \code{g},
+and/or \code{formula}. If omitted, symbols are looked up in the calling
+environment. Formulas like \code{data$Y ~ data$G} are also accepted provided
+the object \code{data} is visible.}
 
-\item{verbose}{to display the full reasoning of the analysis.}
+\item{formula}{A model formula such as \code{Y ~ G1 + G2} (or
+\code{cbind(Y1, Y2, ...) ~ ...} for MANOVA). Notation \code{Y ~ G | id} is internally
+converted to \code{Y ~ G + Error(id/...)} for repeated-measures designs.
+Covariates can be included as numeric predictors.}
 
-\item{return}{allows to return the results of pairwise analysis (p-values and groups).}
+\item{paired}{Logical. Forces paired/repeated analysis. It is also enabled
+automatically when \code{id} is supplied, or in specific repeated-measures patterns.}
 
-\item{id}{name of the column containing subject identifiers for repeated measures analysis}
+\item{id}{Subject identifier (a column name or index in \code{data}, or a vector
+the same length as \code{x}). Supplying \code{id} implies \code{paired = TRUE}
+and enables mixed models with random effects.}
 
-\item{control}{name of the category that will eventually be used as a control.}
+\item{wt}{Within-subject factor(s) for repeated measures. Can be a name,
+index, vector, or a data frame of factors present (or injected) in \code{data}.}
 
-\item{maxcat}{maximum number of categories allowed. When this number is high, some tests may return an error message.}
+\item{within}{Alias of \code{wt}.}
 
-\item{plot}{to display the distribution of the data.}
+\item{between}{Between-subject factor(s). Reserved for explicit specification
+in mixed designs. Transmitted to multi-factor analysis functions.}
 
-\item{silent}{for displaying or not warnings.}
+\item{alpha}{Global p-value threshold (default \code{0.05}).}
 
-\item{boot}{to activate the boostrap on 'mean' and 'median'.}
+\item{control}{Name of the category used as control in directed post-hoc
+procedures (e.g., Dunnett-type comparisons), when applicable.}
 
-\item{iter}{number f iterations (boot==TRUE).}
+\item{verbose}{Logical. Print the step-by-step reasoning.}
 
-\item{conf}{confidence level of bootstrap.}
+\item{plot}{Logical. Draw distribution plots (boxplots, violins, etc.).}
 
-\item{code}{allows to display the simplified R source code to be able to do the same R study step by step.}
+\item{return}{Logical. If \code{TRUE}, returns a summary object (p-values, compact
+letter displays, etc.). If \code{FALSE}, returns raw model output.}
 
-\item{debug}{when m.test return error.}
+\item{boot}{Logical. Enable bootstrap for means/medians where relevant.}
+
+\item{boot_type}{Character. Force the bootstrap type: \code{"mean"}, \code{"median"}, or \code{"meanbp"}.
+If \code{NULL} (default), automatically determined based on normality tests.}
+
+\item{iter}{Number of bootstrap iterations when \code{boot = TRUE}. If \code{0},
+a default is chosen as \code{iter <- 1/alpha * 5}.}
+
+\item{conf}{Confidence level for bootstrap intervals.}
+
+\item{maxcat}{Maximum number of allowed groups; beyond this, some procedures
+may fail.}
+
+\item{silent}{Logical. Suppress secondary warnings.}
+
+\item{code}{Logical. Print a simplified R "recipe" that reproduces the analysis
+(disables \code{verbose}).}
+
+\item{debug}{Logical. Emit detailed diagnostic messages (forces \code{code = FALSE}).}
 }
 \value{
-m.test() runs a decision tree to choose the most appropriate test series for sample comparison.
-
-She chooses the tests, justifies her choices.
-
-It can output groups of means or a comparison to a control.
-
-Finally, it will measure the robustness of the results by bootstrap.
+A list containing test results, p-values, group comparisons, and optionally
+bootstrap confidence intervals. The exact structure depends on the analysis type.
 }
 \description{
-Automatic average/median/variance comparison function.
+This function performs automatic statistical analysis by selecting the most
+appropriate tests based on data structure and statistical assumptions. It handles:
+\itemize{
+\item One-factor and multi-factor designs (ANOVA, ANCOVA)
+\item Univariate and multivariate responses (MANOVA)
+\item Paired and unpaired data (repeated measures)
+\item Covariates and random effects (mixed models)
+\item Parametric and non-parametric tests
+\item Post-hoc comparisons and bootstrap validation
+}
+}
+\details{
+\strong{NA Handling:}
+\itemize{
+\item For one-factor analyses: Listwise deletion (complete cases only)
+\item For multi-factor analyses: NA preserved (may be handled by mixed models)
+}
 }
 \examples{
-data(iris)
-m.test(iris[,1],iris[,5],verbose=TRUE, return=TRUE)
-m.test(iris[1:100,1],iris[1:100,5],verbose=TRUE, return=TRUE)
-m.test(iris[,2],iris[,5],verbose=TRUE, return=TRUE)
-m.test(iris[,3],iris[,5],verbose=TRUE, return=TRUE)
-m.test(iris[,4],iris[,5],verbose=TRUE, plot=FALSE, return=FALSE, boot=FALSE)
-m.test(iris[,1],iris[,5],verbose=TRUE, return=TRUE,control="setosa")
-m.test(iris[,2],iris[,5],verbose=TRUE, return=TRUE,control="virginica")
-m.test(iris[,3],iris[,5],verbose=TRUE, return=TRUE,control="setosa")
-m.test(iris[,4],iris[,5],verbose=TRUE, return=TRUE,control="setosa")
+\dontrun{
+# Example 1: One-factor unpaired
+data1 <- .simul(n = 12, k_H = 3, seed = 123)
+m.test(A ~ F, data = data1, verbose = TRUE)
+
+# Example 2: Repeated measures
+data2 <- .simul(n = 12, seed = 456)
+m.test(A ~ G, data = data2, id = "idG", verbose = TRUE)
+
+# Example 3: Mixed design
+data3 <- .simul(n = 20, seed = 789)
+m.test(A ~ F * Temps + Error(id/Temps), data = data3, verbose = TRUE)
+}
+
 }

@@ -51,18 +51,21 @@ A dataframe containing all the selected settings sorted from best (top) to worst
 Obtain the best configuration to meet the objectives determined by one or more linear models.
 }
 \examples{
+\donttest{
 data(mtcars)
-colnames(mtcars)
-myreg1 <- evolreg(mtcars,"mpg")
-myreg2 <- evolreg(mtcars,"cyl")
-reg <- list()
-reg[[1]] <- myreg1
-reg[[2]] <- myreg2
-output <- dsc(mtcars,reg,Y=c(23.4,5.4),pop=400,iter=200)
+reg1 <- lm(mpg ~ wt + qsec, data = mtcars)
+reg2 <- lm(cyl ~ disp, data = mtcars)
+reg <- list(reg1, reg2)
+output <- dsc(mtcars, reg, Y = c(23.4, 5.4), pop = 50, iter = 200, plot = FALSE)
 # Aggregation of several trials
-for (i in 1:10) {
-	output <- rbind(output,dsc(mtcars,reg,Y=c(23.4,5.4),plot=FALSE))
-} ; parco(output,"Distance")
+for (i in 1:3) {
+  output <- rbind(output, dsc(mtcars, reg, Y = c(23.4, 5.4), plot = FALSE))
+}
+parco(output, "Distance")
 # With filtration of min and max y.
-output <- dsc(mtcars,reg,Y=c(15,5),ymin=c(14,4),ymax=c(15,6),pop=5000,iter=10000)
+output <- dsc(
+  mtcars, reg, Y = c(15, 5), ymin = c(14, 4), ymax = c(15, 6),
+  pop = 50, iter = 200, plot = FALSE
+)
+}
 }

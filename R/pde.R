@@ -66,7 +66,7 @@ pde <- function(x,y,z,xlim=c(),ylim=c(),zlim=c(),dim=45,xlab="",ylab="",
       x.grid <- seq(xlim[1],xlim[2],length.out=dim)
       y.grid <- seq(ylim[1],ylim[2],length.out=dim)
       xy<-expand.grid(x=x.grid,y=y.grid)
-      # Calcul des ordonnées des points de la nappe
+      # Calcul des ordonn\u00e9es des points de la nappe
       z_nappe<-with(xy,
                     lmpoly$coefficients[2]*x^2+
                       lmpoly$coefficients[3]*y^2+
@@ -139,8 +139,8 @@ pde <- function(x,y,z,xlim=c(),ylim=c(),zlim=c(),dim=45,xlab="",ylab="",
                   add=TRUE
         )
         Unaccent <- function(text) {
-          text <- gsub("Ç","C",text); text <- gsub("ç","c",text); text <- gsub("é","e",text); text <- gsub("È","e",text);
-          text <- gsub("î","i",text); text <- gsub("ï","i",text); text <- gsub("è","e",text); text <- gsub("ê","e",text);
+          text <- gsub("\u00c7","C",text); text <- gsub("\u00e7","c",text); text <- gsub("\u00e9","e",text); text <- gsub("\u00c8","e",text);
+          text <- gsub("\u00ee","i",text); text <- gsub("\u00ef","i",text); text <- gsub("\u00e8","e",text); text <- gsub("\u00ea","e",text);
           text <- gsub(" ","_",text); text <- gsub("-","_",text);   text <- gsub("['`^~\"]", " ", text)
           text <- iconv(text, to="ASCII//TRANSLIT//IGNORE");   text <- gsub("['`^~\"]", "", text)
           return(text)

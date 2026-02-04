@@ -1,23 +1,23 @@
-#' Diagnostic d'influence pour modèles linéaires (Cook, Leverage, DFBETAS)
+#' Diagnostic d'influence pour modeles lineaires (Cook, Leverage, DFBETAS)
 #'
 #' @description
-#' Fonction helper pour diagnostiquer les observations influentes dans un modèle
-#' linéaire (lm, ANOVA, ANCOVA). Calcule Cook's distance, leverage (hat values)
-#' et DFBETAS pour identifier les points qui ont un impact disproportionné sur
-#' le modèle ajusté.
+#' Fonction helper pour diagnostiquer les observations influentes dans un modele
+#' lineaire (lm, ANOVA, ANCOVA). Calcule Cook's distance, leverage (hat values)
+#' et DFBETAS pour identifier les points qui ont un impact disproportionne sur
+#' le modele ajuste.
 #'
-#' @param model Modèle lm() ajusté
-#' @param data Data frame utilisé pour ajuster le modèle
-#' @param alpha Seuil de significativité (défaut: 0.05) - non utilisé actuellement
-#' @param verbose Logical. Afficher messages détaillés (défaut: FALSE)
-#' @param k Compteur d'étapes (défaut: 0)
-#' @param debug Logical. Mode debug (défaut: FALSE)
+#' @param model Modele lm() ajuste
+#' @param data Data frame utilise pour ajuster le modele
+#' @param alpha Seuil de significativite (defaut: 0.05) - non utilise actuellement
+#' @param verbose Logical. Afficher messages detailles (defaut: FALSE)
+#' @param k Compteur d'etapes (defaut: 0)
+#' @param debug Logical. Mode debug (defaut: FALSE)
 #'
 #' @return Liste contenant:
 #' \itemize{
 #'   \item \code{cook_d}: Vecteur des distances de Cook
 #'   \item \code{leverage}: Vecteur des leverages (hat values)
-#'   \item \code{dfbetas}: Matrice des DFBETAS (n × p)
+#'   \item \code{dfbetas}: Matrice des DFBETAS (n x p)
 #'   \item \code{thresholds}: Liste des seuils (cook, leverage, dfbetas)
 #'   \item \code{influential_cook}: Indices observations Cook > seuil
 #'   \item \code{influential_leverage}: Indices observations leverage > seuil
@@ -31,23 +31,23 @@
 #' }
 #'
 #' @details
-#' **Méthodes de diagnostic** :
+#' **Methodes de diagnostic** :
 #'
-#' 1. **Cook's Distance** : Mesure l'influence combinée d'une observation sur
-#'    TOUS les coefficients β. Combine leverage (distance géométrique) et résidu
-#'    standardisé. Seuil conservateur : 4/n ; critique si > 1.
+#' 1. **Cook's Distance** : Mesure l'influence combinee d'une observation sur
+#'    TOUS les coefficients beta. Combine leverage (distance geometrique) et residu
+#'    standardise. Seuil conservateur : 4/n ; critique si > 1.
 #'
-#' 2. **Leverage (hat values)** : Mesure si une observation est extrême dans
-#'    l'espace des prédicteurs (covariables, facteurs). Seuil : 2p/n où p est
-#'    le nombre de paramètres.
+#' 2. **Leverage (hat values)** : Mesure si une observation est extreme dans
+#'    l'espace des predicteurs (covariables, facteurs). Seuil : 2p/n ou p est
+#'    le nombre de parametres.
 #'
 #' 3. **DFBETAS** : Mesure l'impact de chaque observation sur CHAQUE coefficient
-#'    individuellement. Seuil : 2/√n. Plus spécifique que Cook.
+#'    individuellement. Seuil : 2/sqrt(n). Plus specifique que Cook.
 #'
-#' **Interprétation** :
-#' - Leverage élevé SEUL : observation extrême en X mais bien ajustée
-#' - Résidu élevé SEUL : mauvais ajustement mais faible impact
-#' - Cook élevé : combinaison des deux → influence forte sur β
+#' **Interpretation** :
+#' - Leverage eleve SEUL : observation extreme en X mais bien ajustee
+#' - Residu eleve SEUL : mauvais ajustement mais faible impact
+#' - Cook eleve : combinaison des deux -> influence forte sur beta
 #'
 #' @references
 #' - Cook, R. D. (1977). Detection of influential observations in linear regression.
@@ -77,7 +77,7 @@
   # ==========================================================================
 
   n <- nrow(data)
-  p <- length(coef(model))  # Nombre de paramètres (incluant intercept)
+  p <- length(coef(model))  # Nombre de parametres (incluant intercept)
 
   .dbg("Computing influence diagnostics...",
        "Calcul diagnostics d'influence...",
@@ -93,7 +93,7 @@
   dfbetas_vals <- dfbetas(model)
 
   # ==========================================================================
-  # SEUILS ACADÉMIQUES
+  # SEUILS ACADEMIQUES
   # ==========================================================================
 
   # Cook : 4/n (conservateur, Fox 2016) ou 1 (critique)
@@ -103,7 +103,7 @@
   # Leverage : 2p/n (standard) ou 3p/n (strict)
   leverage_threshold <- 2*p/n
 
-  # DFBETAS : 2/√n (Belsley et al. 1980)
+  # DFBETAS : 2/sqrt(n) (Belsley et al. 1980)
   dfbetas_threshold <- 2/sqrt(n)
 
   .dbg(paste0("Thresholds: Cook=", round(cook_threshold, 4),
@@ -115,7 +115,7 @@
        debug = debug)
 
   # ==========================================================================
-  # DÉTECTION OBSERVATIONS INFLUENTES
+  # DETECTION OBSERVATIONS INFLUENTES
   # ==========================================================================
 
   # Cook > seuil
@@ -127,7 +127,7 @@
   # DFBETAS > seuil (au moins 1 coefficient)
   influential_dfbetas <- which(apply(abs(dfbetas_vals) > dfbetas_threshold, 1, any))
 
-  # Union (au moins 1 critère)
+  # Union (au moins 1 critere)
   influential_any <- unique(c(influential_cook, influential_leverage, influential_dfbetas))
 
   # Critique : Cook > 1
@@ -165,12 +165,12 @@
       dfbetas = dfbetas_threshold
     ),
 
-    # Détection par critère
+    # Detection par critere
     influential_cook = influential_cook,
     influential_leverage = influential_leverage,
     influential_dfbetas = influential_dfbetas,
 
-    # Détection combinée
+    # Detection combinee
     influential_any = influential_any,
     critical = critical_influence,
 

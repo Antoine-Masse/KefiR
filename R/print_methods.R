@@ -1,4 +1,5 @@
 # Définition d'une classe S3 avec un print() personnalisé
+#' @export
 print.posthoc <- function(x, ...) {
   # Déterminer le nombre de groupes
   n_groups <- nrow(x$groups)

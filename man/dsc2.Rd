@@ -26,6 +26,7 @@ A dataframe containing all the selected settings sorted from best (top) to worst
 Check the robustness of a suggested dsc() prediction of X for objectives in Y by bootstrapping
 }
 \examples{
+\dontrun{
 data(mtcars)
 colnames(mtcars)
 myreg1 <- evolreg(mtcars,"mpg")
@@ -36,4 +37,5 @@ reg[[2]] <- myreg2
 output <- dsc(mtcars,reg,Y=c(23.4,5.4),pop=400,iter=200)
 # Bootstrap on the best line with dsc2()
 output2 <- dsc2(mtcars,reg,dsc=output[1,],plot=TRUE)
+}
 }

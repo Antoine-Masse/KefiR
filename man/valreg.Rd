@@ -13,11 +13,15 @@ valreg(
   conf.level = 0.95,
   plot = FALSE,
   data = c(),
-  code = FALSE,
   raintest_alpha = 0.05,
   dwtest_alpha = 0.03,
   shapiro_alpha = 0.05,
-  bptest_alpha = 0.05
+  bptest_alpha = 0.05,
+  k = 0,
+  orderDW = NULL,
+  tolerance = "basic",
+  code = FALSE,
+  debug = FALSE
 )
 }
 \arguments{
@@ -37,8 +41,6 @@ valreg(
 
 \item{data}{optional, the data.frame of data if complex model.}
 
-\item{code}{allows to display the simplified R source code to be able to do the same R study step by step.}
-
 \item{raintest_alpha}{Minimal value of p-value accepted for Rainbow test}
 
 \item{dwtest_alpha}{Minimal value of p-value accepted for Durbin-Watson test}
@@ -46,33 +48,71 @@ valreg(
 \item{shapiro_alpha}{Minimal value of p-value accepted for Shapiro-Wilk test}
 
 \item{bptest_alpha}{Minimal value of p-value accepted for Breush-Pagan test}
+
+\item{k}{Integer. Message counter for integration with m.test() (default: 0)}
+
+\item{orderDW}{Character. Name of variable for ordering data before Durbin-Watson test. If NULL, uses current order with warning (default: NULL)}
+
+\item{tolerance}{Character. Normality tolerance level: "basic" or "extrem" following .normality() logic (default: "basic")}
+
+\item{code}{Logical. If TRUE, suppresses verbose messages for code-only mode (default: FALSE)}
+
+\item{debug}{Logical. If TRUE, enables debug mode for troubleshooting.}
 }
 \value{
-This function allows to run all the tests necessary to validate a regression model (check the normal distribution of the residuals, avoid leverage effects, control the variance of the residuals...).
-
-valreg will therefore validate the regression model, control the p-values and, possibly (boot argument), control the reliability by bootstrap with the bootreg function.
+If \code{k} is non-zero, a list with two elements:
+\itemize{
+\item \code{valid}: Logical. TRUE if model passes all validation checks, FALSE otherwise
+\item \code{k}: Integer. Updated message counter for continued numbering in m.test() pipeline
+}
+If \code{k} is zero (default), returns a single logical value.
 }
 \description{
 Function to validate a regression model
 }
+\details{
+This function allows to run all the tests necessary to validate a regression model (check the normal distribution of the residuals, avoid leverage effects, control the variance of the residuals...).
+valreg will therefore validate the regression model, control the p-values and, possibly (boot argument), control the reliability by bootstrap with the bootreg function.
+}
+\section{Normality Testing}{
+
+Now uses .normality() function for consistency with m.test() pipeline. Supports two tolerance levels:
+\itemize{
+\item \code{tolerance="basic"}: Standard criteria (|Skewness| ≤ 1, |Kurtosis| ≤ 1.5)
+\item \code{tolerance="extrem"}: Relaxed criteria (|Skewness| ≤ 2, |Kurtosis| ≤ 7) for automatic use in mixed models
+}
+}
+
+\section{Durbin-Watson Test}{
+
+The \code{orderDW} parameter controls how autocorrelation is assessed:
+\itemize{
+\item If \code{NULL} (default): Test is performed but result is informative only (does not invalidate model)
+\item If specified: Test uses the named variable for ordering and result affects validation
+}
+}
+
 \examples{
-# Example 1: Linear model
+# Example 1: Linear model (basic usage)
 data(iris)
 reg <- lm(Sepal.Length~.,data=iris[,1:4])
-valreg(reg,verbose=TRUE)
+result <- valreg(reg, verbose=TRUE)
+print(if (is.list(result)) result$valid else result)  # TRUE if model is valid
 
-# Example 2: Mixed model
+# Example 2: Mixed model with extreme tolerance
 library(lme4)
 data(sleepstudy)
 reg_mixed <- lmer(Reaction ~ Days + (Days | Subject), data = sleepstudy)
-valreg(reg_mixed, verbose=TRUE)
+result <- valreg(reg_mixed, verbose=TRUE, tolerance="extrem")
+print(if (is.list(result)) result$valid else result)
 
-# Example 3: Mixed model
+# Example 3: Integration with m.test() pipeline
 library(lme4)
 data(iris)
 reg_mixed <- lmer(Sepal.Length ~ Petal.Length + (1|Species), data = iris)
-valreg(reg_mixed, verbose=TRUE)
+result <- valreg(reg_mixed, verbose=TRUE, k=5)  # Start counter at 5
+print(result$k)  # Updated counter value
 }
 \author{
-Antoine MASSE (2024)
+Antoine MASSE (2025)
 }

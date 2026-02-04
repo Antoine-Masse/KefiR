@@ -195,7 +195,7 @@
   if (is.matrix(x)) x <- x[, 1, drop = TRUE]
   if (is.list(x)) x <- unlist(x, use.names = FALSE)
   x <- as.vector(x)
-  if (!is.numeric(x)) stop(".posthoc() attend un vecteur numérique 'x'.")
+  if (!is.numeric(x)) stop(".posthoc() attend un vecteur num\u00e9rique 'x'.")
 
   if (is.data.frame(g)) g <- g[[1]]
   if (is.matrix(g)) g <- g[, 1, drop = TRUE]
@@ -211,7 +211,7 @@
   if (ng < 2L || number < 2L) {
     synth <- list(
       groups = data.frame(categories = lev),
-      note = "Pas assez de catégories (number < 2) pour réaliser des post-hoc."
+      note = "Pas assez de cat\u00e9gories (number < 2) pour r\u00e9aliser des post-hoc."
     )
     class(synth) <- "posthoc"
     .dbg(NULL, "Fin de .posthoc() - moins de 2 groupes.",
@@ -224,7 +224,7 @@
 
   if (normal == TRUE) {
     .dbg(".posthoc() - Post-hoc on normal data.",
-         ".posthoc() - Post-hoc sur données normales.",
+         ".posthoc() - Post-hoc sur donn\u00e9es normales.",
          debug = debug)
 
     if (number == 2) {
@@ -238,8 +238,8 @@
               "t.test(x[g==levels_g[1]], x[g==levels_g[2]], var.equal = TRUE, paired = ", paired, ")\n", sep = "")
         }
 
-        # CONTRÔLE CRITIQUE : Vérifier si réplicats présents (multiples obs par niveau)
-        # Référence: Maxwell et al. (2018), pp. 597-599 - Repeated measures with multiple obs per cell
+        # CONTR\u00d4LE CRITIQUE : V\u00e9rifier si r\u00e9plicats pr\u00e9sents (multiples obs par niveau)
+        # R\u00e9f\u00e9rence: Maxwell et al. (2018), pp. 597-599 - Repeated measures with multiple obs per cell
         n_g1 <- sum(g == g1)
         n_g2 <- sum(g == g2)
 
@@ -247,54 +247,54 @@
           .exit(
             paste0("ERROR: Paired t-test requested but unequal sample sizes (n1=", n_g1, ", n2=", n_g2, ").\n",
                    "\tPaired design requires equal n per condition."),
-            paste0("ERREUR : t-test apparié demandé mais tailles d'échantillon inégales (n1=", n_g1, ", n2=", n_g2, ").\n",
-                   "\tPlan apparié nécessite n égal par condition."),
+            paste0("ERREUR : t-test appari\u00e9 demand\u00e9 mais tailles d'\u00e9chantillon in\u00e9gales (n1=", n_g1, ", n2=", n_g2, ").\n",
+                   "\tPlan appari\u00e9 n\u00e9cessite n \u00e9gal par condition."),
             verbose = verbose, code = code, return = TRUE
           )
         }
 
-        # NOTE: La vérification de réplicats a été supprimée ici car:
-        # 1. Pour données appariées, .one_factor_analysis() a déjà vérifié la structure via .align_pairs()
-        # 2. L'ancienne heuristique (basée sur divisibilité de n) donnait des faux positifs
-        #    (ex: 20 sujets × 2 conditions = 20 obs/niveau, divisible par 2, 4, 5 -> faux positif)
-        # 3. Si on arrive ici avec paired=TRUE, les données ont été alignées correctement
+        # NOTE: La v\u00e9rification de r\u00e9plicats a \u00e9t\u00e9 supprim\u00e9e ici car:
+        # 1. Pour donn\u00e9es appari\u00e9es, .one_factor_analysis() a d\u00e9j\u00e0 v\u00e9rifi\u00e9 la structure via .align_pairs()
+        # 2. L'ancienne heuristique (bas\u00e9e sur divisibilit\u00e9 de n) donnait des faux positifs
+        #    (ex: 20 sujets \u00d7 2 conditions = 20 obs/niveau, divisible par 2, 4, 5 -> faux positif)
+        # 3. Si on arrive ici avec paired=TRUE, les donn\u00e9es ont \u00e9t\u00e9 align\u00e9es correctement
 
         pvals <- t.test(x[g == g1], x[g == g2], var.equal = TRUE, paired = paired)$p.value
         control_chr <- if (is.null(control)) NULL else as.character(control)[1]
         ind_control <- if (is.null(control_chr)) integer(0L) else match(control_chr, lev)
 
         if (isTRUE(paired)) {
-          # --- CAS APPARIÉ : PAS de bootstrap "indice moyenne"
+          # --- CAS APPARI\u00c9 : PAS de bootstrap "indice moyenne"
           k <- .vbse(
             "Post-hoc comparison of the two paired levels using a paired Student's t-test [t.test(paired = TRUE)].",
-            "Comparaison post-hoc des 2 niveaux appariés par un test de Student [t.test(paired == TRUE)].",
+            "Comparaison post-hoc des 2 niveaux appari\u00e9s par un test de Student [t.test(paired == TRUE)].",
             verbose = verbose, code = code, k = k, cpt = "on"
           )
 
-          # Résultat (significatif / non significatif)
+          # R\u00e9sultat (significatif / non significatif)
           if (pvals <= alpha) {
             k <- .vbse(
               paste0("Significant difference between the paired levels (p = ", .format_pval(pvals), ")."),
-              paste0("Différence significative entre les niveaux appariés (p = ", .format_pval(pvals), ")."),
+              paste0("Diff\u00e9rence significative entre les niveaux appari\u00e9s (p = ", .format_pval(pvals), ")."),
               verbose = verbose, code = code, k = k, cpt = "off"
             )
           } else {
             k <- .vbse(
               paste0("No significant difference between the paired levels (p = ", .format_pval(pvals), ")."),
-              paste0("Aucune différence significative entre les niveaux appariés (p = ", .format_pval(pvals), ")."),
+              paste0("Aucune diff\u00e9rence significative entre les niveaux appari\u00e9s (p = ", .format_pval(pvals), ")."),
               verbose = verbose, code = code, k = k, cpt = "off"
             )
           }
 
           synth <- list()
           if (length(ind_control) != 1L) {
-            # Sans témoin : lettres a/b selon la significativité
+            # Sans t\u00e9moin : lettres a/b selon la significativit\u00e9
             synth$groups <- data.frame(
               categories = lev,
               Student_Holm = if (pvals <= alpha) c("a", "b") else c("a", "a")
             )
           } else {
-            # Avec témoin : étoiles sur la catégorie non témoin
+            # Avec t\u00e9moin : \u00e9toiles sur la cat\u00e9gorie non t\u00e9moin
             stars <- c("", "")
             stars[-ind_control] <- ifelse(pvals <= 0.001, "***",
                                           ifelse(pvals <= 0.01,  "**",
@@ -323,11 +323,11 @@
 
           k <- .vbse(
             "a) Analysis of mean differences by bootstrap [pairwise.boot() from {KefiR}].",
-            "a) Analyse des différences de moyennes par bootstrap [pairwise.boot() de {KefiR}]",
+            "a) Analyse des diff\u00e9rences de moyennes par bootstrap [pairwise.boot() de {KefiR}]",
             verbose = verbose, code = code, k = k, cpt = "off"
           )
 
-          # Utiliser boot_type spécifié ou la logique automatique
+          # Utiliser boot_type sp\u00e9cifi\u00e9 ou la logique automatique
           final_boot_type <- if (!is.null(boot_type)) boot_type else "mean"
           synth2 <- pairwise(x, g, type = "boot", alpha = alpha, control = control, boot = FALSE,
                              boot_type = final_boot_type, conf = conf, iter = iter, debug = debug)
@@ -357,12 +357,12 @@
             #	control
             ########################
             .dbg(".posthoc() - Student with control.",
-                 ".posthoc() - Student avec présence d'un Témoin.",
+                 ".posthoc() - Student avec pr\u00e9sence d'un T\u00e9moin.",
                  debug = debug, verbose = verbose)
 
             k <- .vbse(
               "b) Student test [t.test()] with control.",
-              "b) Test de Student [t.test()] avec témoin.",
+              "b) Test de Student [t.test()] avec t\u00e9moin.",
               verbose = verbose, code = code, k = k, cpt = "off"
             )
 
@@ -395,11 +395,11 @@
             "Student_Holm" = synth$groups[, 2]
           )
 
-          # Vérification bootstrap APRÈS création des 3 colonnes
+          # V\u00e9rification bootstrap APR\u00c8S cr\u00e9ation des 3 colonnes
           if (isTRUE(verbose) && isTRUE(boot) && !is.null(synth$bootstrap) &&
               ncol(synth$groups) >= 3 && any(synth$bootstrap$groups[, 2] != synth$groups[, 3])) {
             ang <- "Warning! Bootstrap detects weaknesses in the significance of the results."
-            fr <- "Attention ! Le bootstrap détecte des faiblesses dans la signification des résultats."
+            fr <- "Attention ! Le bootstrap d\u00e9tecte des faiblesses dans la signification des r\u00e9sultats."
             k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt = "off")
           }
         }
@@ -419,11 +419,11 @@
         # a) Bootstrap sur l'indice moyen
         k <- .vbse(
           "a) Posthoc - Analysis of mean differences by bootstrap [pairwise.boot(mu='mean') from {KefiR}].",
-          "a) Posthoc - Analyse des différences de moyennes par bootstrap [pairwise.boot(mu='mean') de {KefiR}]",
+          "a) Posthoc - Analyse des diff\u00e9rences de moyennes par bootstrap [pairwise.boot(mu='mean') de {KefiR}]",
           verbose = verbose, code = code, k = k, cpt = "off"
         )
 
-        # Utiliser boot_type spécifié ou la logique automatique
+        # Utiliser boot_type sp\u00e9cifi\u00e9 ou la logique automatique
         final_boot_type <- if (!is.null(boot_type)) boot_type else "mean"
         synth2 <- pairwise(x, g, type = "boot", alpha = alpha, control = control, boot = FALSE,
                            boot_type = final_boot_type, conf = conf, iter = iter, debug = debug)
@@ -435,7 +435,7 @@
           # b) Student
           k <- .vbse(
             "b) Student test [t.test(var.equal=FALSE)].",
-            "b) Test de Student à variances inégales [t.test(var.equal=FALSE)]",
+            "b) Test de Student \u00e0 variances in\u00e9gales [t.test(var.equal=FALSE)]",
             verbose = verbose, code = code, k = k, cpt = "off"
           )
 
@@ -457,7 +457,7 @@
             colnames(synth$bootstrap$groups)[2] <- "Student_bootstrapped"
           }
 
-          # Ajout du bootstrap sur la moyenne - AVANT la vérification bootstrap
+          # Ajout du bootstrap sur la moyenne - AVANT la v\u00e9rification bootstrap
           ind_temp <- match(synth$groups[, 1], synth2$groups[, 1])
           synth$groups <- data.frame(
             "categories" = synth$groups[, 1],
@@ -465,11 +465,11 @@
             "Student_Holm" = synth$groups[, 2]
           )
 
-          # Vérification bootstrap APRÈS création des 3 colonnes
+          # V\u00e9rification bootstrap APR\u00c8S cr\u00e9ation des 3 colonnes
           if ((verbose == TRUE) && (boot == TRUE) && !is.null(synth$bootstrap) &&
               ncol(synth$groups) >= 3 && any(synth$bootstrap$groups[, 2] != synth$groups[, 3])) {
             ang <- "Warning! Bootstrap detects weaknesses in the significance of the results."
-            fr <- "Attention ! Le bootstrap détecte des faiblesses dans la signification des résultats."
+            fr <- "Attention ! Le bootstrap d\u00e9tecte des faiblesses dans la signification des r\u00e9sultats."
             k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt = "off")
           }
 
@@ -479,7 +479,7 @@
           ########################
           k <- .vbse(
             "b) Student test [t.test(var.equal=FALSE)] with control.",
-            "b) Test de Student à variances inégales [t.test(var.equal=FALSE)] avec témoin.",
+            "b) Test de Student \u00e0 variances in\u00e9gales [t.test(var.equal=FALSE)] avec t\u00e9moin.",
             verbose = verbose, code = code, k = k, cpt = "off"
           )
 
@@ -507,24 +507,24 @@
             colnames(synth$bootstrap$groups)[2] <- "Student_bootstrapped"
           }
 
-          # Vérification bootstrap avec contrôles de sécurité
+          # V\u00e9rification bootstrap avec contr\u00f4les de s\u00e9curit\u00e9
           if ((verbose == TRUE) && (boot == TRUE) && !is.null(synth$bootstrap) &&
               ncol(synth$groups) >= 3 && any(synth$bootstrap$groups[, 2] != synth$groups[, 3])) {
             ang <- "Warning! Bootstrap detects weaknesses in the significance of the results."
-            fr <- "Attention ! Le bootstrap détecte des faiblesses dans la signification des résultats."
+            fr <- "Attention ! Le bootstrap d\u00e9tecte des faiblesses dans la signification des r\u00e9sultats."
             k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt = "off")
           }
         }
       }
 
     } else if (number > 2) {
-      .dbg(NULL, ".posthoc() - '>2 catégories'.",
+      .dbg(NULL, ".posthoc() - '>2 cat\u00e9gories'.",
            debug = debug)
 
       if (paired) {
         k <- .vbse(
           "Posthoc - Post-hoc tests on paired normal groups.",
-          "Posthoc - Tests post-hoc sur groupes normaux appariés.",
+          "Posthoc - Tests post-hoc sur groupes normaux appari\u00e9s.",
           verbose = verbose, code = code, k = k
         )
       } else {
@@ -544,20 +544,20 @@
       # a) Bootstrap sur l'indice moyen
       k <- .vbse(
         "a) Posthoc - Analysis of mean differences by bootstrap [pairwise.boot() from {KefiR}].",
-        "a) Posthoc - Analyse des différences de moyennes par bootstrap [pairwise.boot() de {KefiR}].",
+        "a) Posthoc - Analyse des diff\u00e9rences de moyennes par bootstrap [pairwise.boot() de {KefiR}].",
         verbose = verbose, code = code, k = k, cpt = "off"
       )
 
-      # Utiliser boot_type spécifié ou la logique automatique
+      # Utiliser boot_type sp\u00e9cifi\u00e9 ou la logique automatique
       final_boot_type <- if (!is.null(boot_type)) boot_type else "mean"
       synth2 <- pairwise(x, g, type = "boot", alpha = alpha, control = control, boot = FALSE,
                          boot_type = final_boot_type, conf = conf, iter = iter, debug = debug)
 
       ################
-      # b) Réaliser un test de Student en pairwise en tenant compte du sd.pool.
+      # b) R\u00e9aliser un test de Student en pairwise en tenant compte du sd.pool.
       if (paired == TRUE) {
         if (isTRUE(code)) {
-          cat("# Tests t appariés\nresult <- pairwise.t.test(x,g,paired=TRUE)\n# Identification des groupes\ncatego(result)\n")
+          cat("# Tests t appari\u00e9s\nresult <- pairwise.t.test(x,g,paired=TRUE)\n# Identification des groupes\ncatego(result)\n")
         }
 
         k <- .vbse(
@@ -572,7 +572,7 @@
       } else if (paired == FALSE) {
         if (var.equal == FALSE) {
           if (isTRUE(code)) {
-            cat("# Tests t appariés\nresult <- pairwise.t.test(x,g,pool.sd=FALSE)\n# Identification des groupes\ncatego(result)\n")
+            cat("# Tests t appari\u00e9s\nresult <- pairwise.t.test(x,g,pool.sd=FALSE)\n# Identification des groupes\ncatego(result)\n")
           }
 
           k <- .vbse(
@@ -586,7 +586,7 @@
 
         } else if (var.equal == TRUE) {
           if (isTRUE(code)) {
-            cat("# Tests t appariés\nresult <- pairwise.t.test(x,g,pool.sd=TRUE)\n# Identification des groupes\ncatego(result)\n")
+            cat("# Tests t appari\u00e9s\nresult <- pairwise.t.test(x,g,pool.sd=TRUE)\n# Identification des groupes\ncatego(result)\n")
           }
 
           ang <- "b) Posthoc - Student test [pairwise.t.test(pool.sd=TRUE)]."
@@ -600,7 +600,7 @@
 
       colnames(synth$groups)[2] <- "Student_Holm"
 
-      # Agglomérat du bootstrap median bootstrap sur colonne 2, ...
+      # Agglom\u00e9rat du bootstrap median bootstrap sur colonne 2, ...
       ind_temp <- match(synth$groups[, 1], synth2$groups[, 1])
       synth$groups <- data.frame(
         "categories" = synth$groups[, 1],
@@ -608,12 +608,12 @@
         "Student_Holm" = synth$groups[, 2]
       )
 
-      # Plus bootstrap intégré
+      # Plus bootstrap int\u00e9gr\u00e9
       if (boot == TRUE) {
         if (any(synth$bootstrap$groups[, 2] != synth$groups[, 3])) {
           k <- .vbse(
             "\tWarning! Bootstrap detects weaknesses in the significance of the results.",
-            "\tAttention ! Le bootstrap détecte des faiblesses dans la signification des résultats.",
+            "\tAttention ! Le bootstrap d\u00e9tecte des faiblesses dans la signification des r\u00e9sultats.",
             verbose = verbose, code = code, k = k, cpt = "off"
           )
         }
@@ -621,17 +621,17 @@
       }
 
       if ((var.equal == TRUE & length(control) == 0 & paired == FALSE)) {
-        # Tests Scheffé, Tukey, SNK, Waller-Duncan nécessitent agricolae
+        # Tests Scheff\u00e9, Tukey, SNK, Waller-Duncan n\u00e9cessitent agricolae
         if (requireNamespace("agricolae", quietly = TRUE)) {
           ################
-          # c) Test de Scheffé
+          # c) Test de Scheff\u00e9
           if (isTRUE(code)) {
-            cat("#Test de Scheffé\nagricolae::scheffe.test(myaov,'g',alpha=", alpha, ")")
+            cat("#Test de Scheff\u00e9\nagricolae::scheffe.test(myaov,'g',alpha=", alpha, ")")
           }
 
           k <- .vbse(
-            "c) Posthoc - Conservative Scheffé test [scheffe.test() of {agricolae}].",
-            "c) Posthoc - Test conservateur de Scheffé [scheffe.test() of {agricolae}].",
+            "c) Posthoc - Conservative Scheff\u00e9 test [scheffe.test() of {agricolae}].",
+            "c) Posthoc - Test conservateur de Scheff\u00e9 [scheffe.test() of {agricolae}].",
             verbose = verbose, code = code, k = k, cpt = "off"
           )
 
@@ -688,7 +688,7 @@
           if ((length(cat1) != length(cat2)) & (length(ind_control) != 1)) {
             k <- .vbse(
               "Warning! pairwise.t.test() and SNK.test() don't return the same number of groups.",
-              "Attention ! pairwise.t.test() et SNK.test() ne renvoient pas le même nombre de groupes.",
+              "Attention ! pairwise.t.test() et SNK.test() ne renvoient pas le m\u00eame nombre de groupes.",
               k = k, cpt = "off"
             )
           }
@@ -714,7 +714,7 @@
           # agricolae non disponible - informer l'utilisateur
           k <- .vbse(
             "Note: Additional post-hoc tests (Scheffe, Tukey, SNK, Waller-Duncan) require {agricolae} package.",
-            "Note : Les tests post-hoc supplémentaires (Scheffé, Tukey, SNK, Waller-Duncan) nécessitent le package {agricolae}.",
+            "Note : Les tests post-hoc suppl\u00e9mentaires (Scheff\u00e9, Tukey, SNK, Waller-Duncan) n\u00e9cessitent le package {agricolae}.",
             verbose = verbose, code = code, k = k, cpt = "off"
           )
         }
@@ -722,12 +722,12 @@
       } else if ((var.equal == TRUE) & (length(control) > 0) & (paired == FALSE)) {
         if (requireNamespace("DescTools", quietly = TRUE)) {
           if (isTRUE(code)) {
-            cat("# Test de Dunnett car présence de Témoin\nlibrary(DescTools)\nDunnettTest(x,g,control='", control, "')\n")
+            cat("# Test de Dunnett car pr\u00e9sence de T\u00e9moin\nlibrary(DescTools)\nDunnettTest(x,g,control='", control, "')\n")
           }
 
           k <- .vbse(
             "c) Posthoc - See also post-hoc Dunnett test for the control [DunnettTest() from {DescTools}].",
-            "c) Posthoc - Voir aussi le test post-hoc de Dunnett pour le contrôle [DunnettTest() de {DescTools}].",
+            "c) Posthoc - Voir aussi le test post-hoc de Dunnett pour le contr\u00f4le [DunnettTest() de {DescTools}].",
             verbose = verbose, code = code, k = k, cpt = "off"
           )
 
@@ -770,7 +770,7 @@
 
         k <- .vbse(
           "c) Posthoc - Games-Howell test on normally distributed data with non-homogeneous variances [games_howell_test() of {rstatix}].",
-          "c) Posthoc - Test de Games-Howell sur données normales à variances non-homogènes...\n\t\t... [games_howell_test() of {rstatix}].",
+          "c) Posthoc - Test de Games-Howell sur donn\u00e9es normales \u00e0 variances non-homog\u00e8nes...\n\t\t... [games_howell_test() of {rstatix}].",
           verbose = verbose, code = code, k = k, cpt = "off"
         )
 
@@ -790,7 +790,7 @@
           group2 <- resultGH$group2[i]
           p_value <- resultGH$p.adj[i]
           p_value_matrix[group1, group2] <- p_value
-          p_value_matrix[group2, group1] <- p_value  # La matrice est symétrique
+          p_value_matrix[group2, group1] <- p_value  # La matrice est sym\u00e9trique
         }
 
         p_value_matrix <- p_value_matrix[-1, -ncol(p_value_matrix)]
@@ -814,7 +814,7 @@
 
           k <- .vbse(
             "d) Posthoc - Dunnett T3 test on normally distributed data with non-homogeneous variances [dunnettT3Test() of {PMCMRplus}].",
-            "d) Posthoc - Test de Dunnett T3 sur données normales à variances non-homogènes [dunnettT3Test() of {PMCMRplus}].",
+            "d) Posthoc - Test de Dunnett T3 sur donn\u00e9es normales \u00e0 variances non-homog\u00e8nes [dunnettT3Test() of {PMCMRplus}].",
             verbose = verbose, code = code, k = k, cpt = "off"
           )
 
@@ -834,18 +834,18 @@
 
   } else if (normal == FALSE) {
     #================================================
-    #   Non-paramétrique
+    #   Non-param\u00e9trique
     #================================================
-    .dbg(NULL, "post-hoc sur données non normales - k==2 et k>2.",
+    .dbg(NULL, "post-hoc sur donn\u00e9es non normales - k==2 et k>2.",
          debug = debug)
 
     check_wilcox_fiability <- TRUE
 
     if (paired == FALSE) {
       #------------------------------------------
-      # Contrôle de la distribution pour évaluer la fiabilité du test de Wilcoxon-Mann-Witney...
+      # Contr\u00f4le de la distribution pour \u00e9valuer la fiabilit\u00e9 du test de Wilcoxon-Mann-Witney...
       #------------------------------------------
-      # Centrer sur la médiane pour fiabilisé le contrôle des équivalences de distributions par KS
+      # Centrer sur la m\u00e9diane pour fiabilis\u00e9 le contr\u00f4le des \u00e9quivalences de distributions par KS
       sd_cr <- by(x, g, stats::sd, na.rm = T)
       median_cr <- by(x, g, stats::median, na.rm = T)
       data_cr <- x
@@ -853,9 +853,9 @@
         data_cr[g == i] <- (data_cr[g == i] - median_cr[which(names(median_cr) == i)]) / sd_cr[which(names(sd_cr) == i)]
       }
 
-      # Vérifier l'équivalence de distribution pour évaluer la fiabilité de WMW si non appariées.
-      # Lehmann, E. L., & Romano, J. P. (2005). Testing Statistical Hypotheses (3ᵉ éd.). Springer.
-      # KS vérifie l'identité de distribution...
+      # V\u00e9rifier l'\u00e9quivalence de distribution pour \u00e9valuer la fiabilit\u00e9 de WMW si non appari\u00e9es.
+      # Lehmann, E. L., & Romano, J. P. (2005). Testing Statistical Hypotheses (3\u1d49 \u00e9d.). Springer.
+      # KS v\u00e9rifie l'identit\u00e9 de distribution...
       # Correction de Sidak
       pval <- 1 - (1 - alpha)^(1/length(unique(g)))
       temp <- pairwise(data_cr, g, type = "ks", boot = FALSE)
@@ -863,39 +863,39 @@
 
       if (ks_result < pval) {
         check_wilcox_fiability <- FALSE
-        # Message masqué car déjà affiché dans sys_one_factor_analysis.R
+        # Message masqu\u00e9 car d\u00e9j\u00e0 affich\u00e9 dans sys_one_factor_analysis.R
         .dbg(
           paste0("Kolmogorov-Smirnov test [ks.test()] on median-centered and reduced data:\n\t",
           "Warning! The data do not have the same distribution (p-value: ", .format_pval(ks_result), ")...\n\t",
           "...compared to Sidak-corrected alpha ", .format_pval(pval), ".\n\t",
           "--> The Mann-Whitney-Wilcoxon test will be less reliable.\n\t",
           "(Please verify graphically that the groups have the same distribution.)"),
-          paste0("Test de Kolmogorov-Smirnov [ks.test()] sur les données centrées sur la médiane et réduites :\n\t",
-          "Attention ! Les données n'ont pas la même distribution (p-value : ", .format_pval(ks_result), ")...\n\t",
-          "...en comparant avec l'alpha corrigé de Sidak ", .format_pval(pval), ".\n\t",
+          paste0("Test de Kolmogorov-Smirnov [ks.test()] sur les donn\u00e9es centr\u00e9es sur la m\u00e9diane et r\u00e9duites :\n\t",
+          "Attention ! Les donn\u00e9es n'ont pas la m\u00eame distribution (p-value : ", .format_pval(ks_result), ")...\n\t",
+          "...en comparant avec l'alpha corrig\u00e9 de Sidak ", .format_pval(pval), ".\n\t",
           "--> Le test de Mann-Whitney-Wilcoxon sera moins fiable.\n\t",
-          "(Veuillez vérifier graphiquement les distributions des groupes.)"),
+          "(Veuillez v\u00e9rifier graphiquement les distributions des groupes.)"),
           debug = debug
         )
       } else {
-        # Message masqué car déjà affiché dans sys_one_factor_analysis.R
+        # Message masqu\u00e9 car d\u00e9j\u00e0 affich\u00e9 dans sys_one_factor_analysis.R
         .dbg(
           paste0("Kolmogorov-Smirnov test [ks.test()] on median-centered and reduced data -\n\tThe groups have the same distribution. p-value: ", .format_pval(ks_result), "...\n\t\t...by comparing with Sidak corrected alpha ", .format_pval(pval), "\n\tThe Mann-Whitney-Wilcoxon test will be reliable."),
-          paste0("Test de Kolmogorov-Smirnov [ks.test()] sur les données centrées sur la médiane et réduites -\n\tLes groupes ont la même distribution. p-value : ", .format_pval(ks_result), "...\n\t\t...en comparant avec l'alpha corrigé de Sidak ", .format_pval(pval), "\n\tLe test de Mann-Whitney-Wilcoxon est fiable a priori."),
+          paste0("Test de Kolmogorov-Smirnov [ks.test()] sur les donn\u00e9es centr\u00e9es sur la m\u00e9diane et r\u00e9duites -\n\tLes groupes ont la m\u00eame distribution. p-value : ", .format_pval(ks_result), "...\n\t\t...en comparant avec l'alpha corrig\u00e9 de Sidak ", .format_pval(pval), "\n\tLe test de Mann-Whitney-Wilcoxon est fiable a priori."),
           debug = debug
         )
       }
 
       #------------------------------------------
-      # Annoncer les tests post-hocs avec une formulation adapté au nombre de groupes
+      # Annoncer les tests post-hocs avec une formulation adapt\u00e9 au nombre de groupes
       #------------------------------------------
       if (number == 2) {
         ang <- "Non-parametric comparison tests for two groups."
-        fr <- "Tests non paramétriques de comparaison des deux groupes."
+        fr <- "Tests non param\u00e9triques de comparaison des deux groupes."
         k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt = "on")
       } else {
         ang <- "Non-parametric post-hoc tests for group comparisons."
-        fr <- "Tests post-hocs non paramétriques de comparaison des groupes."
+        fr <- "Tests post-hocs non param\u00e9triques de comparaison des groupes."
         k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt = "on")
 
         if (isTRUE(code)) {
@@ -904,17 +904,17 @@
       }
 
     } else if (number == 2) {
-      # Si 2 groupes appariés :
-      # Vérifier la symétrie des différences pour évaluer la fiabilité de WMW si appariées - Miao–Gel–Gastwirth MGG
-      # Zheng, T., & Gastwirth, J. L. (2010). On bootstrap tests of symmetry about an unknown median. Journal of Data Science, 8(3), 397–412.
-      # Le test MGG, robuste et bootstrapable, permet de vérifier la symétrie requise pour que le test de Wilcoxon apparié (WMW) soit statistiquement valide.
+      # Si 2 groupes appari\u00e9s :
+      # V\u00e9rifier la sym\u00e9trie des diff\u00e9rences pour \u00e9valuer la fiabilit\u00e9 de WMW si appari\u00e9es - Miao\u2013Gel\u2013Gastwirth MGG
+      # Zheng, T., & Gastwirth, J. L. (2010). On bootstrap tests of symmetry about an unknown median. Journal of Data Science, 8(3), 397\u2013412.
+      # Le test MGG, robuste et bootstrapable, permet de v\u00e9rifier la sym\u00e9trie requise pour que le test de Wilcoxon appari\u00e9 (WMW) soit statistiquement valide.
       k <- .vbse(
         "Symmetry check of paired differences - Miao-Gel-Gastwirth (MGG) test.",
-        "Contrôle de la symétrie des différences appariées - Test de Miao-Gel-Gastwirth (MGG).",
+        "Contr\u00f4le de la sym\u00e9trie des diff\u00e9rences appari\u00e9es - Test de Miao-Gel-Gastwirth (MGG).",
         verbose = verbose, code = code, k = k
       )
 
-      # Calculer les différences
+      # Calculer les diff\u00e9rences
       unique_g <- levels(g)
       g1 <- unique_g[1]
       g2 <- unique_g[2]
@@ -926,19 +926,19 @@
       mgg_test <- function(diff, iter = 1000, alpha = 0.05) {
         n <- length(diff)
         med_diff <- median(diff)
-        # Centrer sur la médiane
+        # Centrer sur la m\u00e9diane
         centered_diff <- diff - med_diff
-        # Statistique observée : moyenne des différences centrées
+        # Statistique observ\u00e9e : moyenne des diff\u00e9rences centr\u00e9es
         T_obs <- mean(centered_diff)
-        # Bootstrap sous H0 de symétrie
+        # Bootstrap sous H0 de sym\u00e9trie
         T_boot <- numeric(iter)
         for (i in 1:iter) {
-          # Sous H0, les signes sont aléatoires
+          # Sous H0, les signes sont al\u00e9atoires
           signs <- sample(c(-1, 1), n, replace = TRUE)
           centered_boot <- abs(centered_diff) * signs
           T_boot[i] <- mean(centered_boot)
         }
-        # P-value bilatérale
+        # P-value bilat\u00e9rale
         p_value <- mean(abs(T_boot) >= abs(T_obs))
         return(list(
           statistic = T_obs,
@@ -950,7 +950,7 @@
       # Effectuer le test MGG
       mgg_result <- mgg_test(differences, iter = iter, alpha = alpha)
 
-      # Interprétation
+      # Interpr\u00e9tation
       if (mgg_result$p.value < alpha) {
         check_wilcox_fiability <- FALSE
         ang <- paste0(
@@ -960,9 +960,9 @@
           "Consider using the Sign test as an alternative."
         )
         fr <- paste0(
-          "Test de symétrie MGG - Différences asymétriques détectées (p = ",
+          "Test de sym\u00e9trie MGG - Diff\u00e9rences asym\u00e9triques d\u00e9tect\u00e9es (p = ",
           .format_pval(mgg_result$p.value), ").\n\t",
-          "Attention ! Le test de Wilcoxon apparié peut être moins fiable.\n\t",
+          "Attention ! Le test de Wilcoxon appari\u00e9 peut \u00eatre moins fiable.\n\t",
           "Envisagez d'utiliser le test de signe comme alternative."
         )
         k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt = "off")
@@ -970,10 +970,10 @@
     }
 
     ##########
-    # Échantillons non-normaux - WILCOXON
+    # \u00c9chantillons non-normaux - WILCOXON
     ##########
     if (number == 2) {
-      .dbg(NULL, "2 catégories.",
+      .dbg(NULL, "2 cat\u00e9gories.",
            debug = debug)
 
       #~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -988,42 +988,42 @@
       ind_control <- if (is.null(control_chr)) integer(0L) else match(control_chr, lev)
 
       ##########
-      # Échantillons appariés à 2 niveaux
+      # \u00c9chantillons appari\u00e9s \u00e0 2 niveaux
       ##########
       if (isTRUE(paired)) {
         #=====================================================
-        # --- CAS APPARIÉ : PAS de bootstrap "indice médiane"
+        # --- CAS APPARI\u00c9 : PAS de bootstrap "indice m\u00e9diane"
         #=====================================================
         k <- .vbse(
           "Post-hoc: paired Wilcoxon signed-rank test [wilcox.test(paired = TRUE)].",
-          "Post-hoc : test de Wilcoxon apparié [wilcox.test(paired = TRUE)].",
+          "Post-hoc : test de Wilcoxon appari\u00e9 [wilcox.test(paired = TRUE)].",
           verbose = verbose, code = code, k = k, cpt = "on"
         )
 
         if (pvals <= alpha) {
           k <- .vbse(
             paste0("Significant difference between the paired levels (p = ", .format_pval(pvals), ")."),
-            paste0("Différence significative entre les niveaux appariés (p = ", .format_pval(pvals), ")."),
+            paste0("Diff\u00e9rence significative entre les niveaux appari\u00e9s (p = ", .format_pval(pvals), ")."),
             verbose = verbose, code = code, k = k, cpt = "off"
           )
         } else {
           k <- .vbse(
             paste0("No significant difference between the paired levels (p = ", .format_pval(pvals), ")."),
-            paste0("Aucune différence significative entre les niveaux appariés (p = ", .format_pval(pvals), ")."),
+            paste0("Aucune diff\u00e9rence significative entre les niveaux appari\u00e9s (p = ", .format_pval(pvals), ")."),
             verbose = verbose, code = code, k = k, cpt = "off"
           )
         }
 
-        # Attribution des lettres et des étoiles
+        # Attribution des lettres et des \u00e9toiles
         synth <- list()
         if (length(ind_control) != 1L) {
-          # Sans témoin : lettres a/b
+          # Sans t\u00e9moin : lettres a/b
           synth$groups <- data.frame(
             categories = lev,
             Wilcoxon_Holm = if (pvals <= alpha) c("a", "b") else c("a", "a")
           )
         } else {
-          # Avec témoin : étoiles sur la catégorie non témoin
+          # Avec t\u00e9moin : \u00e9toiles sur la cat\u00e9gorie non t\u00e9moin
           stars <- c("", "")
           stars[-ind_control] <- ifelse(pvals <= 0.001, "***",
                                         ifelse(pvals <= 0.01,  "**",
@@ -1035,7 +1035,7 @@
         }
         synth$p.value <- pvals
 
-        # (optionnel) robustesse bootstrap sur la médiane
+        # (optionnel) robustesse bootstrap sur la m\u00e9diane
         if (isTRUE(boot)) {
           synth$bootstrap <- .boots(
             x, g,
@@ -1049,46 +1049,46 @@
           if ((verbose == TRUE) && any(synth$bootstrap$groups[, 2] != synth$groups[, 2])) {
             k <- .vbse(
               "Warning! Bootstrap detects weaknesses in the significance of the results.",
-              "Attention ! Le bootstrap détecte des faiblesses dans la signification des résultats.",
+              "Attention ! Le bootstrap d\u00e9tecte des faiblesses dans la signification des r\u00e9sultats.",
               verbose = verbose, code = code, k = k, cpt = "off"
             )
           }
         }
 
         #=====================================================
-        # --- check_wilcox_fiability == FALSE, compléter par un test de signe avec binom.test()
+        # --- check_wilcox_fiability == FALSE, compl\u00e9ter par un test de signe avec binom.test()
         #=====================================================
         if (check_wilcox_fiability == FALSE) {
           #========================================
-          # CAS APPARIÉ : Différences asymétriques détectées par MGG
-          # Alternative : Test de signe EN COMPLÉMENT du Wilcoxon
+          # CAS APPARI\u00c9 : Diff\u00e9rences asym\u00e9triques d\u00e9tect\u00e9es par MGG
+          # Alternative : Test de signe EN COMPL\u00c9MENT du Wilcoxon
           #========================================
           k <- .vbse(
             "Asymmetric differences detected - Adding Sign test as robust alternative.",
-            "Différences asymétriques détectées - Ajout du test de signe comme alternative robuste.",
+            "Diff\u00e9rences asym\u00e9triques d\u00e9tect\u00e9es - Ajout du test de signe comme alternative robuste.",
             verbose = verbose, code = code, k = k
           )
 
-          # Calculer les différences
+          # Calculer les diff\u00e9rences
           x1 <- x[g == g1]
           x2 <- x[g == g2]
           differences <- x1 - x2
 
-          # Compter les différences (exclure les ex-aequo)
+          # Compter les diff\u00e9rences (exclure les ex-aequo)
           n_positive <- sum(differences > 0)
           n_negative <- sum(differences < 0)
           n_zero <- sum(differences == 0)
-          n_total <- n_positive + n_negative  # Différences non nulles
+          n_total <- n_positive + n_negative  # Diff\u00e9rences non nulles
 
           if (n_total == 0) {
             k <- .vbse(
               "All differences are zero. Sign test cannot be performed.",
-              "Toutes les différences sont nulles. Le test de signe ne peut être effectué.",
+              "Toutes les diff\u00e9rences sont nulles. Le test de signe ne peut \u00eatre effectu\u00e9.",
               verbose = verbose, code = code, k = k, cpt = "off"
             )
             # Ajouter une colonne vide
             synth$groups$Sign_test <- c("a", "a")
-            # p-value = 1 (aucune différence)
+            # p-value = 1 (aucune diff\u00e9rence)
             pvals_sign <- 1
 
           } else {
@@ -1105,8 +1105,8 @@
               paste0("Sign test [binom.test()] - Distribution-free test for paired data.\n\t",
                      "Positive differences: ", n_positive, ", Negative: ", n_negative,
                      ", Ties (excluded): ", n_zero),
-              paste0("Test de signe [binom.test()] - Test sans hypothèse de distribution pour données appariées.\n\t",
-                     "Différences positives : ", n_positive, ", Négatives : ", n_negative,
+              paste0("Test de signe [binom.test()] - Test sans hypoth\u00e8se de distribution pour donn\u00e9es appari\u00e9es.\n\t",
+                     "Diff\u00e9rences positives : ", n_positive, ", N\u00e9gatives : ", n_negative,
                      ", Ex-aequo (exclus) : ", n_zero),
               verbose = verbose, code = code, k = k, cpt = "off"
             )
@@ -1115,30 +1115,30 @@
             binom_result <- binom.test(n_positive, n_total, p = 0.5, alternative = "two.sided")
             pvals_sign <- binom_result$p.value
 
-            # Attribution des lettres ou étoiles pour le test de signe
+            # Attribution des lettres ou \u00e9toiles pour le test de signe
             if (length(ind_control) != 1) {
               #========================================
-              # Pas de contrôle - lettres a/b
+              # Pas de contr\u00f4le - lettres a/b
               #========================================
               if (pvals_sign <= alpha) {
                 sign_groups <- c("a", "b")
                 k <- .vbse(
                   paste0("Sign test: Significant difference detected (p = ", .format_pval(pvals_sign), ")."),
-                  paste0("Test de signe : Différence significative détectée (p = ", .format_pval(pvals_sign), ")."),
+                  paste0("Test de signe : Diff\u00e9rence significative d\u00e9tect\u00e9e (p = ", .format_pval(pvals_sign), ")."),
                   verbose = verbose, code = code, k = k, cpt = "off"
                 )
               } else {
                 sign_groups <- c("a", "a")
                 k <- .vbse(
                   paste0("Sign test: No significant difference (p = ", .format_pval(pvals_sign), ")."),
-                  paste0("Test de signe : Aucune différence significative (p = ", .format_pval(pvals_sign), ")."),
+                  paste0("Test de signe : Aucune diff\u00e9rence significative (p = ", .format_pval(pvals_sign), ")."),
                   verbose = verbose, code = code, k = k, cpt = "off"
                 )
               }
 
             } else {
               #========================================
-              # Avec contrôle - étoiles
+              # Avec contr\u00f4le - \u00e9toiles
               #========================================
               sign_groups <- c("", "")
               sign_groups[-ind_control] <- ifelse(pvals_sign <= 0.001, "***",
@@ -1148,22 +1148,22 @@
               if (pvals_sign <= alpha) {
                 k <- .vbse(
                   paste0("Sign test: Significant difference vs control (p = ", .format_pval(pvals_sign), ")."),
-                  paste0("Test de signe : Différence significative vs témoin (p = ", .format_pval(pvals_sign), ")."),
+                  paste0("Test de signe : Diff\u00e9rence significative vs t\u00e9moin (p = ", .format_pval(pvals_sign), ")."),
                   verbose = verbose, code = code, k = k, cpt = "off"
                 )
               } else {
                 k <- .vbse(
                   paste0("Sign test: No significant difference vs control (p = ", .format_pval(pvals_sign), ")."),
-                  paste0("Test de signe : Aucune différence significative vs témoin (p = ", .format_pval(pvals_sign), ")."),
+                  paste0("Test de signe : Aucune diff\u00e9rence significative vs t\u00e9moin (p = ", .format_pval(pvals_sign), ")."),
                   verbose = verbose, code = code, k = k, cpt = "off"
                 )
               }
             }
 
-            # AJOUTER la colonne Sign_test à synth$groups (qui contient déjà Wilcoxon)
+            # AJOUTER la colonne Sign_test \u00e0 synth$groups (qui contient d\u00e9j\u00e0 Wilcoxon)
             synth$groups$Sign_test <- sign_groups
 
-            # ÉCRASER synth$p.value avec la p-value du Sign test (test de référence car asymétrie)
+            # \u00c9CRASER synth$p.value avec la p-value du Sign test (test de r\u00e9f\u00e9rence car asym\u00e9trie)
             synth$p.value <- pvals_sign
 
             # Comparaison entre Wilcoxon et Sign test si divergence
@@ -1175,9 +1175,9 @@
                 paste0("Warning! Wilcoxon and Sign tests give different conclusions.\n\t",
                        "Wilcoxon p=", .format_pval(pvals), " vs Sign p=", .format_pval(pvals_sign), "\n\t",
                        "Sign test is more reliable with asymmetric differences (synth$p.value updated)."),
-                paste0("Attention ! Les tests de Wilcoxon et de signe donnent des conclusions différentes.\n\t",
+                paste0("Attention ! Les tests de Wilcoxon et de signe donnent des conclusions diff\u00e9rentes.\n\t",
                        "Wilcoxon p=", .format_pval(pvals), " vs Signe p=", .format_pval(pvals_sign), "\n\t",
-                       "Le test de signe est plus fiable avec des différences asymétriques (synth$p.value mise à jour)."),
+                       "Le test de signe est plus fiable avec des diff\u00e9rences asym\u00e9triques (synth$p.value mise \u00e0 jour)."),
                 verbose = verbose, code = code, k = k, cpt = "off"
               )
             }
@@ -1192,7 +1192,7 @@
 
               boot_pvals <- numeric(iter)
               for (i in 1:iter) {
-                # Rééchantillonner les paires
+                # R\u00e9\u00e9chantillonner les paires
                 indices <- sample(1:length(differences), replace = TRUE)
                 diff_boot <- differences[indices]
                 non_zero_boot <- diff_boot[diff_boot != 0]
@@ -1209,7 +1209,7 @@
               # Proportion significative
               boot_significant <- sum(boot_pvals <= alpha) / iter
 
-              # Ajouter à synth$bootstrap (qui existe déjà pour Wilcoxon)
+              # Ajouter \u00e0 synth$bootstrap (qui existe d\u00e9j\u00e0 pour Wilcoxon)
               if (is.null(synth$bootstrap)) {
                 synth$bootstrap <- list()
               }
@@ -1221,11 +1221,11 @@
                 # Lettres selon le bootstrap
                 sign_boot_groups <- if (boot_significant >= 0.95) sign_groups else c("a", "a")
               } else {
-                # Étoiles selon le bootstrap
+                # \u00c9toiles selon le bootstrap
                 sign_boot_groups <- if (boot_significant >= 0.95) sign_groups else c("", "")
               }
 
-              # Créer ou compléter synth$bootstrap$groups
+              # Cr\u00e9er ou compl\u00e9ter synth$bootstrap$groups
               if (is.null(synth$bootstrap$groups)) {
                 synth$bootstrap$groups <- data.frame(categories = lev)
               }
@@ -1235,36 +1235,36 @@
                 k <- .vbse(
                   paste0("Warning! Bootstrap shows instability for Sign test: only ",
                          round(boot_significant * 100, 1), "% of iterations significant."),
-                  paste0("Attention ! Bootstrap montre une instabilité pour le test de signe : seulement ",
-                         round(boot_significant * 100, 1), "% d'itérations significatives."),
+                  paste0("Attention ! Bootstrap montre une instabilit\u00e9 pour le test de signe : seulement ",
+                         round(boot_significant * 100, 1), "% d'it\u00e9rations significatives."),
                   verbose = verbose, code = code, k = k, cpt = "off"
                 )
               }
             }
           }
 
-          # Note académique
+          # Note acad\u00e9mique
           k <- .vbse(
             "Note: Sign test is the only UMP (Uniformly Most Powerful) invariant test when symmetry is not guaranteed (Lehmann & Romano, 2005).",
-            "Note : Le test de signe est le seul test UMP (Uniformly Most Powerful) invariant lorsque la symétrie n'est pas garantie (Lehmann & Romano, 2005).",
+            "Note : Le test de signe est le seul test UMP (Uniformly Most Powerful) invariant lorsque la sym\u00e9trie n'est pas garantie (Lehmann & Romano, 2005).",
             verbose = verbose, code = code, k = k, cpt = "off"
           )
         }
 
       } else {
-        # Si non apparié
+        # Si non appari\u00e9
         #=====================================================
-        #       Si non apparié
+        #       Si non appari\u00e9
         #=====================================================
 
         # a) Bootstrap sur l'indice moyen
         k <- .vbse(
           "a) Posthoc - Analysis of median differences by bootstrap [pairwise.boot(mu='median') from {KefiR}].",
-          "a) Posthoc - Analyse des différences de médianes par bootstrap [pairwise.boot(mu='median') de {KefiR}]",
+          "a) Posthoc - Analyse des diff\u00e9rences de m\u00e9dianes par bootstrap [pairwise.boot(mu='median') de {KefiR}]",
           verbose = verbose, code = code, k = k, cpt = "off"
         )
 
-        # Utiliser boot_type spécifié ou la logique automatique
+        # Utiliser boot_type sp\u00e9cifi\u00e9 ou la logique automatique
         final_boot_type <- if (!is.null(boot_type)) boot_type else "median"
         synth2 <- pairwise(x, g, type = "boot", alpha = alpha, control = control, boot = FALSE,
                            boot_type = final_boot_type, conf = conf, iter = iter, debug = debug)
@@ -1278,7 +1278,7 @@
 
         if (length(ind_control) != 1) {
           ##########
-          #	Pas de contrôle
+          #	Pas de contr\u00f4le
           ##########
           synth <- list()
           if (pvals <= alpha) {
@@ -1290,7 +1290,7 @@
 
         } else {
           ##########
-          #	Contrôle
+          #	Contr\u00f4le
           ##########
           synth <- list()
           stars <- c("", "")
@@ -1314,12 +1314,12 @@
         if ((boot == TRUE) & any(synth$bootstrap$groups[, 2] != synth$groups[, 2])) {
           k <- .vbse(
             "Warning! Bootstrap detects weaknesses in the significance of the results.",
-            "Attention ! Le bootstrap détecte des faiblesses dans la signification des résultats.",
+            "Attention ! Le bootstrap d\u00e9tecte des faiblesses dans la signification des r\u00e9sultats.",
             k = k, cpt = "off"
           )
         }
 
-        # Ajout du bootstrap sur la médiane
+        # Ajout du bootstrap sur la m\u00e9diane
         ind_temp <- match(synth$groups[, 1], synth2$groups[, 1])
         synth$groups <- data.frame(
           "categories" = synth$groups[, 1],
@@ -1329,13 +1329,13 @@
 
         #=====================================================
         # --- check_wilcox_fiability == FALSE
-        # Distributions différentes détectées par KS
+        # Distributions diff\u00e9rentes d\u00e9tect\u00e9es par KS
         # Alternative : Test de Brunner-Munzel
         #=====================================================
         if (check_wilcox_fiability == FALSE) {
           k <- .vbse(
             "Different distributions detected by KS test\n\t==> Brunner-Munzel test added as robust alternative.",
-            "Distributions différentes détectées par le test KS\n\t==> Test de Brunner-Munzel ajouté comme alternative robuste.",
+            "Distributions diff\u00e9rentes d\u00e9tect\u00e9es par le test KS\n\t==> Test de Brunner-Munzel ajout\u00e9 comme alternative robuste.",
             verbose = verbose, code = code, k = k
           )
 
@@ -1346,11 +1346,11 @@
                     if (length(ind_control) == 1) paste0(", control='", control, "'") else "", ")\n")
           }
 
-          # Appel à pairwise() avec type="BM" (fonctionne pour 2 groupes ou plus)
+          # Appel \u00e0 pairwise() avec type="BM" (fonctionne pour 2 groupes ou plus)
           synth_BM <- pairwise(x, g, type = "BM", alpha = alpha, control = control,
                                boot = boot, conf = conf, iter = iter, debug = debug)
 
-          # Vérifier que pairwise a réussi
+          # V\u00e9rifier que pairwise a r\u00e9ussi
           if (!is.null(synth_BM) && !is.null(synth_BM$groups)) {
 
             # AJOUTER la colonne Brunner-Munzel aux groupes existants
@@ -1362,21 +1362,21 @@
               synth$groups$`Brunner-Munzel_Holm` <- synth_BM$groups[ind_temp, 2]
             }
 
-            # ÉCRASER synth$p.value avec la p-value/matrice de Brunner-Munzel
+            # \u00c9CRASER synth$p.value avec la p-value/matrice de Brunner-Munzel
             synth$p.value <- synth_BM$p.value
 
-            # Afficher résultat du test de Brunner-Munzel
+            # Afficher r\u00e9sultat du test de Brunner-Munzel
             if (number == 2) {
-              # Pour 2 groupes: afficher résultat avec conclusion
-              # TOUJOURS afficher ce message (verbose=TRUE) même si .posthoc() est en mode silencieux
-              # car c'est un test supplémentaire non mentionné dans .one_factor_analysis()
+              # Pour 2 groupes: afficher r\u00e9sultat avec conclusion
+              # TOUJOURS afficher ce message (verbose=TRUE) m\u00eame si .posthoc() est en mode silencieux
+              # car c'est un test suppl\u00e9mentaire non mentionn\u00e9 dans .one_factor_analysis()
               BM_signif <- (synth_BM$p.value <= alpha)
               k <- .vbse(
                 paste0("c) Posthoc - Brunner-Munzel test [brunner.munzel.test()].\n\t",
                        if (BM_signif) "\t==> Significant differences between groups (p = " else "\t==> No significant differences between groups (p = ",
                        .format_pval(synth_BM$p.value), ")."),
                 paste0("c) Posthoc - Test de Brunner-Munzel [brunner.munzel.test()].\n\t",
-                       if (BM_signif) "\t==> Différences significatives entre les groupes (p = " else "\t==> Pas de différences significatives entre les groupes (p = ",
+                       if (BM_signif) "\t==> Diff\u00e9rences significatives entre les groupes (p = " else "\t==> Pas de diff\u00e9rences significatives entre les groupes (p = ",
                        .format_pval(synth_BM$p.value), ")."),
                 verbose = TRUE, k = k, cpt = "off"  # Force display even in silent mode
               )
@@ -1391,12 +1391,12 @@
                 k <- .vbse(
                   paste0("Warning! Wilcoxon and Brunner-Munzel tests give different conclusions.\n\t",
                          "Wilcoxon p = ", .format_pval(pvals), " vs Brunner-Munzel p = ", .format_pval(synth_BM$p.value), "\n\t",
-                         "→ Brunner-Munzel is more reliable with different distributions.\n\t",
-                         "→ synth$p.value now contains Brunner-Munzel p-value (reference test)."),
-                  paste0("Attention ! Les tests de Wilcoxon et de Brunner-Munzel donnent des conclusions différentes.\n\t",
+                         "\u2192 Brunner-Munzel is more reliable with different distributions.\n\t",
+                         "\u2192 synth$p.value now contains Brunner-Munzel p-value (reference test)."),
+                  paste0("Attention ! Les tests de Wilcoxon et de Brunner-Munzel donnent des conclusions diff\u00e9rentes.\n\t",
                          "Wilcoxon p = ", .format_pval(pvals), " vs Brunner-Munzel p = ", .format_pval(synth_BM$p.value), "\n\t",
-                         "→ Brunner-Munzel est plus fiable avec des distributions différentes.\n\t",
-                         "→ synth$p.value contient maintenant la p-value de Brunner-Munzel (test de référence)."),
+                         "\u2192 Brunner-Munzel est plus fiable avec des distributions diff\u00e9rentes.\n\t",
+                         "\u2192 synth$p.value contient maintenant la p-value de Brunner-Munzel (test de r\u00e9f\u00e9rence)."),
                   verbose = TRUE, k = k, cpt = "off"  # Force display even in silent mode
                 )
               } else {
@@ -1414,7 +1414,7 @@
             # Ajouter le bootstrap de BM si disponible
             if (boot == TRUE && !is.null(synth_BM$bootstrap)) {
 
-              # Compléter synth$bootstrap$groups avec les résultats BM
+              # Compl\u00e9ter synth$bootstrap$groups avec les r\u00e9sultats BM
               if (is.null(synth$bootstrap$groups)) {
                 synth$bootstrap$groups <- data.frame(categories = lev)
               }
@@ -1427,11 +1427,11 @@
                 synth$bootstrap$groups$`Brunner-Munzel_Holm_bootstrapped` <- synth_BM$bootstrap$groups[ind_temp_boot, 2]
               }
 
-              # Vérifier si divergence entre Wilcoxon bootstrap et BM bootstrap
+              # V\u00e9rifier si divergence entre Wilcoxon bootstrap et BM bootstrap
               if (any(synth$bootstrap$groups[, 2] != synth_BM$bootstrap$groups[ind_temp_boot, 2], na.rm = TRUE)) {
                 k <- .vbse(
                   "\tWarning! Bootstrap on Brunner-Munzel shows differences with Wilcoxon bootstrap.",
-                  "\tAttention ! Bootstrap sur Brunner-Munzel montre des différences avec le bootstrap de Wilcoxon.",
+                  "\tAttention ! Bootstrap sur Brunner-Munzel montre des diff\u00e9rences avec le bootstrap de Wilcoxon.",
                   verbose = verbose, code = code, k = k, cpt = "off"
                 )
               }
@@ -1440,25 +1440,25 @@
           } else {
             k <- .vbse(
               "Error! pairwise(type='BM') failed. Keeping only Wilcoxon results.",
-              "Erreur ! pairwise(type='BM') a échoué. Conservation uniquement des résultats de Wilcoxon.",
+              "Erreur ! pairwise(type='BM') a \u00e9chou\u00e9. Conservation uniquement des r\u00e9sultats de Wilcoxon.",
               verbose = verbose, code = code, k = k, cpt = "off"
             )
           }
 
-          # Note académique
+          # Note acad\u00e9mique
           k <- .vbse(
             "Note: Brunner-Munzel test does not assume identical distributions, unlike Wilcoxon-Mann-Whitney.",
-            "Note : Le test BM ne suppose pas de distributions identiques, contrairement à MWW.",
+            "Note : Le test BM ne suppose pas de distributions identiques, contrairement \u00e0 MWW.",
             verbose = verbose, code = code, k = k, cpt = "off"
           )
         }
       }
 
       #=======================================================
-      #         Plus de 2 catégories, non paramétriques
+      #         Plus de 2 cat\u00e9gories, non param\u00e9triques
       #=======================================================
     } else if (number > 2) {
-      .dbg(NULL, ".posthoc() - '>2 catégories'.",
+      .dbg(NULL, ".posthoc() - '>2 cat\u00e9gories'.",
            debug = debug)
       # Helper: safe outlier detection with fallback
       .safe_identify_outliers <- function(data) {
@@ -1483,7 +1483,7 @@
         }
       }
 
-      # Détection des outliers
+      # D\u00e9tection des outliers
       outlier <- function(z) {
         tablo_outlier <- .safe_identify_outliers(data.frame(z))
         if (nrow(tablo_outlier) > 0) {
@@ -1503,19 +1503,19 @@
       trimmage <- max(by(x, g, outlier))
       if (trimmage > 0) {
         .dbg("Warning! Groups with extreme values:\n\t==> risk of leverage (identify_outliers() of {rstatix}).",
-          "Attention ! Groupes avec des valeurs extrêmes :\n\t==> risque d'effet de levier (identify_outliers() de {rstatix}).",
+          "Attention ! Groupes avec des valeurs extr\u00eames :\n\t==> risque d'effet de levier (identify_outliers() de {rstatix}).",
           debug = debug
         )
       }
 
       #------------------------------------------
-      # 0) Croisements - Voir le nombre de paires à analyser...
+      # 0) Croisements - Voir le nombre de paires \u00e0 analyser...
       #------------------------------------------
       croisement <- ng * (ng - 1) / 2
       if (croisement > 28) {
         .dbg(
           paste0("Posthoc - Warning! Many cross-tests to perform.\n\t\t", ng, " categories for ", croisement, " pairwise comparisons."),
-          paste0("Posthoc - Attention ! Beaucoup de tests croisés à réaliser.\n\t\t", ng, " catégories pour ", croisement, " croisements"),
+          paste0("Posthoc - Attention ! Beaucoup de tests crois\u00e9s \u00e0 r\u00e9aliser.\n\t\t", ng, " cat\u00e9gories pour ", croisement, " croisements"),
           debug = debug
         )
       }
@@ -1524,16 +1524,16 @@
       # 0) Bootstrap sur l'indice median (Wilcoxon)
       #------------------------------------------
       if (isTRUE(code)) {
-        cat("# Analyse des différences de médianes par bootstrap\npairwise(x,g,type='boot')")
+        cat("# Analyse des diff\u00e9rences de m\u00e9dianes par bootstrap\npairwise(x,g,type='boot')")
       }
 
       k <- .vbse(
         "a) Posthoc - Analysis of median differences using bootstrap [pairwise.boot() from {KefiR}].",
-        "a) Posthoc - Analyse des différences de médianes par bootstrap [pairwise.boot() de {KefiR}].",
+        "a) Posthoc - Analyse des diff\u00e9rences de m\u00e9dianes par bootstrap [pairwise.boot() de {KefiR}].",
         verbose = verbose, code = code, k = k, cpt = "off"
       )
 
-      # Utiliser boot_type spécifié ou la logique automatique
+      # Utiliser boot_type sp\u00e9cifi\u00e9 ou la logique automatique
       final_boot_type <- if (!is.null(boot_type)) boot_type else "median"
       synth2 <- pairwise(x, g, type = "boot", alpha = alpha, control = control, boot = FALSE,
                          boot_type = final_boot_type, conf = conf, iter = iter, debug = debug)
@@ -1552,7 +1552,7 @@
       synth <- pairwise(x, g, type = "median", alpha = alpha, control = control, boot = boot, conf = conf, iter = iter, paired = paired, debug = debug)
       colnames(synth$groups)[2] <- "Wilcoxon_Holm"
 
-      # Aggloméra du bootstrap median bootstrap sur colonne 2, Wilcoxon sur colonne 3
+      # Agglom\u00e9ra du bootstrap median bootstrap sur colonne 2, Wilcoxon sur colonne 3
       ind_temp <- match(synth$groups[, 1], synth2$groups[, 1])
       synth$groups <- data.frame(
         "categories" = synth$groups[, 1],
@@ -1560,12 +1560,12 @@
         "Wilcoxon_Holm" = synth$groups[, 2]
       )
 
-      # Plus bootstrap intégré
+      # Plus bootstrap int\u00e9gr\u00e9
       if (boot == TRUE) {
         if (any(synth$bootstrap$groups[, 2] != synth$groups[, 3])) {
           k <- .vbse(
             "\tWarning! Bootstrap detects weaknesses in the significance of the results.",
-            "\tAttention ! Le bootstrap détecte des faiblesses dans la signification des résultats.",
+            "\tAttention ! Le bootstrap d\u00e9tecte des faiblesses dans la signification des r\u00e9sultats.",
             verbose = verbose, code = code, k = k, cpt = "off"
           )
         }
@@ -1574,16 +1574,16 @@
 
       if (paired == TRUE) {
         if (isTRUE(code)) {
-          cat("# Nemenyi - post-hoc sur données appariées\nlibrary(PMCMRplus)\nfrdAllPairsNemenyiTest(x~g)\n")
+          cat("# Nemenyi - post-hoc sur donn\u00e9es appari\u00e9es\nlibrary(PMCMRplus)\nfrdAllPairsNemenyiTest(x~g)\n")
         }
 
         k <- .vbse(
           "c) Posthoc - Paired groups [frdAllPairsNemenyiTest() of {PMCMRplus}].",
-          "c) Posthoc - Test post-hoc sur groupes non normaux appariés [frdAllPairsNemenyiTest() of {PMCMRplus}].",
+          "c) Posthoc - Test post-hoc sur groupes non normaux appari\u00e9s [frdAllPairsNemenyiTest() of {PMCMRplus}].",
           verbose = verbose, code = code, k = k, cpt = "off"
         )
 
-        # Données appariées, faire un Neminye
+        # Donn\u00e9es appari\u00e9es, faire un Neminye
         synth2 <- pairwise(x, g, type = "neminye", alpha = alpha, control = control, boot = boot, conf = conf, iter = iter, paired = paired, debug = debug)
 
         ind_temp <- match(synth$groups[, 1], synth2$groups[, 1])
@@ -1604,14 +1604,14 @@
       }
 
       #------------------------------------------
-      # DONNÉES NON APPARIÉES: Brunner-Munzel si distributions différentes (PRIORITAIRE)
+      # DONN\u00c9ES NON APPARI\u00c9ES: Brunner-Munzel si distributions diff\u00e9rentes (PRIORITAIRE)
       #------------------------------------------
       if ((paired == FALSE) && (check_wilcox_fiability == FALSE)) {
         #=====================================================
-        # K GROUPES - Distributions différentes détectées
+        # K GROUPES - Distributions diff\u00e9rentes d\u00e9tect\u00e9es
         # Wilcoxon et Dunn non fiables
         # Alternative : Brunner-Munzel
-        # Le message d'annonce est déjà affiché dans sys_one_factor_analysis.R (étape 10 - test KS)
+        # Le message d'annonce est d\u00e9j\u00e0 affich\u00e9 dans sys_one_factor_analysis.R (\u00e9tape 10 - test KS)
         #=====================================================
 
         if (isTRUE(code)) {
@@ -1620,7 +1620,7 @@
                   "library(lawstat)\n",
                   "# Exemple pour groupes 1 et 2 :\n",
                   "brunner.munzel.test(x[g==levels(g)[1]], x[g==levels(g)[2]])\n",
-                  "# Répéter pour toutes les paires (i,j) où i < j\n",
+                  "# R\u00e9p\u00e9ter pour toutes les paires (i,j) o\u00f9 i < j\n",
                   "# Puis appliquer la correction de Holm sur toutes les p-values :\n",
                   "p.adjust(p_values_vector, method='holm')\n")
         }
@@ -1631,58 +1631,58 @@
           verbose = verbose, code = code, k = k, cpt = "off"
         )
 
-        # Appel à pairwise() avec type="BM" (en interne, utilise lawstat::brunner.munzel.test)
+        # Appel \u00e0 pairwise() avec type="BM" (en interne, utilise lawstat::brunner.munzel.test)
         synth_BM <- pairwise(x, g, type = "BM", alpha = alpha, control = control,
                              boot = boot, conf = conf, iter = iter, debug = debug)
 
-        # Vérifier que pairwise a réussi
+        # V\u00e9rifier que pairwise a r\u00e9ussi
         if (!is.null(synth_BM) && !is.null(synth_BM$groups)) {
 
-          # AJOUTER la colonne Brunner-Munzel aux groupes existants (après Wilcoxon/Dunn/Lincon)
+          # AJOUTER la colonne Brunner-Munzel aux groupes existants (apr\u00e8s Wilcoxon/Dunn/Lincon)
           ind_temp <- match(synth$groups[, 1], synth_BM$groups[, 1])
           synth$groups$`Brunner-Munzel_Holm` <- synth_BM$groups[ind_temp, 2]
 
-          # ÉCRASER synth$p.value avec la matrice de p-values de Brunner-Munzel
-          # (BM devient la référence car plus fiable avec distributions différentes)
+          # \u00c9CRASER synth$p.value avec la matrice de p-values de Brunner-Munzel
+          # (BM devient la r\u00e9f\u00e9rence car plus fiable avec distributions diff\u00e9rentes)
           synth$p.value <- synth_BM$p.value
 
           .dbg(
             "Brunner-Munzel test completed. p-values updated (synth$p.value now contains BM p-values matrix).",
-            "Test de Brunner-Munzel terminé. p-values mises à jour (synth$p.value contient maintenant la matrice BM).",
+            "Test de Brunner-Munzel termin\u00e9. p-values mises \u00e0 jour (synth$p.value contient maintenant la matrice BM).",
             debug = debug
           )
 
           # Ajouter le bootstrap de BM si disponible
           if (boot == TRUE && !is.null(synth_BM$bootstrap) && !is.null(synth_BM$bootstrap$groups)) {
 
-            # Compléter synth$bootstrap$groups avec les résultats BM
+            # Compl\u00e9ter synth$bootstrap$groups avec les r\u00e9sultats BM
             if (is.null(synth$bootstrap$groups)) {
               synth$bootstrap$groups <- data.frame(categories = lev)
             }
 
             ind_temp_boot <- match(synth$bootstrap$groups[, 1], synth_BM$bootstrap$groups[, 1])
 
-            # Vérifier que les indices sont valides
+            # V\u00e9rifier que les indices sont valides
             if (!all(is.na(ind_temp_boot)) && length(ind_temp_boot) > 0) {
-              # Utiliser cbind au lieu de $ pour éviter problèmes avec backticks
+              # Utiliser cbind au lieu de $ pour \u00e9viter probl\u00e8mes avec backticks
               synth$bootstrap$groups <- cbind(
                 synth$bootstrap$groups,
                 "Brunner-Munzel_Holm_bootstrapped" = synth_BM$bootstrap$groups[ind_temp_boot, 2]
               )
 
-              # Vérifier si divergence entre les tests précédents et BM bootstrap
-              # Comparer avec la première colonne de résultats (généralement Wilcoxon_Holm ou Dunn_Holm)
+              # V\u00e9rifier si divergence entre les tests pr\u00e9c\u00e9dents et BM bootstrap
+              # Comparer avec la premi\u00e8re colonne de r\u00e9sultats (g\u00e9n\u00e9ralement Wilcoxon_Holm ou Dunn_Holm)
               if (ncol(synth$bootstrap$groups) >= 3) {
                 if (any(synth$bootstrap$groups[, 2] != synth$bootstrap$groups[, ncol(synth$bootstrap$groups)], na.rm = TRUE)) {
                 k <- .vbse(
                   "\tWarning! Bootstrap on Brunner-Munzel shows differences with previous bootstrap results.",
-                  "\tAttention ! Bootstrap sur Brunner-Munzel montre des différences avec les résultats bootstrap précédents.",
+                  "\tAttention ! Bootstrap sur Brunner-Munzel montre des diff\u00e9rences avec les r\u00e9sultats bootstrap pr\u00e9c\u00e9dents.",
                   verbose = verbose, code = code, k = k, cpt = "off"
                 )
               } else {
                 .dbg(
                   "\tBootstrap confirms consistency between tests.",
-                  "\tBootstrap confirme la cohérence entre les tests.",
+                  "\tBootstrap confirme la coh\u00e9rence entre les tests.",
                   debug = debug
                 )
               }
@@ -1690,21 +1690,21 @@
             } else {
               .dbg(
                 "Warning: Could not match bootstrap groups for Brunner-Munzel. Skipping bootstrap comparison.",
-                "Attention : Impossible de faire correspondre les groupes bootstrap pour Brunner-Munzel. Comparaison bootstrap ignorée.",
+                "Attention : Impossible de faire correspondre les groupes bootstrap pour Brunner-Munzel. Comparaison bootstrap ignor\u00e9e.",
                 debug = debug
               )
             }
           }
 
-          # Comparaison des conclusions entre les différents tests
-          # Vérifier si Wilcoxon/Dunn et BM donnent les mêmes groupes
+          # Comparaison des conclusions entre les diff\u00e9rents tests
+          # V\u00e9rifier si Wilcoxon/Dunn et BM donnent les m\u00eames groupes
           n_cols <- ncol(synth$groups)
           if (n_cols >= 3 && !is.null(synth$groups$`Brunner-Munzel_Holm`) && length(synth$groups$`Brunner-Munzel_Holm`) > 0) {
-            # Comparer la dernière colonne BM avec les précédentes (Wilcoxon, Dunn, etc.)
+            # Comparer la derni\u00e8re colonne BM avec les pr\u00e9c\u00e9dentes (Wilcoxon, Dunn, etc.)
             differences_detected <- FALSE
 
             for (col_idx in 2:(n_cols - 1)) {
-              # Vérifier que la colonne existe et n'est pas vide
+              # V\u00e9rifier que la colonne existe et n'est pas vide
               if (length(synth$groups[, col_idx]) > 0 && !all(is.na(synth$groups[, col_idx]))) {
                 if (any(synth$groups[, col_idx] != synth$groups$`Brunner-Munzel_Holm`, na.rm = TRUE)) {
                   differences_detected <- TRUE
@@ -1716,11 +1716,11 @@
             if (differences_detected) {
               k <- .vbse(
                 paste0("Warning! Brunner-Munzel gives different groupings than other tests.\n\t",
-                       "→ Brunner-Munzel is more reliable with different distributions.\n\t",
-                       "→ Prioritize Brunner-Munzel results (rightmost column)."),
-                paste0("Attention ! Brunner-Munzel donne des groupements différents des autres tests.\n\t",
-                       "→ Brunner-Munzel est plus fiable avec des distributions différentes.\n\t",
-                       "→ Prioriser les résultats de Brunner-Munzel (colonne la plus à droite)."),
+                       "\u2192 Brunner-Munzel is more reliable with different distributions.\n\t",
+                       "\u2192 Prioritize Brunner-Munzel results (rightmost column)."),
+                paste0("Attention ! Brunner-Munzel donne des groupements diff\u00e9rents des autres tests.\n\t",
+                       "\u2192 Brunner-Munzel est plus fiable avec des distributions diff\u00e9rentes.\n\t",
+                       "\u2192 Prioriser les r\u00e9sultats de Brunner-Munzel (colonne la plus \u00e0 droite)."),
                 verbose = verbose, code = code, k = k, cpt = "off"
               )
             } else {
@@ -1735,35 +1735,35 @@
         } else {
           k <- .vbse(
             "Error! Brunner-Munzel pairwise test failed. Keeping previous test results (Wilcoxon/Dunn/Lincon).",
-            "Erreur ! Test de Brunner-Munzel par paires échoué. Conservation des résultats des tests précédents (Wilcoxon/Dunn/Lincon).",
+            "Erreur ! Test de Brunner-Munzel par paires \u00e9chou\u00e9. Conservation des r\u00e9sultats des tests pr\u00e9c\u00e9dents (Wilcoxon/Dunn/Lincon).",
             verbose = verbose, code = code, k = k, cpt = "off"
           )
         }
 
-        # Note académique masquée (debug uniquement)
+        # Note acad\u00e9mique masqu\u00e9e (debug uniquement)
         .dbg(
           paste0("Academic note: With different distributions detected, Brunner-Munzel test is preferable.\n\t",
                  "Wilcoxon-Mann-Whitney and Dunn tests assume identical distributions (location shift only).\n\t",
                  "Brunner-Munzel makes no such assumption and remains valid (Brunner & Munzel, 2000)."),
-          paste0("Note académique : Avec des distributions différentes détectées, le test de Brunner-Munzel est préférable.\n\t",
-                 "Les tests de Wilcoxon-Mann-Whitney et Dunn supposent des distributions identiques (décalage de position uniquement).\n\t",
-                 "Brunner-Munzel ne fait pas cette hypothèse et reste valide (Brunner & Munzel, 2000)."),
+          paste0("Note acad\u00e9mique : Avec des distributions diff\u00e9rentes d\u00e9tect\u00e9es, le test de Brunner-Munzel est pr\u00e9f\u00e9rable.\n\t",
+                 "Les tests de Wilcoxon-Mann-Whitney et Dunn supposent des distributions identiques (d\u00e9calage de position uniquement).\n\t",
+                 "Brunner-Munzel ne fait pas cette hypoth\u00e8se et reste valide (Brunner & Munzel, 2000)."),
           debug = debug
         )
       }
 
       #------------------------------------------
-      # DONNÉES NON APPARIÉES: Post-hoc adapté selon chosen_test
+      # DONN\u00c9ES NON APPARI\u00c9ES: Post-hoc adapt\u00e9 selon chosen_test
       #------------------------------------------
       if (paired == FALSE) {
-        # Déterminer le post-hoc approprié selon le test global utilisé
+        # D\u00e9terminer le post-hoc appropri\u00e9 selon le test global utilis\u00e9
 
         if (!is.null(chosen_test) && chosen_test == "med1way") {
           #------------------------------------------
           # Post-hoc pour med1way() : medpb2 percentile bootstrap (WRS2)
           #------------------------------------------
           if (isTRUE(code)) {
-            cat("# Post-hoc robuste pour médianes avec medpb2 (WRS2)\n",
+            cat("# Post-hoc robuste pour m\u00e9dianes avec medpb2 (WRS2)\n",
                 "# Comparaisons par paires avec percentile bootstrap\n",
                 "library(WRS2)\n",
                 "library(KefiR)  # Pour .pairwise_medpb2()\n",
@@ -1772,19 +1772,19 @@
 
           k <- .vbse(
             "c) Posthoc - Robust median comparisons [medpb2() from {WRS2}, Holm correction].",
-            "c) Posthoc - Comparaisons robustes de médianes [medpb2() de {WRS2}, correction de Holm].",
+            "c) Posthoc - Comparaisons robustes de m\u00e9dianes [medpb2() de {WRS2}, correction de Holm].",
             verbose = verbose, code = code, k = k, cpt = "off"
           )
 
           # Appeler wrapper medpb2
           synth_medpb2 <- tryCatch({
-            # Vérifier que la fonction existe
+            # V\u00e9rifier que la fonction existe
             if (!exists(".pairwise_medpb2", mode = "function")) {
               stop(".pairwise_medpb2() function not found. Did you source R/sys_pairwise_medpb2.R?")
             }
             .pairwise_medpb2(x, g, alpha = alpha, control = control, nboot = iter, debug = debug)
           }, error = function(e) {
-            # Message d'erreur plus détaillé
+            # Message d'erreur plus d\u00e9taill\u00e9
             if (isTRUE(verbose)) {
               message("ERROR in .pairwise_medpb2(): ", e$message)
             }
@@ -1794,19 +1794,19 @@
             return(NULL)
           })
 
-          # Ajouter les résultats à synth$groups
+          # Ajouter les r\u00e9sultats \u00e0 synth$groups
           if (!is.null(synth_medpb2) && !is.null(synth_medpb2$groups)) {
             ind_temp <- match(synth$groups[, 1], synth_medpb2$groups[, 1])
             synth$groups <- cbind(synth$groups, medpb2_Holm = synth_medpb2$groups[ind_temp, 2])
           } else {
             k <- .vbse(
               "\t\tWarning! medpb2 pairwise test failed. Relying on previous tests (Bootstrap, Wilcoxon).",
-              "\t\tAttention ! Test medpb2 par paires échoué. Utilisation des tests précédents (Bootstrap, Wilcoxon).",
+              "\t\tAttention ! Test medpb2 par paires \u00e9chou\u00e9. Utilisation des tests pr\u00e9c\u00e9dents (Bootstrap, Wilcoxon).",
               verbose = verbose, code = code, k = k, cpt = "off"
             )
           }
 
-          # Pour med1way, on s'arrête là (pas de lincon ni Dunn)
+          # Pour med1way, on s'arr\u00eate l\u00e0 (pas de lincon ni Dunn)
 
         } else if (!is.null(chosen_test) && chosen_test == "kruskal") {
           #------------------------------------------
@@ -1833,7 +1833,7 @@
               if (any(synth$bootstrap$groups[, 2] != synth$groups[, 2], na.rm = TRUE)) {
                 k <- .vbse(
                   "\t\tWarning! Bootstrap on Dunn test detects weaknesses.",
-                  "\t\tAttention ! Bootstrap sur le test de Dunn détecte des faiblesses.",
+                  "\t\tAttention ! Bootstrap sur le test de Dunn d\u00e9tecte des faiblesses.",
                   verbose = verbose, code = code, k = k, cpt = "off"
                 )
               }
@@ -1841,14 +1841,14 @@
             }
           }
 
-          # Pour Kruskal, on s'arrête là (pas de lincon)
+          # Pour Kruskal, on s'arr\u00eate l\u00e0 (pas de lincon)
 
         } else if ((trimmage > 0) && (croisement < 28)) {
           #------------------------------------------
-          # Post-hoc pour t1way() ou par défaut : lincon() sur moyennes tronquées
+          # Post-hoc pour t1way() ou par d\u00e9faut : lincon() sur moyennes tronqu\u00e9es
           #------------------------------------------
           if (isTRUE(code)) {
-            cat("# Lincon - comparaisons robustes sur moyennes tronquées\n",
+            cat("# Lincon - comparaisons robustes sur moyennes tronqu\u00e9es\n",
                 "library(WRS2)\n",
                 "lincon(x ~ g, tr = ", round(trimmage, 3), ")\n")
           }
@@ -1856,17 +1856,17 @@
           k <- .vbse(
             paste0("c) Posthoc - Robust comparisons on trimmed means [lincon() from {WRS2}].\n",
                    "\t\tTrimming level: ", round(trimmage * 100, 1), "% (lower and upper)."),
-            paste0("c) Posthoc - Comparaisons robustes sur moyennes tronquées [lincon() de {WRS2}].\n",
-                   "\t\tNiveau de troncature : ", round(trimmage * 100, 1), "% (inférieur et supérieur)."),
+            paste0("c) Posthoc - Comparaisons robustes sur moyennes tronqu\u00e9es [lincon() de {WRS2}].\n",
+                   "\t\tNiveau de troncature : ", round(trimmage * 100, 1), "% (inf\u00e9rieur et sup\u00e9rieur)."),
             verbose = verbose, code = code, k = k, cpt = "off"
           )
 
-          # Faire un lincon() sur données trimmées
+          # Faire un lincon() sur donn\u00e9es trimm\u00e9es
           synth2 <- pairwise(x, g, type = "lincon", tr = trimmage,
                              alpha = alpha, control = control, boot = boot,
                              conf = conf, iter = iter, debug = debug)
 
-          # Vérifier que pairwise a réussi
+          # V\u00e9rifier que pairwise a r\u00e9ussi
           if (!is.null(synth2) && !is.null(synth2$groups) && nrow(synth2$groups) > 0) {
             ind_temp <- match(synth$groups[, 1], synth2$groups[, 1])
 
@@ -1892,7 +1892,7 @@
           } else {
             k <- .vbse(
               "\t\tWarning! Lincon test failed or returned no results.",
-              "\t\tAttention ! Le test Lincon a échoué ou n'a pas retourné de résultats.",
+              "\t\tAttention ! Le test Lincon a \u00e9chou\u00e9 ou n'a pas retourn\u00e9 de r\u00e9sultats.",
               verbose = verbose, code = code, k = k, cpt = "off"
             )
           }
@@ -1900,7 +1900,7 @@
       }
 
       #------------------------------------------
-      # FALLBACK: Test de Dunn (si ni medpb2 ni lincon ni Kruskal déjà traité)
+      # FALLBACK: Test de Dunn (si ni medpb2 ni lincon ni Kruskal d\u00e9j\u00e0 trait\u00e9)
       #------------------------------------------
       if ((paired == FALSE) && (check_wilcox_fiability == TRUE) &&
           !((trimmage > 0) && (croisement < 28)) &&
@@ -1919,7 +1919,7 @@
         if (trimmage > 0) {
           k <- .vbse(
             paste0("\tLower and upper trimming level of ", round(trimmage * 100, 1), "%."),
-            paste0("\tAvec troncature inférieure et supérieure de ", round(trimmage * 100, 1), "%."),
+            paste0("\tAvec troncature inf\u00e9rieure et sup\u00e9rieure de ", round(trimmage * 100, 1), "%."),
             verbose = verbose, code = code, k = k, cpt = "off"
           )
 
@@ -1947,7 +1947,7 @@
           if (any(synth$bootstrap$groups[, 2] != synth$groups[, 2])) {
             k <- .vbse(
               "\tWarning! Bootstrap on Dunn test detects weaknesses.",
-              "\tAttention ! Bootstrap sur le test de Dunn détecte des faiblesses.",
+              "\tAttention ! Bootstrap sur le test de Dunn d\u00e9tecte des faiblesses.",
               verbose = verbose, code = code, k = k, cpt = "off"
             )
           }

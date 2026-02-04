@@ -2,8 +2,7 @@
 % Please edit documentation in R/biplt.R
 \name{biplt}
 \alias{biplt}
-\title{make a biplot that allows you to see the relationship between two components of a PCA, the weight of the respective variables and to color by category
-pca,  =c(1,2), ="blue", =0.25,xlab="cps",ylab="cps",cex=2,pch}
+\title{make a biplot that allows you to see the relationship between two components of a PCA, the weight of the respective variables and to color by category}
 \usage{
 biplt(
   pca,
@@ -29,7 +28,7 @@ biplt(
 
 \item{choices}{a vector indicating the indices of two desired components that we wish to relate}
 
-\item{col}{a vector of color}
+\item{col}{a vector of color or a factor}
 
 \item{threshold}{the elimination threshold to avoid displaying the variables that have the least influence on the components}
 
@@ -43,30 +42,33 @@ biplt(
 
 \item{labels}{labels for the points}
 
-\item{main}{main title for the plot}
+\item{main}{title of the plot}
 
-\item{legend}{logical, whether to display a legend}
+\item{legend}{logical, if TRUE display a legend}
 
-\item{legend.labels}{character vector of labels for the legend}
+\item{legend.labels}{vector of labels for the legend (if NULL, automatically deduced from col)}
 
-\item{legend.pos}{position of the legend (e.g., "topright", "topleft")}
+\item{legend.pos}{position of the legend (default "topright")}
 
-\item{legend.pch}{pch symbols for the legend}
+\item{legend.pch}{pch for the legend (if NULL, uses the same as pch)}
 
-\item{legend.title}{title for the legend}
+\item{legend.title}{title of the legend}
 
-\item{legend.col}{colors for the legend}
+\item{legend.col}{vector of colors to use in legend (if NULL, automatically deduced)}
 }
 \value{
 a graphic biplot more esthetic of biplot() function
 }
 \description{
 make a biplot that allows you to see the relationship between two components of a PCA, the weight of the respective variables and to color by category
-pca,  =c(1,2), ="blue", =0.25,xlab="cps",ylab="cps",cex=2,pch
 }
 \examples{
 # Example 1
 data(iris)
 a <- prcomp(iris[,1:4])
-biplt(a,col=iris$Species,threshold=0.8,choices=c(1,3))
+biplt(a, col=iris$Species, threshold=0.8, choices=c(1,3), legend=TRUE)
+
+# Example 2 with custom colors
+cols <- rainbow(3)[as.numeric(iris$Species)]
+biplt(a, col=cols, threshold=0.8, legend=TRUE, legend.labels=levels(iris$Species))
 }

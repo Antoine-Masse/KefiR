@@ -3,6 +3,7 @@ title: "comment-utiliser-mon-package KefiR"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{comment-utiliser-mon-package}
+  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
@@ -28,7 +29,7 @@ library(KefiR)
 
 Voici comment utiliser la commande corrigraph :
 
-```{r}
+```{r, eval=FALSE}
 data(swiss)
 corrigraph(swiss)
 ```

@@ -68,7 +68,7 @@
   if (is.null(k)) k <- 0
 
   .dbg("=== Start .analyze_ancova_structure() ===",
-       "=== Début .analyze_ancova_structure() ===", debug = debug)
+       "=== D\u00e9but .analyze_ancova_structure() ===", debug = debug)
 
   # Extraire termes de la formule
   model_terms <- terms(formula, data = data)
@@ -78,7 +78,7 @@
        paste0("Termes : ", paste(term_labels, collapse = ", ")),
        debug = debug)
 
-  # Séparer termes simples et interactions
+  # S\u00e9parer termes simples et interactions
   simple_terms <- term_labels[!grepl(":", term_labels)]
   interaction_terms <- term_labels[grepl(":", term_labels)]
 
@@ -96,7 +96,7 @@
 
   for (term in simple_terms) {
     if (term %in% names(data)) {
-      # Conversion character → factor comme .posthoc_ANCOVA
+      # Conversion character \u2192 factor comme .posthoc_ANCOVA
       if (is.factor(data[[term]]) || is.character(data[[term]])) {
         factor_vars <- c(factor_vars, term)
       } else if (is.numeric(data[[term]])) {
@@ -113,13 +113,13 @@
        paste0("Covariables : ", paste(covariate_vars, collapse = ", ")),
        debug = debug)
 
-  # Détecter interactions facteur×covariable
+  # D\u00e9tecter interactions facteur\u00d7covariable
   factor_covariate_interactions <- character(0)
 
   for (interaction in interaction_terms) {
     parts <- strsplit(interaction, ":")[[1]]
 
-    # Vérifier si interaction contient AU MOINS 1 facteur ET 1 covariable
+    # V\u00e9rifier si interaction contient AU MOINS 1 facteur ET 1 covariable
     has_factor <- any(parts %in% factor_vars)
     has_covariate <- any(parts %in% covariate_vars)
 
@@ -130,22 +130,22 @@
 
   has_interaction <- length(factor_covariate_interactions) > 0
 
-  .dbg(paste0("Factor×Covariate interactions: ",
+  .dbg(paste0("Factor\u00d7Covariate interactions: ",
               ifelse(has_interaction, paste(factor_covariate_interactions, collapse = ", "), "NONE")),
-       paste0("Interactions facteur×covariable : ",
+       paste0("Interactions facteur\u00d7covariable : ",
               ifelse(has_interaction, paste(factor_covariate_interactions, collapse = ", "), "AUCUNE")),
        debug = debug)
 
   # ===========================================================================
-  # CAS 1 : AUCUNE interaction facteur×covariable => ANCOVA classique directe
+  # CAS 1 : AUCUNE interaction facteur\u00d7covariable => ANCOVA classique directe
   # ===========================================================================
 
   if (!has_interaction) {
     k <- .vbse(
-      paste0("Model structure: Classical ANCOVA (no factor×covariate interaction)\n",
+      paste0("Model structure: Classical ANCOVA (no factor\u00d7covariate interaction)\n",
              "\tParallel slopes assumed (homogeneity of regression slopes)"),
-      paste0("Structure du modèle : ANCOVA classique (pas d'interaction facteur×covariable)\n",
-             "\tPentes parallèles assumées (homogénéité des pentes de régression)"),
+      paste0("Structure du mod\u00e8le : ANCOVA classique (pas d'interaction facteur\u00d7covariable)\n",
+             "\tPentes parall\u00e8les assum\u00e9es (homog\u00e9n\u00e9it\u00e9 des pentes de r\u00e9gression)"),
       verbose = verbose, code = code, k = k, cpt = "on"
     )
 
@@ -168,62 +168,62 @@
   }
 
   # ===========================================================================
-  # CAS 2 : Interaction(s) facteur×covariable détectée(s)
-  #         => TEST HIÉRARCHIQUE pour décider
+  # CAS 2 : Interaction(s) facteur\u00d7covariable d\u00e9tect\u00e9e(s)
+  #         => TEST HI\u00c9RARCHIQUE pour d\u00e9cider
   # ===========================================================================
 
-  # RÉFÉRENCE ACADÉMIQUE (développeurs/documentation uniquement - bp.log 7.4.6.1):
+  # R\u00c9F\u00c9RENCE ACAD\u00c9MIQUE (d\u00e9veloppeurs/documentation uniquement - bp.log 7.4.6.1):
   # Maxwell, S. E., Delaney, H. D., & Kelley, K. (2018).
   # Designing Experiments and Analyzing Data (3rd ed.). Routledge.
   # Chapter 9, pp. 423-428: Testing homogeneity of regression slopes assumption.
 
   k <- .vbse(
-    paste0("DETECTED: Factor×covariate interaction in formula\n",
+    paste0("DETECTED: Factor\u00d7covariate interaction in formula\n",
            "\tInteraction(s): ", paste(factor_covariate_interactions, collapse = ", "), "\n",
            "\tPerforming hierarchical test to decide between:\n",
-           "\t  • Parallel slopes (classical ANCOVA)\n",
-           "\t  • Heterogeneous slopes (interaction model)"),
-    paste0("DÉTECTÉ : Interaction facteur×covariable dans la formule\n",
+           "\t  \u2022 Parallel slopes (classical ANCOVA)\n",
+           "\t  \u2022 Heterogeneous slopes (interaction model)"),
+    paste0("D\u00c9TECT\u00c9 : Interaction facteur\u00d7covariable dans la formule\n",
            "\tInteraction(s) : ", paste(factor_covariate_interactions, collapse = ", "), "\n",
-           "\tTest hiérarchique pour décider entre :\n",
-           "\t  • Pentes parallèles (ANCOVA classique)\n",
-           "\t  • Pentes hétérogènes (modèle avec interaction)"),
+           "\tTest hi\u00e9rarchique pour d\u00e9cider entre :\n",
+           "\t  \u2022 Pentes parall\u00e8les (ANCOVA classique)\n",
+           "\t  \u2022 Pentes h\u00e9t\u00e9rog\u00e8nes (mod\u00e8le avec interaction)"),
     verbose = verbose, code = code, k = k, cpt = "on"
   )
 
-  # Construire formule RÉDUITE (sans interactions facteur×covariable)
+  # Construire formule R\u00c9DUITE (sans interactions facteur\u00d7covariable)
   reduced_terms <- setdiff(term_labels, factor_covariate_interactions)
   response_var <- as.character(formula[[2]])
   formula_reduced <- as.formula(paste(response_var, "~", paste(reduced_terms, collapse = " + ")))
 
-  # Construire formule COMPLÈTE (avec interactions) - c'est la formule originale
+  # Construire formule COMPL\u00c8TE (avec interactions) - c'est la formule originale
   formula_full <- formula
 
   .dbg(paste0("Reduced formula: ", deparse(formula_reduced)),
-       paste0("Formule réduite : ", deparse(formula_reduced)),
+       paste0("Formule r\u00e9duite : ", deparse(formula_reduced)),
        debug = debug)
 
   .dbg(paste0("Full formula: ", deparse(formula_full)),
-       paste0("Formule complète : ", deparse(formula_full)),
+       paste0("Formule compl\u00e8te : ", deparse(formula_full)),
        debug = debug)
 
-  # Ajuster les deux modèles
+  # Ajuster les deux mod\u00e8les
   mod_reduced <- aov(formula_reduced, data = data)
   mod_full <- aov(formula_full, data = data)
 
-  # Test hiérarchique
+  # Test hi\u00e9rarchique
   hierarchical_test <- anova(mod_reduced, mod_full)
 
   # Extraire p-value de l'interaction
   p_interaction <- hierarchical_test[2, "Pr(>F)"]
 
   .dbg(paste0("Hierarchical test p-value: ", round(p_interaction, 5)),
-       paste0("P-value test hiérarchique : ", round(p_interaction, 5)),
+       paste0("P-value test hi\u00e9rarchique : ", round(p_interaction, 5)),
        debug = debug)
 
-  # Décision
+  # D\u00e9cision
   if (p_interaction < alpha) {
-    # Interaction SIGNIFICATIVE => Pentes hétérogènes
+    # Interaction SIGNIFICATIVE => Pentes h\u00e9t\u00e9rog\u00e8nes
     decision <- "heterogeneous_slopes"
     model_type <- "Heterogeneous_Slopes"
 
@@ -236,14 +236,14 @@
              "\tHomogeneity of slopes assumption VIOLATED.\n",
              "\tInterpretation must focus on how the covariate-response\n",
              "\trelationship differs between groups (not main effects)."),
-      paste0("RÉSULTAT TEST HIÉRARCHIQUE :\n",
+      paste0("R\u00c9SULTAT TEST HI\u00c9RARCHIQUE :\n",
              "\tP-value interaction = ", .format_pval(p_interaction), " (< ", alpha, ")\n",
-             "\t==> Interaction SIGNIFICATIVE détectée\n\n",
-             "MODÈLE SÉLECTIONNÉ : Modèle à pentes hétérogènes\n",
-             "\tLes pentes diffèrent significativement selon les groupes.\n",
-             "\tAssomption homogénéité des pentes VIOLÉE.\n",
-             "\tL'interprétation doit se concentrer sur comment la relation\n",
-             "\tcovariable-réponse diffère entre groupes (pas effets principaux)."),
+             "\t==> Interaction SIGNIFICATIVE d\u00e9tect\u00e9e\n\n",
+             "MOD\u00c8LE S\u00c9LECTIONN\u00c9 : Mod\u00e8le \u00e0 pentes h\u00e9t\u00e9rog\u00e8nes\n",
+             "\tLes pentes diff\u00e8rent significativement selon les groupes.\n",
+             "\tAssomption homog\u00e9n\u00e9it\u00e9 des pentes VIOL\u00c9E.\n",
+             "\tL'interpr\u00e9tation doit se concentrer sur comment la relation\n",
+             "\tcovariable-r\u00e9ponse diff\u00e8re entre groupes (pas effets principaux)."),
       verbose = verbose, code = code, k = k, cpt = "on"
     )
 
@@ -260,13 +260,13 @@
              "\tSlopes do NOT differ significantly across groups.\n",
              "\tHomogeneity of slopes assumption MET.\n",
              "\tProceeding with classical ANCOVA (interaction removed)."),
-      paste0("RÉSULTAT TEST HIÉRARCHIQUE :\n",
+      paste0("R\u00c9SULTAT TEST HI\u00c9RARCHIQUE :\n",
              "\tP-value interaction = ", .format_pval(p_interaction), " (>= ", alpha, ")\n",
              "\t==> Interaction NON significative\n\n",
-             "MODÈLE SÉLECTIONNÉ : ANCOVA classique (pentes parallèles)\n",
-             "\tLes pentes NE diffèrent PAS significativement selon groupes.\n",
-             "\tAssomption homogénéité des pentes RESPECTÉE.\n",
-             "\tPoursuite avec ANCOVA classique (interaction supprimée)."),
+             "MOD\u00c8LE S\u00c9LECTIONN\u00c9 : ANCOVA classique (pentes parall\u00e8les)\n",
+             "\tLes pentes NE diff\u00e8rent PAS significativement selon groupes.\n",
+             "\tAssomption homog\u00e9n\u00e9it\u00e9 des pentes RESPECT\u00c9E.\n",
+             "\tPoursuite avec ANCOVA classique (interaction supprim\u00e9e)."),
       verbose = verbose, code = code, k = k, cpt = "on"
     )
   }
@@ -274,7 +274,7 @@
   # Retour
   result <- list(
     model_type = model_type,
-    has_interaction = TRUE,  # Interaction était dans formule (même si non significative)
+    has_interaction = TRUE,  # Interaction \u00e9tait dans formule (m\u00eame si non significative)
     interaction_terms = factor_covariate_interactions,
     factor_vars = factor_vars,
     covariate_vars = covariate_vars,

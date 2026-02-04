@@ -8,6 +8,8 @@
 #' @param g Data frame. Contains categorical factors AND continuous covariates.
 #' @param formula Formula specifying the model (e.g., y ~ factor1 * factor2 + covariate).
 #' @param data Data frame containing all variables.
+#' @param paired Logical. Indicates whether data are paired (default is FALSE).
+#' @param id Optional. Identifier for paired data.
 #' @param alpha Numeric. Significance level (default = 0.05).
 #' @param k Integer. Message counter for verbose output.
 #' @param code Logical. If TRUE, displays R code for reproducibility.
@@ -44,15 +46,6 @@
 #' (2nd ed.). Wiley. https://doi.org/10.1002/9781118067475
 #'
 #' @export
-# Fonction auxiliaire pour afficher code R avec numérotation
-.code_ancova <- function(step_num, title, code_lines) {
-  cat(paste0("# ", step_num, ") ", title, "\n"))
-  for (line in code_lines) {
-    cat(paste0(line, "\n"))
-  }
-  cat("\n")
-}
-
 .ancova_analysis <- function(
     x = NULL,
     g = NULL,
@@ -69,21 +62,21 @@
 
   if (is.null(k)) k <- 0
 
-  # Si code==TRUE, désactiver verbose pour éviter mélange texte/code
-  # et initialiser compteur séparé pour numérotation des étapes code
+  # Si code==TRUE, d\u00e9sactiver verbose pour \u00e9viter m\u00e9lange texte/code
+  # et initialiser compteur s\u00e9par\u00e9 pour num\u00e9rotation des \u00e9tapes code
   if (isTRUE(code)) {
     verbose_original <- verbose
     verbose <- FALSE
-    k_code <- 0  # Compteur séparé pour mode code
+    k_code <- 0  # Compteur s\u00e9par\u00e9 pour mode code
   }
 
   .dbg("=== Start .ancova_analysis() ===",
-       "=== Début de .ancova_analysis() ===", debug = debug)
+       "=== D\u00e9but de .ancova_analysis() ===", debug = debug)
 
   # ==========================================================================
-  # DÉTECTION CAS LIMITES : PAIRED ANCOVA / RANDOM EFFECTS
+  # D\u00c9TECTION CAS LIMITES : PAIRED ANCOVA / RANDOM EFFECTS
   # ==========================================================================
-  # Référence: Maxwell et al. (2018), Chapter 15, pp. 739-789
+  # R\u00e9f\u00e9rence: Maxwell et al. (2018), Chapter 15, pp. 739-789
   # Paired ANCOVA requires mixed models (random intercepts for subjects)
 
   if (paired || !is.null(id)) {
@@ -101,36 +94,36 @@
              "WANT THIS FEATURE?\n",
              "\tContact: antoine.masse@u-bordeaux.fr\n",
              "\tPlease include:\n",
-             "\t  • Your code line that triggered this message\n",
-             "\t  • Your dataset (anonymized if confidential)\n",
-             "\t  • Brief description of your research context"),
-      paste0("DÉTECTÉ : ANCOVA appariée / Mesures répétées\n",
-             "\tm.test() ne supporte pas encore l'ANCOVA appariée ou avec effets aléatoires.\n\n",
-             "APPROCHE RECOMMANDÉE :\n",
-             "\t1. Utiliser modèles mixtes avec package lmerTest :\n",
+             "\t  \u2022 Your code line that triggered this message\n",
+             "\t  \u2022 Your dataset (anonymized if confidential)\n",
+             "\t  \u2022 Brief description of your research context"),
+      paste0("D\u00c9TECT\u00c9 : ANCOVA appari\u00e9e / Mesures r\u00e9p\u00e9t\u00e9es\n",
+             "\tm.test() ne supporte pas encore l'ANCOVA appari\u00e9e ou avec effets al\u00e9atoires.\n\n",
+             "APPROCHE RECOMMAND\u00c9E :\n",
+             "\t1. Utiliser mod\u00e8les mixtes avec package lmerTest :\n",
              "\t   install.packages('lmerTest')\n",
              "\t   library(lmerTest)\n",
              "\t   modele <- lmer(VD ~ facteur + covariable + (1|sujet_id), data=vos_donnees)\n",
-             "\t   anova(modele)  # Tests Type III avec degrés liberté Satterthwaite\n",
-             "\t2. Alternative : ANCOVA mesures répétées dans SPSS (MLG Mesures répétées)\n",
-             "\t3. Alternative : afex::aov_ez() pour plans mesures répétées\n\n",
-             "VOUS VOULEZ CETTE FONCTIONNALITÉ ?\n",
+             "\t   anova(modele)  # Tests Type III avec degr\u00e9s libert\u00e9 Satterthwaite\n",
+             "\t2. Alternative : ANCOVA mesures r\u00e9p\u00e9t\u00e9es dans SPSS (MLG Mesures r\u00e9p\u00e9t\u00e9es)\n",
+             "\t3. Alternative : afex::aov_ez() pour plans mesures r\u00e9p\u00e9t\u00e9es\n\n",
+             "VOUS VOULEZ CETTE FONCTIONNALIT\u00c9 ?\n",
              "\tContact : antoine.masse@u-bordeaux.fr\n",
              "\tVeuillez inclure :\n",
-             "\t  • Votre ligne de code ayant déclenché ce message\n",
-             "\t  • Votre jeu de données (anonymisé si confidentiel)\n",
-             "\t  • Brève description de votre contexte de recherche"),
+             "\t  \u2022 Votre ligne de code ayant d\u00e9clench\u00e9 ce message\n",
+             "\t  \u2022 Votre jeu de donn\u00e9es (anonymis\u00e9 si confidentiel)\n",
+             "\t  \u2022 Br\u00e8ve description de votre contexte de recherche"),
       verbose = verbose, code = code, k = k, cpt = "on"
     )
 
     .exit("Paired ANCOVA not supported. Use mixed models (lmerTest).",
-          "ANCOVA appariée non supportée. Utiliser modèles mixtes (lmerTest).")
+          "ANCOVA appari\u00e9e non support\u00e9e. Utiliser mod\u00e8les mixtes (lmerTest).")
   }
 
   # ==========================================================================
-  # DÉTECTION CAS LIMITES : MANCOVA (Multiple DVs)
+  # D\u00c9TECTION CAS LIMITES : MANCOVA (Multiple DVs)
   # ==========================================================================
-  # Référence: Tabachnick & Fidell (2013), Chapter 7
+  # R\u00e9f\u00e9rence: Tabachnick & Fidell (2013), Chapter 7
   # MANCOVA = Multivariate ANCOVA (multiple dependent variables + covariates)
 
   # Check if formula left side has multiple DVs (cbind())
@@ -154,39 +147,39 @@
              "WANT THIS FEATURE?\n",
              "\tContact: antoine.masse@u-bordeaux.fr\n",
              "\tPlease include:\n",
-             "\t  • Your code line that triggered this message\n",
-             "\t  • Your dataset (anonymized if confidential)\n",
-             "\t  • Brief description of your research context"),
-      paste0("DÉTECTÉ : MANCOVA (ANCOVA multivariée)\n",
-             "\tm.test() ne supporte pas encore MANCOVA (plusieurs variables dépendantes + covariables).\n\n",
-             "APPROCHE RECOMMANDÉE :\n",
+             "\t  \u2022 Your code line that triggered this message\n",
+             "\t  \u2022 Your dataset (anonymized if confidential)\n",
+             "\t  \u2022 Brief description of your research context"),
+      paste0("D\u00c9TECT\u00c9 : MANCOVA (ANCOVA multivari\u00e9e)\n",
+             "\tm.test() ne supporte pas encore MANCOVA (plusieurs variables d\u00e9pendantes + covariables).\n\n",
+             "APPROCHE RECOMMAND\u00c9E :\n",
              "\t1. Utiliser stats::manova() avec covariables :\n",
              "\t   # Exemple :\n",
              "\t   modele <- lm(cbind(VD1, VD2, VD3) ~ facteur + covariable, data=vos_donnees)\n",
              "\t   resultat_manova <- manova(modele)\n",
-             "\t   summary(resultat_manova)  # Tests multivariés (Wilks, Pillai, etc.)\n",
-             "\t2. Vérifier assomptions : Test M de Box (homogénéité matrices covariances)\n",
-             "\t3. Pour post-hocs : Analyse discriminante ou ANCOVAs séparées avec correction\n\n",
-             "VOUS VOULEZ CETTE FONCTIONNALITÉ ?\n",
+             "\t   summary(resultat_manova)  # Tests multivari\u00e9s (Wilks, Pillai, etc.)\n",
+             "\t2. V\u00e9rifier assomptions : Test M de Box (homog\u00e9n\u00e9it\u00e9 matrices covariances)\n",
+             "\t3. Pour post-hocs : Analyse discriminante ou ANCOVAs s\u00e9par\u00e9es avec correction\n\n",
+             "VOUS VOULEZ CETTE FONCTIONNALIT\u00c9 ?\n",
              "\tContact : antoine.masse@u-bordeaux.fr\n",
              "\tVeuillez inclure :\n",
-             "\t  • Votre ligne de code ayant déclenché ce message\n",
-             "\t  • Votre jeu de données (anonymisé si confidentiel)\n",
-             "\t  • Brève description de votre contexte de recherche"),
+             "\t  \u2022 Votre ligne de code ayant d\u00e9clench\u00e9 ce message\n",
+             "\t  \u2022 Votre jeu de donn\u00e9es (anonymis\u00e9 si confidentiel)\n",
+             "\t  \u2022 Br\u00e8ve description de votre contexte de recherche"),
       verbose = verbose, code = code, k = k, cpt = "on"
     )
 
     .exit("MANCOVA not supported. Use stats::manova().",
-          "MANCOVA non supportée. Utiliser stats::manova().")
+          "MANCOVA non support\u00e9e. Utiliser stats::manova().")
   }
 
   # ==========================================================================
-  # PHASE 1: ANALYSE STRUCTURE MODÈLE (ANCOVA vs PENTES HÉTÉROGÈNES)
+  # PHASE 1: ANALYSE STRUCTURE MOD\u00c8LE (ANCOVA vs PENTES H\u00c9T\u00c9ROG\u00c8NES)
   # ==========================================================================
   # Appel nouvelle fonction qui :
-  # 1. Détecte interactions facteur×covariable
-  # 2. Effectue test hiérarchique si interaction présente
-  # 3. Décide ANCOVA classique vs pentes hétérogènes
+  # 1. D\u00e9tecte interactions facteur\u00d7covariable
+  # 2. Effectue test hi\u00e9rarchique si interaction pr\u00e9sente
+  # 3. D\u00e9cide ANCOVA classique vs pentes h\u00e9t\u00e9rog\u00e8nes
 
   ancova_structure <- .analyze_ancova_structure(
     formula = formula,
@@ -197,9 +190,9 @@
     k = k
   )
 
-  k <- ancova_structure$k  # Mettre à jour compteur messages
+  k <- ancova_structure$k  # Mettre \u00e0 jour compteur messages
 
-  # Extraire infos pour utilisation ultérieure
+  # Extraire infos pour utilisation ult\u00e9rieure
   model_type <- ancova_structure$model_type  # "ANCOVA" ou "Heterogeneous_Slopes"
   factor_vars <- ancova_structure$factor_vars
   numeric_vars <- ancova_structure$covariate_vars
@@ -207,13 +200,13 @@
   hierarchical_test_result <- ancova_structure$hierarchical_test
 
   # ==========================================================================
-  # VÉRIFICATION PRÉCOCE : TAILLE DES GROUPES
+  # V\u00c9RIFICATION PR\u00c9COCE : TAILLE DES GROUPES
   # ==========================================================================
-  # Vérifier qu'il y a au moins 2 observations par groupe pour éviter erreurs
-  # dans les tests statistiques ultérieurs (Bartlett, Levene, etc.)
+  # V\u00e9rifier qu'il y a au moins 2 observations par groupe pour \u00e9viter erreurs
+  # dans les tests statistiques ult\u00e9rieurs (Bartlett, Levene, etc.)
 
   if (length(factor_vars) > 0) {
-    # Créer interaction de tous les facteurs pour vérification
+    # Cr\u00e9er interaction de tous les facteurs pour v\u00e9rification
     if (length(factor_vars) > 1) {
       g_check <- interaction(data[, factor_vars, drop = FALSE], drop = TRUE)
     } else {
@@ -233,36 +226,36 @@
         paste0("ATTENTION : Observations insuffisantes dans certains groupes.\n",
                "\tGroupes avec < 2 observations : ", paste(groups_with_lt2, collapse = ", "), "\n",
                "\tEffectifs par groupe : ", paste(paste0(names(group_counts), "=", group_counts), collapse = ", "), "\n",
-               "\tCertains tests statistiques (Bartlett, Levene) nécessitent au moins 2 observations par groupe.\n",
-               "\tL'analyse continuera mais certains tests pourraient être ignorés ou échouer."),
+               "\tCertains tests statistiques (Bartlett, Levene) n\u00e9cessitent au moins 2 observations par groupe.\n",
+               "\tL'analyse continuera mais certains tests pourraient \u00eatre ignor\u00e9s ou \u00e9chouer."),
         verbose = verbose, code = code, k = k, cpt = "on"
       )
     }
   }
 
-  # Si pentes hétérogènes, utiliser formule complète (avec interaction)
-  # Si ANCOVA classique + interaction était présente, utiliser formule réduite
+  # Si pentes h\u00e9t\u00e9rog\u00e8nes, utiliser formule compl\u00e8te (avec interaction)
+  # Si ANCOVA classique + interaction \u00e9tait pr\u00e9sente, utiliser formule r\u00e9duite
   if (model_type == "Heterogeneous_Slopes") {
     # Garder formule originale (avec interaction)
     formula_to_use <- formula
   } else if (model_type == "ANCOVA" && !is.null(hierarchical_test_result)) {
-    # Interaction était présente mais non significative -> utiliser formule réduite
+    # Interaction \u00e9tait pr\u00e9sente mais non significative -> utiliser formule r\u00e9duite
     formula_to_use <- hierarchical_test_result$formula_reduced
   } else {
-    # Pas d'interaction dès le départ
+    # Pas d'interaction d\u00e8s le d\u00e9part
     formula_to_use <- formula
   }
 
   .dbg(paste0("Model type determined: ", model_type),
-       paste0("Type de modèle déterminé : ", model_type),
+       paste0("Type de mod\u00e8le d\u00e9termin\u00e9 : ", model_type),
        debug = debug)
 
   .dbg(paste0("Formula to use: ", deparse(formula_to_use)),
-       paste0("Formule à utiliser : ", deparse(formula_to_use)),
+       paste0("Formule \u00e0 utiliser : ", deparse(formula_to_use)),
        debug = debug)
 
-  # Message résumé structure (déjà affiché par .analyze_ancova_structure)
-  # Déterminer le nombre d'assomptions selon le type de modèle
+  # Message r\u00e9sum\u00e9 structure (d\u00e9j\u00e0 affich\u00e9 par .analyze_ancova_structure)
+  # D\u00e9terminer le nombre d'assomptions selon le type de mod\u00e8le
   n_assumptions <- if(has_factor_cov_interaction) 4 else 5
 
   k <- .vbse(
@@ -277,25 +270,25 @@
     paste0("\tFacteurs : ", paste(factor_vars, collapse = ", "), "\n",
            "\t\tCovariables : ", paste(numeric_vars, collapse = ", "), "\n",
            if(has_factor_cov_interaction) {
-             paste0("\tInteraction dans modèle : Pentes hétérogènes autorisées\n",
-                    "\t==> Vérifications complètes des assomptions (", n_assumptions, " assomptions : PAS de test homogénéité pentes).")
+             paste0("\tInteraction dans mod\u00e8le : Pentes h\u00e9t\u00e9rog\u00e8nes autoris\u00e9es\n",
+                    "\t==> V\u00e9rifications compl\u00e8tes des assomptions (", n_assumptions, " assomptions : PAS de test homog\u00e9n\u00e9it\u00e9 pentes).")
            } else {
-             paste0("\t==> Vérifications complètes des assomptions (", n_assumptions, " assomptions).")
+             paste0("\t==> V\u00e9rifications compl\u00e8tes des assomptions (", n_assumptions, " assomptions).")
            }),
     verbose = verbose, code = code, k = k, cpt = "off"
   )
 
-  # CODE: Étape 1 - Structure du modèle
+  # CODE: \u00c9tape 1 - Structure du mod\u00e8le
   if (isTRUE(code)) {
     k_code <- k_code + 1
-    .code_ancova(k_code, "Structure du modèle ANCOVA", c())
+    .code_ancova(k_code, "Structure du mod\u00e8le ANCOVA", c())
   }
 
   # ==========================================================================
   # INITIALISATION DES VARIABLES D'ASSOMPTIONS (GLOBAL SCOPE)
   # ==========================================================================
-  # Initialiser TOUTES les variables d'assomptions au début pour éviter
-  # erreurs "objet introuvable" si early stop avant leur définition
+  # Initialiser TOUTES les variables d'assomptions au d\u00e9but pour \u00e9viter
+  # erreurs "objet introuvable" si early stop avant leur d\u00e9finition
   check_normality <- TRUE
   check_variance_equal <- TRUE
   check_linearity <- TRUE
@@ -304,7 +297,7 @@
   slopes_results <- list()
   goto_robust_ancova <- FALSE
 
-  # Créer interaction des facteurs pour tests
+  # Cr\u00e9er interaction des facteurs pour tests
   if (length(factor_vars) > 1) {
     g_cat <- interaction(data[, factor_vars, drop = FALSE], drop = TRUE)
   } else {
@@ -312,30 +305,30 @@
   }
 
   # ==========================================================================
-  # ASSOMPTION 1: INDÉPENDANCE DES OBSERVATIONS
+  # ASSOMPTION 1: IND\u00c9PENDANCE DES OBSERVATIONS
   # ==========================================================================
-  # Référence: Maxwell et al. (2018), Chapter 9, pp. 395-396
+  # R\u00e9f\u00e9rence: Maxwell et al. (2018), Chapter 9, pp. 395-396
 
   k <- .vbse(
     paste0("ASSUMPTION 1/", n_assumptions, ": Independence of observations\n",
            "\tThis is a DESIGN-LEVEL assumption that cannot be tested statistically.\n",
            "\tVerify that:\n",
-           "\t  • No repeated measures (each observation from different subject)\n",
-           "\t  • No cluster effects (observations not grouped/nested)\n",
-           "\t  • No carryover effects (order of measurements doesn't influence results)"),
-    paste0("ASSOMPTION 1/", n_assumptions, " : Indépendance des observations\n",
-           "\tC'est une assomption de PLAN qui ne peut pas être testée statistiquement.\n",
-           "\tVérifiez que :\n",
-           "\t  • Pas de mesures répétées (chaque observation d'un sujet différent)\n",
-           "\t  • Pas d'effets cluster (observations non groupées/emboîtées)\n",
-           "\t  • Pas d'effets report (ordre des mesures n'influence pas les résultats)"),
+           "\t  \u2022 No repeated measures (each observation from different subject)\n",
+           "\t  \u2022 No cluster effects (observations not grouped/nested)\n",
+           "\t  \u2022 No carryover effects (order of measurements doesn't influence results)"),
+    paste0("ASSOMPTION 1/", n_assumptions, " : Ind\u00e9pendance des observations\n",
+           "\tC'est une assomption de PLAN qui ne peut pas \u00eatre test\u00e9e statistiquement.\n",
+           "\tV\u00e9rifiez que :\n",
+           "\t  \u2022 Pas de mesures r\u00e9p\u00e9t\u00e9es (chaque observation d'un sujet diff\u00e9rent)\n",
+           "\t  \u2022 Pas d'effets cluster (observations non group\u00e9es/embo\u00eet\u00e9es)\n",
+           "\t  \u2022 Pas d'effets report (ordre des mesures n'influence pas les r\u00e9sultats)"),
     verbose = verbose, code = code, k = k, cpt = "on"
   )
 
-  # CODE: Étape 2 - Indépendance des observations
+  # CODE: \u00c9tape 2 - Ind\u00e9pendance des observations
   if (isTRUE(code)) {
     k_code <- k_code + 1
-    .code_ancova(k_code, "ASSOMPTION 1 : Indépendance des observations", c())
+    .code_ancova(k_code, "ASSOMPTION 1 : Ind\u00e9pendance des observations", c())
   }
 
   assumptions_checked <- list(
@@ -346,11 +339,11 @@
   )
 
   # ==========================================================================
-  # AJUSTEMENT DU MODÈLE (nécessaire pour assomptions suivantes)
+  # AJUSTEMENT DU MOD\u00c8LE (n\u00e9cessaire pour assomptions suivantes)
   # ==========================================================================
 
   model <- tryCatch({
-    # Construire liste de contrastes nommée pour Type III SS
+    # Construire liste de contrastes nomm\u00e9e pour Type III SS
     contrast_list <- list()
     for (fvar in factor_vars) {
       contrast_list[[fvar]] <- "contr.sum"
@@ -360,7 +353,7 @@
   }, error = function(e) {
     k <<- .vbse(
       paste0("Error fitting model: ", e$message),
-      paste0("Erreur lors de l'ajustement du modèle : ", e$message),
+      paste0("Erreur lors de l'ajustement du mod\u00e8le : ", e$message),
       verbose = verbose, code = code, k = k, cpt = "on"
     )
     return(NULL)
@@ -378,16 +371,16 @@
   }
 
   # ==========================================================================
-  # SÉLECTION INTELLIGENTE DU TYPE DE SOMMES DES CARRÉS (AVANT message ajustement)
+  # S\u00c9LECTION INTELLIGENTE DU TYPE DE SOMMES DES CARR\u00c9S (AVANT message ajustement)
   # ==========================================================================
-  # Déterminer le type de SS optimal selon contexte (équilibre, ordre formule, etc.)
+  # D\u00e9terminer le type de SS optimal selon contexte (\u00e9quilibre, ordre formule, etc.)
   ss_selection <- .select_ss_type(
     formula = formula,
     data = data,
     model = model,
     analysis_type = "ANCOVA",
     alpha = alpha,
-    verbose = FALSE,  # Ne pas afficher messages ici, on les affiche après
+    verbose = FALSE,  # Ne pas afficher messages ici, on les affiche apr\u00e8s
     code = code,
     k = k,
     debug = debug
@@ -397,10 +390,10 @@
   selected_type <- ss_selection$ss_type
   residuals_model <- residuals(model)
 
-  # Références: Maxwell et al. (2018) Ch.9, DOI:10.4324/9781315642956
+  # R\u00e9f\u00e9rences: Maxwell et al. (2018) Ch.9, DOI:10.4324/9781315642956
   #             Huitema (2011), DOI:10.1002/9781118067475
 
-  # Construire texte méthode
+  # Construire texte m\u00e9thode
   method_text_en <- if (selected_type == "I") {
     "anova() {stats}"
   } else {
@@ -412,13 +405,13 @@
     paste0("car::Anova(type='", selected_type, "')")
   }
 
-  # Déterminer si covariables mal placées (pour message restructuré)
+  # D\u00e9terminer si covariables mal plac\u00e9es (pour message restructur\u00e9)
   has_warnings <- length(ss_selection$warnings) > 0
 
-  # MESSAGE RESTRUCTURÉ ÉTAPE 3 : Ajustement modèle ANCOVA
-  # Structure : Formule → Type SS (si warning) → Contrastes → Modèle ajusté → Avertissements détaillés
+  # MESSAGE RESTRUCTUR\u00c9 \u00c9TAPE 3 : Ajustement mod\u00e8le ANCOVA
+  # Structure : Formule \u2192 Type SS (si warning) \u2192 Contrastes \u2192 Mod\u00e8le ajust\u00e9 \u2192 Avertissements d\u00e9taill\u00e9s
   if (has_warnings && selected_type == "III") {
-    # Cas covariables mal placées : Type III forcé
+    # Cas covariables mal plac\u00e9es : Type III forc\u00e9
     k <- .vbse(
       paste0("Model fitting: ANCOVA with ", length(factor_vars), " factor(s) [lm()]\n",
              "\tFormula: ", deparse(formula), "\n",
@@ -428,14 +421,14 @@
              "\tContrasts: contr.sum (effects coding for unbiased estimates)\n",
              "\t    ==> Model fitted successfully (n=", nrow(data), ", residuals computed)\n",
              "\t        Type of Sums of Squares selected: Type ", selected_type, " [", method_text_en, "]"),
-      paste0("Ajustement du modèle ANCOVA à ", length(factor_vars), " facteur(s) [lm()]\n",
+      paste0("Ajustement du mod\u00e8le ANCOVA \u00e0 ", length(factor_vars), " facteur(s) [lm()]\n",
              "\tFormule : ", deparse(formula), "\n",
-             "\t==> Covariable(s) non placée(s) en premier dans la formule :\n",
-             "\t    ==> Analyse actuelle utilisera Type III (robuste à l'ordre)\n",
-             "\t    --> Sommes des Carrés Type III (Type I dépendant de l'ordre non optimal)\n",
-             "\tContrastes : contr.sum (codage effets pour estimations non biaisées)\n",
-             "\t    ==> Modèle ajusté avec succès (n=", nrow(data), ", résidus calculés)\n",
-             "\t        Type de Sommes de Carrés sélectionné : Type ", selected_type, " [", method_text_fr, "]"),
+             "\t==> Covariable(s) non plac\u00e9e(s) en premier dans la formule :\n",
+             "\t    ==> Analyse actuelle utilisera Type III (robuste \u00e0 l'ordre)\n",
+             "\t    --> Sommes des Carr\u00e9s Type III (Type I d\u00e9pendant de l'ordre non optimal)\n",
+             "\tContrastes : contr.sum (codage effets pour estimations non biais\u00e9es)\n",
+             "\t    ==> Mod\u00e8le ajust\u00e9 avec succ\u00e8s (n=", nrow(data), ", r\u00e9sidus calcul\u00e9s)\n",
+             "\t        Type de Sommes de Carr\u00e9s s\u00e9lectionn\u00e9 : Type ", selected_type, " [", method_text_fr, "]"),
       verbose = verbose, code = code, k = k, cpt = "on"
     )
   } else {
@@ -446,16 +439,16 @@
              "\tContrasts: contr.sum (effects coding for unbiased estimates)\n",
              "\t==> Model fitted successfully (n=", nrow(data), ", residuals computed)\n",
              "\t    Type of Sums of Squares selected: Type ", selected_type, " [", method_text_en, "]"),
-      paste0("Ajustement du modèle ANCOVA à ", length(factor_vars), " facteur(s) [lm()]\n",
+      paste0("Ajustement du mod\u00e8le ANCOVA \u00e0 ", length(factor_vars), " facteur(s) [lm()]\n",
              "\tFormule : ", deparse(formula), "\n",
-             "\tContrastes : contr.sum (codage effets pour estimations non biaisées)\n",
-             "\t==> Modèle ajusté avec succès (n=", nrow(data), ", résidus calculés)\n",
-             "\t    Type de Sommes de Carrés sélectionné : Type ", selected_type, " [", method_text_fr, "]"),
+             "\tContrastes : contr.sum (codage effets pour estimations non biais\u00e9es)\n",
+             "\t==> Mod\u00e8le ajust\u00e9 avec succ\u00e8s (n=", nrow(data), ", r\u00e9sidus calcul\u00e9s)\n",
+             "\t    Type de Sommes de Carr\u00e9s s\u00e9lectionn\u00e9 : Type ", selected_type, " [", method_text_fr, "]"),
       verbose = verbose, code = code, k = k, cpt = "on"
     )
   }
 
-  # Afficher warnings détaillés si formule non-optimale
+  # Afficher warnings d\u00e9taill\u00e9s si formule non-optimale
   if (has_warnings) {
     k <- .vbse(
       paste0("FORMULA OPTIMIZATION WARNINGS:\n",
@@ -465,21 +458,21 @@
       verbose = verbose, k = k, cpt = "off"
     )
 
-    # Suggérer formule améliorée
+    # Sugg\u00e9rer formule am\u00e9lior\u00e9e
     if (!is.null(ss_selection$suggested_formula)) {
       k <- .vbse(
         paste0("SUGGESTED FORMULA (for optimal Type I analysis):\n",
                "\t", deparse(ss_selection$suggested_formula), "\n",
                "--> Rerun m.test() with this formula for Type I Sum of Squares"),
-        paste0("FORMULE SUGGÉRÉE (pour analyse Type I optimale) :\n",
+        paste0("FORMULE SUGG\u00c9R\u00c9E (pour analyse Type I optimale) :\n",
                "\t", deparse(ss_selection$suggested_formula), "\n",
-               "--> Relancer m.test() avec cette formule pour Sommes des Carrés Type I"),
+               "--> Relancer m.test() avec cette formule pour Sommes des Carr\u00e9s Type I"),
         verbose = verbose, k = k, cpt = "off"
       )
     }
   }
 
-  # CODE: Étape 3 - Ajustement modèle ANCOVA
+  # CODE: \u00c9tape 3 - Ajustement mod\u00e8le ANCOVA
   if (isTRUE(code)) {
     formula_str <- deparse(formula)
     contrast_code <- paste0("contrasts_list <- list(",
@@ -487,21 +480,21 @@
       ")")
 
     k_code <- k_code + 1
-    .code_ancova(k_code, "Ajustement du modèle ANCOVA", c(
+    .code_ancova(k_code, "Ajustement du mod\u00e8le ANCOVA", c(
       contrast_code,
       paste0("ancova_model <- lm(", formula_str, ", data = dt, contrasts = contrasts_list)"),
       "residuals_model <- residuals(ancova_model)",
       "",
-      paste0("# Type de SS sélectionné : Type ", selected_type),
+      paste0("# Type de SS s\u00e9lectionn\u00e9 : Type ", selected_type),
       if(selected_type == "I") "# Utiliser anova() pour Type I" else paste0("# Utiliser car::Anova(type='", selected_type, "') pour Type ", selected_type)
     ))
   }
 
   # ==========================================================================
-  # DIAGNOSTIC: VIF (MULTICOLLINÉARITÉ)
+  # DIAGNOSTIC: VIF (MULTICOLLIN\u00c9ARIT\u00c9)
   # ==========================================================================
-  # Référence: Maxwell et al. (2018), pp. 57-59, 428
-  # Checking multicollinearity only if ≥2 covariates
+  # R\u00e9f\u00e9rence: Maxwell et al. (2018), pp. 57-59, 428
+  # Checking multicollinearity only if \u22652 covariates
 
   vif_results <- NULL
   vif_warning <- FALSE
@@ -514,17 +507,17 @@
       k <- .vbse(
         paste0("DIAGNOSTIC: Multicollinearity detection [vif() {car}]\n",
                "\tVariance Inflation Factor measures correlation among covariates\n",
-               "\tThresholds: VIF ≤ 5 (OK), 5 < VIF ≤ 10 (moderate), VIF > 10 (serious)"),
-        paste0("DIAGNOSTIC : Détection multicolinéarité [vif() {car}]\n",
-               "\tFacteur d'Inflation de Variance mesure corrélation entre covariables\n",
-               "\tSeuils : VIF ≤ 5 (OK), 5 < VIF ≤ 10 (modéré), VIF > 10 (sérieux)"),
+               "\tThresholds: VIF \u2264 5 (OK), 5 < VIF \u2264 10 (moderate), VIF > 10 (serious)"),
+        paste0("DIAGNOSTIC : D\u00e9tection multicolin\u00e9arit\u00e9 [vif() {car}]\n",
+               "\tFacteur d'Inflation de Variance mesure corr\u00e9lation entre covariables\n",
+               "\tSeuils : VIF \u2264 5 (OK), 5 < VIF \u2264 10 (mod\u00e9r\u00e9), VIF > 10 (s\u00e9rieux)"),
         verbose = verbose, code = code, k = k, cpt = "on"
       )
 
       vif_values <- tryCatch({
         suppressWarnings(suppressMessages(car::vif(model)))
       }, error = function(e) {
-        .dbg("VIF calculation failed", "Calcul VIF échoué", debug = debug)
+        .dbg("VIF calculation failed", "Calcul VIF \u00e9chou\u00e9", debug = debug)
         NULL
       })
 
@@ -557,16 +550,16 @@
                    "\tAffected covariate(s): ", paste(vars_serious, collapse = ", "), "\n",
                    "\tVIF values: ", paste(sprintf("%s=%.2f", vars_serious, vif_covariates[serious_vif]), collapse = ", "), "\n",
                    "\tCoefficients may be UNSTABLE. Consider:\n",
-                   "\t  • Removing one of the correlated covariates\n",
-                   "\t  • Centering variables\n",
-                   "\t  • Using Principal Component Analysis (PCA)"),
-            paste0("  ATTENTION : Multicolinéarité SÉRIEUSE détectée (VIF > 10)\n",
-                   "\tCovariable(s) affectée(s) : ", paste(vars_serious, collapse = ", "), "\n",
+                   "\t  \u2022 Removing one of the correlated covariates\n",
+                   "\t  \u2022 Centering variables\n",
+                   "\t  \u2022 Using Principal Component Analysis (PCA)"),
+            paste0("  ATTENTION : Multicolin\u00e9arit\u00e9 S\u00c9RIEUSE d\u00e9tect\u00e9e (VIF > 10)\n",
+                   "\tCovariable(s) affect\u00e9e(s) : ", paste(vars_serious, collapse = ", "), "\n",
                    "\tValeurs VIF : ", paste(sprintf("%s=%.2f", vars_serious, vif_covariates[serious_vif]), collapse = ", "), "\n",
-                   "\tLes coefficients peuvent être INSTABLES. Envisagez :\n",
-                   "\t  • Supprimer une des covariables corrélées\n",
-                   "\t  • Centrer les variables\n",
-                   "\t  • Utiliser une Analyse en Composantes Principales (ACP)"),
+                   "\tLes coefficients peuvent \u00eatre INSTABLES. Envisagez :\n",
+                   "\t  \u2022 Supprimer une des covariables corr\u00e9l\u00e9es\n",
+                   "\t  \u2022 Centrer les variables\n",
+                   "\t  \u2022 Utiliser une Analyse en Composantes Principales (ACP)"),
             verbose = verbose, code = code, k = k, cpt = "on"
           )
 
@@ -575,22 +568,22 @@
           vars_moderate <- names(vif_covariates[moderate_vif])
 
           k <- .vbse(
-            paste0("\tNOTE: Moderate multicollinearity detected (5 < VIF ≤ 10)\n",
+            paste0("\tNOTE: Moderate multicollinearity detected (5 < VIF \u2264 10)\n",
                    "\t  Affected covariate(s): ", paste(vars_moderate, collapse = ", "), "\n",
                    "\t  VIF values: ", paste(sprintf("%s=%.2f", vars_moderate, vif_covariates[moderate_vif]), collapse = ", "), "\n",
                    "\t  Coefficients may be less stable. Monitor interpretation carefully."),
-            paste0("\tNOTE : Multicolinéarité modérée détectée (5 < VIF ≤ 10)\n",
-                   "\t  Covariable(s) affectée(s) : ", paste(vars_moderate, collapse = ", "), "\n",
+            paste0("\tNOTE : Multicolin\u00e9arit\u00e9 mod\u00e9r\u00e9e d\u00e9tect\u00e9e (5 < VIF \u2264 10)\n",
+                   "\t  Covariable(s) affect\u00e9e(s) : ", paste(vars_moderate, collapse = ", "), "\n",
                    "\t  Valeurs VIF : ", paste(sprintf("%s=%.2f", vars_moderate, vif_covariates[moderate_vif]), collapse = ", "), "\n",
-                   "\t  Les coefficients peuvent être moins stables. Surveillez l'interprétation."),
+                   "\t  Les coefficients peuvent \u00eatre moins stables. Surveillez l'interpr\u00e9tation."),
             verbose = verbose, code = code, k = k, cpt = "off"
           )
 
         } else {
           k <- .vbse(
-            paste0("\t==> All VIF values ≤ 5: No multicollinearity concern\n",
+            paste0("\t==> All VIF values \u2264 5: No multicollinearity concern\n",
                    "\t    VIF values: ", paste(sprintf("%s=%.2f", names(vif_covariates), vif_covariates), collapse = ", ")),
-            paste0("\t==> Toutes valeurs VIF ≤ 5 : Pas de préoccupation multicolinéarité\n",
+            paste0("\t==> Toutes valeurs VIF \u2264 5 : Pas de pr\u00e9occupation multicolin\u00e9arit\u00e9\n",
                    "\t    Valeurs VIF : ", paste(sprintf("%s=%.2f", names(vif_covariates), vif_covariates), collapse = ", ")),
             verbose = verbose, code = code, k = k, cpt = "off"
           )
@@ -603,8 +596,8 @@
         paste0("DIAGNOSTIC: Multicollinearity check (VIF) - SKIPPED\n",
                "\tPackage 'car' not available. VIF cannot be calculated.\n",
                "\tTo enable: install.packages('car')"),
-        paste0("DIAGNOSTIC : Contrôle multicolinéarité (VIF) - IGNORÉ\n",
-               "\tPackage 'car' non disponible. VIF ne peut être calculé.\n",
+        paste0("DIAGNOSTIC : Contr\u00f4le multicolin\u00e9arit\u00e9 (VIF) - IGNOR\u00c9\n",
+               "\tPackage 'car' non disponible. VIF ne peut \u00eatre calcul\u00e9.\n",
                "\tPour activer : install.packages('car')"),
         verbose = verbose, code = code, k = k, cpt = "on"
       )
@@ -619,9 +612,9 @@
   }
 
   # ==========================================================================
-  # TEST INDÉPENDANCE COVARIABLES-FACTEURS (APPROCHE ROBUSTE)
+  # TEST IND\u00c9PENDANCE COVARIABLES-FACTEURS (APPROCHE ROBUSTE)
   # ==========================================================================
-  # Référence académique:
+  # R\u00e9f\u00e9rence acad\u00e9mique:
   #   Maxwell, S. E., Delaney, H. D., & Kelley, K. (2018).
   #   Designing experiments and analyzing data: A model comparison perspective
   #   (3rd ed.). Routledge. https://doi.org/10.4324/9781315642956
@@ -657,7 +650,7 @@
       test_method <- "aov()"
 
       .dbg(paste0("Testing independence: ", cov, " ~ ", fac, " (", n_levels, " levels)"),
-           paste0("Test indépendance : ", cov, " ~ ", fac, " (", n_levels, " niveaux)"),
+           paste0("Test ind\u00e9pendance : ", cov, " ~ ", fac, " (", n_levels, " niveaux)"),
            debug = debug)
 
       # -----------------------------------------------------------------------
@@ -675,7 +668,7 @@
       }
 
       .dbg(paste0("  Normality: ", ifelse(is_normal, "YES", "NO")),
-           paste0("  Normalité : ", ifelse(is_normal, "OUI", "NON")),
+           paste0("  Normalit\u00e9 : ", ifelse(is_normal, "OUI", "NON")),
            debug = debug)
 
       # -----------------------------------------------------------------------
@@ -696,7 +689,7 @@
         }
 
         .dbg(paste0("  Variance homogeneity: ", ifelse(var_equal, "YES", "NO"), " (p = ", round(var_pval, 4), ")"),
-             paste0("  Homogénéité variances : ", ifelse(var_equal, "OUI", "NON"), " (p = ", round(var_pval, 4), ")"),
+             paste0("  Homog\u00e9n\u00e9it\u00e9 variances : ", ifelse(var_equal, "OUI", "NON"), " (p = ", round(var_pval, 4), ")"),
              debug = debug)
       }
 
@@ -707,7 +700,7 @@
       p_value <- NA
 
       if (!is_normal) {
-        # Non-normal → Kruskal-Wallis (non-parametric)
+        # Non-normal \u2192 Kruskal-Wallis (non-parametric)
         test_method <- "kruskal.test()"
         test_result <- tryCatch({
           kruskal.test(cov_clean ~ fac_clean)
@@ -718,7 +711,7 @@
         }
 
       } else if (!var_equal) {
-        # Normal but heterogeneous variances → Welch ANOVA
+        # Normal but heterogeneous variances \u2192 Welch ANOVA
         test_method <- "oneway.test()"
         test_result <- tryCatch({
           oneway.test(cov_clean ~ fac_clean, var.equal = FALSE)
@@ -729,7 +722,7 @@
         }
 
       } else {
-        # Normal and homogeneous → Classical ANOVA
+        # Normal and homogeneous \u2192 Classical ANOVA
         test_method <- "aov()"
         test_result <- tryCatch({
           aov(cov_clean ~ fac_clean)
@@ -765,29 +758,29 @@
                                    paste0("'", cov, "' vs '", fac, "': p = ", .format_pval(p_value), " [", test_method, "]"))
         } else {
           .dbg(paste0("  Result: INDEPENDENT (p = ", round(p_value, 4), ") via ", test_method),
-               paste0("  Résultat : INDÉPENDANTE (p = ", round(p_value, 4), ") via ", test_method),
+               paste0("  R\u00e9sultat : IND\u00c9PENDANTE (p = ", round(p_value, 4), ") via ", test_method),
                debug = debug)
         }
       } else {
         .dbg(paste0("Independence test failed for ", cov, " ~ ", fac),
-             paste0("Test indépendance échoué pour ", cov, " ~ ", fac),
+             paste0("Test ind\u00e9pendance \u00e9chou\u00e9 pour ", cov, " ~ ", fac),
              debug = debug)
       }
     }
   }
 
-  # Message consolidé: Test + Résultat + Décision
-  # Référence (commentaire uniquement): Maxwell et al. (2018), pp. 401-405
+  # Message consolid\u00e9: Test + R\u00e9sultat + D\u00e9cision
+  # R\u00e9f\u00e9rence (commentaire uniquement): Maxwell et al. (2018), pp. 401-405
   k <- .vbse(
     paste0("DIAGNOSTIC: Covariate-factor independence test [robust approach]\n",
            "\tTests if each covariate differs across factor levels\n",
-           "\tMethod: For each covariate × factor combination:\n",
+           "\tMethod: For each covariate \u00d7 factor combination:\n",
            "\t  1. Test normality of covariate by factor groups\n",
            "\t  2. Test variance homogeneity [var.test() or bartlett.test()]\n",
            "\t  3. Select appropriate test:\n",
-           "\t     • Normal + homogeneous variances: ANOVA [aov() on 1 factor]\n",
-           "\t     • Normal + unequal variances: Welch ANOVA [oneway.test()]\n",
-           "\t     • Non-normal: Kruskal-Wallis [kruskal.test()]\n",
+           "\t     \u2022 Normal + homogeneous variances: ANOVA [aov() on 1 factor]\n",
+           "\t     \u2022 Normal + unequal variances: Welch ANOVA [oneway.test()]\n",
+           "\t     \u2022 Non-normal: Kruskal-Wallis [kruskal.test()]\n",
            if (independence_violations) {
              paste0("\t==> WARNING: Covariate depends on factor (violation detected)\n",
                     "\t    ", paste(independence_details, collapse = "\n\t    "), "\n",
@@ -799,27 +792,27 @@
              paste0("\t==> All covariates independent from factor levels (all p >= ", alpha, ")\n",
                     "\t    Covariate independence assumption MET")
            }),
-    paste0("DIAGNOSTIC : Test indépendance covariables-facteurs [approche robuste]\n",
-           "\tTeste si chaque covariable diffère selon niveaux facteurs\n",
-           "\tMéthode : Pour chaque combinaison covariable × facteur :\n",
-           "\t  1. Tester normalité covariable par groupes de chaque facteur\n",
-           "\t  2. Tester homogénéité variances [var.test() ou bartlett.test()]\n",
-           "\t  3. Sélectionner test approprié :\n",
-           "\t     • Normal + variances homogènes : ANOVA [aov() sur 1 facteur]\n",
-           "\t     • Normal + variances inégales : Welch ANOVA [oneway.test()]\n",
-           "\t     • Non-normal : Kruskal-Wallis [kruskal.test()]\n",
+    paste0("DIAGNOSTIC : Test ind\u00e9pendance covariables-facteurs [approche robuste]\n",
+           "\tTeste si chaque covariable diff\u00e8re selon niveaux facteurs\n",
+           "\tM\u00e9thode : Pour chaque combinaison covariable \u00d7 facteur :\n",
+           "\t  1. Tester normalit\u00e9 covariable par groupes de chaque facteur\n",
+           "\t  2. Tester homog\u00e9n\u00e9it\u00e9 variances [var.test() ou bartlett.test()]\n",
+           "\t  3. S\u00e9lectionner test appropri\u00e9 :\n",
+           "\t     \u2022 Normal + variances homog\u00e8nes : ANOVA [aov() sur 1 facteur]\n",
+           "\t     \u2022 Normal + variances in\u00e9gales : Welch ANOVA [oneway.test()]\n",
+           "\t     \u2022 Non-normal : Kruskal-Wallis [kruskal.test()]\n",
            if (independence_violations) {
-             paste0("\t==> ATTENTION : Covariable dépend du facteur (violation détectée)\n",
+             paste0("\t==> ATTENTION : Covariable d\u00e9pend du facteur (violation d\u00e9tect\u00e9e)\n",
                     "\t    ", paste(independence_details, collapse = "\n\t    "), "\n",
-                    "\t    Interprétation causale compromise : le facteur peut CAUSER des changements\n",
-                    "\t    dans la covariable, la rendant une variable médiatrice plutôt qu'un vrai\n",
-                    "\t    contrôle.\n",
-                    "\t    Rappel : l'ANCOVA suppose que les covariables sont préexistantes et\n",
-                    "\t        indépendantes du traitement.\n",
-                    "\t--> L'analyse continue avec précaution.")
+                    "\t    Interpr\u00e9tation causale compromise : le facteur peut CAUSER des changements\n",
+                    "\t    dans la covariable, la rendant une variable m\u00e9diatrice plut\u00f4t qu'un vrai\n",
+                    "\t    contr\u00f4le.\n",
+                    "\t    Rappel : l'ANCOVA suppose que les covariables sont pr\u00e9existantes et\n",
+                    "\t        ind\u00e9pendantes du traitement.\n",
+                    "\t--> L'analyse continue avec pr\u00e9caution.")
            } else {
-             paste0("\t==> Toutes covariables indépendantes des niveaux facteurs (tous p >= ", alpha, ")\n",
-                    "\t    Assomption d'indépendance des covariables RESPECTÉE")
+             paste0("\t==> Toutes covariables ind\u00e9pendantes des niveaux facteurs (tous p >= ", alpha, ")\n",
+                    "\t    Assomption d'ind\u00e9pendance des covariables RESPECT\u00c9E")
            }),
     verbose = verbose, code = code, k = k, cpt = "on"
   )
@@ -831,18 +824,18 @@
     note = "Robust testing: ANOVA/Welch/Kruskal-Wallis based on assumptions (Maxwell et al., 2018)"
   )
 
-  # CODE: Étape 4 - Test indépendance covariables-facteurs
+  # CODE: \u00c9tape 4 - Test ind\u00e9pendance covariables-facteurs
   if (isTRUE(code)) {
     k_code <- k_code + 1
-    .code_ancova(k_code, "Test indépendance covariables-facteurs", c(
-      "# Appliquer KefiR::m.test() à chaque couple de covariable-facteur possible"
+    .code_ancova(k_code, "Test ind\u00e9pendance covariables-facteurs", c(
+      "# Appliquer KefiR::m.test() \u00e0 chaque couple de covariable-facteur possible"
     ))
   }
 
   # ==========================================================================
   # DIAGNOSTIC: INFLUENCE DIAGNOSTICS (MODEL-BASED)
   # ==========================================================================
-  # Références: Cook (1977), Fox (2016), Belsley et al. (1980)
+  # R\u00e9f\u00e9rences: Cook (1977), Fox (2016), Belsley et al. (1980)
   # NOTE: Outliers marginaux (IQR-based) NOT relevant in ANCOVA since we adjust
   #       for covariates. Only model influence diagnostics matter.
 
@@ -865,7 +858,7 @@
   # MESSAGE: Influence Diagnostics
   # -----------------------------------------------------------------------
 
-  # Préparer tableau synthétique des combinaisons de seuils franchis
+  # Pr\u00e9parer tableau synth\u00e9tique des combinaisons de seuils franchis
   if (influence_results$n_influential > 0) {
     # Identifier quels seuils franchis pour chaque obs
     all_influential <- unique(influence_results$influential_any)
@@ -882,7 +875,7 @@
     n_leverage_dfbetas <- sum(!has_cook & has_leverage & has_dfbetas)
     n_all_three <- sum(has_cook & has_leverage & has_dfbetas)
 
-    # Construire tableau synthétique
+    # Construire tableau synth\u00e9tique
     summary_table <- c()
     if (n_cook_only > 0) summary_table <- c(summary_table, paste0("Cook only: ", n_cook_only))
     if (n_leverage_only > 0) summary_table <- c(summary_table, paste0("Leverage only: ", n_leverage_only))
@@ -895,7 +888,7 @@
     influence_summary_en <- paste0("\t==> ", influence_results$n_influential, " observation(s) exceed threshold(s):\n",
                                    "\t    ", paste(summary_table, collapse = ", "), "\n",
                                    if (influence_results$n_critical > 0) {
-                                     paste0("\t    ⚠ WARNING: ", influence_results$n_critical, " observation(s) with Cook > 1 (critical)\n",
+                                     paste0("\t    \u26a0 WARNING: ", influence_results$n_critical, " observation(s) with Cook > 1 (critical)\n",
                                             "\t    Consider sensitivity analysis\n")
                                    } else {
                                      "\t    All Cook < 1 (no critical concerns)\n"
@@ -905,29 +898,29 @@
     summary_table_fr <- gsub("Cook only", "Cook seul", summary_table)
     summary_table_fr <- gsub("Leverage only", "Leverage seul", summary_table_fr)
     summary_table_fr <- gsub("DFBETAS only", "DFBETAS seul", summary_table_fr)
-    summary_table_fr <- gsub("All three criteria", "Les trois critères", summary_table_fr)
+    summary_table_fr <- gsub("All three criteria", "Les trois crit\u00e8res", summary_table_fr)
 
-    influence_summary_fr <- paste0("\t==> ", influence_results$n_influential, " observation(s) dépassent seuil(s) :\n",
+    influence_summary_fr <- paste0("\t==> ", influence_results$n_influential, " observation(s) d\u00e9passent seuil(s) :\n",
                                    "\t    ", paste(summary_table_fr, collapse = ", "), "\n",
                                    if (influence_results$n_critical > 0) {
-                                     paste0("\t    ⚠ ATTENTION : ", influence_results$n_critical, " observation(s) avec Cook > 1 (critique)\n",
-                                            "\t    Considérer analyse de sensibilité\n")
+                                     paste0("\t    \u26a0 ATTENTION : ", influence_results$n_critical, " observation(s) avec Cook > 1 (critique)\n",
+                                            "\t    Consid\u00e9rer analyse de sensibilit\u00e9\n")
                                    } else {
-                                     "\t    Toutes Cook < 1 (aucune préoccupation critique)\n"
+                                     "\t    Toutes Cook < 1 (aucune pr\u00e9occupation critique)\n"
                                    },
-                                   "\t==> Modèle ", if (influence_results$n_critical == 0) "robuste" else "SENSIBLE", " aux observations individuelles")
+                                   "\t==> Mod\u00e8le ", if (influence_results$n_critical == 0) "robuste" else "SENSIBLE", " aux observations individuelles")
   } else {
     influence_summary_en <- "\t==> No influential observations\n\t==> Model robust to individual observations"
-    influence_summary_fr <- "\t==> Aucune observation influente\n\t==> Modèle robuste aux observations individuelles"
+    influence_summary_fr <- "\t==> Aucune observation influente\n\t==> Mod\u00e8le robuste aux observations individuelles"
   }
 
   k <- .vbse(
     paste0("DIAGNOSTIC: Model Influence [Cook's distance, Leverage, DFBETAS]\n",
-           "\tDetects observations with strong impact on regression coefficients (β)\n",
+           "\tDetects observations with strong impact on regression coefficients (\u03b2)\n",
            "\tThresholds: Cook = ", round(influence_results$thresholds$cook, 3), " (critical if > 1), Leverage = ", round(influence_results$thresholds$leverage, 3), "\n",
            influence_summary_en),
-    paste0("DIAGNOSTIC : Influence sur le Modèle [Distance de Cook, Leverage, DFBETAS]\n",
-           "\tDétecte observations ayant impact fort sur coefficients de régression (β)\n",
+    paste0("DIAGNOSTIC : Influence sur le Mod\u00e8le [Distance de Cook, Leverage, DFBETAS]\n",
+           "\tD\u00e9tecte observations ayant impact fort sur coefficients de r\u00e9gression (\u03b2)\n",
            "\tSeuils : Cook = ", round(influence_results$thresholds$cook, 3), " (critique si > 1), Leverage = ", round(influence_results$thresholds$leverage, 3), "\n",
            influence_summary_fr),
     verbose = verbose, code = code, k = k, cpt = "on"
@@ -935,19 +928,19 @@
 
   assumptions_checked$influence <- influence_results
 
-  # CODE: Étape 5 - Diagnostic d'influence
+  # CODE: \u00c9tape 5 - Diagnostic d'influence
   if (isTRUE(code)) {
     k_code <- k_code + 1
-    .code_ancova(k_code, "Diagnostic influence sur le modèle", c(
-      "# Distance de Cook (influence combinée)",
+    .code_ancova(k_code, "Diagnostic influence sur le mod\u00e8le", c(
+      "# Distance de Cook (influence combin\u00e9e)",
       "cook_d <- cooks.distance(ancova_model)",
       paste0("cook_threshold <- 4 / nrow(dt)  # = ", round(influence_results$thresholds$cook, 3)),
       "",
-      "# Leverage (distance dans l'espace prédicteurs)",
+      "# Leverage (distance dans l'espace pr\u00e9dicteurs)",
       "leverage <- hatvalues(ancova_model)",
       paste0("leverage_threshold <- 2 * length(coef(ancova_model)) / nrow(dt)  # = ", round(influence_results$thresholds$leverage, 3)),
       "",
-      "# DFBETAS (changement coefficients si observation retirée)",
+      "# DFBETAS (changement coefficients si observation retir\u00e9e)",
       "dfbetas_vals <- dfbetas(ancova_model)",
       "dfbetas_threshold <- 2 / sqrt(nrow(dt))",
       "",
@@ -958,26 +951,26 @@
   }
 
   # ==========================================================================
-  # ASSOMPTION 2: NORMALITÉ DES RÉSIDUS
+  # ASSOMPTION 2: NORMALIT\u00c9 DES R\u00c9SIDUS
   # ==========================================================================
 
-  # Déterminer méthode selon taille échantillon
+  # D\u00e9terminer m\u00e9thode selon taille \u00e9chantillon
   n_residuals <- length(residuals_model)
   normality_method <- if(n_residuals <= 50) "shapiro.test() {stats}" else if(n_residuals <= 500) "jb.norm.test() {KefiR}" else "skewness/kurtosis {KefiR}"
 
   k <- .vbse(
     paste0("ASSUMPTION 2/", n_assumptions, ": Normality of residuals (ACADEMIC control)\n",
            "\tTest selection based on sample size:\n",
-           "\t  • n ≤ 50: Shapiro-Wilk [shapiro.test() {stats}]\n",
-           "\t  • 50 < n ≤ 500: Jarque-Bera [jb.norm.test() {KefiR}]\n",
-           "\t  • n > 500: Skewness/Kurtosis [{KefiR}]\n",
+           "\t  \u2022 n \u2264 50: Shapiro-Wilk [shapiro.test() {stats}]\n",
+           "\t  \u2022 50 < n \u2264 500: Jarque-Bera [jb.norm.test() {KefiR}]\n",
+           "\t  \u2022 n > 500: Skewness/Kurtosis [{KefiR}]\n",
            "\tTest used: [", normality_method, "]"),
-    paste0("ASSOMPTION 2/", n_assumptions, " : Normalité des résidus (contrôle ACADÉMIQUE)\n",
-           "\tSélection du test selon taille échantillon :\n",
-           "\t  • n ≤ 50 : Shapiro-Wilk [shapiro.test() {stats}]\n",
-           "\t  • 50 < n ≤ 500 : Jarque-Bera [jb.norm.test() {KefiR}]\n",
-           "\t  • n > 500 : Skewness/Kurtosis [{KefiR}]\n",
-           "\tTest utilisé : [", normality_method, "]"),
+    paste0("ASSOMPTION 2/", n_assumptions, " : Normalit\u00e9 des r\u00e9sidus (contr\u00f4le ACAD\u00c9MIQUE)\n",
+           "\tS\u00e9lection du test selon taille \u00e9chantillon :\n",
+           "\t  \u2022 n \u2264 50 : Shapiro-Wilk [shapiro.test() {stats}]\n",
+           "\t  \u2022 50 < n \u2264 500 : Jarque-Bera [jb.norm.test() {KefiR}]\n",
+           "\t  \u2022 n > 500 : Skewness/Kurtosis [{KefiR}]\n",
+           "\tTest utilis\u00e9 : [", normality_method, "]"),
     verbose = verbose, code = code, k = k, cpt = "on"
   )
 
@@ -998,29 +991,29 @@
     method = if(n_residuals <= 50) "Shapiro-Wilk" else if(n_residuals <= 500) "Jarque-Bera" else "Skewness/Kurtosis"
   )
 
-  # NOTE: Normalité peut bénéficier d'un contrôle tolérant (CLT si n>30)
-  # Pas d'early stop ici - décision finale après vérification autres assumptions
+  # NOTE: Normalit\u00e9 peut b\u00e9n\u00e9ficier d'un contr\u00f4le tol\u00e9rant (CLT si n>30)
+  # Pas d'early stop ici - d\u00e9cision finale apr\u00e8s v\u00e9rification autres assumptions
   goto_robust_ancova <- FALSE
 
-  # CODE: Étape 6 - Normalité des résidus
+  # CODE: \u00c9tape 6 - Normalit\u00e9 des r\u00e9sidus
   if (isTRUE(code)) {
     test_used <- if(n_residuals <= 50) "shapiro.test" else if(n_residuals <= 500) "jb.norm.test" else "skewness/kurtosis"
     k_code <- k_code + 1
-    .code_ancova(k_code, "Test de normalité des résidus", c(
-      paste0("# Test utilisé: ", test_used),
+    .code_ancova(k_code, "Test de normalit\u00e9 des r\u00e9sidus", c(
+      paste0("# Test utilis\u00e9: ", test_used),
       "residuals_model <- residuals(ancova_model)",
       if(n_residuals <= 50) "normality_test <- shapiro.test(residuals_model)" else "# library(KefiR); normality_test <- jb.norm.test(residuals_model)"
     ))
   }
 
   # ==========================================================================
-  # ASSOMPTION 3: HOMOGÉNÉITÉ DES VARIANCES (HOMOSCÉDASTICITÉ)
+  # ASSOMPTION 3: HOMOG\u00c9N\u00c9IT\u00c9 DES VARIANCES (HOMOSC\u00c9DASTICIT\u00c9)
   # ==========================================================================
-  # Référence: Maxwell et al. (2018), pp. 401-402
+  # R\u00e9f\u00e9rence: Maxwell et al. (2018), pp. 401-402
   # Skip if already violated
   if (!goto_robust_ancova) {
 
-  # Déterminer méthode selon normalité
+  # D\u00e9terminer m\u00e9thode selon normalit\u00e9
   variance_method <- if(check_normality) "bartlett.test() {stats}" else "leveneTest() {car}"
 
   k <- .vbse(
@@ -1028,14 +1021,14 @@
            "\tIMPORTANT: Test on FACTOR INTERACTION ONLY (covariates excluded)\n",
            "\tRationale: Covariates are continuous => homogeneity tested on factor groups only\n",
            "\tTest used: [", variance_method, "] (selected based on normality result)\n",
-           "\t  • Residuals normal: Bartlett [bartlett.test() {stats}]\n",
-           "\t  • Residuals non-normal: Levene [leveneTest() {car}]"),
-    paste0("ASSOMPTION 3/", n_assumptions, " : Homoscédasticité (contrôle ACADÉMIQUE)\n",
+           "\t  \u2022 Residuals normal: Bartlett [bartlett.test() {stats}]\n",
+           "\t  \u2022 Residuals non-normal: Levene [leveneTest() {car}]"),
+    paste0("ASSOMPTION 3/", n_assumptions, " : Homosc\u00e9dasticit\u00e9 (contr\u00f4le ACAD\u00c9MIQUE)\n",
            "\tIMPORTANT : Test sur INTERACTION DES FACTEURS UNIQUEMENT (pas les covariables)\n",
-           "\tJustification : Les covariables sont continues => homogénéité testée sur groupes facteurs uniquement\n",
-           "\tTest utilisé : [", variance_method, "] (sélectionné selon résultat normalité)\n",
-           "\t  • Résidus normaux : Bartlett [bartlett.test() {stats}]\n",
-           "\t  • Résidus non-normaux : Levene [leveneTest() {car}]"),
+           "\tJustification : Les covariables sont continues => homog\u00e9n\u00e9it\u00e9 test\u00e9e sur groupes facteurs uniquement\n",
+           "\tTest utilis\u00e9 : [", variance_method, "] (s\u00e9lectionn\u00e9 selon r\u00e9sultat normalit\u00e9)\n",
+           "\t  \u2022 R\u00e9sidus normaux : Bartlett [bartlett.test() {stats}]\n",
+           "\t  \u2022 R\u00e9sidus non-normaux : Levene [leveneTest() {car}]"),
     verbose = verbose, code = code, k = k, cpt = "on"
   )
 
@@ -1054,14 +1047,14 @@
   k <- variance_result[[2]]
   check_variance_equal <- variance_result[[1]]
 
-  # Afficher juste le résultat (sans header redondant)
-  # Si normalité violée MAIS homoscédasticité OK => message d'espoir pour re-test normalité
+  # Afficher juste le r\u00e9sultat (sans header redondant)
+  # Si normalit\u00e9 viol\u00e9e MAIS homosc\u00e9dasticit\u00e9 OK => message d'espoir pour re-test normalit\u00e9
   if (check_variance_equal && !check_normality) {
     k <- .vbse(
       paste0("\t==> Homogeneous variances (p >= ", alpha, ")\n",
              "\t--> Homoscedasticity invites a more tolerant normality check."),
-      paste0("\t==> Variances homogènes (p >= ", alpha, ")\n",
-             "\t--> L'homoscédasticité invite à un contrôle plus tolérant de la normalité."),
+      paste0("\t==> Variances homog\u00e8nes (p >= ", alpha, ")\n",
+             "\t--> L'homosc\u00e9dasticit\u00e9 invite \u00e0 un contr\u00f4le plus tol\u00e9rant de la normalit\u00e9."),
       verbose = verbose, code = code, k = k, cpt = "off"
     )
   } else {
@@ -1072,9 +1065,9 @@
         paste0("\t==> Heterogeneous variances (p < ", alpha, ").")
       },
       if (check_variance_equal) {
-        paste0("\t==> Variances homogènes (p >= ", alpha, ").")
+        paste0("\t==> Variances homog\u00e8nes (p >= ", alpha, ").")
       } else {
-        paste0("\t==> Variances hétérogènes (p < ", alpha, ").")
+        paste0("\t==> Variances h\u00e9t\u00e9rog\u00e8nes (p < ", alpha, ").")
       },
       verbose = verbose, code = code, k = k, cpt = "off"
     )
@@ -1086,11 +1079,11 @@
     note = "Test on factor interaction only (covariates excluded)"
   )
 
-  # CODE: Étape 7 - Homoscédasticité
+  # CODE: \u00c9tape 7 - Homosc\u00e9dasticit\u00e9
   if (isTRUE(code)) {
     k_code <- k_code + 1
-    .code_ancova(k_code, "Test d'homoscédasticité", c(
-      "# Test utilisé si résidus normaux: bartlett.test",
+    .code_ancova(k_code, "Test d'homosc\u00e9dasticit\u00e9", c(
+      "# Test utilis\u00e9 si r\u00e9sidus normaux: bartlett.test",
       if(check_normality) {
         paste0("variance_test <- bartlett.test(residuals_model ~ interaction(", paste(factor_vars, collapse = ", "), "))")
       } else {
@@ -1099,18 +1092,18 @@
     ))
   }
 
-  # EARLY STOP si homoscédasticité violée
-  # Référence : Maxwell et al. (2018), pp. 400-401
+  # EARLY STOP si homosc\u00e9dasticit\u00e9 viol\u00e9e
+  # R\u00e9f\u00e9rence : Maxwell et al. (2018), pp. 400-401
   if (!check_variance_equal) {
     k <- .vbse(
       paste0("  ==> CRITICAL VIOLATIONS detected: ",
              if(!check_normality && !check_variance_equal) "Normality + Homoscedasticity" else "Homoscedasticity",
              "\n\tSTOPPING assumption checks (Linearity/Slopes homogeneity NOT tested)\n",
              "\tSWITCHING to: Robust regression"),
-      paste0("  ==> VIOLATIONS CRITIQUES détectées : ",
-             if(!check_normality && !check_variance_equal) "Normalité + Homoscédasticité" else "Homoscédasticité",
-             "\n\tARRÊT contrôles assomptions (Linéarité/Homogénéité pentes NON testées)\n",
-             "\tPASSAGE vers : Régression robuste"),
+      paste0("  ==> VIOLATIONS CRITIQUES d\u00e9tect\u00e9es : ",
+             if(!check_normality && !check_variance_equal) "Normalit\u00e9 + Homosc\u00e9dasticit\u00e9" else "Homosc\u00e9dasticit\u00e9",
+             "\n\tARR\u00caT contr\u00f4les assomptions (Lin\u00e9arit\u00e9/Homog\u00e9n\u00e9it\u00e9 pentes NON test\u00e9es)\n",
+             "\tPASSAGE vers : R\u00e9gression robuste"),
       verbose = verbose, code = code, k = k, cpt = "on"
     )
     goto_robust_ancova <- TRUE
@@ -1119,18 +1112,18 @@
   } # Fin if (!goto_robust_ancova) pour assumption 3
 
   # ==========================================================================
-  # RETEST NORMALITÉ EN MODE "EXTREM" (si normalité échouée MAIS homoscédasticité ok)
+  # RETEST NORMALIT\u00c9 EN MODE "EXTREM" (si normalit\u00e9 \u00e9chou\u00e9e MAIS homosc\u00e9dasticit\u00e9 ok)
   # ==========================================================================
-  # Référence: Blanca et al. (2017) DOI:10.7334/psicothema2016.383
-  # Standard académique: Donner une seconde chance avec critères stricts (skewness/kurtosis)
+  # R\u00e9f\u00e9rence: Blanca et al. (2017) DOI:10.7334/psicothema2016.383
+  # Standard acad\u00e9mique: Donner une seconde chance avec crit\u00e8res stricts (skewness/kurtosis)
 
   if (!check_normality && check_variance_equal && !goto_robust_ancova) {
     k <- .vbse(
       paste0("NORMALITY RETEST: Applying STRICT criteria\n",
              "\tContext: Non-normality detected BUT homoscedasticity confirmed\n",
              "\tSecond chance: Testing with strict skewness/kurtosis thresholds..."),
-      paste0("RE-TEST NORMALITÉ : Application critères STRICTS\n",
-             "\tContexte : Non-normalité détectée MAIS homoscédasticité confirmée\n",
+      paste0("RE-TEST NORMALIT\u00c9 : Application crit\u00e8res STRICTS\n",
+             "\tContexte : Non-normalit\u00e9 d\u00e9tect\u00e9e MAIS homosc\u00e9dasticit\u00e9 confirm\u00e9e\n",
              "\tSeconde chance : Test avec seuils stricts skewness/kurtosis..."),
       verbose = verbose, code = code, k = k, cpt = "on"
     )
@@ -1138,9 +1131,9 @@
     # Appel .normality() en mode tolerance="extrem"
     normality_retest <- .normality(
       residuals_model,
-      g = NULL,  # Résidus globaux, pas par groupe
+      g = NULL,  # R\u00e9sidus globaux, pas par groupe
       alpha = alpha,
-      tolerance = "extrem",  # Critères stricts (skewness/kurtosis stricts)
+      tolerance = "extrem",  # Crit\u00e8res stricts (skewness/kurtosis stricts)
       verbose = verbose, code = code,
       k = k,
       debug = debug,
@@ -1151,16 +1144,16 @@
     retest_passed <- normality_retest[[1]]
 
     if (retest_passed) {
-      # Normalité passée avec critères stricts → upgrade à paramétrique
+      # Normalit\u00e9 pass\u00e9e avec crit\u00e8res stricts \u2192 upgrade \u00e0 param\u00e9trique
       check_normality <- TRUE
 
       k <- .vbse(
         paste0("  ==> STRICT normality test PASSED\n",
                "\tResiduals acceptable under strict criteria.\n",
                "\tProceeding with parametric ANCOVA."),
-        paste0("  ==> Test normalité strict RÉUSSI\n",
-               "\tRésidus acceptables selon critères stricts.\n",
-               "\tPoursuite avec ANCOVA paramétrique."),
+        paste0("  ==> Test normalit\u00e9 strict R\u00c9USSI\n",
+               "\tR\u00e9sidus acceptables selon crit\u00e8res stricts.\n",
+               "\tPoursuite avec ANCOVA param\u00e9trique."),
         verbose = verbose, code = code, k = k, cpt = "on"
       )
 
@@ -1169,14 +1162,14 @@
       assumptions_checked$normality$passed <- TRUE
 
     } else {
-      # Normalité échouée même avec critères stricts → confirme passage robuste
+      # Normalit\u00e9 \u00e9chou\u00e9e m\u00eame avec crit\u00e8res stricts \u2192 confirme passage robuste
       k <- .vbse(
         paste0("  ==> STRICT normality test FAILED\n",
                "\tResiduals severely non-normal even under lenient criteria.\n",
                "\tWill switch to robust ANCOVA after completing all checks."),
-        paste0("  ==> Test normalité strict ÉCHOUÉ\n",
-               "\tRésidus sévèrement non-normaux même selon critères tolérants.\n",
-               "\tPassage vers ANCOVA robuste après complétion des contrôles."),
+        paste0("  ==> Test normalit\u00e9 strict \u00c9CHOU\u00c9\n",
+               "\tR\u00e9sidus s\u00e9v\u00e8rement non-normaux m\u00eame selon crit\u00e8res tol\u00e9rants.\n",
+               "\tPassage vers ANCOVA robuste apr\u00e8s compl\u00e9tion des contr\u00f4les."),
         verbose = verbose, code = code, k = k, cpt = "on"
       )
 
@@ -1186,19 +1179,19 @@
   }
 
   # ==========================================================================
-  # ASSOMPTION 4: LINÉARITÉ (DV ~ COVARIABLE)
+  # ASSOMPTION 4: LIN\u00c9ARIT\u00c9 (DV ~ COVARIABLE)
   # ==========================================================================
-  # Référence: Huitema (2011), pp. 89-92
-  # Initialiser AVANT le bloc conditionnel pour éviter erreurs si skip
-  check_linearity <- TRUE  # Par défaut, on assume linéarité
+  # R\u00e9f\u00e9rence: Huitema (2011), pp. 89-92
+  # Initialiser AVANT le bloc conditionnel pour \u00e9viter erreurs si skip
+  check_linearity <- TRUE  # Par d\u00e9faut, on assume lin\u00e9arit\u00e9
   linearity_results <- list()
-  check_slopes_homogeneity <- TRUE  # Par défaut, on assume pentes homogènes
+  check_slopes_homogeneity <- TRUE  # Par d\u00e9faut, on assume pentes homog\u00e8nes
   slopes_results <- list()
 
   # Skip if already violated
   if (!goto_robust_ancova) {
 
-  # Réinitialiser pour le test
+  # R\u00e9initialiser pour le test
   check_linearity <- TRUE
   linearity_results <- list()
   linearity_details <- c()
@@ -1238,10 +1231,10 @@
     }
   }
 
-  # Message consolidé: Test + Résultats
+  # Message consolid\u00e9: Test + R\u00e9sultats
   k <- .vbse(
     paste0("ASSUMPTION 4/", n_assumptions, ": Linearity of DV ~ covariate relationship\n",
-           "\tTest: Include quadratic term I(covariate²) and check significance [lm() with I(covariate^2)].\n",
+           "\tTest: Include quadratic term I(covariate\u00b2) and check significance [lm() with I(covariate^2)].\n",
            "\tIf quadratic significant => non-linear relationship.\n",
            paste0("\t  ", paste(linearity_details, collapse = "\n\t  ")), "\n",
            if(!check_linearity) {
@@ -1249,14 +1242,14 @@
            } else {
              "\t==> Linear relationships confirmed"
            }),
-    paste0("ASSOMPTION 4/", n_assumptions, " : Linéarité de la relation Variable Dépendante ~ covariable\n",
-           "\tTest : Inclure terme quadratique I(covariable²) et vérifier significativité [lm() avec I(covariable^2)].\n",
-           "\tSi terme quadratique significatif => relation non-linéaire.\n",
+    paste0("ASSOMPTION 4/", n_assumptions, " : Lin\u00e9arit\u00e9 de la relation Variable D\u00e9pendante ~ covariable\n",
+           "\tTest : Inclure terme quadratique I(covariable\u00b2) et v\u00e9rifier significativit\u00e9 [lm() avec I(covariable^2)].\n",
+           "\tSi terme quadratique significatif => relation non-lin\u00e9aire.\n",
            paste0("\t  ", paste(linearity_details, collapse = "\n\t  ")), "\n",
            if(!check_linearity) {
-             "\t==> ATTENTION : Relation non-linéaire détectée\n\t    Considérer : transformation covariable ou ANCOVA polynomiale"
+             "\t==> ATTENTION : Relation non-lin\u00e9aire d\u00e9tect\u00e9e\n\t    Consid\u00e9rer : transformation covariable ou ANCOVA polynomiale"
            } else {
-             "\t==> Relations linéaires confirmées"
+             "\t==> Relations lin\u00e9aires confirm\u00e9es"
            }),
     verbose = verbose, code = code, k = k, cpt = "on"
   )
@@ -1266,42 +1259,42 @@
     details = linearity_results
   )
 
-  # CODE: Étape 8 - Linéarité DV ~ covariable
+  # CODE: \u00c9tape 8 - Lin\u00e9arit\u00e9 DV ~ covariable
   if (isTRUE(code)) {
-    lin_lines <- c("# Tester linéarité en incluant terme quadratique")
+    lin_lines <- c("# Tester lin\u00e9arit\u00e9 en incluant terme quadratique")
     for (cov in numeric_vars) {
       lin_lines <- c(lin_lines,
         paste0("# Test pour ", cov, ":"),
         paste0("model_quad_", cov, " <- lm(", deparse(formula[[2]]), " ~ ", cov, " + I(", cov, "^2) + ", paste(factor_vars, collapse = " + "), ", data = dt)"),
         paste0("lin_test_", cov, " <- anova(ancova_model, model_quad_", cov, ")"),
-        paste0("# Si p < 0.05 => terme quadratique significatif (relation non-linéaire)")
+        paste0("# Si p < 0.05 => terme quadratique significatif (relation non-lin\u00e9aire)")
       )
     }
     k_code <- k_code + 1
-    .code_ancova(k_code, "Test de linéarité", lin_lines)
+    .code_ancova(k_code, "Test de lin\u00e9arit\u00e9", lin_lines)
   }
 
   # ==========================================================================
-  # ASSOMPTION 5: HOMOGÉNÉITÉ DES PENTES DE RÉGRESSION (UNIQUEMENT ANCOVA CLASSIQUE)
+  # ASSOMPTION 5: HOMOG\u00c9N\u00c9IT\u00c9 DES PENTES DE R\u00c9GRESSION (UNIQUEMENT ANCOVA CLASSIQUE)
   # ==========================================================================
-  # Référence: Maxwell et al. (2018), pp. 405-409
-  # NOTE IMPORTANTE : Ce test N'EST PAS nécessaire si l'interaction facteur:covariable
-  # est déjà INCLUSE dans le modèle (ex: y ~ F * cov). Dans ce cas, le modèle
-  # PERMET explicitement des pentes différentes (modèle linéaire général).
-  # (Initialisation déjà faite avant le bloc conditionnel)
+  # R\u00e9f\u00e9rence: Maxwell et al. (2018), pp. 405-409
+  # NOTE IMPORTANTE : Ce test N'EST PAS n\u00e9cessaire si l'interaction facteur:covariable
+  # est d\u00e9j\u00e0 INCLUSE dans le mod\u00e8le (ex: y ~ F * cov). Dans ce cas, le mod\u00e8le
+  # PERMET explicitement des pentes diff\u00e9rentes (mod\u00e8le lin\u00e9aire g\u00e9n\u00e9ral).
+  # (Initialisation d\u00e9j\u00e0 faite avant le bloc conditionnel)
 
   if (has_factor_cov_interaction) {
-    # L'interaction est DANS le modèle => pas de test d'homogénéité requis
-    # Ce modèle est à 4 ASSOMPTIONS (pas d'assomption homogénéité pentes)
+    # L'interaction est DANS le mod\u00e8le => pas de test d'homog\u00e9n\u00e9it\u00e9 requis
+    # Ce mod\u00e8le est \u00e0 4 ASSOMPTIONS (pas d'assomption homog\u00e9n\u00e9it\u00e9 pentes)
     k <- .vbse(
       paste0("Homogeneity of regression slopes - NOT REQUIRED\n",
              "\t==> Factor:covariate interaction in model (heterogeneous slopes model)\n",
              "\t    This is a 4-assumption model (no slopes homogeneity assumption)\n",
              "\t    Slopes can differ across groups - this is the model's purpose"),
-      paste0("Homogénéité pentes de régression - NON REQUISE\n",
-             "\t==> Interaction facteur:covariable dans modèle (modèle pentes hétérogènes)\n",
-             "\t    C'est un modèle à 4 assomptions (pas d'assomption homogénéité pentes)\n",
-             "\t    Les pentes peuvent différer selon groupes - c'est le but du modèle"),
+      paste0("Homog\u00e9n\u00e9it\u00e9 pentes de r\u00e9gression - NON REQUISE\n",
+             "\t==> Interaction facteur:covariable dans mod\u00e8le (mod\u00e8le pentes h\u00e9t\u00e9rog\u00e8nes)\n",
+             "\t    C'est un mod\u00e8le \u00e0 4 assomptions (pas d'assomption homog\u00e9n\u00e9it\u00e9 pentes)\n",
+             "\t    Les pentes peuvent diff\u00e9rer selon groupes - c'est le but du mod\u00e8le"),
       verbose = verbose, code = code, k = k, cpt = "on"
     )
 
@@ -1311,7 +1304,7 @@
     )
 
   } else {
-    # ANCOVA CLASSIQUE (sans interaction) => tester homogénéité (5ème assomption)
+    # ANCOVA CLASSIQUE (sans interaction) => tester homog\u00e9n\u00e9it\u00e9 (5\u00e8me assomption)
     slopes_details <- c()
 
   for (f in factor_vars) {
@@ -1342,18 +1335,18 @@
 
           if (p_int < alpha) {
             slopes_details <- c(slopes_details,
-                               paste0(f, " × ", cov, ": p = ", .format_pval(p_int), " (heterogeneous)"))
+                               paste0(f, " \u00d7 ", cov, ": p = ", .format_pval(p_int), " (heterogeneous)"))
             check_slopes_homogeneity <- FALSE
           } else {
             slopes_details <- c(slopes_details,
-                               paste0(f, " × ", cov, ": p = ", .format_pval(p_int), " (homogeneous)"))
+                               paste0(f, " \u00d7 ", cov, ": p = ", .format_pval(p_int), " (homogeneous)"))
           }
         }
       }
     }
   }
 
-  # Message consolidé
+  # Message consolid\u00e9
   k <- .vbse(
     paste0("ASSUMPTION 5/", n_assumptions, ": Homogeneity of regression slopes\n",
            "\tTest: factor:covariate interaction must be NON-significant [lm() + anova()]\n",
@@ -1364,14 +1357,14 @@
            } else {
              "\t==> Homogeneous slopes confirmed (parallel regression lines)"
            }),
-    paste0("ASSOMPTION 5/", n_assumptions, " : Homogénéité des pentes de régression\n",
-           "\tTest : interaction facteur:covariable doit être NON-significative [lm() + anova()]\n",
-           "\tSi significative => pentes de régression différentes entre groupes (violation).\n",
+    paste0("ASSOMPTION 5/", n_assumptions, " : Homog\u00e9n\u00e9it\u00e9 des pentes de r\u00e9gression\n",
+           "\tTest : interaction facteur:covariable doit \u00eatre NON-significative [lm() + anova()]\n",
+           "\tSi significative => pentes de r\u00e9gression diff\u00e9rentes entre groupes (violation).\n",
            paste0("\t  ", paste(slopes_details, collapse = "\n\t  ")), "\n",
            if(!check_slopes_homogeneity) {
-             "\t==> ATTENTION : Pentes hétérogènes détectées\n\t    Considérer : technique Johnson-Neyman ou modèle pentes hétérogènes"
+             "\t==> ATTENTION : Pentes h\u00e9t\u00e9rog\u00e8nes d\u00e9tect\u00e9es\n\t    Consid\u00e9rer : technique Johnson-Neyman ou mod\u00e8le pentes h\u00e9t\u00e9rog\u00e8nes"
            } else {
-             "\t==> Pentes homogènes confirmées (droites régression parallèles)"
+             "\t==> Pentes homog\u00e8nes confirm\u00e9es (droites r\u00e9gression parall\u00e8les)"
            }),
     verbose = verbose, code = code, k = k, cpt = "on"
   )
@@ -1381,33 +1374,33 @@
     details = slopes_results
   )
 
-  # CODE: Étape 9 - Homogénéité pentes de régression
+  # CODE: \u00c9tape 9 - Homog\u00e9n\u00e9it\u00e9 pentes de r\u00e9gression
   if (isTRUE(code) && !has_factor_cov_interaction) {
-    slopes_lines <- c("# Tester si pentes de régression diffèrent selon groupes facteurs")
+    slopes_lines <- c("# Tester si pentes de r\u00e9gression diff\u00e8rent selon groupes facteurs")
     for (f in factor_vars) {
       for (cov in numeric_vars) {
         slopes_lines <- c(slopes_lines,
-          paste0("# Test interaction ", f, " × ", cov, ":"),
+          paste0("# Test interaction ", f, " \u00d7 ", cov, ":"),
           paste0("model_interaction <- lm(", deparse(formula[[2]]), " ~ ", paste(c(factor_vars, numeric_vars), collapse = " + "),
                  " + ", f, ":", cov, ", data = dt)"),
           paste0("slopes_test <- anova(ancova_model, model_interaction)"),
-          paste0("# Si p < 0.05 => pentes hétérogènes (violation assomption ANCOVA)")
+          paste0("# Si p < 0.05 => pentes h\u00e9t\u00e9rog\u00e8nes (violation assomption ANCOVA)")
         )
       }
     }
     k_code <- k_code + 1
-    .code_ancova(k_code, "Test homogénéité pentes de régression", slopes_lines)
+    .code_ancova(k_code, "Test homog\u00e9n\u00e9it\u00e9 pentes de r\u00e9gression", slopes_lines)
   }
 
-  } # Fin else (ANCOVA classique, test homogénéité requis)
+  } # Fin else (ANCOVA classique, test homog\u00e9n\u00e9it\u00e9 requis)
 
   } # Fin if (!goto_robust_ancova) pour assumptions 4 et 5
 
   # ==========================================================================
-  # DÉCISION: PARAMÉTRIQUE VS ROBUSTE
+  # D\u00c9CISION: PARAM\u00c9TRIQUE VS ROBUSTE
   # ==========================================================================
 
-  # Si early stop activé, forcer robust
+  # Si early stop activ\u00e9, forcer robust
   if (goto_robust_ancova) {
     all_assumptions_met <- FALSE
   } else {
@@ -1420,12 +1413,12 @@
   }
 
   # ==========================================================================
-  # CONTRÔLE TOLÉRANT DE LA NORMALITÉ (si seule violation)
+  # CONTR\u00d4LE TOL\u00c9RANT DE LA NORMALIT\u00c9 (si seule violation)
   # ==========================================================================
-  # Si SEULE la normalité est violée ET variances homogènes ET n≥30 par groupe
-  # → Le Théorème Central Limite (TCL) garantit la robustesse des tests F
+  # Si SEULE la normalit\u00e9 est viol\u00e9e ET variances homog\u00e8nes ET n\u226530 par groupe
+  # \u2192 Le Th\u00e9or\u00e8me Central Limite (TCL) garantit la robustesse des tests F
   #
-  # Références académiques:
+  # R\u00e9f\u00e9rences acad\u00e9miques:
   # - Lumley et al. (2002) DOI:10.1146/annurev.publhealth.23.100901.140546
   # - Blanca et al. (2017) DOI:10.7334/psicothema2016.383
   # - Maxwell et al. (2018), pp. 133-135
@@ -1438,54 +1431,54 @@
       check_linearity &&
       check_slopes_homogeneity) {
 
-    # Vérifier tailles de groupes
+    # V\u00e9rifier tailles de groupes
     group_sizes <- table(g_cat)
 
     if (all(group_sizes >= 30)) {
       k <- .vbse(
         paste0("TOLERANT NORMALITY CHECK: Central Limit Theorem application\n",
-               "\tContext: Only normality violated, but homoscedasticity confirmed + all group sizes ≥ 30\n",
+               "\tContext: Only normality violated, but homoscedasticity confirmed + all group sizes \u2265 30\n",
                "\tCLT guarantees F-test robustness despite non-normal residuals\n",
                "\t==> Proceeding with parametric ANCOVA"),
-        paste0("CONTRÔLE TOLÉRANT DE LA NORMALITÉ : Application du Théorème Central Limite\n",
-               "\tContexte : Seule la normalité violée, mais homoscédasticité confirmée + tailles de groupes ≥ 30\n",
-               "\tLe TCL garantit la robustesse du test F malgré résidus non normaux\n",
-               "\t==> Poursuite avec ANCOVA paramétrique"),
+        paste0("CONTR\u00d4LE TOL\u00c9RANT DE LA NORMALIT\u00c9 : Application du Th\u00e9or\u00e8me Central Limite\n",
+               "\tContexte : Seule la normalit\u00e9 viol\u00e9e, mais homosc\u00e9dasticit\u00e9 confirm\u00e9e + tailles de groupes \u2265 30\n",
+               "\tLe TCL garantit la robustesse du test F malgr\u00e9 r\u00e9sidus non normaux\n",
+               "\t==> Poursuite avec ANCOVA param\u00e9trique"),
         verbose = verbose, code = code, k = k, cpt = "on"
       )
       check_normality_tolerant <- TRUE
-      all_assumptions_met <- TRUE  # Permettre ANCOVA paramétrique
+      all_assumptions_met <- TRUE  # Permettre ANCOVA param\u00e9trique
       assumptions_checked$normality$tolerant_applied <- TRUE
       assumptions_checked$normality$group_sizes <- as.vector(group_sizes)
     }
   }
 
   if (all_assumptions_met) {
-    # ANCOVA PARAMÉTRIQUE
-    # NOTE: Le type de Sommes des Carrés a déjà été sélectionné à l'étape 3
-    # via .select_ss_type() et warnings affichés si nécessaire
+    # ANCOVA PARAM\u00c9TRIQUE
+    # NOTE: Le type de Sommes des Carr\u00e9s a d\u00e9j\u00e0 \u00e9t\u00e9 s\u00e9lectionn\u00e9 \u00e0 l'\u00e9tape 3
+    # via .select_ss_type() et warnings affich\u00e9s si n\u00e9cessaire
 
     k <- .vbse(
       paste0("Proceeding with parametric ANCOVA (assumptions met)\n",
              "\t==> Displaying results:"),
-      paste0("Poursuite avec ANCOVA paramétrique (assomptions respectées)\n",
+      paste0("Poursuite avec ANCOVA param\u00e9trique (assomptions respect\u00e9es)\n",
              "\t==> Affichage du bilan :"),
       verbose = verbose, code = code, k = k, cpt = "on"
     )
 
-    # CODE: Étape 10 - ANCOVA paramétrique
+    # CODE: \u00c9tape 10 - ANCOVA param\u00e9trique
     if (isTRUE(code)) {
       if (selected_type == "I") {
         k_code <- k_code + 1
-        .code_ancova(k_code, "ANCOVA paramétrique - Type I", c(
-          "# Type I: Sommes des carrés séquentielles",
+        .code_ancova(k_code, "ANCOVA param\u00e9trique - Type I", c(
+          "# Type I: Sommes des carr\u00e9s s\u00e9quentielles",
           "anova_result <- anova(ancova_model)",
           "print(anova_result)"
         ))
       } else {
         k_code <- k_code + 1
-        .code_ancova(k_code, paste0("ANCOVA paramétrique - Type ", selected_type), c(
-          paste0("# Type ", selected_type, ": Sommes des carrés marginales"),
+        .code_ancova(k_code, paste0("ANCOVA param\u00e9trique - Type ", selected_type), c(
+          paste0("# Type ", selected_type, ": Sommes des carr\u00e9s marginales"),
           "library(car)",
           paste0("anova_result <- car::Anova(ancova_model, type = '", selected_type, "')"),
           "print(anova_result)"
@@ -1496,33 +1489,33 @@
     if (verbose) {
       # Type I utilise anova() de base, Type II/III utilisent car::Anova()
       if (selected_type == "I") {
-        # Type I: Sommes des carrés séquentielles (anova de base)
+        # Type I: Sommes des carr\u00e9s s\u00e9quentielles (anova de base)
         anova_result <- anova(model)
         cat("\n")
         print(anova_result)
         cat("\n")
 
       } else if (selected_type %in% c("II", "III") && requireNamespace("car", quietly = TRUE)) {
-        # Type II/III: Tentative avec car::Anova (peut échouer si coefficients aliasés)
+        # Type II/III: Tentative avec car::Anova (peut \u00e9chouer si coefficients alias\u00e9s)
         anova_result <- tryCatch({
           car::Anova(model, type = selected_type)
         }, error = function(e) {
           if (grepl("aliased", conditionMessage(e), ignore.case = TRUE)) {
-            # Coefficients aliasés (typique avec interactions facteur×facteur et contr.sum)
-            # Basculer vers Type II si on était en Type III
+            # Coefficients alias\u00e9s (typique avec interactions facteur\u00d7facteur et contr.sum)
+            # Basculer vers Type II si on \u00e9tait en Type III
             if (selected_type == "III") {
               k <<- .vbse(
-                paste0("\tNote: Aliased coefficients detected (factor×factor interactions with sum contrasts)\n",
+                paste0("\tNote: Aliased coefficients detected (factor\u00d7factor interactions with sum contrasts)\n",
                        "\tSwitching to Type II Sum of Squares [car::Anova(type='II')]\n",
                        "\tType II: Each effect adjusted for all others at same or lower order"),
-                paste0("\tNote : Coefficients aliasés détectés (interactions facteur×facteur avec contrastes somme)\n",
-                       "\tPassage vers Sommes des Carrés Type II [car::Anova(type='II')]\n",
-                       "\tType II : Chaque effet ajusté pour tous les autres de même ordre ou inférieur"),
+                paste0("\tNote : Coefficients alias\u00e9s d\u00e9tect\u00e9s (interactions facteur\u00d7facteur avec contrastes somme)\n",
+                       "\tPassage vers Sommes des Carr\u00e9s Type II [car::Anova(type='II')]\n",
+                       "\tType II : Chaque effet ajust\u00e9 pour tous les autres de m\u00eame ordre ou inf\u00e9rieur"),
                 verbose = verbose, code = code, k = k, cpt = "off"
               )
               car::Anova(model, type = "II")
             } else {
-              stop(e)  # Re-throw si déjà Type II
+              stop(e)  # Re-throw si d\u00e9j\u00e0 Type II
             }
           } else {
             stop(e)  # Re-throw si autre erreur
@@ -1541,17 +1534,17 @@
         if (length(valid_rows) > 0) {
           sig_effects <- row_names[valid_rows][anova_result[valid_rows, pval_col[1]] < alpha]
           if (length(sig_effects) > 0) {
-            # Séparer facteurs et covariables
+            # S\u00e9parer facteurs et covariables
             sig_factors <- sig_effects[sig_effects %in% factor_vars]
             sig_covariates <- sig_effects[sig_effects %in% numeric_vars]
 
-            # Message détaillé
+            # Message d\u00e9taill\u00e9
             if (length(sig_factors) > 0 && length(sig_covariates) > 0) {
               k <- .vbse(
                 paste0("\tSignificant effects detected:\n",
                        "\t  Factors: ", paste(sig_factors, collapse = ", "), "\n",
                        "\t  Covariates: ", paste(sig_covariates, collapse = ", ")),
-                paste0("\tEffets significatifs détectés :\n",
+                paste0("\tEffets significatifs d\u00e9tect\u00e9s :\n",
                        "\t  Facteurs : ", paste(sig_factors, collapse = ", "), "\n",
                        "\t  Covariables : ", paste(sig_covariates, collapse = ", ")),
                 verbose = verbose, code = code, k = k, cpt = "off"
@@ -1560,7 +1553,7 @@
               k <- .vbse(
                 paste0("\tSignificant effects detected:\n",
                        "\t  Factors: ", paste(sig_factors, collapse = ", ")),
-                paste0("\tEffets significatifs détectés :\n",
+                paste0("\tEffets significatifs d\u00e9tect\u00e9s :\n",
                        "\t  Facteurs : ", paste(sig_factors, collapse = ", ")),
                 verbose = verbose, code = code, k = k, cpt = "off"
               )
@@ -1568,7 +1561,7 @@
               k <- .vbse(
                 paste0("\tSignificant effects detected:\n",
                        "\t  Covariates: ", paste(sig_covariates, collapse = ", ")),
-                paste0("\tEffets significatifs détectés :\n",
+                paste0("\tEffets significatifs d\u00e9tect\u00e9s :\n",
                        "\t  Covariables : ", paste(sig_covariates, collapse = ", ")),
                 verbose = verbose, code = code, k = k, cpt = "off"
               )
@@ -1576,14 +1569,14 @@
               # Interactions ou autres effets
               k <- .vbse(
                 paste0("\tSignificant effects detected: ", paste(sig_effects, collapse = ", ")),
-                paste0("\tEffets significatifs détectés : ", paste(sig_effects, collapse = ", ")),
+                paste0("\tEffets significatifs d\u00e9tect\u00e9s : ", paste(sig_effects, collapse = ", ")),
                 verbose = verbose, code = code, k = k, cpt = "off"
               )
             }
           } else {
             k <- .vbse(
               paste0("\tNo significant effects at alpha = ", alpha),
-              paste0("\tAucun effet significatif à alpha = ", alpha),
+              paste0("\tAucun effet significatif \u00e0 alpha = ", alpha),
               verbose = verbose, code = code, k = k, cpt = "off"
             )
           }
@@ -1601,10 +1594,10 @@
 
   } else {
     # ANCOVA ROBUSTE
-    # Ne pas afficher de message ici si early stop déjà activé
-    # (le message a déjà été affiché lors de l'early stop)
+    # Ne pas afficher de message ici si early stop d\u00e9j\u00e0 activ\u00e9
+    # (le message a d\u00e9j\u00e0 \u00e9t\u00e9 affich\u00e9 lors de l'early stop)
     if (!goto_robust_ancova) {
-      # Violations détectées APRÈS early stop (linéarité ou pentes)
+      # Violations d\u00e9tect\u00e9es APR\u00c8S early stop (lin\u00e9arit\u00e9 ou pentes)
       k <- .vbse(
         paste0("==> ASSUMPTION VIOLATIONS DETECTED: Switching to ROBUST ANCOVA\n",
                "\tViolations: ",
@@ -1612,17 +1605,17 @@
                if(!check_variance_equal) "Homoscedasticity " else "",
                if(!check_linearity) "Linearity " else "",
                if(!check_slopes_homogeneity) "Slopes_homogeneity " else ""),
-        paste0("==> VIOLATIONS D'ASSOMPTIONS DÉTECTÉES : Passage vers ANCOVA ROBUSTE\n",
+        paste0("==> VIOLATIONS D'ASSOMPTIONS D\u00c9TECT\u00c9ES : Passage vers ANCOVA ROBUSTE\n",
                "\tViolations : ",
-               if(!check_normality) "Normalité " else "",
-               if(!check_variance_equal) "Homoscédasticité " else "",
-               if(!check_linearity) "Linéarité " else "",
-               if(!check_slopes_homogeneity) "Homogénéité_pentes " else ""),
+               if(!check_normality) "Normalit\u00e9 " else "",
+               if(!check_variance_equal) "Homosc\u00e9dasticit\u00e9 " else "",
+               if(!check_linearity) "Lin\u00e9arit\u00e9 " else "",
+               if(!check_slopes_homogeneity) "Homog\u00e9n\u00e9it\u00e9_pentes " else ""),
         verbose = verbose, code = code, k = k, cpt = "on"
       )
     }
 
-    # Appeler logique robuste ANCOVA (déjà implémentée en session 15)
+    # Appeler logique robuste ANCOVA (d\u00e9j\u00e0 impl\u00e9ment\u00e9e en session 15)
     n_categorical_factors <- length(factor_vars)
     n_continuous_covariates <- length(numeric_vars)
 
@@ -1635,8 +1628,8 @@
     )
 
     if (n_categorical_factors == 1 && n_continuous_covariates >= 1) {
-      # Régression robuste
-      # RÉFÉRENCE ACADÉMIQUE (développeurs/documentation uniquement - bp.log 7.4.6.1):
+      # R\u00e9gression robuste
+      # R\u00c9F\u00c9RENCE ACAD\u00c9MIQUE (d\u00e9veloppeurs/documentation uniquement - bp.log 7.4.6.1):
       # Wilcox, R. R. (2017). Introduction to Robust Estimation and Hypothesis Testing (4th ed.).
       # Academic Press. ISBN: 978-0128047330. Chapitre 7 (pp. 423-456): Robust ANCOVA methods.
 
@@ -1646,11 +1639,11 @@
                "\tMethod: MM-estimation (resistant to outliers and violations)\n",
                "\t(Alternatives: Quade test if paired data, GLM if specific distribution)\n",
                "\t==> Fitting robust ANCOVA model..."),
-        paste0("Sélection méthode robuste : Régression robuste [rlm() {MASS}]\n",
+        paste0("S\u00e9lection m\u00e9thode robuste : R\u00e9gression robuste [rlm() {MASS}]\n",
                "\tJustification : 1 facteur + covariable(s) + violations assomptions\n",
-               "\tMéthode : MM-estimation (résistant outliers et violations)\n",
-               "\t(Alternatives : Test Quade si paired, GLM si distribution spécifique)\n",
-               "\t==> Ajustement du modèle ANCOVA robuste..."),
+               "\tM\u00e9thode : MM-estimation (r\u00e9sistant outliers et violations)\n",
+               "\t(Alternatives : Test Quade si paired, GLM si distribution sp\u00e9cifique)\n",
+               "\t==> Ajustement du mod\u00e8le ANCOVA robuste..."),
         verbose = verbose, code = code, k = k, cpt = "on"
       )
 
@@ -1668,8 +1661,8 @@
 
         if (!is.null(robust_model)) {
           if (verbose) {
-            # IMPORTANT: summary.rlm() peut échouer si résidus contiennent NA
-            # Wrapper dans tryCatch() pour éviter crash
+            # IMPORTANT: summary.rlm() peut \u00e9chouer si r\u00e9sidus contiennent NA
+            # Wrapper dans tryCatch() pour \u00e9viter crash
             tryCatch({
               print(summary(robust_model))
               cat("\n")
@@ -1685,12 +1678,12 @@
 
     } else if (n_categorical_factors >= 2 && n_continuous_covariates >= 1) {
       #==========================================================================
-      # CAS 2: PLUSIEURS FACTEURS + COVARIABLES → White's Heteroscedasticity-Consistent SEs
+      # CAS 2: PLUSIEURS FACTEURS + COVARIABLES \u2192 White's Heteroscedasticity-Consistent SEs
       #==========================================================================
-      # NOTE ACADÉMIQUE: aovp() non adapté pour ANCOVA car permute observations entières,
+      # NOTE ACAD\u00c9MIQUE: aovp() non adapt\u00e9 pour ANCOVA car permute observations enti\u00e8res,
       # ce qui brise la relation covariate-DV. Solution: erreurs standard robustes (HC3).
       #
-      # Référence: Long & Ervin (2000). Using heteroscedasticity consistent standard errors.
+      # R\u00e9f\u00e9rence: Long & Ervin (2000). Using heteroscedasticity consistent standard errors.
       #            DOI:10.1080/00031305.2000.10474549
 
       k <- .vbse(
@@ -1698,10 +1691,10 @@
                "\tApproach: White's correction (HC3 estimator)\n",
                "\tReason: Permutation tests invalid for ANCOVA (break covariate-DV relationship)\n",
                "\tRationale: HC3 provides valid inference without normality/homoscedasticity assumptions"),
-        paste0("Méthode sélectionnée : ANCOVA avec erreurs standard robustes à l'hétéroscédasticité\n",
+        paste0("M\u00e9thode s\u00e9lectionn\u00e9e : ANCOVA avec erreurs standard robustes \u00e0 l'h\u00e9t\u00e9rosc\u00e9dasticit\u00e9\n",
                "\tApproche : Correction de White (estimateur HC3)\n",
-               "\tRaison : Tests de permutation invalides pour ANCOVA (brisent relation covariable-Variable Dépendante)\n",
-               "\tRationale : HC3 fournit inférence valide sans hypothèses de normalité/homoscédasticité"),
+               "\tRaison : Tests de permutation invalides pour ANCOVA (brisent relation covariable-Variable D\u00e9pendante)\n",
+               "\tRationale : HC3 fournit inf\u00e9rence valide sans hypoth\u00e8ses de normalit\u00e9/homosc\u00e9dasticit\u00e9"),
         verbose = verbose, code = code, k = k, cpt = "on"
       )
 
@@ -1726,18 +1719,18 @@
             suppressMessages(car::Anova(model, vcov. = robust_vcov, type = "III"))
           }, error = function(e) {
             if (grepl("aliased", conditionMessage(e), ignore.case = TRUE)) {
-              # Coefficients aliasés avec robust vcov → car::Anova() échoue même avec Type II
+              # Coefficients alias\u00e9s avec robust vcov \u2192 car::Anova() \u00e9choue m\u00eame avec Type II
               # Tentative Type II d'abord
               type_ii_result <- tryCatch({
                 suppressMessages(car::Anova(model, vcov. = robust_vcov, type = "II"))
               }, error = function(e2) {
                 if (grepl("aliased", conditionMessage(e2), ignore.case = TRUE)) {
-                  # Type II échoue aussi → basculer vers rlm() comme fallback
+                  # Type II \u00e9choue aussi \u2192 basculer vers rlm() comme fallback
                   k <<- .vbse(
                     paste0("\tNote: Aliased coefficients incompatible with robust standard errors\n",
                            "\tFalling back to robust regression [rlm() {MASS}]"),
-                    paste0("\tNote : Coefficients aliasés incompatibles avec erreurs standard robustes\n",
-                           "\tRetour vers régression robuste [rlm() {MASS}]"),
+                    paste0("\tNote : Coefficients alias\u00e9s incompatibles avec erreurs standard robustes\n",
+                           "\tRetour vers r\u00e9gression robuste [rlm() {MASS}]"),
                     verbose = verbose, code = code, k = k, cpt = "off"
                   )
 
@@ -1757,17 +1750,17 @@
                       })
                     }
                   }
-                  return(NULL)  # Pas de robust_tests, utilise rlm() à la place
+                  return(NULL)  # Pas de robust_tests, utilise rlm() \u00e0 la place
                 } else {
                   stop(e2)  # Autre erreur, propager
                 }
               })
 
-              # Si Type II réussit, l'utiliser
+              # Si Type II r\u00e9ussit, l'utiliser
               if (!is.null(type_ii_result)) {
                 k <<- .vbse(
                   paste0("\tNote: Aliased coefficients detected, using Type II"),
-                  paste0("\tNote : Coefficients aliasés détectés, utilisation Type II"),
+                  paste0("\tNote : Coefficients alias\u00e9s d\u00e9tect\u00e9s, utilisation Type II"),
                   verbose = verbose, code = code, k = k, cpt = "off"
                 )
                 return(type_ii_result)
@@ -1798,17 +1791,17 @@
                 if (length(valid_rows) > 0) {
                   sig_effects <- row_names[valid_rows][robust_tests[valid_rows, pval_col[1]] < alpha]
                   if (length(sig_effects) > 0) {
-                    # Séparer facteurs et covariables
+                    # S\u00e9parer facteurs et covariables
                     sig_factors <- sig_effects[sig_effects %in% factor_vars]
                     sig_covariates <- sig_effects[sig_effects %in% numeric_vars]
 
-                    # Message détaillé
+                    # Message d\u00e9taill\u00e9
                     if (length(sig_factors) > 0 && length(sig_covariates) > 0) {
                       k <- .vbse(
                         paste0("\tSignificant effects detected:\n",
                                "\t  Factors: ", paste(sig_factors, collapse = ", "), "\n",
                                "\t  Covariates: ", paste(sig_covariates, collapse = ", ")),
-                        paste0("\tEffets significatifs détectés :\n",
+                        paste0("\tEffets significatifs d\u00e9tect\u00e9s :\n",
                                "\t  Facteurs : ", paste(sig_factors, collapse = ", "), "\n",
                                "\t  Covariables : ", paste(sig_covariates, collapse = ", ")),
                         verbose = verbose, code = code, k = k, cpt = "off"
@@ -1817,7 +1810,7 @@
                       k <- .vbse(
                         paste0("\tSignificant effects detected:\n",
                                "\t  Factors: ", paste(sig_factors, collapse = ", ")),
-                        paste0("\tEffets significatifs détectés :\n",
+                        paste0("\tEffets significatifs d\u00e9tect\u00e9s :\n",
                                "\t  Facteurs : ", paste(sig_factors, collapse = ", ")),
                         verbose = verbose, code = code, k = k, cpt = "off"
                       )
@@ -1825,7 +1818,7 @@
                       k <- .vbse(
                         paste0("\tSignificant effects detected:\n",
                                "\t  Covariates: ", paste(sig_covariates, collapse = ", ")),
-                        paste0("\tEffets significatifs détectés :\n",
+                        paste0("\tEffets significatifs d\u00e9tect\u00e9s :\n",
                                "\t  Covariables : ", paste(sig_covariates, collapse = ", ")),
                         verbose = verbose, code = code, k = k, cpt = "off"
                       )
@@ -1833,14 +1826,14 @@
                       # Interactions ou autres effets
                       k <- .vbse(
                         paste0("\tSignificant effects detected: ", paste(sig_effects, collapse = ", ")),
-                        paste0("\tEffets significatifs détectés : ", paste(sig_effects, collapse = ", ")),
+                        paste0("\tEffets significatifs d\u00e9tect\u00e9s : ", paste(sig_effects, collapse = ", ")),
                         verbose = verbose, code = code, k = k, cpt = "off"
                       )
                     }
                   } else {
                     k <- .vbse(
                       paste0("\tNo significant effects at alpha = ", alpha),
-                      paste0("\tAucun effet significatif à alpha = ", alpha),
+                      paste0("\tAucun effet significatif \u00e0 alpha = ", alpha),
                       verbose = verbose, code = code, k = k, cpt = "off"
                     )
                   }
@@ -1879,3 +1872,12 @@
     ))
   }
 }
+
+  # Fonction auxiliaire locale pour afficher code R avec num\u00e9rotation
+  .code_ancova <- function(step_num, title, code_lines) {
+    cat(paste0("# ", step_num, ") ", title, "\n"))
+    for (line in code_lines) {
+      cat(paste0(line, "\n"))
+    }
+    cat("\n")
+  }
