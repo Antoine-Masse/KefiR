@@ -20,6 +20,13 @@
 			fr <- paste0(k,") ",fr,"\n")
 			cat(.msg(ang,fr))
 			return(k)
+		} else if (cpt == "sub") {
+			# Sub-step mode: tab prefix + double-tab for internal newlines
+			ang <- gsub("\n\t([^\t])", "\n\t\t\\1", ang)
+			fr <- gsub("\n\t([^\t])", "\n\t\t\\1", fr)
+			ang <- paste0("\t",ang,"\n")
+			fr <- paste0("\t",fr,"\n")
+			cat(.msg(ang,fr))
 		} else {
 			ang <- paste0("\t",ang,"\n")
 			fr <- paste0("\t",fr,"\n")

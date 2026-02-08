@@ -184,17 +184,25 @@
 #'
 #' @examples
 #' \dontrun{
-#' # Example 1: One-factor unpaired
-#' data1 <- .simul(n = 12, k_H = 3, seed = 123)
-#' m.test(A ~ F, data = data1, verbose = TRUE)
+#' # Example 1: One-factor ANOVA (iris)
+#' data(iris)
+#' m.test(Sepal.Length ~ Species, data = iris, verbose = TRUE)
 #'
-#' # Example 2: Repeated measures
-#' data2 <- .simul(n = 12, seed = 456)
-#' m.test(A ~ G, data = data2, id = "idG", verbose = TRUE)
+#' # Example 2: ANCOVA (mtcars)
+#' data(mtcars)
+#' mtcars$cyl <- factor(mtcars$cyl)
+#' m.test(mpg ~ cyl + wt, data = mtcars, verbose = TRUE)
 #'
-#' # Example 3: Mixed design
-#' data3 <- .simul(n = 20, seed = 789)
-#' m.test(A ~ F * Temps + Error(id/Temps), data = data3, verbose = TRUE)
+#' # Example 3: MANOVA (iris)
+#' data(iris)
+#' m.test(cbind(Sepal.Length, Sepal.Width) ~ Species,
+#'        data = iris, verbose = TRUE)
+#'
+#' # Example 4: Mixed model / random effect (sleepstudy)
+#' # Requires lme4 installed
+#' # data(sleepstudy, package = "lme4")
+#' # m.test(Reaction ~ Days + (1|Subject),
+#' #        data = sleepstudy, verbose = TRUE)
 #' }
 #'
 m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
@@ -1013,7 +1021,7 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
   ################################################################################
 
   if (!check_anova && !check_manova) {
-    if (is.vector(x) && is.vector(g)) {
+    if ((is.vector(x) || is.numeric(x)) && (is.vector(g) || is.factor(g))) {
       complete_cases <- complete.cases(x, g)
       n_na <- sum(!complete_cases)
 
@@ -1525,12 +1533,12 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
     if (verbose == TRUE) {
       cat("\n")
       cat(.msg(
-        "m.test() - version 02 beta 2025 - report any issues to antoine.masse@u-bordeaux.fr.\n",
-        "m.test() - version 02 b\u00eata 2025 - envoyer ce bilan \u00e0 antoine.masse@u-bordeaux.fr en cas d'anomalie.\n"
+        "m.test() - version 02 beta 2026 - report any issues to antoine.masse@u-bordeaux.fr.\n",
+        "m.test() - version 02 b\u00eata 2026 - envoyer ce bilan \u00e0 antoine.masse@u-bordeaux.fr en cas d'anomalie.\n"
       ))
     } else if (code == TRUE && !is.null(bilan)) {
       # En mode code, ajouter le message en commentaire
-      cat("# m.test() - version 02 b\u00eata 2025 - envoyer ce bilan \u00e0 antoine.masse@u-bordeaux.fr en cas d'anomalie.\n")
+      cat("# m.test() - version 02 b\u00eata 2026 - envoyer ce bilan \u00e0 antoine.masse@u-bordeaux.fr en cas d'anomalie.\n")
     }
 
     # Nettoyage du bilan MANOVA : conserver uniquement les \u00e9l\u00e9ments utiles \u00e0 l'utilisateur
@@ -1647,8 +1655,8 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
         )
 
         synth <- tryCatch({
-          .posthoc(x, g, alpha = alpha, normal = check_normality,
-                   var.equal = check_variance_equal,
+          .posthoc(x, g, alpha = alpha, normal = isTRUE(check_normality),
+                   var.equal = isTRUE(check_variance_equal),
                    control = control, debug = debug,
                    verbose = verbose, code = code, paired = paired,
                    boot = boot, boot_type = boot_type, iter = iter, conf = conf, k = k,
@@ -1682,8 +1690,8 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
              debug = debug)
 
         synth <- tryCatch({
-          .posthoc(x, g, alpha = alpha, normal = check_normality,
-                   var.equal = check_variance_equal,
+          .posthoc(x, g, alpha = alpha, normal = isTRUE(check_normality),
+                   var.equal = isTRUE(check_variance_equal),
                    control = control, code = FALSE, debug = debug,
                    verbose = FALSE,  # MODE SILENCIEUX pour \u00e9viter r\u00e9affichage (et code=FALSE pour \u00e9viter duplication)
                    paired = paired,
@@ -1700,8 +1708,8 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
       } else {
         # Plus de 2 groupes : appeler .posthoc() TOUJOURS (m\u00eame si test global non significatif)
         synth <- tryCatch({
-          .posthoc(x, g, alpha = alpha, normal = check_normality,
-                   var.equal = check_variance_equal,
+          .posthoc(x, g, alpha = alpha, normal = isTRUE(check_normality),
+                   var.equal = isTRUE(check_variance_equal),
                    control = control, debug = debug,
                    verbose = verbose, code = code, paired = paired,
                    boot = boot, boot_type = boot_type, iter = iter, conf = conf, k = k,
@@ -1761,29 +1769,67 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
              "Cr\u00e9ation graphique avec lettres de significativit\u00e9.",
              debug = debug)
 
-        # D\u00e9terminer titre selon type d'analyse
-        plot_title <- ""
-        if (is_ancova) {
-          plot_title <- "ANCOVA (adjusted means)"
-        } else if (paired) {
-          plot_title <- "Paired comparisons"
-        } else if (is_mixed_model) {
-          plot_title <- "Mixed Model (EMMs)"
-        } else {
-          plot_title <- "ANOVA"
-        }
-
         # G\u00e9rer format multi-effets de .posthoc_mixed_model()
         # Si synth contient $note et plusieurs sous-listes : extraire le premier effet
         posthoc_for_plot <- synth
+        effect_suffix <- ""
         if (!is.null(synth$note) && !inherits(synth, "posthoc")) {
           # Multi-effets : extraire le premier effet significatif
           effect_names <- setdiff(names(synth), c("k", "note"))
           if (length(effect_names) > 0) {
             posthoc_for_plot <- synth[[effect_names[1]]]
-            plot_title <- paste0(plot_title, " - ", effect_names[1])
+            effect_suffix <- paste0(" - ", effect_names[1])
           }
         }
+
+        # D\u00e9terminer titre dynamique selon le post-hoc utilis\u00e9 pour les lettres
+        # Meme logique de scan que .plot_with_letters() pour coherence
+        plot_title <- ""
+        if (!is.null(posthoc_for_plot) && !is.null(posthoc_for_plot$groups)) {
+          gdf <- posthoc_for_plot$groups
+          for (ic in seq_along(names(gdf))) {
+            cn <- names(gdf)[ic]
+            # Sauter uniquement les colonnes de statistiques descriptives (pas les colonnes de lettres)
+            # "categories" = noms des groupes, "mean"/"std"/"se" seuls = statistiques
+            if (tolower(cn) %in% c("categories", "category", "mean", "std", "se", "n", "sd")) next
+            cv <- as.character(gdf[[ic]])
+            if (any(grepl("^[a-z]+$", cv, ignore.case = TRUE))) {
+              # Formatter : _Holm -> (Holm), _ restants -> espace
+              plot_title <- gsub("_Holm$", " (Holm)", cn)
+              plot_title <- gsub("_", " ", plot_title)
+              break
+            }
+          }
+        }
+        # Fallback : champ method si pas de colonne lettres
+        if (plot_title == "" && !is.null(posthoc_for_plot$method)) {
+          plot_title <- posthoc_for_plot$method
+        }
+        # Dernier recours : type d'analyse generique
+        if (plot_title == "") {
+          if (is_ancova) {
+            plot_title <- "ANCOVA"
+          } else if (paired) {
+            plot_title <- "Paired comparisons"
+          } else if (is_mixed_model) {
+            plot_title <- "Mixed Model"
+          } else if (n_groups_plot == 2) {
+            # 2 groupes : t-test ou comparaison simple
+            if (isTRUE(check_normality)) {
+              plot_title <- "Student t-test"
+            } else {
+              plot_title <- "Wilcoxon"
+            }
+          } else {
+            # >2 groupes
+            if (isTRUE(check_normality)) {
+              plot_title <- "ANOVA"
+            } else {
+              plot_title <- "Kruskal-Wallis"
+            }
+          }
+        }
+        plot_title <- paste0(plot_title, effect_suffix)
 
         # Appeler .plot_with_letters() avec r\u00e9sultats post-hocs
         .plot_with_letters(
@@ -1936,12 +1982,12 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
     if (verbose == TRUE) {
       cat("\n")
       cat(.msg(
-        "m.test() - version 02 beta 2025 - report any issues to antoine.masse@u-bordeaux.fr.\n",
-        "m.test() - version 02 b\u00eata 2025 - envoyer ce bilan \u00e0 antoine.masse@u-bordeaux.fr en cas d'anomalie.\n"
+        "m.test() - version 02 beta 2026 - report any issues to antoine.masse@u-bordeaux.fr.\n",
+        "m.test() - version 02 b\u00eata 2026 - envoyer ce bilan \u00e0 antoine.masse@u-bordeaux.fr en cas d'anomalie.\n"
       ))
     } else if (code == TRUE && !is.null(synth)) {
       # En mode code, ajouter le message en commentaire
-      cat("# m.test() - version 02 b\u00eata 2025 - envoyer ce bilan \u00e0 antoine.masse@u-bordeaux.fr en cas d'anomalie.\n")
+      cat("# m.test() - version 02 b\u00eata 2026 - envoyer ce bilan \u00e0 antoine.masse@u-bordeaux.fr en cas d'anomalie.\n")
     }
 
     return(synth)

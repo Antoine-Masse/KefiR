@@ -183,6 +183,7 @@ Academic Press. https://doi.org/10.1016/C2010-0-67044-1
 }
 
 \examples{
+\dontrun{
 # Example 1: Classical MANOVA with 2 groups and 3 dependent variables
 set.seed(123)
 data <- data.frame(
@@ -205,9 +206,11 @@ result <- .manova_analysis(
   g = data.frame(FactorA = data$FactorA, FactorB = data$FactorB),
   verbose = TRUE
 )
+}
 
 }
 \seealso{
 \code{\link{.multi_factor_analysis}}, \code{.one_factor_analysis},
 \code{\link[stats]{manova}}, \code{\link[car]{Anova}}, \code{\link[MVN]{mvn}}
 }
+\keyword{internal}

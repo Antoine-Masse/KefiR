@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(R CMD check:*)",
+      "Bash(Rscript -e \"tryCatch(source(''R/sys_vbse.R''), error=function(e) cat(''ERROR:'', e$message, ''\\n'')); cat(''sys_vbse.R: OK\\n'')\")",
+      "Bash(Rscript -e \"tryCatch(parse(file=''R/sys_variance.R''), error=function(e) cat(''PARSE ERROR:'', e$message, ''\\n'')); cat(''sys_variance.R: OK\\n'')\")",
+      "Bash(Rscript -e \"tryCatch(parse(file=''R/sys_multi_factor_analysis.R''), error=function(e) cat(''PARSE ERROR:'', e$message, ''\\n'')); cat(''sys_multi_factor_analysis.R: OK\\n'')\")",
+      "Bash(grep:*)",
+      "Bash(Rscript:*)",
+      "Bash(awk:*)"
+    ]
+  }
+}

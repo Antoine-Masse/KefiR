@@ -23,7 +23,7 @@
 #' @keywords internal
 .variance <- function(x, g, check_normality=TRUE, alpha=0.05,
                       paired=FALSE, debug=FALSE, verbose=FALSE, k=0, code=FALSE, cpt="on",
-                      assumption_label=NULL) {
+                      assumption_label=NULL, prefix="") {
   ####################################
   # Initialisation
   ####################################
@@ -107,6 +107,10 @@
 
     } else if (n_g > 2) {
 
+      # Indentation pour sous-etapes (cpt="sub" depuis multi-facteur)
+      sub_indent <- if (cpt == "sub") "\t" else ""
+      detail_cpt <- if (cpt == "sub") "sub" else "off"
+
       if (check_normality==TRUE) {
         #========================================
         # DONN\u00c9ES NORMALES : Test de Bartlett
@@ -148,8 +152,8 @@
           )
         } else {
           k <- .vbse(
-            "Contr\u00f4le ACAD\u00c9MIQUE de l'homog\u00e9n\u00e9it\u00e9 de la variance des groupes.",
-            "Contr\u00f4le ACAD\u00c9MIQUE de l'homog\u00e9n\u00e9it\u00e9 de la variance des groupes.",
+            paste0(prefix, "Group variance homogeneity check."),
+            paste0(prefix, "Contr\u00f4le de l'homog\u00e9n\u00e9it\u00e9 de la variance des groupes."),
             verbose = verbose, code = code, k = k, cpt=cpt
           )
         }
@@ -157,15 +161,15 @@
         if (pvals > alpha) {
           # VARIANCES HOMOG\u00c8NES
           check_variance <- TRUE
-          ang <- paste0("Bartlett test [bartlett.test()] - Homogeneous variances (p = ", .format_pval(pvals), ").")
-          fr <- paste0("Test de Bartlett [bartlett.test()] - Variances homog\u00e8nes (p = ", .format_pval(pvals), ").")
-          k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt="off")
+          ang <- paste0(sub_indent, "Bartlett test [bartlett.test()] - Homogeneous variances (p = ", .format_pval(pvals), ").")
+          fr <- paste0(sub_indent, "Test de Bartlett [bartlett.test()] - Variances homog\u00e8nes (p = ", .format_pval(pvals), ").")
+          k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt=detail_cpt)
         } else {
           # VARIANCES H\u00c9T\u00c9ROG\u00c8NES
           check_variance <- FALSE
-          ang <- paste0("Bartlett test [bartlett.test()] - Heterogeneous variances (p = ", .format_pval(pvals), ").")
-          fr <- paste0("Test de Bartlett [bartlett.test()] - Variances h\u00e9t\u00e9rog\u00e8nes (p = ", .format_pval(pvals), ").")
-          k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt="off")
+          ang <- paste0(sub_indent, "Bartlett test [bartlett.test()] - Heterogeneous variances (p = ", .format_pval(pvals), ").")
+          fr <- paste0(sub_indent, "Test de Bartlett [bartlett.test()] - Variances h\u00e9t\u00e9rog\u00e8nes (p = ", .format_pval(pvals), ").")
+          k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt=detail_cpt)
         }
 
       } else if (check_normality==FALSE) {
@@ -213,21 +217,21 @@
           )
         } else {
           k <- .vbse(
-            "Contr\u00f4le ACAD\u00c9MIQUE de l'homog\u00e9n\u00e9it\u00e9 de la variance des groupes.",
-            "Contr\u00f4le ACAD\u00c9MIQUE de l'homog\u00e9n\u00e9it\u00e9 de la variance des groupes.",
+            paste0(prefix, "Group variance homogeneity check."),
+            paste0(prefix, "Contr\u00f4le de l'homog\u00e9n\u00e9it\u00e9 de la variance des groupes."),
             verbose = verbose, code = code, k = k, cpt=cpt
           )
         }
 
         if (pvals <= alpha) {
           # VARIANCE H\u00c9T\u00c9ROG\u00c8NE d\u00e9tect\u00e9e par Levene
-          ang <- paste0("Levene test detects heteroscedasticity (heterogeneous variances).\n\t",
+          ang <- paste0(sub_indent, "Levene test detects heteroscedasticity (heterogeneous variances).\n\t",
                         "\t==> p-value: ", .format_pval(pvals), ".\n\t",
                         "Note: Levene test may be affected by data asymmetry or outliers.")
-          fr <- paste0("Le test de Levene met en \u00e9vidence une h\u00e9t\u00e9rosc\u00e9dasticit\u00e9 (variances h\u00e9t\u00e9rog\u00e8nes).\n\t",
+          fr <- paste0(sub_indent, "Le test de Levene met en \u00e9vidence une h\u00e9t\u00e9rosc\u00e9dasticit\u00e9 (variances h\u00e9t\u00e9rog\u00e8nes).\n\t",
                        "\t==> p-value : ", .format_pval(pvals), ".\n\t",
                        "Note : Le test de Levene peut avoir \u00e9t\u00e9 fauss\u00e9 par une asym\u00e9trie des donn\u00e9es ou des outliers.")
-          k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt="off")
+          k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt=detail_cpt)
 
           #========================================
           # Test de Brown-Forsyth (plus robuste, bas\u00e9 sur la m\u00e9diane)
@@ -238,43 +242,43 @@
           if (pvals2 <= alpha) {
             # VARIANCE H\u00c9T\u00c9ROG\u00c8NE confirm\u00e9e par Brown-Forsyth
             check_variance <- FALSE
-            ang <- paste0("Brown-Forsyth test confirms heteroscedasticity.\n\t",
+            ang <- paste0(sub_indent, "Brown-Forsyth test confirms heteroscedasticity.\n\t",
                           "\t==> p-value: ", .format_pval(pvals2), ".")
-            fr <- paste0("Le test de Brown-Forsyth confirme l'h\u00e9t\u00e9rosc\u00e9dasticit\u00e9.\n\t",
+            fr <- paste0(sub_indent, "Le test de Brown-Forsyth confirme l'h\u00e9t\u00e9rosc\u00e9dasticit\u00e9.\n\t",
                          "\t==> p-value : ", .format_pval(pvals2), ".")
-            k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt="off")
+            k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt=detail_cpt)
 
             # Message de redirection vers non-param\u00e9trique
-            ang <- "--> Moving towards non-parametric analysis."
-            fr <- "--> On part vers une analyse non-param\u00e9trique."
-            k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt="off")
+            ang <- paste0(sub_indent, "--> Moving towards non-parametric analysis.")
+            fr <- paste0(sub_indent, "--> On part vers une analyse non-param\u00e9trique.")
+            k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt=detail_cpt)
           } else {
             # Brown-Forsyth ne confirme PAS \u2192 Levene probablement fauss\u00e9
             check_variance <- TRUE
-            ang <- paste0("Brown-Forsyth test does NOT confirm heteroscedasticity.\n\t",
+            ang <- paste0(sub_indent, "Brown-Forsyth test does NOT confirm heteroscedasticity.\n\t",
                           "\t==> p-value: ", .format_pval(pvals2), ".\n\t",
                           "==> Variances considered homogeneous (Levene likely affected by asymmetry/outliers).")
-            fr <- paste0("Le test de Brown-Forsyth ne confirme PAS l'h\u00e9t\u00e9rosc\u00e9dasticit\u00e9.\n\t",
+            fr <- paste0(sub_indent, "Le test de Brown-Forsyth ne confirme PAS l'h\u00e9t\u00e9rosc\u00e9dasticit\u00e9.\n\t",
                          "\t==> p-value : ", .format_pval(pvals2), ".\n\t",
                          "==> Variances consid\u00e9r\u00e9es comme homog\u00e8nes (Levene probablement fauss\u00e9 par asym\u00e9trie/outliers).")
-            k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt="off")
+            k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt=detail_cpt)
           }
 
         } else {
           # VARIANCE HOMOG\u00c8NE selon Levene \u2192 PAS de test Brown-Forsyth
           check_variance <- TRUE
-          ang <- paste0("Levene test [car::leveneTest()] shows homogeneous variances (homoscedasticity).\n\t",
+          ang <- paste0(sub_indent, "Levene test [car::leveneTest()] shows homogeneous variances (homoscedasticity).\n\t",
                         "p-value: ", .format_pval(pvals), ".\n\t",
                         "Note: Levene test may be affected by data asymmetry or outliers.")
-          fr <- paste0("Test de Levene [car::leveneTest()] - Variance homog\u00e8ne (homosc\u00e9dasticit\u00e9).\n\t",
+          fr <- paste0(sub_indent, "Test de Levene [car::leveneTest()] - Variance homog\u00e8ne (homosc\u00e9dasticit\u00e9).\n\t",
                        "p-value : ", .format_pval(pvals), ".\n\t",
                        "Note : Le test de Levene peut avoir \u00e9t\u00e9 fauss\u00e9 par une asym\u00e9trie des donn\u00e9es ou des outliers.")
-          k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt="off")
+          k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt=detail_cpt)
 
           # Message de transition vers contr\u00f4le tol\u00e9rant de normalit\u00e9
-          ang <- "--> Variance homogeneity invites a more tolerant normality check."
-          fr <- "--> L'homog\u00e9n\u00e9it\u00e9 de la variance invite \u00e0 un contr\u00f4le plus tol\u00e9rant de la normalit\u00e9."
-          k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt="off")
+          ang <- paste0(sub_indent, "--> Variance homogeneity invites a more tolerant normality check.")
+          fr <- paste0(sub_indent, "--> L'homog\u00e9n\u00e9it\u00e9 de la variance invite \u00e0 un contr\u00f4le plus tol\u00e9rant de la normalit\u00e9.")
+          k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt=detail_cpt)
         }
 
       } # Fin check_normality==FALSE

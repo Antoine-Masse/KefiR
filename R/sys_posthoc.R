@@ -171,7 +171,6 @@
 #' }
 #'
 #' @keywords internal
-#' @export
 .posthoc <- function(
     x, g,
     alpha = 0.05,
@@ -394,10 +393,11 @@
             "Bootstrap" = synth2$groups[ind_temp, 2],
             "Student_Holm" = synth$groups[, 2]
           )
+          colnames(synth$groups)[2] <- paste0("Bootstrap (", final_boot_type, ")")
 
           # V\u00e9rification bootstrap APR\u00c8S cr\u00e9ation des 3 colonnes
           if (isTRUE(verbose) && isTRUE(boot) && !is.null(synth$bootstrap) &&
-              ncol(synth$groups) >= 3 && any(synth$bootstrap$groups[, 2] != synth$groups[, 3])) {
+              ncol(synth$groups) >= 3 && any(synth$bootstrap$groups[, 2] != synth$groups[, 3], na.rm = TRUE)) {
             ang <- "Warning! Bootstrap detects weaknesses in the significance of the results."
             fr <- "Attention ! Le bootstrap d\u00e9tecte des faiblesses dans la signification des r\u00e9sultats."
             k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt = "off")
@@ -464,10 +464,11 @@
             "Bootstrap" = synth2$groups[ind_temp, 2],
             "Student_Holm" = synth$groups[, 2]
           )
+          colnames(synth$groups)[2] <- paste0("Bootstrap (", final_boot_type, ")")
 
           # V\u00e9rification bootstrap APR\u00c8S cr\u00e9ation des 3 colonnes
           if ((verbose == TRUE) && (boot == TRUE) && !is.null(synth$bootstrap) &&
-              ncol(synth$groups) >= 3 && any(synth$bootstrap$groups[, 2] != synth$groups[, 3])) {
+              ncol(synth$groups) >= 3 && any(synth$bootstrap$groups[, 2] != synth$groups[, 3], na.rm = TRUE)) {
             ang <- "Warning! Bootstrap detects weaknesses in the significance of the results."
             fr <- "Attention ! Le bootstrap d\u00e9tecte des faiblesses dans la signification des r\u00e9sultats."
             k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt = "off")
@@ -497,6 +498,7 @@
             "Bootstrap" = synth2$groups[ind_temp, 2],
             "Student_Holm" = synth$groups[, 2]
           )
+          colnames(synth$groups)[2] <- paste0("Bootstrap (", final_boot_type, ")")
 
           if (boot == TRUE) {
             synth$bootstrap <- .boots(
@@ -509,7 +511,7 @@
 
           # V\u00e9rification bootstrap avec contr\u00f4les de s\u00e9curit\u00e9
           if ((verbose == TRUE) && (boot == TRUE) && !is.null(synth$bootstrap) &&
-              ncol(synth$groups) >= 3 && any(synth$bootstrap$groups[, 2] != synth$groups[, 3])) {
+              ncol(synth$groups) >= 3 && any(synth$bootstrap$groups[, 2] != synth$groups[, 3], na.rm = TRUE)) {
             ang <- "Warning! Bootstrap detects weaknesses in the significance of the results."
             fr <- "Attention ! Le bootstrap d\u00e9tecte des faiblesses dans la signification des r\u00e9sultats."
             k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt = "off")
@@ -607,10 +609,11 @@
         "Bootstrap" = synth2$groups[ind_temp, 2],
         "Student_Holm" = synth$groups[, 2]
       )
+      colnames(synth$groups)[2] <- paste0("Bootstrap (", final_boot_type, ")")
 
       # Plus bootstrap int\u00e9gr\u00e9
       if (boot == TRUE) {
-        if (any(synth$bootstrap$groups[, 2] != synth$groups[, 3])) {
+        if (any(synth$bootstrap$groups[, 2] != synth$groups[, 3], na.rm = TRUE)) {
           k <- .vbse(
             "\tWarning! Bootstrap detects weaknesses in the significance of the results.",
             "\tAttention ! Le bootstrap d\u00e9tecte des faiblesses dans la signification des r\u00e9sultats.",
@@ -1046,7 +1049,7 @@
           )
           colnames(synth$bootstrap$groups)[2] <- "Wilcoxon_bootstrapped"
 
-          if ((verbose == TRUE) && any(synth$bootstrap$groups[, 2] != synth$groups[, 2])) {
+          if ((verbose == TRUE) && any(synth$bootstrap$groups[, 2] != synth$groups[, 2], na.rm = TRUE)) {
             k <- .vbse(
               "Warning! Bootstrap detects weaknesses in the significance of the results.",
               "Attention ! Le bootstrap d\u00e9tecte des faiblesses dans la signification des r\u00e9sultats.",
@@ -1167,10 +1170,10 @@
             synth$p.value <- pvals_sign
 
             # Comparaison entre Wilcoxon et Sign test si divergence
-            wilcox_signif <- (pvals <= alpha)
-            sign_signif <- (pvals_sign <= alpha)
+            wilcox_signif <- if (is.na(pvals)) FALSE else (pvals <= alpha)
+            sign_signif <- if (is.na(pvals_sign)) FALSE else (pvals_sign <= alpha)
 
-            if (wilcox_signif != sign_signif) {
+            if (isTRUE(wilcox_signif != sign_signif)) {
               k <- .vbse(
                 paste0("Warning! Wilcoxon and Sign tests give different conclusions.\n\t",
                        "Wilcoxon p=", .format_pval(pvals), " vs Sign p=", .format_pval(pvals_sign), "\n\t",
@@ -1231,7 +1234,7 @@
               }
               synth$bootstrap$groups$Sign_test_bootstrapped <- sign_boot_groups
 
-              if (boot_significant < 0.95 && pvals_sign <= alpha) {
+              if (boot_significant < 0.95 && !is.na(pvals_sign) && pvals_sign <= alpha) {
                 k <- .vbse(
                   paste0("Warning! Bootstrap shows instability for Sign test: only ",
                          round(boot_significant * 100, 1), "% of iterations significant."),
@@ -1311,11 +1314,11 @@
           colnames(synth$bootstrap$groups)[2] <- "Wilcoxon_bootstrapped"
         }
 
-        if ((boot == TRUE) & any(synth$bootstrap$groups[, 2] != synth$groups[, 2])) {
+        if ((boot == TRUE) & any(synth$bootstrap$groups[, 2] != synth$groups[, 2], na.rm = TRUE)) {
           k <- .vbse(
             "Warning! Bootstrap detects weaknesses in the significance of the results.",
             "Attention ! Le bootstrap d\u00e9tecte des faiblesses dans la signification des r\u00e9sultats.",
-            k = k, cpt = "off"
+            verbose = verbose, code = code, k = k, cpt = "off"
           )
         }
 
@@ -1326,6 +1329,7 @@
           "Bootstrap" = synth2$groups[ind_temp, 2],
           "Wilcoxon_Holm" = synth$groups[, 2]
         )
+        colnames(synth$groups)[2] <- paste0("Bootstrap (", final_boot_type, ")")
 
         #=====================================================
         # --- check_wilcox_fiability == FALSE
@@ -1384,10 +1388,10 @@
 
             # Comparaison Wilcoxon vs Brunner-Munzel (pour 2 groupes)
             if (number == 2) {
-              wilcox_signif <- (pvals <= alpha)
-              BM_signif <- (synth_BM$p.value <= alpha)
+              wilcox_signif <- if (is.na(pvals)) FALSE else (pvals <= alpha)
+              BM_signif <- if (is.na(synth_BM$p.value)) FALSE else (synth_BM$p.value <= alpha)
 
-              if (wilcox_signif != BM_signif) {
+              if (isTRUE(wilcox_signif != BM_signif)) {
                 k <- .vbse(
                   paste0("Warning! Wilcoxon and Brunner-Munzel tests give different conclusions.\n\t",
                          "Wilcoxon p = ", .format_pval(pvals), " vs Brunner-Munzel p = ", .format_pval(synth_BM$p.value), "\n\t",
@@ -1500,8 +1504,8 @@
       #------------------------------------------
       # 0) Identifier les outliers
       #------------------------------------------
-      trimmage <- max(by(x, g, outlier))
-      if (trimmage > 0) {
+      trimmage <- max(by(x, g, outlier), na.rm = TRUE)
+      if (!is.na(trimmage) && trimmage > 0) {
         .dbg("Warning! Groups with extreme values:\n\t==> risk of leverage (identify_outliers() of {rstatix}).",
           "Attention ! Groupes avec des valeurs extr\u00eames :\n\t==> risque d'effet de levier (identify_outliers() de {rstatix}).",
           debug = debug
@@ -1559,10 +1563,11 @@
         "Bootstrap" = synth2$groups[ind_temp, 2],
         "Wilcoxon_Holm" = synth$groups[, 2]
       )
+      colnames(synth$groups)[2] <- paste0("Bootstrap (", final_boot_type, ")")
 
       # Plus bootstrap int\u00e9gr\u00e9
       if (boot == TRUE) {
-        if (any(synth$bootstrap$groups[, 2] != synth$groups[, 3])) {
+        if (any(synth$bootstrap$groups[, 2] != synth$groups[, 3], na.rm = TRUE)) {
           k <- .vbse(
             "\tWarning! Bootstrap detects weaknesses in the significance of the results.",
             "\tAttention ! Le bootstrap d\u00e9tecte des faiblesses dans la signification des r\u00e9sultats.",
@@ -1591,7 +1596,7 @@
         synth$groups <- cbind(synth$groups, "Neminyi" = synth2$groups[ind_temp, 2])
 
         if (boot == TRUE) {
-          if (any(synth2$bootstrap$groups[, 2] != synth2$groups[, 2])) {
+          if (any(synth2$bootstrap$groups[, 2] != synth2$groups[, 2], na.rm = TRUE)) {
             k <- .vbse(
               "\tWarning! Bootstrap on Neminyi- weaknesses.",
               "\tAttention ! Bootstrap sur Neminyi - faiblesses.",
@@ -1843,7 +1848,7 @@
 
           # Pour Kruskal, on s'arr\u00eate l\u00e0 (pas de lincon)
 
-        } else if ((trimmage > 0) && (croisement < 28)) {
+        } else if (!is.na(trimmage) && (trimmage > 0) && (croisement < 28)) {
           #------------------------------------------
           # Post-hoc pour t1way() ou par d\u00e9faut : lincon() sur moyennes tronqu\u00e9es
           #------------------------------------------
@@ -1902,9 +1907,10 @@
       #------------------------------------------
       # FALLBACK: Test de Dunn (si ni medpb2 ni lincon ni Kruskal d\u00e9j\u00e0 trait\u00e9)
       #------------------------------------------
+      trimmage_safe <- if (is.na(trimmage) || is.infinite(trimmage)) 0 else trimmage
       if ((paired == FALSE) && (check_wilcox_fiability == TRUE) &&
-          !((trimmage > 0) && (croisement < 28)) &&
-          !(chosen_test %in% c("med1way", "kruskal"))) {
+          !((trimmage_safe > 0) && (croisement < 28)) &&
+          !(isTRUE(chosen_test %in% c("med1way", "kruskal")))) {
         # Test de Dunn avec correction de Holm
         if (isTRUE(code)) {
           cat("# Test de Dunn\nlibrary(FSA)\ndunnTest(x ~ g, method = 'holm')\n")
@@ -1916,10 +1922,10 @@
           verbose = verbose, code = code, k = k, cpt = "off"
         )
 
-        if (trimmage > 0) {
+        if (trimmage_safe > 0) {
           k <- .vbse(
             paste0("\tLower and upper trimming level of ", round(trimmage * 100, 1), "%."),
-            paste0("\tAvec troncature inf\u00e9rieure et sup\u00e9rieure de ", round(trimmage * 100, 1), "%."),
+            paste0("\tAvec troncature inf\u00e9rieure et sup\u00e9rieure de ", round(trimmage_safe * 100, 1), "%."),
             verbose = verbose, code = code, k = k, cpt = "off"
           )
 
@@ -1927,7 +1933,7 @@
           g_temp <- c()
           for (categor in lev) {
             x_categor <- x[g == categor]
-            x_categor <- x_categor[x_categor > quantile(x_categor, p = trimmage) & x_categor < quantile(x_categor, p = (1 - trimmage))]
+            x_categor <- x_categor[x_categor > quantile(x_categor, p = trimmage_safe) & x_categor < quantile(x_categor, p = (1 - trimmage_safe))]
             g_categor <- rep(categor, length(x_categor))
             x_temp <- c(x_temp, x_categor)
             g_temp <- c(g_temp, g_categor)
@@ -1944,7 +1950,7 @@
         synth$groups <- data.frame(synth$groups, "Dunn_Holm" = synth2$groups[ind_temp, 2])
 
         if (boot == TRUE) {
-          if (any(synth$bootstrap$groups[, 2] != synth$groups[, 2])) {
+          if (any(synth$bootstrap$groups[, 2] != synth$groups[, 2], na.rm = TRUE)) {
             k <- .vbse(
               "\tWarning! Bootstrap on Dunn test detects weaknesses.",
               "\tAttention ! Bootstrap sur le test de Dunn d\u00e9tecte des faiblesses.",

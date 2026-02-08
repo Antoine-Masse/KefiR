@@ -1,0 +1,456 @@
+#' Test de normalite adaptatif avec strategies multiples
+#'
+#' Evalue la normalite d'une variable numerique avec selection automatique du test
+#' approprie selon la taille des echantillons et l'heterogeneite des groupes.
+#'
+#' @param x Vecteur numerique. Variable dont la normalite doit etre testee.
+#' @param g Vecteur ou facteur de regroupement. Si \code{NULL}, toutes les donnees
+#'   sont traitees comme un seul groupe (defaut : \code{NULL}).
+#' @param alpha Numerique. Seuil de signification pour evaluer la normalite
+#'   (defaut : \code{0.05}).
+#' @param tolerance Chaine de caracteres. Niveau de tolerance pour les criteres
+#'   de Skewness/Kurtosis :
+#'   \itemize{
+#'     \item \code{"basic"} : |Skewness| <= 1 et |Kurtosis| <= 1.5 (Kline, 2011)
+#'     \item \code{"extrem"} : |Skewness| <= 2 et |Kurtosis| <= 7 (Blanca et al., 2017)
+#'   }
+#'   Defaut : \code{"basic"}.
+#' @param paired Logique. Si \code{TRUE}, teste la normalite des differences
+#'   pour donnees appariees (defaut : \code{FALSE}).
+#' @param debug Logique. Si \code{TRUE}, affiche des messages de debogage
+#'   (defaut : \code{FALSE}).
+#' @param verbose Logique. Si \code{TRUE}, affiche des messages detailles
+#'   (defaut : \code{FALSE}).
+#' @param k Entier. Compteur de messages (defaut : \code{0}).
+#' @param cpt Chaine de caracteres. Mode de comptage des messages
+#'   (defaut : \code{"on"}).
+#' @param code Chaine de caracteres. Code de la langue pour les messages
+#'   (\code{NULL} pour detection automatique).
+#'
+#' @return Une liste contenant :
+#'   \itemize{
+#'     \item \code{check_normality} : Logique. \code{TRUE} si les donnees sont
+#'       considerees normales, \code{FALSE} sinon.
+#'     \item \code{k} : Entier. Compteur de messages mis a jour.
+#'   }
+#'
+#' @details
+#' \strong{Strategie de selection des tests :}
+#' \enumerate{
+#'   \item \strong{Groupes homogenes (n <= 50)} : Test de Shapiro-Wilk
+#'   \item \strong{Groupes homogenes (50 < n <= 500)} : Test de Jarque-Bera modifie
+#'   \item \strong{Grands echantillons (n > 500) ou heterogeneite forte} :
+#'         Criteres heuristiques bases sur Skewness et Kurtosis
+#' }
+#'
+#' \strong{Gestion de l'heterogeneite :}
+#' Lorsque les tailles de groupes traversent les seuils critiques (50 ou 500),
+#' une strategie uniforme (heuristique) est appliquee pour eviter les biais
+#' lies aux differences de puissance statistique entre tests.
+#'
+#' \strong{Correction pour comparaisons multiples :}
+#' \itemize{
+#'   \item 2-10 groupes : Correction de Sidak
+#'   \item > 10 groupes : Correction FDR (Benjamini-Hochberg)
+#'   \item Heuristique : Pas de correction (valeurs non probabilistes)
+#' }
+#'
+#' @references
+#' Blanca, M. J., Alarcon, R., Arnau, J., Bono, R., & Bendayan, R. (2017).
+#' Non-normal data: Is ANOVA still a valid option? \emph{Psicothema}, 29(4), 552-557.
+#' \url{https://diposit.ub.edu/dspace/bitstream/2445/122126/1/671797.pdf}
+#'
+#' Chaffin, W. W., & Rhiel, S. G. (1993). The effect of skewness and kurtosis
+#' on the one-sample T test and the impact of knowledge of the population
+#' standard deviation. \emph{Journal of Statistical Computation and Simulation},
+#' 46(1-2), 79-90.
+#'
+#' Glinskiy, V. V., Zhukova, M. A., & Tsybatov, A. E. (2024).
+#' Modifications to the Jarque-Bera Test. \emph{Mathematics}, 12(16), 2523.
+#' \doi{10.3390/math12162523}
+#'
+#' Kline, R. B. (2011). \emph{Principles and practice of structural equation
+#' modeling} (4th ed.). Guilford Press.
+#'
+#' Korkmaz, S., & Demir, Y. (2023). Investigation of some univariate normality
+#' tests in terms of type-I errors and test power. \emph{Journal of Scientific
+#' Reports-A}, (52), 376-395.
+#'
+#' @seealso
+#' \code{\link{shapiro.test}}, \code{\link{jb.norm.test}},
+#' \code{\link[agricolae]{skewness}}, \code{\link[agricolae]{kurtosis}}
+#'
+#' @examples
+#' \dontrun{
+#' # Exemple 1 : Un seul groupe (petite taille)
+#' x1 <- rnorm(30)
+#' .normality(x1)  # Utilise Shapiro-Wilk
+#'
+#' # Exemple 2 : Plusieurs groupes homogenes
+#' x2 <- c(rnorm(40, mean = 5), rnorm(40, mean = 6), rnorm(40, mean = 7))
+#' g2 <- factor(rep(c("A", "B", "C"), each = 40))
+#' .normality(x2, g2)  # Utilise Shapiro-Wilk avec correction Sidak
+#'
+#' # Exemple 3 : Grand echantillon
+#' x3 <- rnorm(600)
+#' .normality(x3)  # Utilise criteres Skewness/Kurtosis
+#'
+#' # Exemple 4 : Groupes heterogenes (force heuristique)
+#' x4 <- c(rnorm(30), rnorm(200))
+#' g4 <- factor(rep(c("Small", "Large"), c(30, 200)))
+#' .normality(x4, g4)  # Strategie uniforme appliquee
+#'
+#' # Exemple 5 : Tolerance extreme pour donnees reelles
+#' x5 <- rgamma(100, shape = 2, rate = 1)  # Legerement asymetrique
+#' .normality(x5, tolerance = "extrem")
+#' }
+#'
+#' # Exemple 5 : Tolerance extreme pour donnees reelles
+#' x5 <- rgamma(100, shape = 2, rate = 1)  # Legerement asymetrique
+#' .normality(x5, tolerance = "extrem")
+#'
+#' @keywords internal
+.normality <- function(x, g = NULL, alpha=0.05, tolerance="basic", paired=FALSE,
+                       debug = FALSE, verbose=FALSE, k=0, cpt="on", code=NULL) {
+
+  # ===========================================================================
+  # SECTION 1 : INITIALISATION ET VALIDATION
+  # ===========================================================================
+  # Korkmaz, S., & Demir, Y. (2023). Investigation of some univariate normality tests
+  # in terms of type-I errors and test power. Journal of Scientific Reports-A, (52), 376-395.
+  # https://dergipark.org.tr/en/download/article-file/2847569
+
+  .dbg("Start of normality assessment.",
+       "D\u00e9but de l'\u00e9valuation de la normalit\u00e9.", debug = debug)
+
+  if (is.null(g)) {
+    g <- factor(rep("A", length(x)))
+  }
+
+  # ===========================================================================
+  # SECTION 2 : ANALYSE DES TAILLES DE GROUPES
+  # ===========================================================================
+  # Determiner la taille du plus petit groupe pour uniformiser le choix du test
+  group_sizes <- table(g)
+  min_size <- min(group_sizes)
+  max_size <- max(group_sizes)
+
+  if (length(unique(g))==1) {
+    multi <- FALSE
+    # Limites pour un seul groupe (controles des residus d'une ANOVA)
+  } else {
+    multi <- TRUE
+  }
+
+  # Detecter heterogeneite forte des tailles de groupes
+  # Si heterogeneite, la normalite est limitee a des controles de skewness et kurtosis
+  if ((min_size<=50 & max_size>50) | (min_size<=500 & max_size>500)) {
+    reajust <- TRUE
+  } else {
+    reajust <- FALSE
+  }
+
+  # ===========================================================================
+  # SECTION 3 : FONCTION DE TEST PAR GROUPE
+  # ===========================================================================
+  subnormality <- function(vector, multi=multi) {
+
+    n <- length(vector)  # Taille du groupe ACTUEL
+
+    #================================
+    # Scenario de base
+    #================================
+    if (tolerance=="basic") {
+      if ((n <= 50) & (reajust==FALSE)) {
+        return(shapiro.test(as.numeric(vector))$p.value)
+      } else if ((n <= 500) & (reajust==FALSE)) {
+        # Ce groupe specifique depasse la limite de Shapiro
+        # Il presente une bonne puissance au-dela de 300
+        # Glinskiy, V. V., Zhukova, M. A., & Tsybatov, A. E. (2024). Modifications to the Jarque-Bera Test. Mathematics, 12(16), 2523. https://doi.org/10.3390/math12162523
+        return(jb.norm.test(vector)$p.value)
+      } else {
+        # |Skewness| < 1 et |Kurtosis| < 1.5 sont les seuils recommandes pour considerer une distribution comme "approximativement normale", selon Kline (2011).
+        # Kline, R. B. (2011). Principles and practice of structural equation modeling (4th ed.). New York, NY: Guilford Press.
+        # Blanca, M.J., Alarcon, R., Arnau, J., Bono, R., & Bendayan, R. (2017). Non-normal data: Is ANOVA still a valid option? Psicothema, 29(4), 552-557. DOI 10.7334/psicothema2016.383
+        mysk <- abs(skewness(vector))
+        myku <- abs(kurtosis(vector))
+        if ((mysk<=1) & (myku<=1.5)) {
+          return(1)
+        } else {
+          return(0)
+        }
+      }
+    } else if (tolerance=="extrem") {
+      mysk <- abs(skewness(vector))
+      myku <- abs(kurtosis(vector))
+      if (multi==TRUE) { # Controle des groupes Chaffin et al.
+        # Chaffin, W. W., & Rhiel, S. G. (1993). The effect of skewness and kurtosis on the one-sample T test and the impact of knowledge of the population standard deviation. Journal of Statistical Computation and Simulation, 46(1-2), 79-90.
+        if ((mysk<=1) & (myku<=4.5) & (n>=20)) {
+          return(1)
+        } else if ((mysk<=1.5) & (myku<=5) & (n>=30)) {
+          return(1)
+        } else if ((mysk<=2) & (myku<=6.5) & (n>=50)) {
+          return(1)
+        } else {
+          return(0)
+        }
+      } else if ((multi==FALSE) & (mysk<=2) & (myku<=7) & (n>=15)) { # Controle des residus Blanca et al.
+        return(1)
+      } else {
+        return(0)
+      }
+    }
+  }
+
+  # ===========================================================================
+  # SECTION 4 : APPLICATION AUX GROUPES
+  # ===========================================================================
+  pvals <- by(x, g, subnormality, multi=multi)
+
+  # ===========================================================================
+  # SECTION 5 : CORRECTION POUR COMPARAISONS MULTIPLES
+  # ===========================================================================
+  if ((reajust==TRUE) | (min_size>500) | (tolerance=="extrem")) {
+    # Aucune correction des valeurs p qui n'en sont pas.
+    check_normality <- min(pvals) >= alpha
+  } else {
+    # Sidak devient trop conservatif au-dela de 10 groupes...
+    # Bender, R., & Lange, S. (2001). Adjusting for multiple testing-when and how?  DOI: 10.1016/S0895-4356(00)00314-0
+    # Methode FDR la correction par FDR (False Discovery Rate) - notamment via la methode Benjamini-Hochberg (BH)
+    # Murray, E. J., Berrie, L., & Matthews, J. N. S. (2021). Understanding multiplicity in clinical trials: the impact of multiple endpoints in the interpretation of treatment effects.
+    if (length(unique(g))>1 && length(unique(g))<=10) {
+      pval <- 1-(1-alpha)^(1/length(unique(g)))
+      check_normality <- min(pvals) >= pval
+    } else if (length(unique(g))>10) {
+      pvals_fdr <- p.adjust(pvals, method = "BH")
+      check_normality <- min(pvals_fdr) >= alpha
+    } else {
+      # Pas de correction (1 groupe)
+      check_normality <- min(pvals) >= alpha
+    }
+  }
+
+  # ===========================================================================
+  # SECTION 6 : MESSAGES VERBOSE
+  # ===========================================================================
+  if (isTRUE(verbose)) {
+
+    if (paired==FALSE) {
+
+      if ((multi==TRUE) & (tolerance=="basic")) {
+        # Affichage du bilan pour plusieurs groupes
+        # Determiner quel test a ete applique
+        test_used <- if ((min_size <= 50 && max_size > 50) || (min_size <= 500 && max_size > 500) || max_size > 500) {
+          "skewness/kurtosis"
+        } else if (max_size <= 50) {
+          "shapiro.test"
+        } else {
+          "jb.norm.test"
+        }
+
+        k <- .vbse(
+          paste0("Normality check - Test selection based on group size.\n\t",
+                 "Shapiro-Wilk (<=50), Jarque-Bera (<=500), or skewness/kurtosis (>500).\n\t",
+                 "Test used: ", test_used, "\n\t",
+                 if ((min_size <= 50 && max_size > 50) || (min_size <= 500 && max_size > 500)) {
+                   "Note: Due to data imbalance, all groups are checked using skewness/kurtosis.\n\t"
+                 } else {
+                   if (max_size > 500) {
+                     "Note: Due to large group sizes,\n\t... all groups are checked using skewness (Skewness) / kurtosis (Kurtosis).\n\t"
+                   } else {
+                     paste0("Note: p-values are compared to a Sidak-corrected alpha of ", .format_pval(pval), ".\n\t")
+                   }
+                 },
+                 if (check_normality==TRUE) {
+                   paste0("==> All groups are normal.",
+                          if ((min_size <= 50 && max_size > 50) || (max_size > 500)) {
+                            "\n\t...with |skewness| <= 1 and |kurtosis| <= 1.5."
+                          } else if (min(pvals) != 1) {
+                            paste0(" (min p-value: ", .format_pval(min(pvals)), ")")
+                          })
+                 } else {
+                   paste0("==> At least one group is non-normal.",
+                          if ((min_size <= 50 && max_size > 50) || (max_size > 500)) {
+                            "\n\t...with |skewness| > 1 or |kurtosis| > 1.5."
+                          } else if (min(pvals) != 0) {
+                            paste0(" (min p-value: ", .format_pval(min(pvals)), ")")
+                          })
+                 }),
+          paste0("Contr\u00f4le de normalit\u00e9 - S\u00e9lection du test selon la taille des groupes.\n\t",
+                 "Shapiro-Wilk (<=50), Jarque-Bera (<=500), ou skewness/kurtosis (>500).\n\t",
+                 "Test utilis\u00e9 : ", test_used, "\n\t",
+                 if ((min_size <= 50 && max_size > 50) || (min_size <= 500 && max_size > 500)) {
+                   "Note : du fait du d\u00e9s\u00e9quilibre des donn\u00e9es, les groupes sont tous contr\u00f4l\u00e9s par skewness/kurtosis.\n\t"
+                 } else {
+                   if (max_size > 500) {
+                     "Note : du fait de la taille importante des groupes,\n\t... ceux-ci sont tous contr\u00f4l\u00e9s par skewness (Asym\u00e9trie) / kurtosis (Aplatissement).\n\t"
+                   } else {
+                     paste0("Note : les p-value sont compar\u00e9es \u00e0 un alpha corrig\u00e9 (Sidak) de ", .format_pval(pval), ".\n\t")
+                   }
+                 },
+                 if (check_normality==TRUE) {
+                   paste0("==> Tous les groupes sont normaux.",
+                          if ((min_size <= 50 && max_size > 50) || (max_size > 500)) {
+                            "\n\t...avec un |skewness| <= 1 et un |kurtosis| <= 1.5."
+                          } else if (min(pvals) != 1) {
+                            paste0(" (p-value min : ", .format_pval(min(pvals)), ")")
+                          })
+                 } else {
+                   paste0("==> Au moins un des groupes est non-normal.",
+                          if ((min_size <= 50 && max_size > 50) || (max_size > 500)) {
+                            "\n\t...avec un |skewness| > 1 ou un |kurtosis| > 1.5."
+                          } else if (min(pvals) != 0) {
+                            paste0(" (p-value min : ", .format_pval(min(pvals)), ")")
+                          })
+                 }),
+          verbose = verbose, code = code, k = k, cpt = cpt)
+
+      } else if ((multi==FALSE) & (tolerance=="basic")) {
+        # Controle des residus
+        n_g <- length(x)
+        # Determiner quel test a ete applique
+        test_used_en <- if (n_g <= 50) {
+          "Shapiro-Wilk [shapiro.test()]"
+        } else if (n_g <= 500) {
+          "Jarque-Bera [jb.norm.test() {normtest}]"
+        } else {
+          "Skewness/Kurtosis"
+        }
+        test_used_fr <- if (n_g <= 50) {
+          "Shapiro-Wilk [shapiro.test()]"
+        } else if (n_g <= 500) {
+          "Jarque-Bera [jb.norm.test() {normtest}]"
+        } else {
+          "Skewness/Kurtosis"
+        }
+        k <- .vbse(
+          paste0(test_used_en, "\n\t",
+                 if (check_normality==TRUE) {
+                   paste0("==> Residuals are normal",
+                          if (n_g > 500) {
+                            " with |skewness| <= 1 and |kurtosis| <= 1.5."
+                          } else if (min(pvals) != 1) {
+                            paste0(" (p-value: ", .format_pval(min(pvals)), ").")
+                          } else {
+                            "."
+                          })
+                 } else {
+                   paste0("==> Residuals are non-normal",
+                          if (n_g > 500) {
+                            " with |skewness| > 1 or |kurtosis| > 1.5."
+                          } else if (min(pvals) != 0) {
+                            paste0(" (p-value: ", .format_pval(min(pvals)), ").")
+                          } else {
+                            "."
+                          },
+                          "\n\t--> Variance checks will need to be more stringent (Levene instead of Bartlett).")
+                 }),
+          paste0(test_used_fr, "\n\t",
+                 if (check_normality==TRUE) {
+                   paste0("==> Les r\u00e9sidus sont normaux",
+                          if (n_g > 500) {
+                            " avec un |skewness| <= 1 et un |kurtosis| <= 1.5."
+                          } else if (min(pvals) != 1) {
+                            paste0(" (p-value : ", .format_pval(min(pvals)), ").")
+                          } else {
+                            "."
+                          })
+                 } else {
+                   paste0("==> Les r\u00e9sidus sont non-normaux",
+                          if (n_g > 500) {
+                            " avec un |skewness| > 1 ou un |kurtosis| > 1.5."
+                          } else if (min(pvals) != 0) {
+                            paste0(" (p-value : ", .format_pval(min(pvals)), ").")
+                          } else {
+                            "."
+                          },
+                          "\n\t--> Les contr\u00f4les de la variance devront \u00eatre plus exigeants (Levene au lieu de Bartlett).")
+                 }),
+          verbose = verbose, code = code, k = k, cpt = cpt)
+
+      } else if ((multi==TRUE) & (tolerance=="extrem")) {
+        # Affichage du bilan avec tolerance extreme
+        # Chaffin, W. W., & Rhiel, S. G. (1993). The effect of skewness and kurtosis on the
+        # one-sample T test and the impact of knowledge of the population standard deviation.
+        # Journal of Statistical Computation and Simulation, 46(1-2), 79-90.
+        k <- .vbse(
+          paste0("Normality check with variable tolerance based on group size.\n\t",
+                 "Skewness/Kurtosis <=1/4.5 (n>=20); <=1.5/5 (n>=30); <=2/6.5 (n>=50).\n\t",
+                 if (check_normality==TRUE) {
+                   "==> Groups show acceptable normality."
+                 } else {
+                   "==> At least one group shows extreme non-normality."
+                 }),
+          paste0("Contr\u00f4le de la normalit\u00e9 avec tol\u00e9rance variable selon la taille des groupes.\n\t",
+                 "Skewness/Kurtosis <=1/4.5 (n>=20) ; <=1.5/5 (n>=30) ; <=2/6.5 (n>=50).\n\t",
+                 if (check_normality==TRUE) {
+                   "==> Les groupes pr\u00e9sentent une normalit\u00e9 acceptable."
+                 } else {
+                   "==> Au moins un des groupes pr\u00e9sente une non-normalit\u00e9 trop extr\u00eame."
+                 }),
+          verbose = verbose, code = code, k = k, cpt = cpt)
+
+      } else if ((multi==FALSE) & (tolerance=="extrem")) {
+        # Seuils de tolerance: Blanca et al. 2018
+        k <- .vbse(
+          paste0("Residual normality check with tolerance if n>15.\n\t",
+                 "==> Skewness <=2 and Kurtosis <=7.\n\t",
+                 if (check_normality==TRUE) {
+                   "==> Residuals show acceptable normality."
+                 } else {
+                   "==> Residuals show extreme non-normality."
+                 }),
+          paste0("Contr\u00f4le de la normalit\u00e9 des r\u00e9sidus avec tol\u00e9rance si n>15.\n\t",
+                 "==> Skewness <=2 et Kurtosis <=7.\n\t",
+                 if (check_normality==TRUE) {
+                   "==> Les r\u00e9sidus pr\u00e9sentent une normalit\u00e9 acceptable."
+                 } else {
+                   "==> Les r\u00e9sidus pr\u00e9sentent une non-normalit\u00e9 trop extr\u00eame."
+                 }),
+          verbose = verbose, code = code, k = k, cpt = cpt)
+      }
+
+    } else if (paired==TRUE) {
+      # Messages pour donnees appariees
+      if (check_normality == FALSE) {
+        k <- .vbse(
+          paste0("Normality check of paired differences:\n\tShapiro-Wilk (<=50), Jarque-Bera (<=500), or skewness/kurtosis (>500).\n\t",
+                 "The differences are not normally distributed",
+                 if (min(pvals) != 0) {
+                   paste0(" (p-value: ", .format_pval(min(pvals)), ")")
+                 },
+                 "."),
+          paste0("Contr\u00f4le de la normalit\u00e9 des diff\u00e9rences appari\u00e9es :\n\tTest de Shapiro-Wilk (<=50), Jarque-Bera (<=500) ou skewness/kurtosis (>500).\n\t",
+                 "Les diff\u00e9rences ne sont pas normales",
+                 if (min(pvals) != 0) {
+                   paste0(" (p-value : ", .format_pval(min(pvals)), ")")
+                 },
+                 "."),
+          verbose = verbose, code = code, k = k, cpt=cpt)
+      } else {
+        k <- .vbse(
+          paste0("Normality check of paired differences:\n\tShapiro-Wilk (<=50), Jarque-Bera (<=500), or skewness/kurtosis (>500).\n\t",
+                 "The differences are normally distributed",
+                 if (min(pvals) != 1) {
+                   paste0(" (p-value: ", .format_pval(min(pvals)), ")")
+                 },
+                 "."),
+          paste0("Contr\u00f4le de la normalit\u00e9 des diff\u00e9rences appari\u00e9es :\n\tTest de Shapiro-Wilk (<=50), Jarque-Bera (<=500) ou skewness/kurtosis (>500).\n\t",
+                 "Les diff\u00e9rences sont normales",
+                 if (min(pvals) != 1) {
+                   paste0(" (p-value : ", .format_pval(min(pvals)), ")")
+                 },
+                 "."),
+          verbose = verbose, code = code, k = k, cpt=cpt)
+      }
+    }
+  }
+
+  # ===========================================================================
+  # SECTION 7 : RETOUR
+  # ===========================================================================
+  normal <- list()
+  normal[[1]] <- check_normality
+  normal[[2]] <- k
+  return(normal)
+}

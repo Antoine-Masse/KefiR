@@ -28,6 +28,7 @@ that paired observations are correctly aligned. Useful for preparing
 data before using paired statistical tests like t.test(..., paired = TRUE).
 }
 \examples{
+\dontrun{
 # Basic example
 df <- data.frame(
   id = c("S1", "S1", "S2", "S2"),
@@ -39,5 +40,7 @@ aligned <- .align_pairs(x = df$x, id = df$id, g = df$g)
 
 # Data is now ready for paired t-test
 t.test(aligned$x[aligned$g == "A"], aligned$x[aligned$g == "B"], paired = TRUE)
+}
 
 }
+\keyword{internal}

@@ -85,6 +85,7 @@ lies aux differences de puissance statistique entre tests.
 }
 }
 \examples{
+\dontrun{
 # Exemple 1 : Un seul groupe (petite taille)
 x1 <- rnorm(30)
 .normality(x1)  # Utilise Shapiro-Wilk
@@ -106,6 +107,7 @@ g4 <- factor(rep(c("Small", "Large"), c(30, 200)))
 # Exemple 5 : Tolerance extreme pour donnees reelles
 x5 <- rgamma(100, shape = 2, rate = 1)  # Legerement asymetrique
 .normality(x5, tolerance = "extrem")
+}
 
 }
 \references{

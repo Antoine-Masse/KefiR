@@ -31,6 +31,7 @@
 #' @importFrom onewaytests bf.test
 #'
 #' @examples
+#' \dontrun{
 #' # Example with normal data
 #' set.seed(123)
 #' x <- c(rnorm(50, mean = 5), rnorm(50, mean = 6))
@@ -41,6 +42,7 @@
 #' x <- c(rpois(50, lambda = 5), rpois(50, lambda = 7))
 #' g <- factor(rep(1:2, each = 50))
 #' .one_factor_analysis(x, g, verbose = TRUE)
+#' }
 #'
 #' @return
 #' Returns results of the selected statistical tests, including:
@@ -54,7 +56,7 @@
 #' - [WRS2::med1way()]
 #' - [onewaytests::bf.test()]
 #'
-#' @export
+#' @keywords internal
 .one_factor_analysis <- function(x=NULL,g=NULL,formula=NULL,data=NULL,
 	paired = FALSE, id = NULL,alpha = 0.05,return=TRUE,
 	k=NULL,code=FALSE,debug=FALSE,verbose=FALSE, boot = TRUE, silent=TRUE) {
@@ -192,7 +194,7 @@
   #         Contr\u00f4le du nombre de groupes
   #==================================================
 
-  check_number <- length(unique(g))
+  check_number <- length(unique(g[!is.na(g)]))
   if (check_number==2) { 							# 2 categories
     if (paired==TRUE) {
       k <- .vbse("Two conditions.",
@@ -754,11 +756,19 @@
 
       # Conclusion \u00e9tape 7
       if (check_normality_before == FALSE && check_normality == TRUE) {
-        k <- .vbse(
-          "--> Maintaining classical ANOVA (parametric situation).",
-          "--> Conservation de l'ANOVA classique (situation param\u00e9trique).",
-          verbose = verbose, code = code, k = k, cpt = "off"
-        )
+        if (check_number == 2) {
+          k <- .vbse(
+            "--> Maintaining parametric comparison (Student's t-test).",
+            "--> Conservation de la comparaison param\u00e9trique (test de Student).",
+            verbose = verbose, code = code, k = k, cpt = "off"
+          )
+        } else {
+          k <- .vbse(
+            "--> Maintaining classical ANOVA (parametric situation).",
+            "--> Conservation de l'ANOVA classique (situation param\u00e9trique).",
+            verbose = verbose, code = code, k = k, cpt = "off"
+          )
+        }
       } else if (check_normality_before == FALSE && check_normality == FALSE) {
         k <- .vbse(
           "--> Switching to a non-parametric comparison.",
@@ -767,8 +777,8 @@
         )
       }
 
-      # \u00c9TAPE 8 : Diagnostic ANOVA (optionnel)
-      if (isTRUE(check_normality)) {
+      # \u00c9TAPE 8 : Diagnostic ANOVA (optionnel, uniquement pour n>2 groupes)
+      if (isTRUE(check_normality) && check_number > 2) {
         temp_diag <- diagnostic_anova(x, g, myaov = myaov_for_diagnostic,
                                       alpha = alpha, verbose = verbose, code = code, k = k)
         k <- temp_diag[[1]]

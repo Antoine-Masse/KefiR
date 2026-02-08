@@ -114,8 +114,12 @@ if (length(errors) > 0) {
   }
 }
 
+
+
 cat("\n")
 
+neutralise <- 0
+if (neutralise !=0) {
 
 #' Génération de données aléatoires pour tests ANOVA mixtes
 #'
@@ -551,5 +555,5 @@ catego(pairwise.boot(dt$D,dt$H, mu="mean"))$groups
 res$groups
 
 
-
+}
 

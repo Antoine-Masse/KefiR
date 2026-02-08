@@ -104,10 +104,10 @@ if (manova_res$test_statistics["Wilks", "p.value"] < 0.05) {
   )
 }
 }
-
 }
 \references{
 Huberty, C. J., & Olejnik, S. (2006). Applied MANOVA and Discriminant Analysis (2nd ed.). Wiley.
 Stevens, J. P. (2009). Applied Multivariate Statistics for the Social Sciences (5th ed.). Routledge.
 Tabachnick, B. G., & Fidell, L. S. (2019). Using Multivariate Statistics (7th ed.). Pearson.
 }
+\keyword{internal}

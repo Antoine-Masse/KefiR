@@ -77,3 +77,4 @@ Huitema, B. E. (2011). The Analysis of Covariance and Alternatives:
 Statistical Methods for Experiments, Quasi-Experiments, and Single-Case Studies
 (2nd ed.). Wiley. https://doi.org/10.1002/9781118067475
 }
+\keyword{internal}

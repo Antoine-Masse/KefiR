@@ -46,8 +46,15 @@ catego <- function(result,control=c(),alpha=0.05,debug=FALSE) {
       #cat("Passage",start,"\n")
       for (j in i:nrow(mymat)) {
         pvals <- mymat[j,i]
+        # Gérer les NA : traiter comme non-significatif (conserver le groupe actuel)
+        if (is.na(pvals)) {
+          if (start == 0) {
+            cats <- c(cats, possibility[pos])
+          }
+          next
+        }
         if (start==0) {
-			
+
           if (pvals > alpha){
             #print("non-signif")
             cats <- c(cats,possibility[pos])
@@ -84,7 +91,7 @@ catego <- function(result,control=c(),alpha=0.05,debug=FALSE) {
             }
           }
         }
-#.dbg(NULL, paste("Groupes intermédiaires en j :", paste(cats, collapse = ",")), debug = debug)	  		
+#.dbg(NULL, paste("Groupes intermédiaires en j :", paste(cats, collapse = ",")), debug = debug)
       }
 #.dbg(NULL, paste("Groupes intermédiaires en i :", paste(cats, collapse = ",")), debug = debug)	  
       #print(cats)

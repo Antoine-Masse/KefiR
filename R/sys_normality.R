@@ -81,6 +81,7 @@
 #' \code{\link[agricolae]{skewness}}, \code{\link[agricolae]{kurtosis}}
 #'
 #' @examples
+#' \dontrun{
 #' # Exemple 1 : Un seul groupe (petite taille)
 #' x1 <- rnorm(30)
 #' .normality(x1)  # Utilise Shapiro-Wilk
@@ -102,11 +103,12 @@
 #' # Exemple 5 : Tolerance extreme pour donnees reelles
 #' x5 <- rgamma(100, shape = 2, rate = 1)  # Legerement asymetrique
 #' .normality(x5, tolerance = "extrem")
+#' }
 #'
 #' @keywords internal
-#' @export
 .normality <- function(x, g = NULL, alpha=0.05, tolerance="basic", paired=FALSE,
-                       debug = FALSE, verbose=FALSE, k=0, cpt="on", code=NULL) {
+                       debug = FALSE, verbose=FALSE, k=0, cpt="on", code=NULL,
+                       prefix="") {
 
   # ===========================================================================
   # SECTION 1 : INITIALISATION ET VALIDATION
@@ -244,7 +246,7 @@
         }
 
         k <- .vbse(
-          paste0("Normality check - Test selection based on group size.\n\t",
+          paste0(prefix, "Normality check - Test selection based on group size.\n\t",
                  "Shapiro-Wilk (<=50), Jarque-Bera (<=500), or skewness/kurtosis (>500).\n\t",
                  "Test used: ", test_used, "\n\t",
                  if ((min_size <= 50 && max_size > 50) || (min_size <= 500 && max_size > 500)) {
@@ -271,7 +273,7 @@
                             paste0(" (min p-value: ", .format_pval(min(pvals)), ")")
                           })
                  }),
-          paste0("Contr\u00f4le de normalit\u00e9 - S\u00e9lection du test selon la taille des groupes.\n\t",
+          paste0(prefix, "Contr\u00f4le de normalit\u00e9 - S\u00e9lection du test selon la taille des groupes.\n\t",
                  "Shapiro-Wilk (<=50), Jarque-Bera (<=500), ou skewness/kurtosis (>500).\n\t",
                  "Test utilis\u00e9 : ", test_used, "\n\t",
                  if ((min_size <= 50 && max_size > 50) || (min_size <= 500 && max_size > 500)) {
@@ -369,14 +371,14 @@
         # one-sample T test and the impact of knowledge of the population standard deviation.
         # Journal of Statistical Computation and Simulation, 46(1-2), 79-90.
         k <- .vbse(
-          paste0("Normality check with variable tolerance based on group size.\n\t",
+          paste0(prefix, "Normality check with variable tolerance based on group size.\n\t",
                  "Skewness/Kurtosis <=1/4.5 (n>=20); <=1.5/5 (n>=30); <=2/6.5 (n>=50).\n\t",
                  if (check_normality==TRUE) {
                    "==> Groups show acceptable normality."
                  } else {
                    "==> At least one group shows extreme non-normality."
                  }),
-          paste0("Contr\u00f4le de la normalit\u00e9 avec tol\u00e9rance variable selon la taille des groupes.\n\t",
+          paste0(prefix, "Contr\u00f4le de la normalit\u00e9 avec tol\u00e9rance variable selon la taille des groupes.\n\t",
                  "Skewness/Kurtosis <=1/4.5 (n>=20) ; <=1.5/5 (n>=30) ; <=2/6.5 (n>=50).\n\t",
                  if (check_normality==TRUE) {
                    "==> Les groupes pr\u00e9sentent une normalit\u00e9 acceptable."
@@ -388,14 +390,14 @@
       } else if ((multi==FALSE) & (tolerance=="extrem")) {
         # Seuils de tolerance: Blanca et al. 2018
         k <- .vbse(
-          paste0("Residual normality check with tolerance if n>15.\n\t",
+          paste0(prefix, "Residual normality check with tolerance if n>15.\n\t",
                  "==> Skewness <=2 and Kurtosis <=7.\n\t",
                  if (check_normality==TRUE) {
                    "==> Residuals show acceptable normality."
                  } else {
                    "==> Residuals show extreme non-normality."
                  }),
-          paste0("Contr\u00f4le de la normalit\u00e9 des r\u00e9sidus avec tol\u00e9rance si n>15.\n\t",
+          paste0(prefix, "Contr\u00f4le de la normalit\u00e9 des r\u00e9sidus avec tol\u00e9rance si n>15.\n\t",
                  "==> Skewness <=2 et Kurtosis <=7.\n\t",
                  if (check_normality==TRUE) {
                    "==> Les r\u00e9sidus pr\u00e9sentent une normalit\u00e9 acceptable."
@@ -409,13 +411,13 @@
       # Messages pour donnees appariees
       if (check_normality == FALSE) {
         k <- .vbse(
-          paste0("Normality check of paired differences:\n\tShapiro-Wilk (<=50), Jarque-Bera (<=500), or skewness/kurtosis (>500).\n\t",
+          paste0(prefix, "Normality check of paired differences:\n\tShapiro-Wilk (<=50), Jarque-Bera (<=500), or skewness/kurtosis (>500).\n\t",
                  "The differences are not normally distributed",
                  if (min(pvals) != 0) {
                    paste0(" (p-value: ", .format_pval(min(pvals)), ")")
                  },
                  "."),
-          paste0("Contr\u00f4le de la normalit\u00e9 des diff\u00e9rences appari\u00e9es :\n\tTest de Shapiro-Wilk (<=50), Jarque-Bera (<=500) ou skewness/kurtosis (>500).\n\t",
+          paste0(prefix, "Contr\u00f4le de la normalit\u00e9 des diff\u00e9rences appari\u00e9es :\n\tTest de Shapiro-Wilk (<=50), Jarque-Bera (<=500) ou skewness/kurtosis (>500).\n\t",
                  "Les diff\u00e9rences ne sont pas normales",
                  if (min(pvals) != 0) {
                    paste0(" (p-value : ", .format_pval(min(pvals)), ")")
@@ -424,13 +426,13 @@
           verbose = verbose, code = code, k = k, cpt=cpt)
       } else {
         k <- .vbse(
-          paste0("Normality check of paired differences:\n\tShapiro-Wilk (<=50), Jarque-Bera (<=500), or skewness/kurtosis (>500).\n\t",
+          paste0(prefix, "Normality check of paired differences:\n\tShapiro-Wilk (<=50), Jarque-Bera (<=500), or skewness/kurtosis (>500).\n\t",
                  "The differences are normally distributed",
                  if (min(pvals) != 1) {
                    paste0(" (p-value: ", .format_pval(min(pvals)), ")")
                  },
                  "."),
-          paste0("Contr\u00f4le de la normalit\u00e9 des diff\u00e9rences appari\u00e9es :\n\tTest de Shapiro-Wilk (<=50), Jarque-Bera (<=500) ou skewness/kurtosis (>500).\n\t",
+          paste0(prefix, "Contr\u00f4le de la normalit\u00e9 des diff\u00e9rences appari\u00e9es :\n\tTest de Shapiro-Wilk (<=50), Jarque-Bera (<=500) ou skewness/kurtosis (>500).\n\t",
                  "Les diff\u00e9rences sont normales",
                  if (min(pvals) != 1) {
                    paste0(" (p-value : ", .format_pval(min(pvals)), ")")

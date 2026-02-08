@@ -102,3 +102,4 @@ formulator(y ~ x1 + x2, mode = "aovp")
 \item \code{\link[lme4]{lmer}} pour un modèle mixte prenant en charge les effets aléatoires.
 }
 }
+\keyword{internal}

@@ -82,7 +82,7 @@
 #' \code{\link{.one_factor_analysis}}, \code{\link[car]{Anova}},
 #' \code{\link[ez]{ezANOVA}}, \code{\link[lme4]{lmer}}
 #'
-#' @export
+#' @keywords internal
 .multi_factor_analysis <- function(
     x = NULL,
     g = NULL,
@@ -150,33 +150,47 @@
   #* \u279c Statut : Solution partielle impl\u00e9ment\u00e9e ci-dessous
   #============================================================================
 
-  # D\u00e9tection pr\u00e9coce des NA
+  # D\u00e9tection pr\u00e9coce des NA (uniquement sur les variables utilis\u00e9es)
   if (!is.null(data)) {
-    na_count <- sum(is.na(data))
-    total_cells <- nrow(data) * ncol(data)
-    na_rate <- (na_count / total_cells) * 100
+    data_na <- data
+    if (!is.null(formula)) {
+      data_na <- tryCatch(
+        stats::model.frame(formula, data = data, na.action = stats::na.pass),
+        error = function(e) data
+      )
+    }
+
+    if (nrow(data_na) > 0) {
+      complete_idx <- stats::complete.cases(data_na)
+      na_count <- sum(!complete_idx)
+      na_rate <- (na_count / nrow(data_na)) * 100
+    } else {
+      complete_idx <- rep(TRUE, nrow(data))
+      na_count <- 0
+      na_rate <- 0
+    }
 
     if (na_rate > 5 && verbose) {
       k <- .vbse(
         paste0("Warning: ", round(na_rate, 2), "% missing data detected (>5% threshold).\n",
-               "\tListwise deletion may reduce power. Consider imputation for mixed models."),
+               "\tListwise deletion may reduce power. Consider imputation."),
         paste0("Attention : ", round(na_rate, 2), "% de donn\u00e9es manquantes d\u00e9tect\u00e9es (seuil >5%).\n",
-               "\tLa suppression listwise peut r\u00e9duire la puissance. Envisager l'imputation pour mod\u00e8les mixtes."),
+               "\tLa suppression listwise peut r\u00e9duire la puissance. Envisager l'imputation."),
         verbose = verbose, code = code, k = k, cpt = "on"
       )
       if (isTRUE(code)) {
         k_code <- k_code + 1
         .code_multi(k_code, "D\u00e9tection des donn\u00e9es manquantes", c(
-          "na_count <- sum(is.na(data))",
-          "total_cells <- nrow(data) * ncol(data)",
-          "na_rate <- (na_count / total_cells) * 100",
-          "data <- na.omit(data)"
+          "data_na <- model.frame(formula, data = data, na.action = stats::na.pass)",
+          "complete_idx <- complete.cases(data_na)",
+          "na_rate <- sum(!complete_idx) / nrow(data_na) * 100",
+          "data <- data[complete_idx, , drop = FALSE]"
         ))
       }
     }
 
     # Suppression listwise pour la voie classique (d\u00e9fensif)
-    data_clean <- na.omit(data)
+    data_clean <- data[complete_idx, , drop = FALSE]
     if (nrow(data_clean) < nrow(data) && verbose) {
       k <- .vbse(
         paste0(nrow(data) - nrow(data_clean), " observations removed due to missing data (listwise deletion)."),
@@ -185,6 +199,20 @@
       )
     }
     data <- data_clean
+
+    # Synchroniser x et g avec le listwise (si passes en argument, non extraits de data)
+    if (!is.null(x) && length(x) == length(complete_idx)) {
+      x <- x[complete_idx]
+    }
+    if (!is.null(g)) {
+      if (is.data.frame(g) && nrow(g) == length(complete_idx)) {
+        g <- g[complete_idx, , drop = FALSE]
+      } else if (is.vector(g) || is.factor(g)) {
+        if (length(g) == length(complete_idx)) {
+          g <- g[complete_idx]
+        }
+      }
+    }
   }
 
   #============================================================================
@@ -272,7 +300,13 @@
   alea <- FALSE
   alea_plus <- FALSE
   check_normality <- TRUE
+  normality_already_tested <- FALSE
   check_variance_equal <- TRUE
+  variance_already_tested <- FALSE
+  outliers_marginal_detected <- FALSE
+  n_extreme_outliers <- 0
+  force_wrs2 <- FALSE
+  imbalance_ratio <- NA_real_
   check_discret <- FALSE
   balanced <- FALSE  # Indicateur pour le type de sommes des carr\u00e9s (Type II vs III)
   use_mixed_model <- FALSE  # Indicateur sp\u00e9cifique pour mod\u00e8les mixtes (\u00e9vite messages redondants)
@@ -739,6 +773,7 @@
       )
 
       robuste <- TRUE
+      check_normality <- FALSE  # Donn\u00e9es d\u00e9s\u00e9quilibr\u00e9es => post-hocs non-param\u00e9triques
       use_mixed_model <- TRUE
 
     } else {
@@ -1057,6 +1092,118 @@
     }
 
   } # Fin if (paired)
+
+  #============================================================================
+  #             ASSOMPTION DE BASE (AVANT D\u00c9S\u00c9QUILIBRE)
+  #============================================================================
+
+  # Ind\u00e9pendance des observations (assomption de plan)
+  if (!alea) {
+    k <- .vbse(
+      paste0("ASSUMPTION BASE: Independence of observations (design verification).\n",
+             "\tThis is a DESIGN assumption that cannot be statistically tested.\n",
+             "\tVerify that:\n",
+             "\t  \u2022 No repeated measures (each observation from a different subject)\n",
+             "\t  \u2022 No cluster effects (observations not grouped/nested)\n",
+             "\t  \u2022 No carryover effects (order of measurements doesn't influence results)"),
+      paste0("ASSOMPTION DE BASE : Ind\u00e9pendance des observations (v\u00e9rification de plan).\n",
+             "\tC'est une assomption de PLAN qui ne peut pas \u00eatre test\u00e9e statistiquement.\n",
+             "\tV\u00e9rifiez que :\n",
+             "\t  \u2022 Pas de mesures r\u00e9p\u00e9t\u00e9es (chaque observation d'un sujet diff\u00e9rent)\n",
+             "\t  \u2022 Pas d'effets cluster (observations non group\u00e9es/embo\u00eet\u00e9es)\n",
+             "\t  \u2022 Pas d'effets report (ordre des mesures n'influence pas les r\u00e9sultats)"),
+      verbose = verbose, code = code, k = k, cpt = "on"
+    )
+
+    if (isTRUE(code)) {
+      k_code <- k_code + 1
+      .code_multi(k_code, "Assomption de base (ind\u00e9pendance)", c(
+        "# V\u00e9rifier l'ind\u00e9pendance des observations",
+        "# (pas de mesures r\u00e9p\u00e9t\u00e9es, pas d'effets cluster, pas d'effets d'ordre)"
+      ))
+    }
+
+    #-----------------------------------
+    # DIAGNOSTIC: Outliers marginaux (avant ajustement mod\u00e8le)
+    #-----------------------------------
+    n_outliers_marginal <- 0
+    if (requireNamespace("rstatix", quietly = TRUE)) {
+      tryCatch({
+        response_var <- all.vars(formula)[1]
+        outlier_data <- data.frame(value = data[[response_var]], group = g_cat)
+        outliers <- rstatix::identify_outliers(outlier_data, value)
+
+        if (!is.null(outliers) && nrow(outliers) > 0) {
+          n_outliers_marginal <- nrow(outliers)
+          n_extreme_outliers <- sum(outliers$is.extreme, na.rm = TRUE)
+          outliers_marginal_detected <- (nrow(outliers) > 0)
+        }
+      }, error = function(e) {
+        .dbg(paste0("Warning: Outlier detection failed: ", e$message),
+             paste0("Attention : D\u00e9tection outliers \u00e9chou\u00e9e : ", e$message),
+             debug = debug)
+      })
+    }
+
+    if (outliers_marginal_detected) {
+      outlier_conclusion_en <- if (n_extreme_outliers > 0) {
+        "--> Extreme values may strongly influence parametric tests."
+      } else {
+        "--> Values to monitor, but not excessive."
+      }
+      outlier_conclusion_fr <- if (n_extreme_outliers > 0) {
+        "--> Valeurs extr\u00eames peuvent fortement influencer tests param\u00e9triques."
+      } else {
+        "--> Valeurs \u00e0 surveiller, mais non excessives."
+      }
+
+      k <- .vbse(
+        paste0("DIAGNOSTIC: Outliers [identify_outliers() {rstatix}]\n",
+               "\t==> ", n_outliers_marginal, " outlier(s)",
+               if (n_extreme_outliers > 0) paste0(" (", n_extreme_outliers, " extreme)") else "", ".\n",
+               "\t", outlier_conclusion_en),
+        paste0("DIAGNOSTIC : Outliers [identify_outliers() {rstatix}]\n",
+               "\t==> ", n_outliers_marginal, " outlier(s)",
+               if (n_extreme_outliers > 0) paste0(" (", n_extreme_outliers, " extr\u00eame(s))") else "", ".\n",
+               "\t", outlier_conclusion_fr),
+        verbose = verbose, code = code, k = k, cpt = "on"
+      )
+    }
+
+    if (isTRUE(code)) {
+      k_code <- k_code + 1
+      .code_multi(k_code, "Diagnostic outliers", c(
+        "library(rstatix)",
+        "outlier_data <- data.frame(value = data[[all.vars(formula)[1]]], group = g_cat)",
+        "outliers <- identify_outliers(outlier_data, value)"
+      ))
+    }
+  } else {
+    k <- .vbse(
+      paste0("ASSUMPTION BASE: Independence of observations (repeated measures context).\n",
+             "\tThis is a DESIGN assumption that cannot be statistically tested.\n",
+             "\tVerify that:\n",
+             "\t  \u2022 Repeated measures on the same subjects (expected)\n",
+             "\t  \u2022 No additional clustering beyond subject\n",
+             "\t  \u2022 Order/carryover effects are controlled\n",
+             "\t  \u2022 No systematic dropout"),
+      paste0("ASSOMPTION DE BASE : Ind\u00e9pendance des observations (contexte mesures r\u00e9p\u00e9t\u00e9es).\n",
+             "\tC'est une assomption de PLAN qui ne peut pas \u00eatre test\u00e9e statistiquement.\n",
+             "\tV\u00e9rifiez que :\n",
+             "\t  \u2022 Mesures r\u00e9p\u00e9t\u00e9es sur les m\u00eames sujets (attendu)\n",
+             "\t  \u2022 Pas de cluster suppl\u00e9mentaire au-del\u00e0 du sujet\n",
+             "\t  \u2022 Effets d'ordre/report contr\u00f4l\u00e9s\n",
+             "\t  \u2022 Pas d'abandon syst\u00e9matique"),
+      verbose = verbose, code = code, k = k, cpt = "on"
+    )
+
+    if (isTRUE(code)) {
+      k_code <- k_code + 1
+      .code_multi(k_code, "Assomption de base (mesures r\u00e9p\u00e9t\u00e9es)", c(
+        "# V\u00e9rifier la structure RM (sujets, effets d'ordre, abandons)"
+      ))
+    }
+  }
 
   #============================================================================
   #         PR\u00e9PARATION DU FACTEUR D'INTERACTION CAT\u00e9GORIEL
@@ -1457,80 +1604,6 @@
       # Note: Message "Le plan factoriel est \u00e9quilibr\u00e9" supprim\u00e9 (redondant avec v\u00e9rification
       #       structure d\u00e9j\u00e0 effectu\u00e9e pour mesures r\u00e9p\u00e9t\u00e9es, ou \u00e9vident pour plans factoriels)
 
-      # V\u00e9rification de l'ind\u00e9pendance des observations (assomption de plan)
-      # R\u00e9f\u00e9rence: Maxwell, Delaney & Kelley (2018), Chapter 3
-      # NOTE: Ce texte est pour plans NON-appari\u00e9s (mesures ind\u00e9pendantes)
-      # Ne PAS afficher si alea=TRUE (mesures r\u00e9p\u00e9t\u00e9es) car texte inadapt\u00e9
-      if (!alea) {
-        k <- .vbse(
-          paste0("ASSUMPTION 1/3: Independence of observations (design verification).\n",
-                 "\tThis is a DESIGN assumption that cannot be statistically tested.\n",
-                 "\tVerify that:\n",
-                 "\t  \u2022 No repeated measures (each observation from a different subject)\n",
-                 "\t  \u2022 No cluster effects (observations not grouped/nested)\n",
-                 "\t  \u2022 No carryover effects (order of measurements doesn't influence results)"),
-          paste0("ASSOMPTION 1/3 : Ind\u00e9pendance des observations (v\u00e9rification de plan).\n",
-                 "\tC'est une assomption de PLAN qui ne peut pas \u00eatre test\u00e9e statistiquement.\n",
-                 "\tV\u00e9rifiez que :\n",
-                 "\t  \u2022 Pas de mesures r\u00e9p\u00e9t\u00e9es (chaque observation d'un sujet diff\u00e9rent)\n",
-                 "\t  \u2022 Pas d'effets cluster (observations non group\u00e9es/embo\u00eet\u00e9es)\n",
-                 "\t  \u2022 Pas d'effets report (ordre des mesures n'influence pas les r\u00e9sultats)"),
-          verbose = verbose, code = code, k = k, cpt = "on"
-        )
-
-        #-----------------------------------
-        # DIAGNOSTIC: Outliers marginaux (AVANT ajustement mod\u00e8le)
-        #-----------------------------------
-        # D\u00e9tection sur donn\u00e9es brutes par groupe - permet d'alerter AVANT l'analyse
-        outliers_marginal_detected <- FALSE
-        n_outliers_marginal <- 0
-        n_extreme_outliers <- 0
-
-        if (requireNamespace("rstatix", quietly = TRUE)) {
-          tryCatch({
-            response_var <- all.vars(formula)[1]
-            outlier_data <- data.frame(value = data[[response_var]], group = g_cat)
-            outliers <- rstatix::identify_outliers(outlier_data, value)
-
-            if (!is.null(outliers) && nrow(outliers) > 0) {
-              n_extreme_outliers <- sum(outliers$is.extreme, na.rm = TRUE)
-              n_outliers_marginal <- nrow(outliers)
-              outliers_marginal_detected <- (n_outliers_marginal > 0)
-            }
-          }, error = function(e) {
-            .dbg(paste0("Warning: Outlier detection failed: ", e$message),
-                 paste0("Attention : D\u00e9tection outliers \u00e9chou\u00e9e : ", e$message),
-                 debug = debug)
-          })
-        }
-
-        # Afficher r\u00e9sultat outliers marginaux
-        if (outliers_marginal_detected) {
-          outlier_conclusion_en <- if (n_extreme_outliers > 0) {
-            "--> Extreme values may strongly influence parametric tests."
-          } else {
-            "--> Values to monitor, but not excessive."
-          }
-          outlier_conclusion_fr <- if (n_extreme_outliers > 0) {
-            "--> Valeurs extr\u00eames peuvent fortement influencer tests param\u00e9triques."
-          } else {
-            "--> Valeurs \u00e0 surveiller, mais non excessives."
-          }
-
-          k <- .vbse(
-            paste0("DIAGNOSTIC: Outliers [identify_outliers() {rstatix}]\n",
-                   "\t==> ", n_outliers_marginal, " outlier(s) detected",
-                   if (n_extreme_outliers > 0) paste0(" (", n_extreme_outliers, " extreme)") else "", ".\n",
-                   "\t", outlier_conclusion_en),
-            paste0("DIAGNOSTIC : Outliers [identify_outliers() {rstatix}]\n",
-                   "\t==> ", n_outliers_marginal, " outlier(s) d\u00e9tect\u00e9(s)",
-                   if (n_extreme_outliers > 0) paste0(" (", n_extreme_outliers, " extr\u00eame(s))") else "", ".\n",
-                   "\t", outlier_conclusion_fr),
-            verbose = verbose, code = code, k = k, cpt = "on"
-          )
-        }
-      }
-
       # Construire le mod\u00e8le
       if (alea) {
         # V\u00e9rification de l'ind\u00e9pendance des observations pour mesures r\u00e9p\u00e9t\u00e9es
@@ -1586,15 +1659,37 @@
     balanced <- FALSE  # Indicateur pour le type de SS \u00e0 utiliser
     min_sample <- min(table_data)
     max_sample <- max(table_data)
+    imbalance_ratio <- max_sample / min_sample
 
-    if (max_sample / min_sample > 2) {
+    if (imbalance_ratio > 10) {
+      # D\u00e9s\u00e9quilibre extr\u00eame
+      .dbg("", "D\u00e9s\u00e9quilibre extr\u00eame, vers WRS2.", debug=debug)
+      k <- .vbse(
+        paste0("The data are extremely unbalanced (ratio max/min > 10).\n",
+               "\tObserved ratio: ", round(imbalance_ratio, 2), ".\n",
+               "\t--> Switching to robust WRS2 ANOVA (t2way/t3way)."),
+        paste0("Les donn\u00e9es sont extr\u00eamement d\u00e9s\u00e9quilibr\u00e9es (ratio max/min > 10).\n",
+               "\tRatio observ\u00e9 : ", round(imbalance_ratio, 2), ".\n",
+               "\t--> Passage vers ANOVA robuste WRS2 (t2way/t3way)."),
+        verbose = verbose, code = code, k = k, cpt = "on"
+      )
+
+      robuste <- TRUE
+      force_wrs2 <- TRUE
+      check_normality <- FALSE
+
+    } else if (imbalance_ratio > 2) {
       # D\u00e9s\u00e9quilibre s\u00e9v\u00e8re
       .dbg("", "Les donn\u00e9es sont trop d\u00e9s\u00e9quilibr\u00e9es, vers une ANOVA robuste.", debug=debug)
       k <- .vbse(
         paste0("The data are severely unbalanced (max/min ratio > 2).\n",
-               "\tSome groups are more than twice as large as others. Switching to robust ANOVA."),
+               "\tObserved ratio: ", round(imbalance_ratio, 2), ".\n",
+               "\tSome groups are more than twice as large as others.\n",
+               "\t--> Switching to robust ANOVA."),
         paste0("Les donn\u00e9es sont s\u00e9v\u00e8rement d\u00e9s\u00e9quilibr\u00e9es (ratio max/min > 2).\n",
-               "\tCertains groupes sont plus de 2 fois plus nombreux que d'autres. Passage vers ANOVA robuste."),
+               "\tRatio observ\u00e9 : ", round(imbalance_ratio, 2), ".\n",
+               "\tCertains groupes sont plus de 2 fois plus nombreux que d'autres.\n",
+               "\t--> Passage vers ANOVA robuste."),
         verbose = verbose, code = code, k = k, cpt = "on"
       )
 
@@ -1604,81 +1699,14 @@
       # D\u00e9s\u00e9quilibre l\u00e9ger
       .dbg("", "Les donn\u00e9es sont l\u00e9g\u00e8rement d\u00e9s\u00e9quilibr\u00e9es, vers une ANOVA de type 3.", debug=debug)
       k <- .vbse(
-        "The data are slightly unbalanced. Using Type III Sum of Squares.",
-        "Les donn\u00e9es sont l\u00e9g\u00e8rement d\u00e9s\u00e9quilibr\u00e9es. Utilisation des Sommes des Carr\u00e9s de Type III.",
+        paste0("The data are slightly unbalanced (ratio \u2264 2).\n",
+               "\tObserved ratio: ", round(imbalance_ratio, 2), ".\n",
+               "\tUsing Type III Sum of Squares."),
+        paste0("Les donn\u00e9es sont l\u00e9g\u00e8rement d\u00e9s\u00e9quilibr\u00e9es (ratio \u2264 2).\n",
+               "\tRatio observ\u00e9 : ", round(imbalance_ratio, 2), ".\n",
+               "\tUtilisation des Sommes des Carr\u00e9s de Type III."),
         verbose = verbose, code = code, k = k, cpt = "on"
       )
-
-      # ASSOMPTION 1/3: Ind\u00e9pendance (pour plans d\u00e9s\u00e9quilibr\u00e9s aussi)
-      # R\u00e9f\u00e9rence: Maxwell, Delaney & Kelley (2018), Chapter 3
-      if (!alea) {
-        k <- .vbse(
-          paste0("ASSUMPTION 1/3: Independence of observations (design verification).\n",
-                 "\tThis is a DESIGN assumption that cannot be statistically tested.\n",
-                 "\tVerify that:\n",
-                 "\t  \u2022 No repeated measures (each observation from a different subject)\n",
-                 "\t  \u2022 No cluster effects (observations not grouped/nested)\n",
-                 "\t  \u2022 No carryover effects (order of measurements doesn't influence results)"),
-          paste0("ASSOMPTION 1/3 : Ind\u00e9pendance des observations (v\u00e9rification de plan).\n",
-                 "\tC'est une assomption de PLAN qui ne peut pas \u00eatre test\u00e9e statistiquement.\n",
-                 "\tV\u00e9rifiez que :\n",
-                 "\t  \u2022 Pas de mesures r\u00e9p\u00e9t\u00e9es (chaque observation d'un sujet diff\u00e9rent)\n",
-                 "\t  \u2022 Pas d'effets cluster (observations non group\u00e9es/embo\u00eet\u00e9es)\n",
-                 "\t  \u2022 Pas d'effets report (ordre des mesures n'influence pas les r\u00e9sultats)"),
-          verbose = verbose, code = code, k = k, cpt = "on"
-        )
-
-        #-----------------------------------
-        # DIAGNOSTIC: Outliers marginaux (AVANT ajustement mod\u00e8le)
-        #-----------------------------------
-        outliers_marginal_detected <- FALSE
-        n_outliers_marginal <- 0
-        n_extreme_outliers <- 0
-
-        if (requireNamespace("rstatix", quietly = TRUE)) {
-          tryCatch({
-            response_var <- all.vars(formula)[1]
-            outlier_data <- data.frame(value = data[[response_var]], group = g_cat)
-            outliers <- rstatix::identify_outliers(outlier_data, value)
-
-            if (!is.null(outliers) && nrow(outliers) > 0) {
-              n_extreme_outliers <- sum(outliers$is.extreme, na.rm = TRUE)
-              n_outliers_marginal <- nrow(outliers)
-              outliers_marginal_detected <- (n_outliers_marginal > 0)
-            }
-          }, error = function(e) {
-            .dbg(paste0("Warning: Outlier detection failed: ", e$message),
-                 paste0("Attention : D\u00e9tection outliers \u00e9chou\u00e9e : ", e$message),
-                 debug = debug)
-          })
-        }
-
-        # Afficher r\u00e9sultat outliers marginaux
-        if (outliers_marginal_detected) {
-          outlier_conclusion_en <- if (n_extreme_outliers > 0) {
-            "--> Extreme values may strongly influence parametric tests."
-          } else {
-            "--> Values to monitor, but not excessive."
-          }
-          outlier_conclusion_fr <- if (n_extreme_outliers > 0) {
-            "--> Valeurs extr\u00eames peuvent fortement influencer tests param\u00e9triques."
-          } else {
-            "--> Valeurs \u00e0 surveiller, mais non excessives."
-          }
-
-          k <- .vbse(
-            paste0("DIAGNOSTIC: Outliers [identify_outliers() {rstatix}]\n",
-                   "\t==> ", n_outliers_marginal, " outlier(s) detected",
-                   if (n_extreme_outliers > 0) paste0(" (", n_extreme_outliers, " extreme)") else "", ".\n",
-                   "\t", outlier_conclusion_en),
-            paste0("DIAGNOSTIC : Outliers [identify_outliers() {rstatix}]\n",
-                   "\t==> ", n_outliers_marginal, " outlier(s) d\u00e9tect\u00e9(s)",
-                   if (n_extreme_outliers > 0) paste0(" (", n_extreme_outliers, " extr\u00eame(s))") else "", ".\n",
-                   "\t", outlier_conclusion_fr),
-            verbose = verbose, code = code, k = k, cpt = "on"
-          )
-        }
-      }
 
       #============================================================================
       #                      NOTE PERSO #6 [PARTIELLEMENT R\u00e9SOLUE]
@@ -2006,9 +2034,6 @@
     #-----------------------------------
     .dbg("", "Contr\u00f4le de la normalit\u00e9 des r\u00e9sidus.", debug=debug)
 
-    # Flag pour \u00e9viter double test de variance (Levene puis Bartlett)
-    variance_already_tested <- FALSE
-
     if (!is.null(model)) {
       residus <- get_residuals(model)
 
@@ -2038,6 +2063,7 @@
                                     debug = debug, verbose = verbose, code = code, k = k, cpt = "off")
       k <- pvals_residuals[[2]]
       check_normality <- pvals_residuals[[1]]
+      normality_already_tested <- TRUE
 
       #----------------------------------------------------------------------
       # Test de sph\u00e9ricit\u00e9 (Mauchly) - SI mesures r\u00e9p\u00e9t\u00e9es avec k >= 3
@@ -2394,6 +2420,7 @@
                                   assumption_label = "3/3")
       k <- pvals_variance[[2]]
       check_variance_equal <- pvals_variance[[1]]
+      variance_already_tested <- TRUE
 
       if (!check_variance_equal) {
         # NOTE: Le message de passage vers analyse robuste a \u00e9t\u00e9 supprim\u00e9 ici
@@ -2881,7 +2908,10 @@
         if (requireNamespace("lmPerm", quietly = TRUE)) {
           tryCatch({
             # ANCOVA par permutation
-            perm_ancova <- lmPerm::aovp(formula, data = data, perm = "Prob")
+            # capture.output() absorbe le message parasite "Settings:  unique SS" \u00e9mis par aovp()
+            utils::capture.output(
+              perm_ancova <- lmPerm::aovp(formula, data = data, perm = "Prob")
+            )
 
             k <- .vbse(
               "Permutation ANCOVA completed successfully.",
@@ -3410,11 +3440,87 @@
       # D\u00e9terminer le nombre de facteurs r\u00e9els
       n_factors <- length(factor_vars)
 
+      wrs2_done <- FALSE
+
+      if (force_wrs2 && !paired && !check_ancova && n_factors >= 2) {
+        # Trimming adaptatif selon la proportion r\u00e9elle d'outliers
+        # R\u00e9f\u00e9rence : Wilcox (2017), ch. 7 - tr=0.05 minimum pour robustesse aux queues lourdes
+        n_total_obs <- nrow(data)
+        pct_outliers <- if (n_total_obs > 0) 100 * n_outliers_marginal / n_total_obs else 0
+
+        if (n_extreme_outliers > 0 || pct_outliers > 5) {
+          tr_val <- 0.20
+          tr_reason_en <- paste0("extreme outliers or >5% outliers (", round(pct_outliers, 1), "%)")
+          tr_reason_fr <- paste0("outliers extr\u00eames ou >5% d'outliers (", round(pct_outliers, 1), "%)")
+        } else if (pct_outliers > 0) {
+          tr_val <- 0.10
+          tr_reason_en <- paste0("moderate outliers (", round(pct_outliers, 1), "%, non-extreme)")
+          tr_reason_fr <- paste0("outliers mod\u00e9r\u00e9s (", round(pct_outliers, 1), "%, non extr\u00eames)")
+        } else {
+          tr_val <- 0.05
+          tr_reason_en <- "no outliers, minimal robustness trim"
+          tr_reason_fr <- "pas d'outliers, trimming minimal de robustesse"
+        }
+
+        k <- .vbse(
+          paste0("Applying robust WRS2 ANOVA due to extreme imbalance (ratio > 10).\n",
+                 "\tTrim level: ", round(tr_val * 100), "% (", tr_reason_en, ")."),
+          paste0("Application de l'ANOVA robuste WRS2 en raison d'un d\u00e9s\u00e9quilibre extr\u00eame (ratio > 10).\n",
+                 "\tTrimmage : ", round(tr_val * 100), "% (", tr_reason_fr, ")."),
+          verbose = verbose, code = code, k = k, cpt = "on"
+        )
+
+        if (isTRUE(code)) {
+          k_code <- k_code + 1
+          .code_multi(k_code, "ANOVA robuste WRS2 (d\u00e9s\u00e9quilibre extr\u00eame)", c(
+            "library(WRS2)",
+            paste0("tr <- ", tr_val),
+            if (n_factors == 2) "WRS2::t2way(formula, data = data, tr = tr)" else
+              "WRS2::t3way(formula, data = data, tr = tr)"
+          ))
+        }
+
+        if (requireNamespace("WRS2", quietly = TRUE)) {
+          tryCatch({
+            wrs2_result <- if (n_factors == 2) {
+              WRS2::t2way(formula, data = data, tr = tr_val)
+            } else {
+              WRS2::t3way(formula, data = data, tr = tr_val)
+            }
+
+            robust_results$method <- if (n_factors == 2) "WRS2_t2way" else "WRS2_t3way"
+            robust_results$test_result <- wrs2_result
+            robust_results$posthoc_applicable <- TRUE
+            wrs2_done <- TRUE
+
+            if (verbose) {
+              print(wrs2_result)
+              cat("\n")
+            }
+          }, error = function(e) {
+            robust_results$warnings <- c(robust_results$warnings, paste0("WRS2 error: ", e$message))
+            k <- .vbse(
+              paste0("WRS2 robust ANOVA failed: ", e$message, "\n\tFalling back to permutation ANOVA."),
+              paste0("\u00c9chec ANOVA robuste WRS2 : ", e$message, "\n\tRetour vers ANOVA par permutation."),
+              verbose = verbose, code = code, k = k, cpt = "on"
+            )
+            wrs2_done <- FALSE
+          })
+        } else {
+          k <- .vbse(
+            "Package WRS2 not available. Install with: install.packages('WRS2').\n\tFalling back to permutation ANOVA.",
+            "Package WRS2 non disponible. Installer avec : install.packages('WRS2').\n\tRetour vers ANOVA par permutation.",
+            verbose = verbose, code = code, k = k, cpt = "on"
+          )
+          wrs2_done <- FALSE
+        }
+      }
+
       #=============================================================================
       # PHASE 1: S\u00c9LECTION ET APPLICATION AUTOMATIQUE DU TEST ROBUSTE
       #=============================================================================
 
-      if (paired && nlevels(g_cat) >= 3 && n_factors == 1) {
+      if (!wrs2_done && paired && nlevels(g_cat) >= 3 && n_factors == 1) {
         #---------------------------------------------------------------------------
         # CAS 1: MESURES R\u00c9P\u00c9T\u00c9ES, k >= 3, UN SEUL FACTEUR
         # \u2192 Test de Friedman (extension non param\u00e9trique de RM-ANOVA)
@@ -3522,7 +3628,7 @@
           )
         })
 
-      } else if (n_factors == 1 && !paired && !check_ancova && nlevels(g_cat) >= 2) {
+      } else if (!wrs2_done && n_factors == 1 && !paired && !check_ancova && nlevels(g_cat) >= 2) {
         #---------------------------------------------------------------------------
         # CAS 2: UN SEUL FACTEUR, DONN\u00c9ES IND\u00c9PENDANTES, PAS D'ANCOVA
         # \u2192 Kruskal-Wallis (d\u00e9j\u00e0 document\u00e9 dans NOTE #12, mais enrichi ici)
@@ -3619,7 +3725,7 @@
           robust_results$warnings <- c(robust_results$warnings, as.character(e$message))
         })
 
-      } else if (n_factors == 2 && !paired && !check_ancova) {
+      } else if (!wrs2_done && n_factors == 2 && !paired && !check_ancova) {
         #---------------------------------------------------------------------------
         # CAS 3: DEUX FACTEURS, DONN\u00c9ES IND\u00c9PENDANTES, PAS ANCOVA
         # \u2192 Scheirer-Ray-Hare (extension de Kruskal-Wallis pour 2-way)
@@ -3730,7 +3836,7 @@
 
       }
 
-      if (n_factors >= 2 && !paired &&
+      if (!wrs2_done && n_factors >= 2 && !paired &&
           (is.null(robust_results$method) ||
            robust_results$method %in% c("Scheirer_Ray_Hare_Unavailable", "Scheirer_Ray_Hare_Failed"))) {
         #---------------------------------------------------------------------------
@@ -3745,15 +3851,9 @@
 
         k <- .vbse(
           paste0("Applying permutation ANOVA [lmPerm::aovp()] for multi-factor independent design.\n",
-                 "\tDesign: ", length(factor_vars), " factor(s) detected.\n",
-                 "\tReason: Distribution-free method, BEST for non-normal/discrete data.\n",
-                 "\tAdvantages: Tests all effects, handles imbalance, robust to violations.\n",
-                 "\t==> Gold standard for robust multi-factor analysis."),
+                 "\tDesign: ", length(factor_vars), " factor(s) detected."),
           paste0("Application de l'ANOVA par permutation [lmPerm::aovp()] pour plan multi-facteurs ind\u00e9pendant.\n",
-                 "\tPlan : ", length(factor_vars), " facteur(s) d\u00e9tect\u00e9(s).\n",
-                 "\tRaison : M\u00e9thode sans hypoth\u00e8se de distribution, MEILLEURE pour donn\u00e9es non-normales/discr\u00e8tes.\n",
-                 "\tAvantages : Teste tous les effets, g\u00e8re d\u00e9s\u00e9quilibre, robuste aux violations.\n",
-                 "\t==> Standard de r\u00e9f\u00e9rence pour analyse robuste multi-facteurs."),
+                 "\tPlan : ", length(factor_vars), " facteur(s) d\u00e9tect\u00e9(s)."),
           verbose = verbose, code = code, k = k, cpt = "on"
         )
 
@@ -3763,24 +3863,15 @@
             # Plus de facteurs = plus de permutations n\u00e9cessaires
             n_perm <- ifelse(length(factor_vars) <= 2, "Prob", "Exact")
 
-            k <- .vbse(
-              paste0("Using permutation strategy: ", n_perm, " (adaptive to design complexity)"),
-              paste0("Utilisation de la strat\u00e9gie de permutation : ", n_perm, " (adaptative \u00e0 la complexit\u00e9 du plan)"),
-              verbose = verbose, code = code, k = k, cpt = "off"
-            )
-
             # Ajuster le mod\u00e8le par permutation
-            perm_result <- lmPerm::aovp(formula, data = data, perm = n_perm)
+            # capture.output() absorbe le message parasite "Settings:  unique SS" \u00e9mis par aovp()
+            utils::capture.output(
+              perm_result <- lmPerm::aovp(formula, data = data, perm = n_perm)
+            )
 
             robust_results$method <- "Permutation_ANOVA"
             robust_results$test_result <- perm_result
             robust_results$posthoc_applicable <- TRUE
-
-            k <- .vbse(
-              "Permutation ANOVA completed successfully.",
-        "ANOVA par permutation termin\u00e9e avec succ\u00e8s.",
-              verbose = verbose, code = code, k = k, cpt = "off"
-            )
 
             if (verbose) {
               k <- .vbse(
@@ -3802,17 +3893,16 @@
               ]
 
               if (length(sig_effects) > 0) {
+                sig_list <- paste0("\t  - ", trimws(sig_effects), collapse = "\n")
                 k <- .vbse(
-                  paste0("\tSignificant effects detected (alpha = ", alpha, "): ",
-                         paste(sig_effects, collapse = ", ")),
-                  paste0("\tEffets significatifs d\u00e9tect\u00e9s (alpha = ", alpha, ") : ",
-                         paste(sig_effects, collapse = ", ")),
+                  paste0("Significant effects detected (alpha = ", alpha, "):\n", sig_list),
+                  paste0("Effets significatifs d\u00e9tect\u00e9s (alpha = ", alpha, ") :\n", sig_list),
                   verbose = verbose, code = code, k = k, cpt = "off"
                 )
               } else {
                 k <- .vbse(
-                  paste0("\tNo significant effects at alpha = ", alpha),
-                  paste0("\tAucun effet significatif \u00e0 alpha = ", alpha),
+                  paste0("No significant effects at alpha = ", alpha),
+                  paste0("Aucun effet significatif \u00e0 alpha = ", alpha),
                   verbose = verbose, code = code, k = k, cpt = "off"
                 )
               }
@@ -3823,7 +3913,8 @@
             robust_results$assumptions_checked$tests_interactions <- TRUE
             robust_results$assumptions_checked$outlier_robust <- TRUE
 
-            # V\u00e9rifier degr\u00e9 de d\u00e9s\u00e9quilibre (information, pas blocage)
+            # Stocker le degr\u00e9 de d\u00e9s\u00e9quilibre (information interne, pas de message verbose)
+            # Note : aovp g\u00e8re correctement les d\u00e9s\u00e9quilibres jusqu'\u00e0 10:1
             table_data_local <- table(g_cat)
             if (length(table_data_local) > 1) {
               max_ratio <- max(table_data_local) / min(table_data_local)
@@ -3834,14 +3925,65 @@
                   robust_results$warnings,
                   paste0("Severe imbalance: max/min ratio = ", round(max_ratio, 2))
                 )
-                k <- .vbse(
-                  paste0("Note: Severely unbalanced design (ratio = ", round(max_ratio, 2),
-                         "). Permutation ANOVA handles this, but power may be reduced for smaller groups."),
-                  paste0("Note : Plan s\u00e9v\u00e8rement d\u00e9s\u00e9quilibr\u00e9 (ratio = ", round(max_ratio, 2),
-                         "). L'ANOVA par permutation g\u00e8re cela, mais la puissance peut \u00eatre r\u00e9duite pour les petits groupes."),
-                  verbose = verbose, code = code, k = k, cpt = "off"
-                )
               }
+            }
+
+            # Contr\u00f4les d'assomptions pour post-hocs (normalit\u00e9 + variance)
+            # M\u00eame si l'ANOVA est par permutation, les post-hocs d\u00e9pendent des hypoth\u00e8ses
+            k <- .vbse(
+              "Post-hoc suitability check after robust ANOVA.\n\tNormality + variance tests determine the appropriate post-hoc family.",
+              "Contr\u00f4le d'ad\u00e9quation des post-hocs apr\u00e8s ANOVA robuste.\n\tTests de normalit\u00e9 + variance pour choisir les post-hocs appropri\u00e9s.",
+              verbose = verbose, code = code, k = k, cpt = "on"
+            )
+            need_posthoc_checks <- (!normality_already_tested || !variance_already_tested)
+
+            if (!need_posthoc_checks) {
+              k <- .vbse(
+                "Note: Normality/variance already checked earlier. Reusing results for post-hoc selection.",
+                "Note : Normalit\u00e9/variance d\u00e9j\u00e0 contr\u00f4l\u00e9es plus t\u00f4t. R\u00e9utilisation des r\u00e9sultats pour les post-hocs.",
+                verbose = verbose, code = code, k = k, cpt = "off"
+              )
+            }
+
+            if (isTRUE(code) && need_posthoc_checks) {
+              k_code <- k_code + 1
+              .code_multi(k_code, "Contr\u00f4le post-hoc (normalit\u00e9 + variance)", c(
+                "norm_res <- .normality(x, g = g_cat, alpha = alpha, paired = FALSE)",
+                "var_res <- .variance(x, g = g_cat, check_normality = norm_res[[1]], alpha = alpha)"
+              ))
+            }
+            if (!normality_already_tested) {
+              normality_result <- .normality(
+                x, g = g_cat, alpha = alpha, paired = FALSE,
+                debug = debug, verbose = verbose, code = code, k = k,
+                cpt = "sub", prefix = "a) "
+              )
+              check_normality <- normality_result[[1]]
+              k <- normality_result[[2]]
+              normality_already_tested <- TRUE
+            }
+
+            if (!variance_already_tested) {
+              pvals_variance <- .variance(
+                x, g = g_cat, check_normality = check_normality,
+                alpha = alpha, paired = FALSE, debug = debug,
+                verbose = verbose, code = code, k = k, cpt = "sub",
+                assumption_label = NULL, prefix = "b) "
+              )
+              check_variance_equal <- pvals_variance[[1]]
+              k <- pvals_variance[[2]]
+              variance_already_tested <- TRUE
+            }
+            if (isTRUE(outliers_marginal_detected) || n_extreme_outliers > 0) {
+              check_normality <- FALSE
+              k <- .vbse(
+                "Note: Outliers detected earlier. Forcing robust/non-parametric post-hocs.",
+                "Note : Outliers d\u00e9tect\u00e9s en amont. Post-hocs robustes/non-param\u00e9triques impos\u00e9s.",
+                verbose = verbose, code = code, k = k, cpt = "off"
+              )
+            }
+            if (!check_variance_equal) {
+              check_normality <- FALSE  # Forcer post-hocs non-param\u00e9triques
             }
 
           }, error = function(e) {
@@ -4174,14 +4316,8 @@
       # NOTE: R\u00e9sum\u00e9 "M\u00e9thode appliqu\u00e9e" SUPPRIM\u00c9 car redondant avec messages pr\u00e9c\u00e9dents
       # qui affichent d\u00e9j\u00e0 la m\u00e9thode choisie et les r\u00e9sultats d\u00e9taill\u00e9s
 
-      # Afficher les avertissements uniquement s'il y en a
-      if (length(robust_results$warnings) > 0 && verbose) {
-        k <- .vbse(
-          paste0("WARNINGS/NOTES:\n\t", paste(robust_results$warnings, collapse = "\n\t")),
-          paste0("AVERTISSEMENTS/NOTES :\n\t", paste(robust_results$warnings, collapse = "\n\t")),
-          verbose = verbose, code = code, k = k, cpt = "on"
-        )
-      }
+      # Avertissements internes conserves dans robust_results$warnings
+      # mais non affiches dans le bilan (redondant avec messages precedents)
 
       # Ajouter robust_results \u00e0 la structure de retour finale
       # (sera int\u00e9gr\u00e9 dans le return() \u00e0 la fin de la fonction)

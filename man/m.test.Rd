@@ -124,17 +124,25 @@ appropriate tests based on data structure and statistical assumptions. It handle
 }
 \examples{
 \dontrun{
-# Example 1: One-factor unpaired
-data1 <- .simul(n = 12, k_H = 3, seed = 123)
-m.test(A ~ F, data = data1, verbose = TRUE)
+# Example 1: One-factor ANOVA (iris)
+data(iris)
+m.test(Sepal.Length ~ Species, data = iris, verbose = TRUE)
 
-# Example 2: Repeated measures
-data2 <- .simul(n = 12, seed = 456)
-m.test(A ~ G, data = data2, id = "idG", verbose = TRUE)
+# Example 2: ANCOVA (mtcars)
+data(mtcars)
+mtcars$cyl <- factor(mtcars$cyl)
+m.test(mpg ~ cyl + wt, data = mtcars, verbose = TRUE)
 
-# Example 3: Mixed design
-data3 <- .simul(n = 20, seed = 789)
-m.test(A ~ F * Temps + Error(id/Temps), data = data3, verbose = TRUE)
+# Example 3: MANOVA (iris)
+data(iris)
+m.test(cbind(Sepal.Length, Sepal.Width) ~ Species,
+       data = iris, verbose = TRUE)
+
+# Example 4: Mixed model / random effect (sleepstudy)
+# Requires lme4 installed
+# data(sleepstudy, package = "lme4")
+# m.test(Reaction ~ Days + (1|Subject),
+#        data = sleepstudy, verbose = TRUE)
 }
 
 }

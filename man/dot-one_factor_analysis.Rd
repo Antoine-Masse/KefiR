@@ -71,6 +71,7 @@ The function performs the following:
 }
 }
 \examples{
+\dontrun{
 # Example with normal data
 set.seed(123)
 x <- c(rnorm(50, mean = 5), rnorm(50, mean = 6))
@@ -81,6 +82,7 @@ g <- factor(rep(1:2, each = 50))
 x <- c(rpois(50, lambda = 5), rpois(50, lambda = 7))
 g <- factor(rep(1:2, each = 50))
 .one_factor_analysis(x, g, verbose = TRUE)
+}
 
 }
 \seealso{
@@ -92,3 +94,4 @@ g <- factor(rep(1:2, each = 50))
 \item \code{\link[onewaytests:bf.test]{onewaytests::bf.test()}}
 }
 }
+\keyword{internal}

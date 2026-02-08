@@ -19,7 +19,7 @@
 	}
 	pvals <- quantile(pvals,probs=conf,na.rm=T)
 	if (ctrl == TRUE) {
-	  if (pvals <= alpha) {
+	  if (!is.na(pvals) && pvals <= alpha) {
 		synth <- list()
 		starss <- c("","")
 		starss[-ind_control] <- ifelse(pvals <=0.001,"***",ifelse(pvals <=0.01,"**",
@@ -33,7 +33,7 @@
 	  }
 	} else if (ctrl==FALSE) {
 	  synth <- list()
-	  if (pvals <= alpha) {
+	  if (!is.na(pvals) && pvals <= alpha) {
 		synth$groups <- data.frame(categories=unique(g),groups=c("a","b"))
 		synth$p.value <- pvals
 	  } else {

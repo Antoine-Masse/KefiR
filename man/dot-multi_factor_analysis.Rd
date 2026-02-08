@@ -109,3 +109,4 @@ Wilcox, R. R. (2017). \emph{Introduction to robust estimation and hypothesis tes
 \code{\link{.one_factor_analysis}}, \code{\link[car]{Anova}},
 \code{\link[ez]{ezANOVA}}, \code{\link[lme4]{lmer}}
 }
+\keyword{internal}

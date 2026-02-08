@@ -1,0 +1,1069 @@
+#' Multivariate Analysis of Variance (MANOVA)
+#'
+#' This function performs MANOVA for multiple dependent variables and one or more grouping factors.
+#' It handles classical MANOVA, repeated measures MANOVA, MANOVA with random effects, and robust
+#' alternatives for non-parametric situations. The function automatically checks all assumptions
+#' (multivariate normality, homogeneity of covariance matrices, etc.) and selects the appropriate
+#' statistical approach.
+#'
+#' @param x Numeric matrix or data frame. Multiple dependent variables to be analyzed.
+#'   Can also be NULL if using formula interface.
+#' @param g Factor or data frame. Grouping variable(s) for the analysis.
+#' @param formula Optional formula specifying the model (e.g., cbind(Y1, Y2, Y3) ~ A * B).
+#' @param data Optional data frame containing variables specified in the formula.
+#' @param paired Logical. Indicates whether data are from repeated measures (default: FALSE).
+#' @param id Optional. Identifier for paired/repeated measures data.
+#' @param alpha Numeric. Significance level for hypothesis testing (default: 0.05).
+#' @param k Optional counter for verbose messages (auto-initialized to 0 if NULL).
+#' @param code Logical. If TRUE, displays R code snippets (default: FALSE).
+#' @param debug Logical. If TRUE, displays detailed debugging messages (default: FALSE).
+#' @param verbose Logical. If TRUE, provides detailed output during analysis (default: FALSE).
+#' @param boot Logical. If TRUE, uses bootstrap for post-hoc tests (default: TRUE).
+#' @param silent Logical. If TRUE, suppresses warnings from underlying functions (default: TRUE).
+#' @param return Logical. If TRUE, returns results; if FALSE, only displays output (default: TRUE).
+#'
+#' @details
+#' \strong{PIPELINE ARCHITECTURE:}
+#' \enumerate{
+#'   \item \strong{Data validation}: Check for missing values, verify data structure
+#'   \item \strong{Assumption checks}:
+#'     \itemize{
+#'       \item Multivariate normality (Mardia, Henze-Zirkler, Royston tests)
+#'       \item Homogeneity of covariance matrices (Box's M test)
+#'       \item Independence of observations
+#'       \item Absence of multicollinearity
+#'       \item Linearity between dependent variables
+#'       \item Multivariate outliers (Mahalanobis distance)
+#'     }
+#'   \item \strong{Model selection}:
+#'     \itemize{
+#'       \item Classical MANOVA (parametric, homogeneous covariances)
+#'       \item Repeated measures MANOVA (within-subject factors)
+#'       \item MANOVA with random effects (nlme::lme or lme4::lmer)
+#'       \item Robust MANOVA (rrcov::Wilks.test with MCD estimator)
+#'     }
+#'   \item \strong{Test execution}: Wilks' Lambda, Pillai's trace, Hotelling-Lawley, Roy's largest root
+#'   \item \strong{Post-hoc analyses}: Discriminant analysis if requested
+#' }
+#'
+#' @return
+#' A list containing:
+#' \itemize{
+#'   \item \code{x}: Processed dependent variables matrix
+#'   \item \code{g}: Grouping factor(s)
+#'   \item \code{check_multivariate_normality}: Logical indicating multivariate normality assumption
+#'   \item \code{check_covariance_homogeneity}: Logical indicating homogeneity of covariance matrices
+#'   \item \code{check_multicollinearity}: Logical indicating absence of multicollinearity
+#'   \item \code{manova_model}: Fitted MANOVA model object (NULL if robust approach)
+#'   \item \code{test_statistics}: List of test statistics (Wilks, Pillai, Hotelling-Lawley, Roy)
+#'   \item \code{k}: Updated message counter
+#'   \item \code{robust}: Logical indicating if robust methods were used
+#' }
+#'
+#' @section Assumptions and Academic References:
+#'
+#' \strong{1. Multivariate Normality}
+#'
+#' The vector of dependent variables must follow a multivariate normal distribution.
+#'
+#' \emph{Reference:}
+#' Mardia, K. V. (1970). Measures of multivariate skewness and kurtosis with applications.
+#' \emph{Biometrika}, 57(3), 519-530. https://doi.org/10.1093/biomet/57.3.519
+#'
+#' \emph{Tests used:} Mardia's test, Henze-Zirkler test, Royston's test (package: MVN)
+#'
+#' \strong{2. Homogeneity of Covariance Matrices}
+#'
+#' Variance-covariance matrices of dependent variables must be equal across groups (Box's M test).
+#'
+#' \emph{Reference:}
+#' Box, G. E. P. (1949). A general distribution theory for a class of likelihood criteria.
+#' \emph{Biometrika}, 36(3/4), 317-346. https://doi.org/10.2307/2332671
+#'
+#' \emph{Note:} Box's M test is very sensitive; significance is typically assessed at α = 0.001.
+#'
+#' \strong{3. Independence of Observations}
+#'
+#' Each observation must be independent of others. For repeated measures, use appropriate
+#' repeated measures MANOVA or mixed models.
+#'
+#' \emph{Reference:}
+#' Field, A., Miles, J., & Field, Z. (2012). \emph{Discovering Statistics Using R}.
+#' Sage Publications. Chapter 16.
+#'
+#' \strong{4. Absence of Multicollinearity}
+#'
+#' Dependent variables should not be too highly correlated (typically r < 0.90).
+#'
+#' \emph{Reference:}
+#' Tabachnick, B. G., & Fidell, L. S. (2019). \emph{Using Multivariate Statistics} (7th ed.).
+#' Pearson. Chapter 7.
+#'
+#' \strong{5. Linearity}
+#'
+#' Linear relationships should exist between all pairs of dependent variables within each group.
+#' Checked via scatterplot matrices and bivariate correlations.
+#'
+#' \strong{6. Multivariate Outliers}
+#'
+#' Detected using Mahalanobis distance. Outliers can strongly influence MANOVA results.
+#'
+#' \emph{Reference:}
+#' Mahalanobis, P. C. (1936). On the generalized distance in statistics.
+#' \emph{Proceedings of the National Institute of Sciences of India}, 2(1), 49-55.
+#'
+#' \strong{7. Sample Size}
+#'
+#' Adequate sample size is crucial. For MANOVA, recommended minimum: n > p + g where
+#' p = number of dependent variables, g = number of groups.
+#'
+#' \emph{Reference:}
+#' Stevens, J. P. (2009). \emph{Applied Multivariate Statistics for the Social Sciences} (5th ed.).
+#' Routledge. Chapter 5.
+#'
+#' @section Non-Parametric and Robust Alternatives:
+#'
+#' When assumptions are violated, the function switches to robust methods:
+#'
+#' \itemize{
+#'   \item \strong{Robust MANOVA:} Uses MCD (Minimum Covariance Determinant) estimator
+#'     (package: rrcov)
+#'   \item \strong{Permutation MANOVA:} For small samples or severe violations
+#'   \item \strong{Multivariate Kruskal-Wallis:} Non-parametric alternative (limited availability in R)
+#' }
+#'
+#' \emph{Reference:}
+#' Wilcox, R. R. (2017). \emph{Introduction to Robust Estimation and Hypothesis Testing} (4th ed.).
+#' Academic Press. https://doi.org/10.1016/C2010-0-67044-1
+#'
+#' @importFrom stats manova aov na.omit cor mahalanobis qchisq
+#' @importFrom car Anova
+#' @importFrom MVN mvn
+#' @importFrom biotools boxM
+#' @importFrom rstatix identify_outliers
+#'
+#' @param within Vecteur de caractères. Facteurs intra-sujets (mesures répétées).
+#' @param between Vecteur de caractères. Facteurs inter-sujets.
+#'
+#' @seealso
+#' \code{\link{.multi_factor_analysis}}, \code{.one_factor_analysis},
+#' \code{\link[stats]{manova}}, \code{\link[car]{Anova}}, \code{\link[MVN]{mvn}}
+#'
+#' @examples
+#' # Example 1: Classical MANOVA with 2 groups and 3 dependent variables
+#' set.seed(123)
+#' data <- data.frame(
+#'   Y1 = rnorm(60, mean = rep(c(5, 6), each = 30)),
+#'   Y2 = rnorm(60, mean = rep(c(10, 12), each = 30)),
+#'   Y3 = rnorm(60, mean = rep(c(15, 14), each = 30)),
+#'   Group = factor(rep(c("A", "B"), each = 30))
+#' )
+#' result <- .manova_analysis(
+#'   x = data[, c("Y1", "Y2", "Y3")],
+#'   g = data$Group,
+#'   verbose = TRUE
+#' )
+#'
+#' # Example 2: MANOVA with 2 factors (2x3 design)
+#' data$FactorA <- factor(rep(c("A1", "A2"), times = 30))
+#' data$FactorB <- factor(rep(c("B1", "B2", "B3"), each = 20))
+#' result <- .manova_analysis(
+#'   x = data[, c("Y1", "Y2", "Y3")],
+#'   g = data.frame(FactorA = data$FactorA, FactorB = data$FactorB),
+#'   verbose = TRUE
+#' )
+#'
+#' @keywords internal
+
+
+
+
+
+
+
+.manova_analysis <- function(x=NULL, g=NULL, formula=NULL, data=NULL,
+                              paired = FALSE, id = NULL, within = NULL, between = NULL,
+                              alpha = 0.05,
+                              k=NULL, code=FALSE, debug=FALSE, verbose=FALSE,
+                              boot=TRUE, silent=TRUE, return=TRUE) {
+
+  # Helper function for code mode output
+  .code_manova <- function(step_num, title, code_lines) {
+    cat(paste0("# ", step_num, ") ", title, "\n"))
+    for (line in code_lines) {
+      cat(paste0(line, "\n"))
+    }
+    cat("\n")
+  }
+
+  # Initialize code mode
+  if (isTRUE(code)) {
+    verbose_original <- verbose
+    verbose <- FALSE
+    k_code <- 0  # Compteur s\u00e9par\u00e9 pour mode code
+  }
+
+  #============================================================================
+  #                     INITIALIZATION
+  #============================================================================
+  .dbg("=== Start .manova_analysis() ===",
+       "=== D\u00e9but de .manova_analysis() ===", debug=debug)
+
+  # Initialize k counter for verbose messages
+  if (is.null(k)) k <- 0
+
+  # Initialize control variables
+  check_multivariate_normality <- TRUE
+  check_covariance_homogeneity <- TRUE
+  check_multicollinearity <- TRUE
+  check_outliers_mv <- TRUE
+  robust <- FALSE
+  manova_model <- NULL
+  test_statistics <- list()
+
+  #============================================================================
+  #                     FORMULA PROCESSING
+  #============================================================================
+  # NOTE PERSO: Ce code de traitement des formules provient de l'ancien fichier
+  # Il gere les transformations (I, log, etc.) et les fonctions speciales (cbind)
+  # pour extraire correctement les variables reponses et explicatives.
+  #
+  # IMPORTANT: Si x et g sont deja fournis (cas d'appel depuis m.test()),
+  # on ne retraite PAS la formule car x est deja une matrice extraite.
+  #============================================================================
+
+  # Cas 1: x et g d\u00e9j\u00e0 fournis (appel\u00e9 depuis m.test)
+  if (!is.null(x) && !is.null(g)) {
+    .dbg("x and g provided directly, skipping formula processing.",
+         "x et g fournis directement, traitement de formule ignor\u00e9.", debug=debug)
+    # x est d\u00e9j\u00e0 une matrice, g est d\u00e9j\u00e0 un facteur ou data.frame
+    # On ne fait rien, on passe directement \u00e0 la validation
+  } else if (!is.null(formula)) {
+    # Cas 2: Seulement formula fournie, on doit l'\u00e9valuer
+    .dbg("Processing formula interface.",
+         "Traitement de l'interface formula.", debug=debug)
+
+    clean_formula <- function(expr) {
+      if (is.call(expr)) {
+        func_name <- as.character(expr[[1]])
+        transform_funcs <- c("I", "log", "sqrt", "exp", "scale", "as.numeric", "as.factor")
+        preserve_funcs <- c("cbind", "interaction", "poly", "bs", "ns")
+
+        .dbg(paste("Processing function:", func_name),
+             paste("Traitement fonction:", func_name), debug=debug)
+
+        if (func_name %in% transform_funcs) {
+          return(clean_formula(expr[[2]]))
+        } else if (func_name %in% preserve_funcs) {
+          return(expr)
+        } else if (func_name == ":") {
+          return(expr)
+        }
+        return(as.call(lapply(expr, clean_formula)))
+      }
+      return(expr)
+    }
+
+    cleaned_formula <- clean_formula(formula)
+    vars_needed <- all.vars(cleaned_formula)
+    .dbg(paste("Variables needed:", paste(vars_needed, collapse=", ")),
+         paste("Variables n\u00e9cessaires:", paste(vars_needed, collapse=", ")), debug=debug)
+
+    response_expr <- formula[[2]]
+    original_response_expr <- response_expr
+    cleaned_response_expr <- clean_formula(response_expr)
+
+    response_vars <- if (is.call(response_expr)) {
+      func_name <- as.character(response_expr[[1]])
+      if (func_name == "cbind") {
+        unique(unlist(lapply(response_expr[-1], all.vars)))
+      } else {
+        all.vars(cleaned_response_expr)
+      }
+    } else {
+      all.vars(cleaned_response_expr)
+    }
+
+    .dbg(paste("Response variables:", paste(response_vars, collapse=", ")),
+         paste("Variables r\u00e9ponse:", paste(response_vars, collapse=", ")), debug=debug)
+
+    # Extract response matrix - simplification
+    # Extraire directement les colonnes du data.frame et les convertir en matrice
+    response <- tryCatch({
+      if (all(response_vars %in% colnames(data))) {
+        as.matrix(data[, response_vars, drop = FALSE])
+      } else {
+        stop("Not all response variables found in data")
+      }
+    }, error = function(e) {
+      .exit(paste0("Error extracting response variables: ", e$message),
+            paste0("Erreur lors de l'extraction des variables r\u00e9ponse : ", e$message),
+            verbose=verbose, return=return)
+    })
+
+    # Extract grouping variables
+    g_vars <- setdiff(vars_needed, response_vars)
+    .dbg(paste("Grouping variables:", paste(g_vars, collapse=", ")),
+         paste("Variables explicatives:", paste(g_vars, collapse=", ")), debug=debug)
+
+    g_list <- lapply(g_vars, function(var) {
+      if (var %in% colnames(data)) {
+        data[[var]]
+      } else {
+        get(var, envir = parent.frame())
+      }
+    })
+
+    g <- if (length(g_list) > 1) {
+      as.data.frame(setNames(g_list, g_vars))
+    } else if (length(g_list) == 1) {
+      factor(g_list[[1]])
+    } else {
+      NULL
+    }
+
+    x <- response
+  } else {
+    # Cas 3: Ni x/g ni formula fournis
+    .exit("Either provide x and g directly, or provide formula and data.",
+          "Fournissez soit x et g directement, soit formula et data.",
+          verbose=verbose, return=return)
+  }
+
+  #============================================================================
+  #                     DATA VALIDATION
+  #============================================================================
+  .dbg("Data validation.",
+       "Validation des donn\u00e9es.", debug=debug)
+
+  # Check that x is a matrix with multiple columns
+  if (is.null(x)) {
+    .exit("Response variable x is NULL.",
+          "La variable r\u00e9ponse x est NULL.",
+          verbose=verbose, return=return)
+  }
+
+  # Ensure x is a matrix
+  if (!is.matrix(x)) {
+    x <- as.matrix(x)
+  }
+
+  n_dv <- ncol(x)
+  n_obs <- nrow(x)
+
+  if (n_dv < 2) {
+    .exit("MANOVA requires at least 2 dependent variables. Use .multi_factor_analysis() or .one_factor_analysis() for univariate analysis.",
+          "MANOVA n\u00e9cessite au moins 2 variables d\u00e9pendantes. Utilisez .multi_factor_analysis() ou .one_factor_analysis() pour une analyse univari\u00e9e.",
+          verbose=verbose, return=return)
+  }
+
+  k <- .vbse(paste0("MANOVA analysis with ", n_dv, " dependent variables and ", n_obs, " observations."),
+             paste0("Analyse MANOVA avec ", n_dv, " variables d\u00e9pendantes et ", n_obs, " observations."),
+             verbose=verbose, k=k, cpt="on")
+  if (isTRUE(code)) {
+    k_code <- k_code + 1
+    .code_manova(k_code, "Initialisation analyse MANOVA", c(
+      "x <- as.matrix(x)",
+      "n_dv <- ncol(x)",
+      "n_obs <- nrow(x)"
+    ))
+  }
+
+  # Check for missing values
+  na_count <- sum(is.na(x))
+  if (na_count > 0) {
+    na_rate <- (na_count / (n_obs * n_dv)) * 100
+    k <- .vbse(paste0("Warning: ", na_count, " missing values detected (", round(na_rate, 2), "% of data).\n\tListwise deletion will be applied."),
+               paste0("Attention : ", na_count, " valeurs manquantes d\u00e9tect\u00e9es (", round(na_rate, 2), "% des donn\u00e9es).\n\tUne suppression listwise sera appliqu\u00e9e."),
+               verbose=verbose, k=k, cpt="on")
+    if (isTRUE(code)) {
+      k_code <- k_code + 1
+      .code_manova(k_code, "Gestion des valeurs manquantes", c(
+        "na_count <- sum(is.na(x))",
+        "na_rate <- (na_count / (nrow(x) * ncol(x))) * 100",
+        "complete_cases <- complete.cases(x)",
+        "x <- x[complete_cases, , drop = FALSE]",
+        "g <- g[complete_cases]"
+      ))
+    }
+
+    # Remove rows with any NA
+    complete_cases <- complete.cases(x)
+    if (!is.null(g)) {
+      if (is.data.frame(g)) {
+        complete_cases <- complete_cases & complete.cases(g)
+      } else {
+        complete_cases <- complete_cases & !is.na(g)
+      }
+    }
+    x <- x[complete_cases, , drop=FALSE]
+    if (!is.null(g)) {
+      if (is.data.frame(g)) {
+        g <- g[complete_cases, , drop=FALSE]
+      } else {
+        g <- g[complete_cases]
+      }
+    }
+    n_obs <- nrow(x)
+  }
+
+  # Validate grouping variable
+  if (is.null(g)) {
+    .exit("Grouping variable g is NULL.",
+          "La variable de groupement g est NULL.",
+          verbose=verbose, return=return)
+  }
+
+  # Convert g to factor if needed
+  if (is.data.frame(g)) {
+    # Multiple factors: create interaction
+    g_interaction <- interaction(g, drop=TRUE)
+    n_groups <- nlevels(g_interaction)
+    k <- .vbse(paste0("Multiple grouping factors detected. Creating interaction with ", n_groups, " groups."),
+               paste0("Plusieurs facteurs de groupement d\u00e9tect\u00e9s. Cr\u00e9ation d'interaction avec ", n_groups, " groupes."),
+               verbose=verbose, k=k, cpt="off")
+    g_factor <- g_interaction
+  } else {
+    g_factor <- droplevels(factor(g))
+    n_groups <- nlevels(g_factor)
+    k <- .vbse(paste0("Single grouping factor with ", n_groups, " groups."),
+               paste0("Facteur de groupement unique avec ", n_groups, " groupes."),
+               verbose=verbose, k=k, cpt="off")
+  }
+
+  #============================================================================
+  #                     DETECTION OF REPEATED MEASURES / MANCOVA
+  #============================================================================
+  # NOTE PERSO: MANOVA avec mesures r\u00e9p\u00e9t\u00e9es et MANCOVA ne sont pas encore
+  # impl\u00e9ment\u00e9s. On d\u00e9tecte ces situations et on redirige l'utilisateur vers
+  # les mod\u00e8les mixtes multivari\u00e9s appropri\u00e9s.
+  #============================================================================
+
+  # Check for repeated measures (paired data with id)
+  if (paired == TRUE || !is.null(id) || !is.null(within)) {
+    .exit(
+      paste0("ERROR: Repeated measures MANOVA (within-subject factors) is not yet implemented.\n\n",
+             "For repeated measures with multiple dependent variables, consider:\n",
+             "  1. Mixed models with multivariate response (package: nlme, lme4)\n",
+             "  2. Separate repeated measures ANOVAs for each DV (with Bonferroni correction)\n",
+             "  3. Profile analysis (if DVs represent time points)\n\n",
+             "Recommended R packages:\n",
+             "  - nlme::lme() for linear mixed effects models\n",
+             "  - lme4::lmer() for mixed models with random effects\n",
+             "  - car::Anova() with type='III' for repeated measures\n\n",
+             "Academic reference:\n",
+             "  Davis, C. S. (2002). Statistical Methods for the Analysis of\n",
+             "  Repeated Measurements. Springer. Chapter 7.\n",
+             "  https://doi.org/10.1007/b97287"),
+      paste0("ERREUR: MANOVA \u00e0 mesures r\u00e9p\u00e9t\u00e9es (facteurs intra-sujets) non encore impl\u00e9ment\u00e9e.\n\n",
+             "Pour mesures r\u00e9p\u00e9t\u00e9es avec variables d\u00e9pendantes multiples, consid\u00e9rez:\n",
+             "  1. Mod\u00e8les mixtes avec r\u00e9ponse multivari\u00e9e (packages: nlme, lme4)\n",
+             "  2. ANOVAs \u00e0 mesures r\u00e9p\u00e9t\u00e9es s\u00e9par\u00e9es pour chaque VD (correction Bonferroni)\n",
+             "  3. Analyse de profils (si VD repr\u00e9sentent des points temporels)\n\n",
+             "Packages R recommand\u00e9s:\n",
+             "  - nlme::lme() pour mod\u00e8les lin\u00e9aires mixtes\n",
+             "  - lme4::lmer() pour mod\u00e8les mixtes avec effets al\u00e9atoires\n",
+             "  - car::Anova() avec type='III' pour mesures r\u00e9p\u00e9t\u00e9es\n\n",
+             "R\u00e9f\u00e9rence acad\u00e9mique:\n",
+             "  Davis, C. S. (2002). Statistical Methods for the Analysis of\n",
+             "  Repeated Measurements. Springer. Chapitre 7.\n",
+             "  https://doi.org/10.1007/b97287"),
+      verbose=verbose, return=return
+    )
+  }
+
+  # Check for covariates (MANCOVA)
+  # Si la formule contient des variables num\u00e9riques continues en plus des facteurs,
+  # c'est probablement une MANCOVA
+  if (!is.null(formula)) {
+    # Extraire les termes du c\u00f4t\u00e9 droit de la formule
+    rhs_terms <- attr(terms(formula), "term.labels")
+
+    # V\u00e9rifier si des termes sont num\u00e9riques (covariables) dans les donn\u00e9es
+    if (!is.null(data)) {
+      numeric_predictors <- sapply(rhs_terms, function(term) {
+        # Extraire le nom de la variable (ignorer interactions)
+        var_name <- gsub("[*:].*", "", term)
+        if (var_name %in% names(data)) {
+          is.numeric(data[[var_name]]) && !is.factor(data[[var_name]])
+        } else {
+          FALSE
+        }
+      })
+
+      if (any(numeric_predictors)) {
+        covariate_names <- rhs_terms[numeric_predictors]
+        .exit(
+          paste0("ERROR: MANCOVA (MANOVA with covariates) is not yet implemented.\n",
+                 "Detected numeric covariates: ", paste(covariate_names, collapse=", "), "\n\n",
+                 "For MANCOVA (multivariate analysis with continuous predictors), consider:\n",
+                 "  1. Convert continuous predictors to categorical factors (if appropriate)\n",
+                 "  2. Use multivariate regression (lm() with cbind() response)\n",
+                 "  3. Use specialized MANCOVA functions in other packages\n\n",
+                 "Recommended approaches:\n",
+                 "  - car::Manova() supports MANCOVA with type II/III SS\n",
+                 "  - For complex designs: multivariate mixed models (nlme, lme4)\n\n",
+                 "Academic reference:\n",
+                 "  Tabachnick, B. G., & Fidell, L. S. (2019). Using Multivariate\n",
+                 "  Statistics (7th ed.). Pearson. Chapter 7 (MANCOVA).\n",
+                 "  ISBN: 978-0134790541"),
+           paste0("ERREUR: MANCOVA (MANOVA avec covariables) non encore impl\u00e9ment\u00e9e.\n",
+                 "Covariables num\u00e9riques d\u00e9tect\u00e9es: ", paste(covariate_names, collapse=", "), "\n\n",
+                 "Pour MANCOVA (analyse multivari\u00e9e avec pr\u00e9dicteurs continus), consid\u00e9rez:\n",
+                 "  1. Convertir pr\u00e9dicteurs continus en facteurs cat\u00e9goriels (si appropri\u00e9)\n",
+                 "  2. Utiliser r\u00e9gression multivari\u00e9e (lm() avec r\u00e9ponse cbind())\n",
+                 "  3. Utiliser fonctions MANCOVA sp\u00e9cialis\u00e9es dans autres packages\n\n",
+                 "Approches recommand\u00e9es:\n",
+                 "  - car::Manova() supporte MANCOVA avec SC type II/III\n",
+                 "  - Pour designs complexes: mod\u00e8les mixtes multivari\u00e9s (nlme, lme4)\n\n",
+                 "R\u00e9f\u00e9rence acad\u00e9mique:\n",
+                 "  Tabachnick, B. G., & Fidell, L. S. (2019). Using Multivariate\n",
+                 "  Statistics (7th ed.). Pearson. Chapitre 7 (MANCOVA).\n",
+                 "  ISBN: 978-0134790541"),
+          verbose=verbose, return=return
+        )
+      }
+    }
+  }
+
+  # Sample size check
+  # Reference: Stevens (2009) recommends n > p + number of groups
+  min_sample_size <- n_dv + n_groups
+  if (n_obs <= min_sample_size) {
+    k <- .vbse(paste0("Warning: Sample size (n=", n_obs, ") is small relative to the number of variables and groups.\n\tRecommended minimum: n > ", min_sample_size, " (Stevens, 2009)."),
+               paste0("Attention : Taille d'\u00e9chantillon (n=", n_obs, ") faible par rapport au nombre de variables et groupes.\n\tMinimum recommand\u00e9 : n > ", min_sample_size, " (Stevens, 2009)."),
+               verbose=verbose, k=k, cpt="on")
+  }
+
+  #============================================================================
+  #          ASSUMPTION 1: INDEPENDENCE OF OBSERVATIONS
+  #============================================================================
+  # Reference: Field et al. (2012), Chapter 16
+  # This assumption cannot be tested statistically but must be ensured by design
+  #============================================================================
+
+  .dbg("Check: Independence of observations.",
+       "Contr\u00f4le: Ind\u00e9pendance des observations.", debug=debug)
+
+  if (paired == FALSE) {
+    k <- .vbse("Assumption check: Independence of observations.\n\tEnsure that observations between groups are independent (no repeated measures, no clustering effects).",
+               "V\u00e9rification d'assomption : Ind\u00e9pendance des observations.\n\tAssurez-vous que les observations entre les groupes sont ind\u00e9pendantes (pas de mesures r\u00e9p\u00e9t\u00e9es, pas d'effets de cluster).",
+               verbose=verbose, k=k, cpt="on")
+  } else {
+    k <- .vbse("Repeated measures design detected.\n\tMANOVA will account for within-subject dependencies.",
+               "Plan de mesures r\u00e9p\u00e9t\u00e9es d\u00e9tect\u00e9.\n\tLa MANOVA tiendra compte des d\u00e9pendances intra-sujets.",
+               verbose=verbose, k=k, cpt="on")
+  }
+
+  #============================================================================
+  #          ASSUMPTION 2: ABSENCE OF MULTICOLLINEARITY
+  #============================================================================
+  # Reference: Tabachnick & Fidell (2019), Chapter 7
+  # Check correlations between dependent variables (should be < 0.90)
+  #============================================================================
+
+  .dbg("Check: Multicollinearity.",
+       "Contr\u00f4le: Multicolin\u00e9arit\u00e9.", debug=debug)
+
+  cor_matrix <- cor(x, use="complete.obs")
+  cor_upper <- cor_matrix[upper.tri(cor_matrix)]
+  max_cor <- max(abs(cor_upper))
+
+  if (max_cor >= 0.90) {
+    check_multicollinearity <- FALSE
+    k <- .vbse(paste0("Warning: High correlation detected between dependent variables (max r = ", round(max_cor, 3), ").\n\tMulticollinearity may be present (r >= 0.90). Consider removing highly correlated variables."),
+               paste0("Attention : Corr\u00e9lation \u00e9lev\u00e9e d\u00e9tect\u00e9e entre variables d\u00e9pendantes (max r = ", round(max_cor, 3), ").\n\tLa multicolin\u00e9arit\u00e9 peut \u00eatre pr\u00e9sente (r >= 0.90). Envisagez de retirer des variables fortement corr\u00e9l\u00e9es."),
+               verbose=verbose, k=k, cpt="on")
+  } else {
+    k <- .vbse(paste0("Multicollinearity check: Maximum correlation = ", round(max_cor, 3), " (acceptable, < 0.90)."),
+               paste0("Contr\u00f4le de multicolin\u00e9arit\u00e9 : Corr\u00e9lation maximale = ", round(max_cor, 3), " (acceptable, < 0.90)."),
+               verbose=verbose, k=k, cpt="off")
+  }
+
+  #============================================================================
+  #          ASSUMPTION 3: MULTIVARIATE OUTLIERS
+  #============================================================================
+  # Reference: Mahalanobis (1936)
+  # Detect multivariate outliers using Mahalanobis distance
+  #============================================================================
+
+  .dbg("Check: Multivariate outliers (Mahalanobis distance).",
+       "Contr\u00f4le: Outliers multivari\u00e9s (distance de Mahalanobis).", debug=debug)
+
+  # Calculate Mahalanobis distance for each observation
+  center <- colMeans(x, na.rm=TRUE)
+  cov_matrix <- cov(x, use="complete.obs")
+
+  # Check if covariance matrix is invertible
+  if (det(cov_matrix) == 0) {
+    k <- .vbse("Warning: Covariance matrix is singular. Cannot compute Mahalanobis distance.\n\tThis may indicate perfect multicollinearity.",
+               "Attention : Matrice de covariance singuli\u00e8re. Impossible de calculer la distance de Mahalanobis.\n\tCela peut indiquer une multicolin\u00e9arit\u00e9 parfaite.",
+               verbose=verbose, k=k, cpt="on")
+    check_outliers_mv <- FALSE
+  } else {
+    maha_dist <- mahalanobis(x, center, cov_matrix)
+
+    # Critical value: chi-square with p degrees of freedom at alpha=0.001
+    # Reference: Using conservative alpha for outlier detection
+    critical_value <- qchisq(1 - 0.001, df=n_dv)
+    outliers_mv <- which(maha_dist > critical_value)
+    n_outliers <- length(outliers_mv)
+    prop_outliers <- n_outliers / n_obs
+
+    if (n_outliers > 0) {
+      k <- .vbse(paste0("Multivariate outliers detected: ", n_outliers, " observations (", round(prop_outliers*100, 1), "%).\n\tThese may influence MANOVA results. Consider robust methods."),
+                 paste0("Outliers multivari\u00e9s d\u00e9tect\u00e9s : ", n_outliers, " observations (", round(prop_outliers*100, 1), "%).\n\tCeux-ci peuvent influencer les r\u00e9sultats de MANOVA. Envisagez des m\u00e9thodes robustes."),
+                 verbose=verbose, k=k, cpt="on")
+
+      if (prop_outliers > 0.05) {
+        check_outliers_mv <- FALSE
+      }
+    } else {
+      k <- .vbse("Multivariate outliers: None detected (Mahalanobis distance, \u03b1 = 0.001).",
+                 "Outliers multivari\u00e9s : Aucun d\u00e9tect\u00e9 (distance de Mahalanobis, \u03b1 = 0.001).",
+                 verbose=verbose, k=k, cpt="off")
+    }
+  }
+
+  #============================================================================
+  #          ASSUMPTION 4: MULTIVARIATE NORMALITY
+  #============================================================================
+  # References:
+  # - Mardia (1970): Measures of multivariate skewness and kurtosis
+  # - Henze & Zirkler (1990): A class of invariant consistent tests for multivariate normality
+  # - Royston (1983): Extension of Shapiro-Wilk test to multivariate case
+  #
+  # Tests available in MVN package: mardia, hz (Henze-Zirkler), royston
+  #============================================================================
+
+  .dbg("Check: Multivariate normality.",
+       "Contr\u00f4le: Normalit\u00e9 multivari\u00e9e.", debug=debug)
+
+  k <- .vbse("Multivariate normality test [mvn() {MVN}]\n\tMardia's test, Henze-Zirkler test, and Royston's test",
+             "Test normalit\u00e9 multivari\u00e9e [mvn() {MVN}]\n\tTest de Mardia, test de Henze-Zirkler et test de Royston",
+             verbose=verbose, k=k, cpt="on")
+
+  # Use MVN package for multivariate normality testing
+  if (requireNamespace("MVN", quietly = TRUE)) {
+    # Mardia's test
+    mvn_mardia <- tryCatch({
+      MVN::mvn(data=x, mvnTest="mardia", multivariatePlot="none")
+    }, error=function(e) {
+      return(NULL)
+    })
+
+    # Henze-Zirkler test
+    mvn_hz <- tryCatch({
+      MVN::mvn(data=x, mvnTest="hz", multivariatePlot="none")
+    }, error=function(e) {
+      return(NULL)
+    })
+
+    # Interpret results
+    tests_failed <- 0
+
+    if (!is.null(mvn_mardia)) {
+      mardia_result <- mvn_mardia$multivariateNormality
+      mardia_skew_pval <- as.numeric(mardia_result$`p value`[1])
+      mardia_kurt_pval <- as.numeric(mardia_result$`p value`[2])
+
+      if (!is.na(mardia_skew_pval) && mardia_skew_pval < alpha) tests_failed <- tests_failed + 1
+      if (!is.na(mardia_kurt_pval) && mardia_kurt_pval < alpha) tests_failed <- tests_failed + 1
+
+      k <- .vbse(paste0("Mardia's test - Skewness p-value: ", .format_pval(mardia_skew_pval),
+                       ", Kurtosis p-value: ", .format_pval(mardia_kurt_pval)),
+                 paste0("Test de Mardia - p-value Asym\u00e9trie : ", .format_pval(mardia_skew_pval),
+                       ", p-value Kurtosis : ", .format_pval(mardia_kurt_pval)),
+                 verbose=verbose, k=k, cpt="off")
+    }
+
+    if (!is.null(mvn_hz)) {
+      hz_result <- mvn_hz$multivariateNormality
+      hz_pval <- as.numeric(hz_result$`p value`)
+
+      if (!is.na(hz_pval) && hz_pval < alpha) tests_failed <- tests_failed + 1
+
+      k <- .vbse(paste0("Henze-Zirkler test p-value: ", .format_pval(hz_pval)),
+                 paste0("Test de Henze-Zirkler p-value : ", .format_pval(hz_pval)),
+                 verbose=verbose, k=k, cpt="off")
+    }
+
+    # Decision based on majority of tests
+    if (tests_failed >= 2) {
+      check_multivariate_normality <- FALSE
+      k <- .vbse("Multivariate normality assumption violated (majority of tests significant).\n\tConsider robust MANOVA or data transformation.",
+                 "Assomption de normalit\u00e9 multivari\u00e9e viol\u00e9e (majorit\u00e9 des tests significatifs).\n\tEnvisagez une MANOVA robuste ou une transformation des donn\u00e9es.",
+                 verbose=verbose, k=k, cpt="off")
+    } else {
+      k <- .vbse("Multivariate normality assumption met (majority of tests non-significant).",
+                 "Assomption de normalit\u00e9 multivari\u00e9e respect\u00e9e (majorit\u00e9 des tests non significatifs).",
+                 verbose=verbose, k=k, cpt="off")
+    }
+  } else {
+    k <- .vbse("Warning: MVN package not available. Multivariate normality not tested.\n\tInstall with: install.packages('MVN')",
+               "Attention : Package MVN non disponible. Normalit\u00e9 multivari\u00e9e non test\u00e9e.\n\tInstaller avec : install.packages('MVN')",
+               verbose=verbose, k=k, cpt="on")
+    check_multivariate_normality <- NA
+  }
+
+  #============================================================================
+  #          ASSUMPTION 5: HOMOGENEITY OF COVARIANCE MATRICES (Box's M test)
+  #============================================================================
+  # Reference: Box (1949)
+  # Note: Box's M test is very sensitive; use alpha = 0.001 (conservative)
+  #============================================================================
+
+  .dbg("Check: Homogeneity of covariance matrices (Box's M test).",
+       "Contr\u00f4le: Homog\u00e9n\u00e9it\u00e9 des matrices de covariance (test M de Box).", debug=debug)
+
+  k <- .vbse("Homogeneity of covariance matrices test: Box's M [boxM() {biotools}]\n\tNote: Sensitive test, significance assessed at \u03b1 = 0.001 (conservative)",
+             "Test d'homog\u00e9n\u00e9it\u00e9 des matrices de covariance avec le test M de Box [package biotools].\n\tNote : Ce test est sensible ; significativit\u00e9 \u00e9valu\u00e9e \u00e0 \u03b1 = 0.001 (conservateur).",
+             verbose=verbose, k=k, cpt="on")
+
+  # Use biotools package for Box's M test
+  if (requireNamespace("biotools", quietly = TRUE)) {
+    boxm_result <- tryCatch({
+      biotools::boxM(data=x, grouping=g_factor)
+    }, error=function(e) {
+      return(NULL)
+    })
+
+    if (!is.null(boxm_result)) {
+      boxm_pval <- boxm_result$p.value
+
+      # Use conservative alpha = 0.001 for Box's M test
+      if (boxm_pval < 0.001) {
+        check_covariance_homogeneity <- FALSE
+        k <- .vbse(paste0("Box's M test: p-value = ", .format_pval(boxm_pval), " (< 0.001).\n\tCovariance matrices are heterogeneous. Consider Pillai's trace (more robust) or robust MANOVA."),
+                   paste0("Test M de Box : p-value = ", .format_pval(boxm_pval), " (< 0.001).\n\tLes matrices de covariance sont h\u00e9t\u00e9rog\u00e8nes. Envisagez la trace de Pillai (plus robuste) ou une MANOVA robuste."),
+                   verbose=verbose, k=k, cpt="off")
+      } else {
+        k <- .vbse(paste0("Box's M test: p-value = ", .format_pval(boxm_pval), " (>= 0.001).\n\tCovariance matrices can be considered homogeneous."),
+                   paste0("Test M de Box : p-value = ", .format_pval(boxm_pval), " (>= 0.001).\n\tLes matrices de covariance peuvent \u00eatre consid\u00e9r\u00e9es comme homog\u00e8nes."),
+                   verbose=verbose, k=k, cpt="off")
+      }
+    } else {
+      k <- .vbse("Warning: Box's M test failed. Covariance homogeneity not tested.",
+                 "Attention : Le test M de Box a \u00e9chou\u00e9. Homog\u00e9n\u00e9it\u00e9 de covariance non test\u00e9e.",
+                 verbose=verbose, k=k, cpt="on")
+      check_covariance_homogeneity <- NA
+    }
+  } else {
+    k <- .vbse("Warning: biotools package not available. Box's M test not performed.\n\tInstall with: install.packages('biotools')",
+               "Attention : Package biotools non disponible. Test M de Box non effectu\u00e9.\n\tInstaller avec : install.packages('biotools')",
+               verbose=verbose, k=k, cpt="on")
+    check_covariance_homogeneity <- NA
+  }
+
+  #============================================================================
+  #                     DECISION: PARAMETRIC VS ROBUST
+  #============================================================================
+
+  .dbg("Decision: Parametric vs Robust approach.",
+       "D\u00e9cision : Approche param\u00e9trique vs robuste.", debug=debug)
+
+  # Count assumption violations (excluding NA = untested)
+  checks <- c(
+    check_multivariate_normality,
+    check_covariance_homogeneity,
+    check_multicollinearity,
+    check_outliers_mv
+  )
+
+  # Count only FALSE (violated), not NA (untested)
+  violations <- sum(checks == FALSE, na.rm=TRUE)
+  n_tested <- sum(!is.na(checks))
+
+  if (n_tested > 0) {
+    k <- .vbse(paste0("Assumption checks: ", n_tested, " tested, ", violations, " violated."),
+               paste0("Contr\u00f4les d'assomptions : ", n_tested, " test\u00e9s, ", violations, " viol\u00e9s."),
+               verbose=verbose, k=k, cpt="off")
+  }
+
+  if (violations >= 2) {
+    robust <- TRUE
+    k <- .vbse(paste0("Multiple assumption violations detected (", violations, " out of 4).\n\tSwitching to robust MANOVA approach."),
+               paste0("Violations multiples d'assomptions d\u00e9tect\u00e9es (", violations, " sur 4).\n\tPassage \u00e0 une approche MANOVA robuste."),
+               verbose=verbose, k=k, cpt="on")
+  } else if (violations == 1) {
+    if (!isTRUE(check_covariance_homogeneity)) {
+      k <- .vbse("Covariance heterogeneity detected.\n\tWill use Pillai's trace (most robust to this violation).",
+                 "H\u00e9t\u00e9rog\u00e9n\u00e9it\u00e9 de covariance d\u00e9tect\u00e9e.\n\tUtilisation de la trace de Pillai (la plus robuste \u00e0 cette violation).",
+                 verbose=verbose, k=k, cpt="off")
+    }
+  }
+
+  #============================================================================
+  #                     MANOVA EXECUTION
+  #============================================================================
+
+  if (robust == FALSE) {
+    #==========================================================================
+    #                    CLASSICAL MANOVA (PARAMETRIC)
+    #==========================================================================
+
+    k <- .vbse("Executing classical MANOVA (parametric approach).",
+               "Ex\u00e9cution de la MANOVA classique (approche param\u00e9trique).",
+               verbose=verbose, k=k, cpt="on")
+
+    # Create data frame for manova
+    response_names <- if (!is.null(colnames(x))) {
+      colnames(x)
+    } else {
+      paste0("Y", 1:n_dv)
+    }
+    colnames(x) <- response_names
+
+    manova_data <- data.frame(x, g_factor=g_factor)
+
+    # Construct formula
+    response_formula <- paste0("cbind(", paste(response_names, collapse=", "), ")")
+    manova_formula <- as.formula(paste(response_formula, "~ g_factor"))
+
+    # Fit MANOVA model
+    manova_model <- tryCatch({
+      manova(manova_formula, data=manova_data)
+    }, error=function(e) {
+      k <- .vbse(paste0("Error fitting MANOVA model: ", e$message),
+                 paste0("Erreur lors de l'ajustement du mod\u00e8le MANOVA : ", e$message),
+                 verbose=verbose, k=k, cpt="on")
+      return(NULL)
+    })
+
+    if (!is.null(manova_model)) {
+      # Extract test statistics
+      # Default tests: Wilks, Pillai, Hotelling-Lawley, Roy
+      k <- .vbse("Multivariate tests [manova()]\n\tWilks' Lambda, Pillai's trace, Hotelling-Lawley trace, Roy's largest root",
+                 "Tests multivari\u00e9s [manova()]\n\tLambda de Wilks, trace de Pillai, trace de Hotelling-Lawley, plus grande racine de Roy",
+                 verbose=verbose, k=k, cpt="off")
+      if (isTRUE(code)) {
+        k_code <- k_code + 1
+        .code_manova(k_code, "Tests multivari\u00e9s MANOVA", c(
+          paste0("manova_formula <- ", deparse(manova_formula)),
+          "manova_model <- manova(manova_formula, data = data)",
+          "summary(manova_model, test = 'Wilks')",
+          "summary(manova_model, test = 'Pillai')",
+          "summary(manova_model, test = 'Hotelling-Lawley')",
+          "summary(manova_model, test = 'Roy')"
+        ))
+      }
+
+      # Wilks' Lambda
+      wilks_summary <- tryCatch({
+        summary(manova_model, test="Wilks")
+      }, error=function(e) NULL)
+
+      if (!is.null(wilks_summary)) {
+        wilks_stats <- wilks_summary$stats
+        wilks_pval <- wilks_stats[1, "Pr(>F)"]
+        test_statistics$Wilks <- list(
+          statistic = wilks_stats[1, "Wilks"],
+          F_value = wilks_stats[1, "approx F"],
+          df1 = wilks_stats[1, "num Df"],
+          df2 = wilks_stats[1, "den Df"],
+          p_value = wilks_pval
+        )
+
+        if (wilks_pval <= alpha) {
+          k <- .vbse(paste0("Wilks' Lambda test: Significant multivariate effect, p-value = ", .format_pval(wilks_pval)),
+                     paste0("Test Lambda de Wilks : Effet multivari\u00e9 significatif, p-value = ", .format_pval(wilks_pval)),
+                     verbose=verbose, k=k, cpt="off")
+        } else {
+          k <- .vbse(paste0("Wilks' Lambda test: Non-significant multivariate effect, p-value = ", .format_pval(wilks_pval)),
+                     paste0("Test Lambda de Wilks : Effet multivari\u00e9 non significatif, p-value = ", .format_pval(wilks_pval)),
+                     verbose=verbose, k=k, cpt="off")
+        }
+      }
+
+      # Pillai's trace (most robust to violations)
+      pillai_summary <- tryCatch({
+        summary(manova_model, test="Pillai")
+      }, error=function(e) NULL)
+
+      if (!is.null(pillai_summary)) {
+        pillai_stats <- pillai_summary$stats
+        pillai_pval <- pillai_stats[1, "Pr(>F)"]
+        test_statistics$Pillai <- list(
+          statistic = pillai_stats[1, "Pillai"],
+          F_value = pillai_stats[1, "approx F"],
+          df1 = pillai_stats[1, "num Df"],
+          df2 = pillai_stats[1, "den Df"],
+          p_value = pillai_pval
+        )
+
+        if (pillai_pval <= alpha) {
+          k <- .vbse(paste0("Pillai's trace test: Significant multivariate effect, p-value = ", .format_pval(pillai_pval)),
+                     paste0("Test trace de Pillai : Effet multivari\u00e9 significatif, p-value = ", .format_pval(pillai_pval)),
+                     verbose=verbose, k=k, cpt="off")
+        } else {
+          k <- .vbse(paste0("Pillai's trace test: Non-significant multivariate effect, p-value = ", .format_pval(pillai_pval)),
+                     paste0("Test trace de Pillai : Effet multivari\u00e9 non significatif, p-value = ", .format_pval(pillai_pval)),
+                     verbose=verbose, k=k, cpt="off")
+        }
+      }
+
+      # Hotelling-Lawley trace
+      hotelling_summary <- tryCatch({
+        summary(manova_model, test="Hotelling-Lawley")
+      }, error=function(e) NULL)
+
+      if (!is.null(hotelling_summary)) {
+        hotelling_stats <- hotelling_summary$stats
+        hotelling_pval <- hotelling_stats[1, "Pr(>F)"]
+        test_statistics$HotellingLawley <- list(
+          statistic = hotelling_stats[1, "Hotelling-Lawley"],
+          F_value = hotelling_stats[1, "approx F"],
+          df1 = hotelling_stats[1, "num Df"],
+          df2 = hotelling_stats[1, "den Df"],
+          p_value = hotelling_pval
+        )
+      }
+
+      # Roy's largest root
+      roy_summary <- tryCatch({
+        summary(manova_model, test="Roy")
+      }, error=function(e) NULL)
+
+      if (!is.null(roy_summary)) {
+        roy_stats <- roy_summary$stats
+        roy_pval <- roy_stats[1, "Pr(>F)"]
+        test_statistics$Roy <- list(
+          statistic = roy_stats[1, "Roy"],
+          F_value = roy_stats[1, "approx F"],
+          df1 = roy_stats[1, "num Df"],
+          df2 = roy_stats[1, "den Df"],
+          p_value = roy_pval
+        )
+      }
+
+      # Recommendation on which test to trust
+      if (!isTRUE(check_covariance_homogeneity)) {
+        k <- .vbse("Recommendation: Given covariance heterogeneity, prioritize Pillai's trace (most robust).",
+                   "Recommandation : \u00c9tant donn\u00e9 l'h\u00e9t\u00e9rog\u00e9n\u00e9it\u00e9 de covariance, privil\u00e9gier la trace de Pillai (la plus robuste).",
+                   verbose=verbose, k=k, cpt="off")
+      }
+    }
+
+  } else {
+    #==========================================================================
+    #                    ROBUST MANOVA (NON-PARAMETRIC)
+    #==========================================================================
+
+    k <- .vbse("Executing robust MANOVA (non-parametric approach).",
+               "Ex\u00e9cution de la MANOVA robuste (approche non param\u00e9trique).",
+               verbose=verbose, k=k, cpt="on")
+
+    # Use rrcov package for robust MANOVA with MCD estimator
+    if (requireNamespace("rrcov", quietly = TRUE)) {
+      k <- .vbse("Using MCD (Minimum Covariance Determinant) estimator for robust MANOVA [rrcov package].",
+                 "Utilisation de l'estimateur MCD (Minimum Covariance Determinant) pour MANOVA robuste [package rrcov].",
+                 verbose=verbose, k=k, cpt="off")
+
+      robust_result <- tryCatch({
+        rrcov::Wilks.test(x, grouping=g_factor, method="mcd")
+      }, error=function(e) {
+        k <- .vbse(paste0("Error in robust MANOVA: ", e$message),
+                   paste0("Erreur dans la MANOVA robuste : ", e$message),
+                   verbose=verbose, k=k, cpt="on")
+        return(NULL)
+      })
+
+      if (!is.null(robust_result)) {
+        robust_pval <- robust_result$p.value
+        test_statistics$RobustWilks <- list(
+          statistic = robust_result$statistic,
+          p_value = robust_pval
+        )
+
+        if (robust_pval <= alpha) {
+          k <- .vbse(paste0("Robust Wilks' test (MCD): Significant multivariate effect, p-value = ", .format_pval(robust_pval)),
+                     paste0("Test de Wilks robuste (MCD) : Effet multivari\u00e9 significatif, p-value = ", .format_pval(robust_pval)),
+                     verbose=verbose, k=k, cpt="off")
+        } else {
+          k <- .vbse(paste0("Robust Wilks' test (MCD): Non-significant multivariate effect, p-value = ", .format_pval(robust_pval)),
+                     paste0("Test de Wilks robuste (MCD) : Effet multivari\u00e9 non significatif, p-value = ", .format_pval(robust_pval)),
+                     verbose=verbose, k=k, cpt="off")
+        }
+      }
+    } else {
+      k <- .vbse("Warning: rrcov package not available. Robust MANOVA cannot be performed.\n\tInstall with: install.packages('rrcov')\n\tFalling back to permutation test.",
+                 "Attention : Package rrcov non disponible. MANOVA robuste impossible.\n\tInstaller avec : install.packages('rrcov')\n\tRetour au test de permutation.",
+                 verbose=verbose, k=k, cpt="on")
+
+      # TODO: Implement permutation MANOVA as fallback
+      k <- .vbse("Permutation MANOVA: Not yet implemented in this function.\n\tConsider using adonis() from vegan package manually.",
+                 "MANOVA par permutation : Pas encore impl\u00e9ment\u00e9e dans cette fonction.\n\tEnvisagez d'utiliser adonis() du package vegan manuellement.",
+                 verbose=verbose, k=k, cpt="off")
+    }
+  }
+
+  #============================================================================
+  #                     POST-HOC ANALYSES (if requested)
+  #============================================================================
+  # NOTE PERSO: Discriminant analysis and post-hoc tests would be added here
+  # Reference: Huberty & Olejnik (2006). Applied MANOVA and Discriminant Analysis.
+  # For now, these are left for future implementation.
+  #============================================================================
+
+  #============================================================================
+  #                     RETURN RESULTS
+  #============================================================================
+
+  .dbg("=== End .manova_analysis() ===",
+       "=== Fin de .manova_analysis() ===", debug=debug)
+
+  # Pour compatibilit\u00e9 avec m.test() qui appelle .posthoc()
+  # check_normality et check_variance_equal sont attendus
+  # Note: Ce ne sont pas les post-hocs appropri\u00e9s pour MANOVA (voir journal.txt)
+  # Solution temporaire en attendant impl\u00e9mentation d'analyse discriminante
+  check_normality <- isTRUE(check_multivariate_normality)
+  check_variance_equal <- isTRUE(check_covariance_homogeneity)
+
+  # NOTE PERSO: Extraire p-value globale pour return=FALSE
+  # (cf. Cahier des charges priorit\u00e9 2)
+  # Utiliser Wilks' Lambda comme test principal
+  global_pvalue <- NA
+  if (!is.null(test_statistics$Wilks)) {
+    global_pvalue <- test_statistics$Wilks$p_value
+  } else if (!is.null(test_statistics$Pillai)) {
+    global_pvalue <- test_statistics$Pillai$p_value
+  } else if (!is.null(test_statistics$RobustWilks)) {
+    global_pvalue <- test_statistics$RobustWilks$p_value
+  }
+
+  #============================================================================
+  #                         MODE CODE=TRUE
+  #============================================================================
+  # G\u00e9n\u00e8re du code R comment\u00e9 pour reproduire l'analyse MANOVA
+
+  # NOTE: Code generation for MANOVA is not currently implemented in centralized form.
+  # Future enhancement: Add coordinated code output with .posthoc_MANOVA.R messages.
+  # For now, users should refer to verbose output for analysis steps.
+
+  #============================================================================
+  #                         RETOUR FINAL
+  #============================================================================
+
+  result <- list(
+    x = x,
+    g = g_factor,
+    check_multivariate_normality = check_multivariate_normality,
+    check_covariance_homogeneity = check_covariance_homogeneity,
+    check_multicollinearity = check_multicollinearity,
+    check_outliers_mv = check_outliers_mv,
+    check_normality = check_normality,  # Pour compatibilit\u00e9 m.test()
+    check_variance_equal = check_variance_equal,  # Pour compatibilit\u00e9 m.test()
+    manova_model = manova_model,
+    test_statistics = test_statistics,
+    k = k,
+    robust = robust,
+    global_pvalue = global_pvalue  # P-value globale pour return=FALSE
+  )
+
+  # Assigner classe pour m\u00e9thode print() customis\u00e9e (\u00e9vite affichage verbeux de x et g)
+  class(result) <- c("manova_result", "list")
+
+  if (return == TRUE) {
+    return(result)
+  }
+}
