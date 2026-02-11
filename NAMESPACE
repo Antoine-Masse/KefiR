@@ -76,7 +76,7 @@ importFrom(car,vif)
 importFrom(e1071,naiveBayes)
 importFrom(emmeans,contrast)
 importFrom(emmeans,emmeans)
-importFrom(ez,ezANOVA)
+
 importFrom(fda.usc,fanova.hetero)
 importFrom(foreach,"%do%")
 importFrom(foreach,"%dopar%")

@@ -1,12 +1,34 @@
 ================================================================================
 GUIDE DES BONNES PRATIQUES - PACKAGE KefiR
 ================================================================================
-Version: 1.0
+Version: 2.0 (restructuré)
 Date création: 2025-11-04
+Date restructuration: 2026-02-08
 Auteur: Antoine Massé
 
 Ce document recense les consignes à suivre lors du développement du package
 KefiR pour maintenir cohérence, qualité et maintenabilité.
+
+================================================================================
+TABLE DES MATIÈRES
+================================================================================
+1. Structure et organisation du code
+2. Style de code
+3. Gestion des paramètres
+4. Tests et validation
+5. Post-hocs et comparaisons multiples
+6. Messages et communication
+7. Mode code (code=TRUE)
+8. Gestion des formules
+9. Packages et dépendances
+10. Versioning et archivage
+11. Références académiques
+12. Checklist avant commit
+13. Ordre logique traitement ANCOVA
+14. CATALOGUE DES BONNES PRATIQUES (BP-001 à BP-044)
+15. CHECKLIST UNIFIÉE
+16. HISTORIQUE DES MODIFICATIONS
+================================================================================
 
 ================================================================================
 1. STRUCTURE ET ORGANISATION DU CODE
@@ -143,9 +165,6 @@ if (return == FALSE) {
   - ANCOVA : p-value F-test global de l'ANCOVA
   - Modèles mixtes : p-value de l'effet fixe principal
 
-**Justification**: return=FALSE est utilisé dans les boucles pour extraire rapidement
-la significativité sans surcharge de mémoire ou d'affichage.
-
 ================================================================================
 4. TESTS ET VALIDATION
 ================================================================================
@@ -186,49 +205,14 @@ B) **Influence sur le modèle** [.diagnostic_influence()]
         - Seuil conservateur: 4/n (Fox 2016)
         - Seuil critique: > 1
         - Interprétation: Impact global sur TOUS les coefficients β
-        - Référence: Cook (1977), Technometrics 19(1):15-18
 
      2. **Leverage (hat values)** [hatvalues() {stats}]
         - Seuil: 2p/n où p = nombre de paramètres
         - Interprétation: Distance dans espace prédicteurs
-        - Obs à leverage élevé SEUL: extrême en X mais bien ajusté
 
      3. **DFBETAS** [dfbetas() {stats}]
         - Seuil: 2/√n (Belsley et al. 1980)
         - Interprétation: Impact sur CHAQUE coefficient individuellement
-        - Plus spécifique que Cook (par coefficient)
-        - Référence: Belsley, Kuh & Welsch (1980), Regression Diagnostics
-
-**RÈGLE D'APPLICATION par type d'analyse**:
-
-1. **ANCOVA (.ancova_analysis.R)**:
-   - Diagnostic SYSTÉMATIQUE (toujours effectué)
-   - Raison: Covariables continues → risque élevé d'observations influentes
-   - Affichage: Section unique "DIAGNOSTIC: Outliers and Influence"
-     * Partie A: Outliers marginaux (IQR)
-     * Partie B: Influence (Cook/Leverage/DFBETAS)
-   - Moment: Après ajustement modèle, avant tests assomptions
-
-2. **ANOVA multi-facteurs (.multi_factor_analysis.R)**:
-   - Diagnostic CONDITIONNEL (déclenché par détection outliers)
-   - Raison: Facteurs catégoriques → influence moins fréquente
-   - Logique:
-     * Si identify_outliers() détecte outliers marginaux
-     * ALORS déclencher .diagnostic_influence()
-   - Affichage: "DIAGNOSTIC: Outliers and Influence (conditional)"
-   - Moment: Après ajustement modèle, avant normalité résidus
-
-**Messages à afficher**:
-- Thresholds avec formules explicites (4/n, 2p/n, 2/√n)
-- Liste observations influentes avec raisons spécifiques:
-  "Obs 25 (Cook=0.065, DFBETAS>threshold)"
-- Avertissement si Cook > 1 (influence critique)
-- Conclusion: "Modèle robuste" OU "X% observations influentes"
-
-**Interprétation combinée**:
-- Leverage élevé + résidu faible: obs extrême mais bien ajustée (OK)
-- Leverage faible + résidu élevé: mauvais ajustement, faible impact (surveiller)
-- Leverage élevé + résidu élevé: influence forte sur β (CRITIQUE si Cook > 1)
 
 ## 4.2 Approches robustes
 
@@ -237,8 +221,6 @@ TOUJOURS proposer alternatives robustes si assomptions violées:
 - Bootstrap
 - Permutations
 - Estimateurs robustes (MCD, etc.)
-
-Documenter avec références académiques.
 
 ## 4.3 Tests de non-régression
 
@@ -282,8 +264,6 @@ IMPORTANT: Post-hocs univariés classiques INAPPROPRIÉS pour MANOVA
    - Correction Bonferroni: alpha_adj = alpha / p
    - UNIQUEMENT après MANOVA significative
 
-Références: Huberty & Olejnik (2006)
-
 ## 5.3 Post-hocs ANCOVA (.posthoc_ANCOVA.R)
 
 Logique académique implémentée:
@@ -304,23 +284,6 @@ IMPORTANT: Post-hocs classiques INAPPROPRIÉS pour modèles mixtes
 2. **Conditions d'exécution**:
    - UNIQUEMENT si au moins un effet fixe significatif
    - Pas de post-hocs si aucun effet significatif détecté
-   - Éviter surinterprétation des modèles mixtes
-
-3. **Méthode d'ajustement**:
-   - Tukey (défaut) pour comparaisons toutes paires
-   - Bonferroni pour comparaisons ciblées
-   - Holm pour nombreuses comparaisons
-   - Approximation Satterthwaite pour ddl
-
-4. **Sorties**:
-   - Comparaisons par paires avec p-values ajustées
-   - Compact letter display (si package multcomp disponible)
-   - Intervalles de confiance ajustés
-
-Références:
-- Lenth (2021) - emmeans package
-- Searle et al. (1980) - Population marginal means
-- DOI: 10.1080/00031305.1980.10483031
 
 ================================================================================
 6. MESSAGES ET COMMUNICATION
@@ -332,14 +295,12 @@ Références:
 - Usage: Développement uniquement
 - Condition: `if (debug == TRUE)`
 - Bilingue: Oui
-- Exemple: `.dbg("Processing formula", "Traitement formule", debug=debug)`
 
 ### .vbse() - Verbose:
 - Usage: Messages pédagogiques utilisateur
 - Condition: `if (verbose == TRUE)`
 - Compteur: k incrémenté
 - Bilingue: Oui
-- Exemple: `k <- .vbse("EN", "FR", verbose=verbose, k=k, cpt="on")`
 
 ### .msg() - Messages critiques:
 - Usage: Avertissements importants toujours affichés
@@ -371,88 +332,22 @@ Règles de base:
 - \n pour retours ligne
 - Sections en MAJUSCULES
 - Détails concis et pédagogiques
-- Expliquer le "pourquoi"
 
-## 6.2.1 Niveaux hiérarchiques avec cpt="off"
+## 6.3 Niveaux hiérarchiques avec cpt="off"
 
-**RÈGLE IMPORTANTE**: Quand `cpt="off"`, la fonction .vbse() ajoute automatiquement
-UNE TABULATION devant la PREMIÈRE LIGNE du message uniquement (voir sys_vbse.R ligne 24).
-
-**Conséquence**:
-- La première ligne reçoit +1 tabulation automatique
-- Les lignes suivantes (après \n) NE reçoivent PAS de tabulation automatique
-- Il faut donc mettre les tabulations explicites dans le message pour les lignes 2+
+**RÈGLE IMPORTANTE**: Quand `cpt="off"`, .vbse() ajoute automatiquement
+UNE TABULATION devant la PREMIÈRE LIGNE uniquement.
 
 **Niveaux d'indentation résultants:**
-- Sous-titres (a), b), c)...) : AUCUN \t dans le message → résultat = 1 tabulation (auto)
-- Sous-lignes (==>, explications) : DEUX \t dans le message → résultat = 2 tabulations
-- Détails supplémentaires : TROIS \t dans le message → résultat = 3 tabulations
+- Sous-titres (a), b), c)...) : AUCUN \t → résultat = 1 tabulation (auto)
+- Sous-lignes (==>) : DEUX \t → résultat = 2 tabulations
+- Détails supplémentaires : TROIS \t → résultat = 3 tabulations
 
-**Exemple CORRECT:**
-```r
-k <- .vbse(
-  paste0("a) Outliers detected on residuals:\n",
-         "\t\t==> ", n_outliers, " outliers (", prop_out, "%), ",
-         n_extreme, " extreme (", prop_ext, "%)."),
-  paste0("a) Outliers détectés sur les résidus :\n",
-         "\t\t==> ", n_outliers, " outliers (", prop_out, "%), ",
-         n_extreme, " extrêmes (", prop_ext, "%)."),
-  verbose = verbose, code = code, k = k, cpt = "off"
-)
-```
+## 6.4 Formatage pour fenêtres étroites
 
-**Résultat affiché:**
-```
-8) DIAGNOSTIC optionnel pour garantir la fiabilité de la lecture de l'ANOVA :
-    a) Outliers détectés sur les résidus :
-        ==> 13 outliers (10.8%), 0 extrêmes (0%).
-```
+RÈGLE CRITIQUE: Messages ≤ 80 caractères par ligne
 
-**Exemple INCORRECT:**
-```r
-# ❌ NE PAS FAIRE - tabulation sur le sous-titre
-k <- .vbse(
-  paste0("\ta) Outliers detected...\n",    # ❌ \t superflu (doublon)
-         "\t==> ", n_outliers, "..."),     # ❌ seulement 1 \t (insuffisant)
-  ...,
-  cpt = "off"
-)
-```
-
-**Référence:** sys_vbse.R:24 ajoute automatiquement `paste0("\t", ang, "\n")`
-ce qui ajoute \t SEULEMENT au début du message, pas devant chaque ligne.
-
-## 6.3 IMPORTANT: Formatage pour fenêtres étroites
-
-RÈGLE CRITIQUE: Les messages doivent rester lisibles sur des fenêtres étroites (80 caractères max par ligne)
-
-**Techniques recommandées:**
-
-1. **Phrases courtes** - Éviter les phrases de plus de 80 caractères
-2. **Retours à la ligne tabulés** - Couper les phrases longues avec \n\t...
-3. **Listes à puces** - Utiliser des listes plutôt que des paragraphes
-
-**Exemples:**
-
-❌ MAUVAIS (ligne trop longue):
-```r
-k <- .vbse(
-  "Test de Kolmogorov-Smirnov sur les données centrées sur la médiane et réduites : les données n'ont pas la même distribution (p-value : 0.001) en comparant avec l'alpha corrigé de Sidak 0.025.",
-  verbose = verbose, k = k
-)
-```
-
-✓ BON (lignes courtes avec retours tabulés):
-```r
-k <- .vbse(
-  paste0("Test de Kolmogorov-Smirnov [ks.test()]:\n",
-         "\tLes données n'ont pas la même distribution (p-value : 0.001)...\n",
-         "\t...en comparant avec l'alpha corrigé de Sidak 0.025."),
-  verbose = verbose, k = k
-)
-```
-
-✓ ENCORE MIEUX (avec abréviations):
+✓ BON:
 ```r
 k <- .vbse(
   paste0("Test KS sur données centrées/réduites:\n",
@@ -461,11 +356,6 @@ k <- .vbse(
   verbose = verbose, k = k
 )
 ```
-
-**Application systématique:**
-- Appliquer ces règles à TOUS les messages .vbse(), .msg(), .exit()
-- Relire chaque message et se demander: "Est-ce lisible sur 80 caractères?"
-- Utiliser des abréviations académiques courantes (MWW, BM, KS, etc.)
 
 ================================================================================
 7. MODE CODE (code=TRUE)
@@ -478,1132 +368,60 @@ Générer script R reproductible commenté pour:
 - Permettre vérification par pairs
 - Faciliter apprentissage R
 
-## 7.2 Format
+## 7.2 Principe de minimalisme
 
-```r
-if (code == TRUE) {
-  cat("# ==================================================\n")
-  cat("# Titre de l'étape\n")
-  cat("# ==================================================\n\n")
-  cat("# Commentaire explicatif\n")
-  cat("code_r_executable\n\n")
-}
-```
-
-## 7.3 Contenu
-
-INCLURE:
-- Chargement packages nécessaires
-- Tests d'assomptions principaux
-- Test statistique principal
-- Post-hocs si appropriés
-
-EXCLURE:
-- Contrôles de sécurité internes
-- Fonctions cachées (.xxx)
-- Détails d'implémentation
-
-## 7.4 RÈGLES SPÉCIFIQUES MODE CODE
-
-### 7.4.1 Bilinguisme automatique des commentaires
-RÈGLE CRITIQUE: Les commentaires dans le code généré doivent automatiquement
-changer de langue selon le paramètre de langue détecté ou par défaut.
-
-```r
-# Si langue française détectée ou par défaut
-cat("# Chargement des packages nécessaires\n")
-cat("library(stats)\n")
-
-# Si langue anglaise spécifiée
-cat("# Load required packages\n")
-cat("library(stats)\n")
-```
-
-Implémentation recommandée:
-- Détecter langue via Sys.getenv("LANG") ou paramètre explicite
-- Fonction helper .code_comment(en_text, fr_text, lang="fr")
-- Par défaut français si utilisateur francophone
-
-### 7.4.2 Cohérence avec le verbose
-
-RÈGLE FONDAMENTALE: **Le code=TRUE ne doit PAS se substituer au verbose**
+**PRINCIPE**: Le code=TRUE ne doit PAS se substituer au verbose.
 Il doit juste aider l'utilisateur à reproduire le verbose avec son propre code.
 
-**PRINCIPE DE MINIMALISME:**
 - ✅ Garder: Titres numérotés des étapes
 - ✅ Garder: Code R exécutable essentiel
-- ✅ Garder: Commentaires techniques nécessaires (formules mathématiques, seuils)
 - ❌ Supprimer: Détails déjà expliqués dans verbose
-- ❌ Supprimer: Commentaires pédagogiques redondants avec verbose
-- ❌ Supprimer: Lignes "Interpréter: ..." (c'est le rôle du verbose)
-- ❌ Supprimer: Arborescences de décision (quel test selon quelle condition)
-- ❌ Supprimer: Conclusions sur les résultats
+- ❌ Supprimer: Commentaires pédagogiques redondants
+- ❌ Supprimer: Arborescences de décision
 
-**EXEMPLE MAUVAIS (trop verbeux):**
-```r
-# 3) Détection outliers
-# Détection des outliers par groupe avec méthode IQR
-# Une valeur est considérée outlier si:
-#   - Q1 - 1.5*IQR ou > Q3 + 1.5*IQR (outlier)
-#   - Q1 - 3*IQR ou > Q3 + 3*IQR (extrême)
-library(rstatix)
-outliers_by_group <- by(x, g, function(z) {
-  result <- identify_outliers(data.frame(z))
-  prop_extreme <- sum(result$is.extreme, na.rm = TRUE) / length(z)
-  return(prop_extreme)
-})
-max_outliers_extrem <- max(unlist(outliers_by_group))
-# Résultat: 5.2% outliers extrêmes (maximum)
-# ==> Valeurs extrêmes peuvent fortement influencer tests paramétriques
-# Interprétation: Si > 5% => considérer approche robuste
-```
-
-**EXEMPLE BON (minimaliste):**
-```r
-# 3) Détection outliers
-library(rstatix)
-outliers_by_group <- by(x, g, function(z) {
-  result <- identify_outliers(data.frame(z))
-  prop_extreme <- sum(result$is.extreme, na.rm = TRUE) / length(z)
-  return(prop_extreme)
-})
-max_outliers_extrem <- max(unlist(outliers_by_group))
-```
-
-**CAS PARTICULIERS:**
-
-1. **Assomptions conceptuelles sans test** (ex: indépendance):
-   → Garder uniquement le titre, pas de code
-   ```r
-   # 2) ASSOMPTION 1 : Indépendance des observations
-   ```
-
-2. **Suggestions méthodologiques**:
-   → Formuler comme recommandation d'usage
-   ```r
-   # 4) Test indépendance covariables-facteurs
-   # Appliquer KefiR::m.test() à chaque couple de covariable-facteur possible
-   ```
-
-3. **Tests conditionnels** (ex: Bartlett si normal, Levene si non-normal):
-   → Ne PAS afficher l'arborescence, montrer juste le test utilisé
-   ```r
-   # 7) Test d'homoscédasticité
-   # Test utilisé si résidus normaux: bartlett.test
-   variance_test <- bartlett.test(residuals_model ~ interaction(F))
-   ```
-
-4. **Préférences implémentation**:
-   → Privilégier aov() à lm() pour ANOVA/ANCOVA sauf si contrastes nécessaires
-
-### 7.4.3 Sauts de ligne cohérents
-RÈGLE: Les sauts de ligne entre sections doivent être SYSTÉMATIQUES
-
-❌ MAUVAIS (sauts anarchiques):
-```r
-cat("# Test 1\n")
-cat("t.test(x, y)\n")
-cat("# Test 2\n\n")  # Pourquoi 2 \n ici ?
-cat("aov(x ~ g)\n")  # Et pas là ?
-```
-
-✓ BON (sauts systématiques):
-```r
-# Après chaque section de commentaires : 1 saut
-cat("# ==================================================\n")
-cat("# Test de Student\n")
-cat("# ==================================================\n\n")  # 1 saut après header
-
-# Après chaque bloc de code : 2 sauts
-cat("t.test(x, y)\n\n")  # 2 sauts après code
-
-# Entre sections : déjà inclus dans le header
-```
-
-Règle générale:
-- Header section: `cat("# ==..==\n# Titre\n# ==..==\n\n")`
-- Commentaire simple: `cat("# Commentaire\n")`
-- Ligne de code: `cat("code_r\n")`
-- Fin de bloc: `cat("code_r\n\n")`  # 2 \n
-
-### 7.4.4 Noms de variables reproductibles
-RÈGLE: Utiliser des noms de variables génériques dans le code généré
-
-❌ MAUVAIS (variables du contexte):
-```r
-cat("t.test(data$VenteQ1, data$RegionNord)\n")
-```
-
-✓ BON (variables génériques):
-```r
-cat("# Remplacer par vos noms de variables\n")
-cat("t.test(data$dependent_var, data$group_factor)\n\n")
-cat("# Exemple avec vos données :\n")
-cat("# t.test(data$VenteQ1, data$RegionNord)\n")
-```
-
-### 7.4.5 Ordre des opérations
-Le code généré doit TOUJOURS suivre cet ordre :
-
-1. Chargement packages
-2. Préparation données (si nécessaire)
-3. Tests d'assomptions (dans ordre verbose)
-4. Test principal
-5. Post-hocs (si significatif)
-6. Interprétation (commentaires)
-
-Exemple complet:
-```r
-# ==================================================
-# ANALYSE STATISTIQUE - Test de Student
-# ==================================================
-
-# 1. Chargement packages
-library(stats)
-
-# 2. Préparation données (si nécessaire)
-x <- data$dependent_var
-g <- factor(data$group_factor)
-
-# 3. Vérification assomptions
-# 3a. Normalité
-shapiro.test(x[g == levels(g)[1]])
-shapiro.test(x[g == levels(g)[2]])
-
-# 3b. Homogénéité des variances
-var.test(x ~ g)
-
-# 4. Test principal
-result <- t.test(x ~ g, var.equal = TRUE)
-print(result)
-
-# 5. Interprétation
-# p-value < 0.05 : différence significative
-# p-value >= 0.05 : pas de différence significative
-```
-
-### 7.4.6 Interdictions critiques mode code
-
-**RÈGLES ABSOLUES** - Ces erreurs sont INACCEPTABLES :
+## 7.3 Interdictions critiques mode code
 
 ❌ **INTERDIT 1: Dupliquer les appels**
-```r
-# MAUVAIS - var.test() appelé 2 fois
-var.test(x~g)  # ligne 1
-# ... 10 lignes plus tard ...
-var.test(x~g)  # ligne 11 - DUPLICATION !
-```
-
-✓ **BON - Un seul appel par test**
-```r
-# ==================================================
-# 3. Test d'homogénéité des variances
-# ==================================================
-result_variance <- var.test(x ~ g)
-```
-
 ❌ **INTERDIT 2: Charger library(KefiR)**
-Le code généré doit être AUTONOME. Charger KefiR crée une dépendance circulaire.
-```r
-# MAUVAIS
-library(KefiR)
-m.test(x, g)  # ❌ On est déjà DANS m.test() !
-```
-
-✓ **BON - Packages externes uniquement**
-```r
-# Packages standards ou recommandés
-library(stats)      # ✓ Toujours disponible
-library(agricolae)  # ✓ Pour SNK, Tukey, etc.
-library(car)        # ✓ Pour Levene
-```
-
 ❌ **INTERDIT 3: Variables placeholder non utilisables**
-```r
-# MAUVAIS - Variables fictives
-t.test(x ~ g, data = your_data)  # ❌ your_data n'existe pas !
-t.test(x[g==g1], x[g==g2])       # ❌ g1, g2 non définis !
-```
-
-✓ **BON - Variables déjà disponibles dans l'environnement**
-```r
-# Les variables x et g existent déjà (passées à m.test)
-t.test(x ~ g, var.equal = TRUE)
-# OU avec niveaux explicites
-levels_g <- levels(factor(g))
-t.test(x[g == levels_g[1]], x[g == levels_g[2]], var.equal = TRUE)
-```
-
-❌ **INTERDIT 4: Commentaires en anglais**
-Sauf si langue=EN détectée, TOUT doit être en français (cohérence avec verbose).
-```r
-# MAUVAIS (incohérent)
-# Student's t-test    # ❌ Anglais
-t.test(x ~ g)
-```
-
-✓ **BON - Français par défaut**
-```r
-# Test de Student (données normales, variances égales)
-t.test(x ~ g, var.equal = TRUE)
-```
-
+❌ **INTERDIT 4: Commentaires en anglais** (sauf si langue=EN)
 ❌ **INTERDIT 5: Sauts de ligne anarchiques**
-```r
-# MAUVAIS - Incohérent
-shapiro.test(x)
-by(x,g,length)#3)    # Pas de saut, commentaire inline
-# Test de Fisher      # Saut avant
-var.test(x~g)        # Pas de saut après
-
-t.test(x~g)          # Double saut avant ???
-```
-
-✓ **BON - Systématique (voir 7.4.3)**
-```r
-# ==================================================
-# 3. Normalité (Shapiro-Wilk)
-# ==================================================
-shapiro.test(x[g == levels(g)[1]])
-shapiro.test(x[g == levels(g)[2]])
-
-# ==================================================
-# 4. Homogénéité variances (Fisher-Snedecor)
-# ==================================================
-var.test(x ~ g)
-
-# ==================================================
-# 5. Test de Student
-# ==================================================
-t.test(x ~ g, var.equal = TRUE)
-```
-
 ❌ **INTERDIT 6: Manque de correspondance avec verbose**
-Si verbose affiche:
-```
-1) Deux groupes
-2) Indépendance
-3) Outliers détectés
-4) Normalité
-5) Fisher-Snedecor
-6) Test de Student
-```
 
-Le code DOIT suivre CET ORDRE avec numérotation correspondante:
+## 7.4 Références bibliographiques : JAMAIS en verbose
+
+**RÈGLE ABSOLUE**: Les références académiques ne doivent JAMAIS apparaître
+dans les messages verbose. Elles sont UNIQUEMENT pour les commentaires de code.
+
+✓ BON:
 ```r
-# ==================================================
-# 1. Nombre de groupes
-# ==================================================
-length(unique(g))
-
-# ==================================================
-# 2. Contrôle indépendance (vérification manuelle)
-# ==================================================
-# Assurez-vous que les observations sont indépendantes
-
-# ==================================================
-# 3. Détection outliers
-# ==================================================
-# (code outliers ici)
-
-# ==================================================
-# 4. Test de normalité (Shapiro-Wilk)
-# ==================================================
-by(x, g, shapiro.test)
-
-# ==================================================
-# 5. Test d'homogénéité des variances (Fisher)
-# ==================================================
-var.test(x ~ g)
-
-# ==================================================
-# 6. Test de Student
-# ==================================================
-t.test(x ~ g, var.equal = TRUE)
+# Référence: Wilcox (2017). Introduction to Robust Estimation.
+.vbse("Méthode robuste sélectionnée : MM-estimation", ...)
 ```
 
----
-
-## 7.4.6.1 Références bibliographiques : JAMAIS en verbose
-
-**RÈGLE ABSOLUE** : Les références académiques ne doivent JAMAIS apparaître dans
-les messages verbose destinés aux utilisateurs. Elles sont UNIQUEMENT pour les
-développeurs et les commentaires de code.
-
-❌ **INTERDIT - Référence en verbose**
+❌ MAUVAIS:
 ```r
-.vbse(
-  "Robust method selected",
-  "Méthode robuste sélectionnée",
-  verbose = verbose, k = k
-)
-
-.vbse(
-  "Reference: Wilcox (2017). Introduction to Robust Estimation.",
-  "Référence: Wilcox (2017). Introduction to Robust Estimation.",
-  verbose = verbose, k = k
-)
+.vbse("Méthode robuste (Wilcox, 2017) sélectionnée", ...)
 ```
 
-**PROBLÈME** :
-- Surcharge cognitive pour l'utilisateur
-- Information non actionnable
-- Brise le flux de lecture
-- L'utilisateur veut savoir QUOI faire, pas QUI l'a dit
+## 7.5 Normalisation des sorties return=TRUE
 
-✓ **BON - Référence en commentaire uniquement**
-```r
-# RÉFÉRENCE ACADÉMIQUE (pour développeurs/documentation uniquement) :
-# Wilcox, R. R. (2017). Introduction to Robust Estimation and Hypothesis Testing (4th ed.).
-# Academic Press. ISBN: 978-0128047330
-# Chapitre 7 : Robust regression methods (pp. 423-456)
-
-.vbse(
-  "Robust method selected: MM-estimation",
-  "Méthode robuste sélectionnée : MM-estimation",
-  verbose = verbose, k = k
-)
-```
-
-**JUSTIFICATION** :
-- Les références servent à la **traçabilité académique** (développeurs, revue par pairs)
-- Les messages verbose servent à **l'accompagnement utilisateur** (compréhension, décisions)
-- Ce sont deux objectifs distincts qui ne doivent PAS être mélangés
-
-**RÈGLE DE DÉCISION** :
-- Si l'info aide l'utilisateur à COMPRENDRE → verbose
-- Si l'info documente la SOURCE → commentaire
-- Si l'info justifie un CHOIX → verbose (sans citer l'auteur)
-
-**Exemples corrects** :
-```r
-# ✓ Verbose sans référence (focus sur l'action)
-"Utilisation de Welch ANOVA car variances hétérogènes"
-
-# ✓ Commentaire avec référence (traçabilité académique)
-# Welch, B. L. (1951). On the comparison of several mean values. Biometrika, 38(3/4), 330-336.
-
-# ❌ NE JAMAIS FAIRE
-"Utilisation de Welch ANOVA (Welch, 1951) car variances hétérogènes"
-```
-
----
-
-## 7.4.6.2 Messages de limites standardisés pour fonctionnalités non implémentées
-
-**RÈGLE ABSOLUE** : Chaque fois que m.test() rencontre une fonctionnalité non encore
-implémentée, le message DOIT suivre un template standardisé pour :
-1. **Informer clairement** l'utilisateur de la limite
-2. **Proposer une solution externe** immédiatement utilisable
-3. **Inviter au contact** pour développement futur
-
-### Template obligatoire
-
-```r
-.vbse(
-  # ANGLAIS
-  paste0("DETECTED: [Nom fonctionnalité en anglais]\n",
-         "\tm.test() does not yet support [description courte].\n\n",
-         "RECOMMENDED APPROACH:\n",
-         "\t[Solution externe ligne 1]\n",
-         "\t[Solution externe ligne 2]\n",
-         "\t[Solution externe ligne 3 si nécessaire]\n\n",
-         "WANT THIS FEATURE?\n",
-         "\tContact: antoine.masse@u-bordeaux.fr\n",
-         "\tPlease include:\n",
-         "\t  • Your code line that triggered this message\n",
-         "\t  • Your dataset (anonymized if confidential)\n",
-         "\t  • Brief description of your research context\n",
-         "\tThis helps prioritize development and ensure the implementation\n",
-         "\tmatches your specific statistical needs."),
-
-  # FRANÇAIS
-  paste0("DÉTECTÉ : [Nom fonctionnalité en français]\n",
-         "\tm.test() ne supporte pas encore [description courte].\n\n",
-         "APPROCHE RECOMMANDÉE :\n",
-         "\t[Solution externe ligne 1]\n",
-         "\t[Solution externe ligne 2]\n",
-         "\t[Solution externe ligne 3 si nécessaire]\n\n",
-         "VOUS VOULEZ CETTE FONCTIONNALITÉ ?\n",
-         "\tContact : antoine.masse@u-bordeaux.fr\n",
-         "\tMerci d'inclure :\n",
-         "\t  • Votre ligne de code ayant déclenché ce message\n",
-         "\t  • Votre jeu de données (anonymisé si confidentiel)\n",
-         "\t  • Brève description de votre contexte de recherche\n",
-         "\tCela aide à prioriser le développement et garantir que l'implémentation\n",
-         "\tcorresponde à vos besoins statistiques spécifiques."),
-
-  verbose = TRUE, k = k, cpt = "on"
-)
-
-# Puis EXIT obligatoire
-.exit(
-  "Feature not supported.",
-  "Fonctionnalité non supportée."
-)
-```
-
-### Exemples d'application
-
-**1. ANCOVA avec données appariées** :
-```r
-.vbse(
-  paste0("DETECTED: Paired/repeated measures ANCOVA\n",
-         "\tm.test() does not yet support paired ANCOVA.\n\n",
-         "RECOMMENDED APPROACH:\n",
-         "\tUse mixed models with lmerTest:\n",
-         "\tlibrary(lmerTest)\n",
-         "\tmodel <- lmer(Y ~ factor + baseline + (1|subject), data = data)\n",
-         "\tanova(model, type = 'III')\n\n",
-         "WANT THIS FEATURE?\n",
-         "\tContact: antoine.masse@u-bordeaux.fr\n",
-         "\tPlease include your code and dataset."),
-  paste0("DÉTECTÉ : ANCOVA avec mesures répétées\n",
-         "\tm.test() ne supporte pas encore l'ANCOVA appariée.\n\n",
-         "APPROCHE RECOMMANDÉE :\n",
-         "\tUtiliser modèles mixtes avec lmerTest :\n",
-         "\tlibrary(lmerTest)\n",
-         "\tmodele <- lmer(Y ~ facteur + baseline + (1|sujet), data = donnees)\n",
-         "\tanova(modele, type = 'III')\n\n",
-         "VOUS VOULEZ CETTE FONCTIONNALITÉ ?\n",
-         "\tContact : antoine.masse@u-bordeaux.fr\n",
-         "\tMerci d'inclure votre code et données."),
-  verbose = TRUE, k = k, cpt = "on"
-)
-.exit("Paired ANCOVA not supported.", "ANCOVA appariée non supportée.")
-```
-
-**2. MANCOVA (MANOVA avec covariables)** :
-```r
-.vbse(
-  paste0("DETECTED: MANCOVA (multivariate ANCOVA)\n",
-         "\tm.test() does not yet support MANCOVA.\n\n",
-         "RECOMMENDED APPROACH:\n",
-         "\tUse stats::manova() with covariates:\n",
-         "\tmodel <- manova(cbind(Y1, Y2, Y3) ~ factor + covariate)\n",
-         "\tsummary(model, test = 'Wilks')\n\n",
-         "WANT THIS FEATURE?\n",
-         "\tContact: antoine.masse@u-bordeaux.fr"),
-  paste0("DÉTECTÉ : MANCOVA (ANCOVA multivariée)\n",
-         "\tm.test() ne supporte pas encore la MANCOVA.\n\n",
-         "APPROCHE RECOMMANDÉE :\n",
-         "\tUtiliser stats::manova() avec covariables :\n",
-         "\tmodele <- manova(cbind(Y1, Y2, Y3) ~ facteur + covariable)\n",
-         "\tsummary(modele, test = 'Wilks')\n\n",
-         "VOUS VOULEZ CETTE FONCTIONNALITÉ ?\n",
-         "\tContact : antoine.masse@u-bordeaux.fr"),
-  verbose = TRUE, k = k, cpt = "on"
-)
-.exit("MANCOVA not supported.", "MANCOVA non supportée.")
-```
-
-**3. Modèles GLM (données non-gaussiennes)** :
-```r
-.vbse(
-  paste0("DETECTED: Non-normal data after all transformations\n",
-         "\tm.test() cannot resolve severe non-normality.\n\n",
-         "RECOMMENDED APPROACH:\n",
-         "\tConsider Generalized Linear Models (GLM):\n",
-         "\t# For count data (Poisson)\n",
-         "\tmodel <- glm(Y ~ factor, family = poisson, data = data)\n",
-         "\t# For binary data (Binomial)\n",
-         "\tmodel <- glm(Y ~ factor, family = binomial, data = data)\n\n",
-         "WANT THIS FEATURE?\n",
-         "\tContact: antoine.masse@u-bordeaux.fr"),
-  paste0("DÉTECTÉ : Données non-normales après toutes transformations\n",
-         "\tm.test() ne peut résoudre une non-normalité sévère.\n\n",
-         "APPROCHE RECOMMANDÉE :\n",
-         "\tConsidérer Modèles Linéaires Généralisés (GLM) :\n",
-         "\t# Pour données de comptage (Poisson)\n",
-         "\tmodele <- glm(Y ~ facteur, family = poisson, data = donnees)\n",
-         "\t# Pour données binaires (Binomial)\n",
-         "\tmodele <- glm(Y ~ facteur, family = binomial, data = donnees)\n\n",
-         "VOUS VOULEZ CETTE FONCTIONNALITÉ ?\n",
-         "\tContact : antoine.masse@u-bordeaux.fr"),
-  verbose = TRUE, k = k, cpt = "on"
-)
-.exit("GLM needed, not supported.", "GLM nécessaire, non supporté.")
-```
-
-### Justification
-
-**Pourquoi ce template ?**
-
-1. **Section "DETECTED"** : Validation empathique - l'utilisateur a raison de vouloir cette analyse
-2. **Section "RECOMMENDED"** : Solution immédiate et concrète - pas de blocage
-3. **Section "WANT THIS"** : Invitation collaborative - développement guidé par besoins réels
-
-**Pourquoi demander code + données ?**
-
-- Évite implémentation générique inutilisable dans contextes spécifiques
-- Permet tests unitaires basés sur cas réels
-- Garantit que développement répond À VRAIMENT aux besoins utilisateurs
-- Priorise développement selon demandes fréquentes
-
-**Pourquoi EXIT systématique après ?**
-
-- Évite comportement imprévisible (m.test() continuant avec mauvaises assomptions)
-- Force utilisateur à utiliser solution externe ou contacter développeur
-- Clarté > faux sentiment de fonctionnement
-
----
-
-### 7.4.6.3 Linéarité du cheminement et structure du bilan verbose
-
-**PRINCIPE FONDAMENTAL**: Le bilan m.test() doit suivre un **cheminement linéaire**
-sans noyer l'utilisateur dans des analyses inutiles après avoir détecté qu'une
-branche est inexploitable.
-
-#### Règle 1: Cheminement décisionnel linéaire
-
-**STOP IMMÉDIAT** dès qu'une branche s'avère inexploitable:
-- ✓ Détection violation assomption => STOP contrôles => Passage branche robuste
-- ✗ PAS de continuation exhaustive des contrôles si résultat déjà déterminé
-- ✗ PAS de tests supplémentaires si décision déjà prise
-
-**Exemple CORRECT**:
-```
-1) Normalité: ÉCHOUÉE (p = 0.001)
-2) Homoscédasticité: ÉCHOUÉE (p = 0.003)
-   ==> STOP: Passage vers analyse robuste
-3) Méthode robuste: Kruskal-Wallis [kruskal.test() {stats}]
-```
-
-**Exemple INCORRECT** (à éviter):
-```
-1) Normalité: ÉCHOUÉE
-2) Homoscédasticité: ÉCHOUÉE
-3) Linéarité: Test effectué... <-- INUTILE, on sait déjà qu'on va au robuste
-4) Outliers: Détection...     <-- INUTILE
-5) ==> Passage robuste        <-- Trop tard, utilisateur noyé
-```
-
-#### Règle 2: Structure d'une étape numérotée
-
-**CHAQUE ÉTAPE = Analyse + Résultat + Décision (si applicable)**
-
-Format obligatoire:
-```
-N) NOM DE L'ANALYSE [fonction() {package}]
-   Description brève de ce qui est testé
-   Résultat: [valeur obtenue]
-   ==> Décision: [action prise si applicable]
-```
-
-**Éléments OBLIGATOIRES**:
-1. **Numéro unique** pour chaque analyse distincte
-2. **Nom du test** entre crochets `[fonction() {package}]`
-3. **Résultat** sur même ligne ou ligne suivante
-4. **Décision** (==> ...) si le résultat implique un changement de branche
-
-**Exemple CORRECT**:
-```
-5) Test d'indépendance covariable-facteur [aov()]
-   Teste si covariable 'age' diffère selon 'groupe'
-   Résultat: p = 5.49e-12 (< 0.05)
-   ==> ATTENTION: Covariable dépend du facteur (violation assomption ANCOVA)
-       Interprétation causale compromise. Analyse continue mais résultats à interpréter avec précaution.
-```
-
-**Exemple INCORRECT** (à corriger):
-```
-5) DIAGNOSTIC : Contrôle indépendance covariables-facteurs  <-- Trop vague
-   L'ANCOVA assume que les covariables sont indépendantes...
-   Test si chaque covariable diffère selon les groupes facteurs...
-6)   ATTENTION : Covariable 'B' diffère...  <-- Ceci n'est PAS une étape, c'est la conclusion de 5)
-```
-
-#### Règle 3: Terme "Ajuster/Ajustement" obligatoire
-
-Quand un modèle est ajusté (fitted), **TOUJOURS utiliser explicitement le terme**:
-- ✓ "Ajustement du modèle ANCOVA [lm()]"
-- ✓ "Modèle ajusté avec Type III SS"
-- ✗ "ANCOVA avec Sommes de Carrés..." <-- Pas clair qu'on ajuste un modèle
-
-**Exemple**:
-```
-4) Ajustement du modèle ANCOVA [lm() {stats}]
-   Formule: performance ~ groupe + age
-   Type de sommes de carrés: III (effets ajustés mutuellement)
-   Contrastes: contr.sum (codage effets)
-   ==> Modèle ajusté avec succès (n=72, résidus calculés)
-```
-
-#### Règle 4: Pas d'étapes purement verbeuses
-
-**INTERDIT**: Étapes numérotées sans analyse concrète (sauf indépendance des observations).
-
-**Exemple INCORRECT** (à supprimer):
-```
-14) MÉTHODES ALTERNATIVES (si méthode robuste automatique inadaptée) :
-    1. TEST DE QUADE...
-    2. GLM...
-    3. TRANSFORMATION EN RANGS...
-    <-- Ceci noie l'utilisateur sans faire d'analyse
-```
-
-**Correction**: Choisir DIRECTEMENT la méthode la plus appropriée et l'appliquer:
-```
-14) Sélection méthode robuste: Régression robuste [rlm() {MASS}]
-    Justification: 1 facteur + covariables + violations normalité/homoscédasticité
-    Avantage: Résistant outliers et violations assomptions
-    ==> Ajustement du modèle robuste en cours...
-```
-
-Si vraiment plusieurs options possibles, **mentionner dans message de décision**:
-```
-==> Passage vers analyse non-paramétrique
-    Méthode sélectionnée: Kruskal-Wallis [kruskal.test()]
-    (Alternatives: Transformation rangs puis ANOVA, ou GLM Poisson si données comptage)
-```
-
-#### Règle 5: Exception pour indépendance des observations
-
-L'étape "Indépendance des observations" est **la seule exception autorisée** à être
-purement informative (pas de test statistique possible sous R).
-
-Format:
-```
-1) ASSOMPTION: Indépendance des observations
-   Vérification de plan (non testable statistiquement)
-   Assurez-vous que:
-     • Pas de mesures répétées
-     • Pas d'effets cluster
-     • Pas d'effets report
-```
-
-#### Règle 6: Consolidation des sous-résultats
-
-**Résultats multiples d'un même test = UNE SEULE étape numérotée**
-
-**Exemple CORRECT**:
-```
-5) Tests d'assomptions GLM [plot(), shapiro.test()]
-   a) Linéarité: Résidus vs fitted (inspection visuelle) => OK
-   b) Indépendance résidus: Durbin-Watson p=0.45 => OK
-   c) Homoscédasticité: Scale-Location plot => OK
-   ==> Toutes assomptions GLM respectées
-```
-
-**Exemple INCORRECT**:
-```
-5) Test linéarité... => OK
-6) Test indépendance... => OK  <-- Devrait être 5a, 5b, pas deux étapes
-7) Test homoscédasticité... => OK
-```
-
-#### Application pratique: Early stopping
-
-**Dès qu'une violation critique est détectée:**
-
-1. Annoncer la violation avec symbole visuel fort (==>)
-2. Expliquer la conséquence (pourquoi on arrête)
-3. Annoncer la branche alternative activée
-4. **ARRÊTER les contrôles en cours**
-5. Passer DIRECTEMENT à la branche alternative
-
-**Template**:
-```
-N) [Test qui échoue] [fonction()]
-   Résultat: [échec avec p-value ou valeur]
-   ==> VIOLATION CRITIQUE: [nom assomption]
-       Conséquence: [Pourquoi l'analyse paramétrique n'est plus valide]
-       ARRÊT des contrôles d'assomptions
-       PASSAGE vers: [Méthode robuste/alternative]
-
-N+1) [Méthode alternative sélectionnée] [fonction() {package}]
-     Justification: [Pourquoi cette méthode]
-     [Résultats de la méthode alternative]
-```
-
-**Exemple complet CORRECT**:
-```
-1) Indépendance observations (vérification plan)
-2) Ajustement modèle ANCOVA [lm()]
-3) Test normalité résidus [shapiro.test()]
-   p = 0.002 (< 0.05)
-   ==> Résidus non-normaux
-4) Test homoscédasticité [var.test()]
-   p = 0.0056 (< 0.05)
-   ==> VIOLATIONS: Normalité + Homoscédasticité détectées
-       ARRÊT des contrôles (Linéarité et Homogénéité pentes non testées)
-       PASSAGE vers: Régression robuste
-
-5) Régression robuste [rlm() {MASS}]
-   Méthode: MM-estimation (résistant outliers)
-   Modèle ajusté: I ~ F + B
-   [Résultats du modèle robuste]
-```
-
----
-
-### 7.4.7 Normalisation des sorties return=TRUE
-
-**RÈGLE CRITIQUE**: TOUTES les fonctions post-hoc doivent retourner une structure
-cohérente et normalisée, QUEL QUE SOIT le type d'analyse.
-
-**Structure MINIMALE OBLIGATOIRE** (return=TRUE):
+**Structure MINIMALE OBLIGATOIRE**:
 ```r
 result <- list(
-  # CHAMPS ESSENTIELS (toujours présents)
   p_value = numeric,        # P-value du test global
   method = character,       # Nom du test utilisé
-  groups = data.frame,      # Lettres/groupes homogènes (si post-hocs)
-
-  # CHAMPS OPTIONNELS (selon contexte)
-  model = object,           # Modèle statistique complet (aov, lm, manova, etc.)
-  assumptions = list,       # Résultats tests assomptions (normalité, variance, etc.)
-  effect_size = numeric,    # Taille d'effet (si calculée)
-  pairwise = data.frame,    # Comparaisons par paires (si disponible)
-
-  # CHAMPS INTERNES (à éviter dans le retour utilisateur)
-  # k = numeric             # ❌ SUPPRIMER - compteur interne .vbse()
-  # debug_info = list       # ❌ SUPPRIMER - informations debug temporaires
+  groups = data.frame,      # Lettres/groupes homogènes
+  model = object,           # Modèle statistique (optionnel)
+  pairwise = data.frame     # Comparaisons par paires (optionnel)
 )
 ```
-
-**INTERDICTIONS**:
-- ❌ Ne PAS inclure `k` (compteur .vbse) dans les retours utilisateur
-- ❌ Ne PAS inclure de données intermédiaires sans intérêt (matrices complètes LDA, etc.)
-- ❌ Ne PAS dupliquer les informations (ex: `adjusted_means` ET `pairwise_comparisons`
-  contenant les mêmes moyennes)
-- ❌ Ne PAS retourner d'objets volumineux si un résumé suffit
-
-**NETTOYAGE AVANT RETOUR**:
-```r
-# Avant de retourner result dans .posthoc(), .posthoc_ANCOVA(), .posthoc_MANOVA():
-result$k <- NULL              # Supprimer compteur interne
-result$debug_info <- NULL     # Supprimer infos debug
-result$verbose <- NULL        # Supprimer paramètres internes
-
-# Pour MANOVA : ne retourner que les RÉSUMÉS, pas les objets complets
-# CORRECT:
-result$discriminant_analysis <- list(
-  n_functions = n,
-  prop_variance = prop_trace,
-  structure_matrix = correlations  # Résumé compact
-)
-# INCORRECT:
-result$discriminant_analysis <- list(
-  lda = lda_full_object,    # ❌ Objet complet trop volumineux
-  predictions = all_preds   # ❌ Toutes les prédictions (redondant)
-)
-```
-
-**COHÉRENCE ENTRE TYPES DE POST-HOC**:
-
-Tous les post-hocs (.posthoc, .posthoc_ANCOVA, .posthoc_MANOVA) doivent retourner:
-- `$groups` : Data frame avec colonnes `group`, `mean`, `letter` (lettres homogènes)
-- `$p_value` : P-value globale du test
-- `$method` : Nom explicite du test (ex: "Tukey HSD", "EMMs with Bonferroni", etc.)
-- `$pairwise` : Data frame optionnel avec comparaisons 2 à 2 (colonnes: `group1`, `group2`, `p_value`)
-
-**EXEMPLE CONFORME** (post-hoc ANCOVA):
-```r
-result <- list(
-  p_value = 0.023,
-  method = "ANCOVA with EMMs (Tukey adjustment)",
-  groups = data.frame(
-    group = c("A", "B", "C"),
-    adjusted_mean = c(10.2, 12.5, 11.8),
-    letter = c("a", "b", "ab")
-  ),
-  pairwise = data.frame(
-    group1 = c("A", "A", "B"),
-    group2 = c("B", "C", "C"),
-    p_value = c(0.01, 0.05, 0.30)
-  ),
-  model = ancova_model  # Modèle complet pour diagnostics avancés
-)
-```
-
-**CONSÉQUENCE**: L'utilisateur peut utiliser `result$groups` de manière identique
-qu'il ait fait une ANOVA simple, ANCOVA, ou MANOVA. La structure est TOUJOURS la même.
-
-## 7.5 CHECK-LIST VALIDATION VERBOSE ET CODE
-
-### 7.5.1 Objectif
-
-Cette check-list DOIT être appliquée systématiquement à CHAQUE branche d'analyse
-pour éviter les incohérences entre verbose et code, et garantir la qualité du bilan.
-
-**RÈGLE ABSOLUE**: Avant tout commit, VALIDER avec cette check-list.
-
-### 7.5.2 CHECK-LIST VERBOSE (sortie utilisateur)
-
-#### A. NUMÉROTATION DES ÉTAPES
-
-□ **Règle k strict**: Chaque étape numérotée (k) doit contenir ces 3-4 éléments:
-  1. Explication du test/contrôle
-  2. Résultat du test (p-value, statistique, proportion)
-  3. Conclusion avec flèche appropriée (==> ou -->)
-  4. (Optionnel) Ajustement de la démarche si nécessaire
-
-□ **Pas de k orphelin**: Ne JAMAIS numéroter une étape qui ne contient qu'un seul élément
-  ❌ INTERDIT: "8) Comparaisons post-hoc par paires :"
-  ✓ CORRECT: "7) Tests non paramétriques de comparaison des deux groupes.\n\t..."
-
-□ **Séquence sans trou**: La numérotation doit être 1, 2, 3, 4... sans saut
-  ❌ INTERDIT: 1, 2, 3, 5, 7 (manque 4 et 6)
-
-□ **Pas de redondance**: Ne JAMAIS répéter une étape déjà traitée
-  ❌ INTERDIT: Afficher test KS à l'étape 6 puis le répéter à l'étape 9
-
-#### B. TYPES DE FLÈCHES
-
-□ **==>** pour CONCLUSIONS de tests statistiques:
-  ```
-  4) Test de Fisher-Snedecor [var.test()]
-      ==> Variances hétérogènes (p = 0.0058).
-  ```
-
-□ **-->** pour AJUSTEMENTS/DÉCISIONS méthodologiques:
-  ```
-  4) Test de Fisher-Snedecor [var.test()]
-      ==> Variances hétérogènes (p = 0.0058).
-      --> Vers un test de comparaison non paramétrique (Wilcoxon-Mann-Whitney)
-  ```
-
-□ **Flèches cohérentes**: Ne JAMAIS mélanger ==> pour une décision méthodologique
-
-#### C. RETOURS À LA LIGNE ET INDENTATION
-
-□ **Liste à puces**: Pour énumérations longues (>3 éléments), utiliser puces avec *
-  ❌ INTERDIT:
-  ```
-  2) Contrôle de l'indépendance : vérifiez que les observations entre les groupes
-      sont indépendantes (pas de mesures répétées, pas d'effet cluster, ...)
-  ```
-  ✓ CORRECT:
-  ```
-  2) Contrôle de l'indépendance : vérifiez que les observations entre les groupes
-      sont indépendantes
-      * pas de mesures répétées
-      * pas d'effet cluster
-      * pas d'effets report [influence sur l'ordre des mesures]
-  ```
-
-□ **Indentation tabulation**: Toute ligne après le numéro d'étape doit avoir une tabulation
-  ❌ INTERDIT:
-  ```
-  7) Tests non paramétriques.
-  a) Bootstrap
-  ==> Résultat
-  ```
-  ✓ CORRECT:
-  ```
-  7) Tests non paramétriques.
-      a) Bootstrap
-      ==> Résultat
-  ```
-
-□ **Ligne ≤ 100 caractères**: Aller à la ligne si dépassement
-  ❌ INTERDIT: Une ligne de 150 caractères
-  ✓ CORRECT: Découper en plusieurs lignes avec indentation cohérente
-
-#### D. COHÉRENCE ANALYTIQUE
-
-□ **Ordre logique**: Les étapes doivent suivre la logique d'analyse
-  Exemple non-paramétrique 2 groupes:
-  1. Nombre de groupes
-  2. Indépendance
-  3. Outliers (optionnel)
-  4. Normalité
-  5. Variance
-  6. **Évaluation fiabilité test (KS) AVANT le test**
-  7. Test non-paramétrique avec résultat
-
-□ **Pas de conclusion prématurée**: Ne pas afficher un message de décision AVANT le test
-  ❌ INTERDIT:
-  ```
-  5) Variances hétérogènes (p = 0.0058)
-  6) Données non normales ==> Utilisation du test de Wilcoxon-Mann-Whitney
-  7) Test de Wilcoxon [wilcox.test()] - Résultat: p = 0.88
-  ```
-  ✓ CORRECT:
-  ```
-  5) Test de Fisher-Snedecor [var.test()]
-      ==> Variances hétérogènes (p = 0.0058).
-      --> Vers un test non paramétrique
-  6) Évaluation fiabilité Wilcoxon : Test KS [ks.test()] ...
-  7) Tests non paramétriques [wilcox.test()] - Résultat: p = 0.88
-  ```
-
-□ **Fin d'analyse claire**: La dernière étape numérotée doit clore l'analyse
-  Si une étape 7 conclut l'analyse, il ne doit PAS y avoir d'étapes 8, 9, 10 répétant
-  des tests déjà affichés
-
-#### E. CONTENU DES MESSAGES
-
-□ **Test utilisé toujours précisé**: Quand plusieurs tests possibles, indiquer lequel
-  ✓ "Test utilisé : shapiro.test"
-  ✓ "Test utilisé si résidus normaux: bartlett.test"
-
-□ **Fonction R entre crochets**: Toujours indiquer la fonction R utilisée
-  ✓ "Test de Student [t.test()]"
-  ✓ "Test de Shapiro-Wilk [shapiro.test()]"
-
-□ **Package entre accolades**: Si fonction d'un package externe
-  ✓ "Outliers [identify_outliers() {rstatix}]"
-  ✓ "Régression robuste [rlm() {MASS}]"
-
-### 7.5.3 CHECK-LIST CODE (mode code=TRUE)
-
-#### F. NUMÉROTATION SYNCHRONISÉE AVEC VERBOSE
-
-□ **Même numérotation que verbose**: Le code doit avoir LES MÊMES numéros d'étapes
-  ❌ INTERDIT:
-  ```
-  Verbose:                    Code:
-  1) Deux groupes             # 1) Deux groupes
-  2) Indépendance             # 2) Indépendance
-  3) Normalité                # 3) Normalité
-  4) Variance                 var.test(x~g)  ← PAS DE NUMÉRO !
-  5) Test Student             t.test(...)    ← PAS DE NUMÉRO !
-  ```
-  ✓ CORRECT:
-  ```
-  Verbose:                    Code:
-  1) Deux groupes             # 1) Deux groupes
-  2) Indépendance             # 2) Indépendance
-  3) Normalité                # 3) Normalité
-  4) Variance                 # 4) Test de variance
-                              var.test(x~g)
-  5) Test Student             # 5) Test de Student
-                              t.test(...)
-  ```
-
-□ **Sauts de ligne entre étapes**: Un saut de ligne APRÈS chaque bloc d'étape
-  ```r
-  # 3) Normalité
-  by(x, g, shapiro.test)
-
-  # 4) Test de variance
-  var.test(x~g)
-
-  # 5) Test de Student
-  t.test(...)
-  ```
-
-#### G. MINIMALISME ET NON-REDONDANCE
-
-□ **Pas de code dupliqué**: Un test ne doit apparaître QU'UNE SEULE FOIS
-  ❌ INTERDIT:
-  ```r
-  var.test(x~g)    # ligne 10
-  # ...
-  var.test(x~g)    # ligne 25 - DUPLICATION !
-  ```
-
-□ **Pas de commentaires verbose**: Ne PAS répéter les explications du verbose
-  ❌ "# Interpréter: p >= 0.05 => normalité acceptée"
-  ❌ "# Résultat: 2.8% outliers extrêmes"
-  ✓ "# Test utilisé: shapiro.test"
-  ✓ "# Critères: ratio_ng <= 4, Fmax <= 10"
-
-□ **Pas d'arborescence**: Ne PAS montrer tous les tests possibles, juste celui utilisé
-  ❌ INTERDIT:
-  ```r
-  # Si résidus normaux: bartlett.test
-  # Sinon: leveneTest
-  bartlett.test(...)
-  ```
-  ✓ CORRECT:
-  ```r
-  # Test utilisé si résidus normaux: bartlett.test
-  bartlett.test(...)
-  ```
-
-#### H. COHÉRENCE TECHNIQUE
-
-□ **library() au bon moment**: Charger le package juste avant son usage
-  ✓ CORRECT:
-  ```r
-  # 3) Normalité
-  by(x, g, shapiro.test)
-
-  # 4) Outliers
-  library(rstatix)
-  identify_outliers(...)
-  ```
-
-□ **Code conditionnel pertinent**: Générer du code adapté à la situation
-  Exemple: Ne générer skewness/kurtosis QUE si n > 50
-
-□ **Pas de library(KefiR)**: Le code doit être autonome
-
-#### I. VALIDATION CROISÉE VERBOSE ↔ CODE
-
-□ **Étape par étape**: Pour chaque étape k du verbose, vérifier:
-  - [ ] Le code a la même étape k
-  - [ ] Le code exécute le même test mentionné dans verbose
-  - [ ] Pas de test supplémentaire dans le code non mentionné dans verbose
-  - [ ] Pas de test manquant dans le code qui est dans verbose
-
-□ **Exemple validation**:
-  ```
-  Verbose étape 4:                   Code étape 4:
-  "Test Fisher [var.test()]"    →    var.test(x~g)  ✓ MATCH
-  ```
-
-### 7.5.4 PROCÉDURE D'APPLICATION
-
-**AVANT TOUT COMMIT**, pour chaque branche d'analyse (ANOVA, ANCOVA, etc.):
-
-1. **Générer un test complet** avec données réelles
-2. **Copier output verbose** dans un fichier texte
-3. **Analyser la cohérence** avec CHECK-LIST VERBOSE (A-E)
-4. **Générer code=TRUE** pour le même test
-5. **Analyser la cohérence** avec CHECK-LIST CODE (F-H)
-6. **Validation croisée** verbose ↔ code (I)
-7. **Si échec**: Corriger et recommencer depuis l'étape 1
-8. **Si succès**: Commit autorisé
-
-**EXEMPLE D'ANALYSE SYSTÉMATIQUE**:
-
-Fichier `.testeur.R` doit contenir pour chaque branche:
-```r
-# Test ANOVA 2 groupes - Cas paramétrique
-dt <- data.frame(A = rnorm(72, 10, 2), F = rep(c("G1","G2"), each=36))
-m.test(A~F, data=dt)              # Verbose
-m.test(A~F, data=dt, code=TRUE)  # Code
-
-# Vérification:
-# ✓ Étapes numérotées 1-6
-# ✓ Flèches ==> pour conclusions
-# ✓ Code numéroté 1-6
-# ✓ Pas de duplication var.test()
-```
-
-### 7.5.5 CAS SPÉCIFIQUES À VÉRIFIER
-
-#### Cas 1: Analyses à 2 groupes non-paramétriques
-
-**Points critiques**:
-- [ ] Test KS (fiabilité) AVANT test Wilcoxon (pas après)
-- [ ] Pas d'étape "Comparaisons post-hoc par paires" (absurde pour 2 groupes)
-- [ ] Flèche --> pour "Vers un test non paramétrique"
-- [ ] Étape finale qui regroupe bootstrap + wilcox.test (pas 2 étapes séparées)
-
-#### Cas 2: ANCOVA avec violations
-
-**Points critiques**:
-- [ ] ARRÊT explicite des contrôles si violations multiples
-- [ ] Passage vers alternative (régression robuste) clairement indiqué
-- [ ] Ne PAS tester linéarité/homogénéité pentes si arrêt décidé
-
-#### Cas 3: MANOVA
-
-**Points critiques**:
-- [ ] 4 tests multivariés (Wilks, Pillai, Hotelling, Roy) affichés
-- [ ] Analyse discriminante conditionnelle (si significatif)
-- [ ] Nettoyage return (pas d'objets LDA complets)
 
 ================================================================================
 8. GESTION DES FORMULES
 ================================================================================
 
-## 8.1 Formats supportés (à implémenter complètement)
+## 8.1 Formats supportés
 
 ```r
 # Format 1: Vecteurs directs
@@ -1612,17 +430,10 @@ m.test(data$A, data$F)
 # Format 2: Formule avec data=
 m.test(A ~ F, data=data)
 
-# Format 3: Formule sans data= (si variables dans data)
-m.test(A ~ F, data)
-
-# Format 4: Formule mixte
-m.test(A ~ data$F, data)
-
-# Format 5: MANOVA
+# Format 3: MANOVA
 m.test(cbind(A,B,C) ~ F, data=data)
 
-# Format 6: Multi-facteurs
-m.test(A ~ F + G, data=data)
+# Format 4: Multi-facteurs
 m.test(A ~ F * G, data=data)  # Avec interaction
 ```
 
@@ -1640,18 +451,15 @@ Utiliser fonctions:
 
 ## 9.1 Packages requis (Imports)
 
-Documenter dans DESCRIPTION:
 - stats: Tests statistiques de base
 - MASS: Analyse discriminante
 - car: ANCOVA, tests avancés
 - agricolae: Post-hocs, tests agricoles
 - lme4, lmerTest: Modèles mixtes
 - WRS2: Tests robustes
-- etc.
 
 ## 9.2 Packages suggérés (Suggests)
 
-Pour fonctionnalités optionnelles:
 - MVN: Tests normalité multivariée
 - biotools: Box's M test
 - rrcov: Méthodes robustes multivariées
@@ -1661,12 +469,9 @@ Pour fonctionnalités optionnelles:
 
 ```r
 if (requireNamespace("package", quietly = TRUE)) {
-  # Utiliser fonctionnalité complète
   fonction <- package::fonction
 } else {
-  # Fallback ou avertissement
-  warning("Package 'xxx' recommandé pour... Install: install.packages('xxx')")
-  # Alternative basique si possible
+  warning("Package 'xxx' recommandé. Install: install.packages('xxx')")
 }
 ```
 
@@ -1682,8 +487,6 @@ Format: MAJOR.MINOR.PATCH.BUILD
 - PATCH: Corrections bugs
 - BUILD: Itérations internes
 
-Actuel: 0.0.1.0 → En cours: 0.0.1.1
-
 ## 10.2 Archivage
 
 À chaque fin de session majeure:
@@ -1691,16 +494,6 @@ Actuel: 0.0.1.0 → En cours: 0.0.1.1
 2. Copier TOUS les fichiers .R modifiés
 3. Mettre à jour kefir.log
 4. Commit Git avec message détaillé
-
-## 10.3 Nettoyage
-
-Avant release:
-1. Déplacer fonctions obsolètes vers R_poubelle/
-2. Supprimer fichiers test_*.R temporaires
-3. Vérifier tous les @ export
-4. Regénérer documentation: devtools::document()
-5. Vérifier: devtools::check()
-6. Build: devtools::build()
 
 ================================================================================
 11. RÉFÉRENCES ACADÉMIQUES
@@ -1717,7 +510,7 @@ Format préféré:
 # DOI: https://doi.org/xxx ou ISBN: xxx
 ```
 
-Exemples de références clés:
+Références clés:
 - Field et al. (2012): Discovering Statistics Using R
 - Tabachnick & Fidell (2019): Using Multivariate Statistics
 - Huberty & Olejnik (2006): Applied MANOVA
@@ -1736,15 +529,11 @@ Avant chaque commit important:
 [ ] kefir.log mis à jour
 [ ] Pas de browser() ou print() de debug
 [ ] Code formaté et commenté
-[ ] Fichiers archivés dans R/v{version}/
 [ ] DESCRIPTION à jour (dépendances, version)
 
 ================================================================================
 13. ORDRE LOGIQUE DE TRAITEMENT ANCOVA
 ================================================================================
-
-Cette section définit l'ordre canonique des vérifications pour les analyses
-ANCOVA dans m.test(), basé sur les standards académiques (Maxwell et al., 2018).
 
 ## 13.1 Détection préliminaire du type de modèle
 
@@ -1758,676 +547,105 @@ modèle via `.analyze_ancova_structure()` :
 
 ### Cas 2: Modèle à pentes hétérogènes
 - Formule: A ~ F * B  (AVEC interaction facteur×covariable)
-- Test hiérarchique: Si interaction significative → garder interaction
 - Assomptions: 4 (indépendance, normalité, homoscédasticité, linéarité)
-  **PAS de test homogénéité pentes** (le modèle autorise pentes différentes)
 - Post-hocs: Simple effects, Johnson-Neyman
 
-## 13.2 Ordre académique des vérifications (ANCOVA classique)
+## 13.2 Numérotation dynamique des assomptions
 
-### Phase 1: Détection du modèle
-```
-1. Analyse structure via .analyze_ancova_structure()
-   - Détecter interactions facteur×covariable
-   - Test hiérarchique si nécessaire
-   - Décider: ANCOVA classique (5 assomptions) vs pentes hétérogènes (4 assomptions)
-```
-
-### Phase 2: Ajustement du modèle
-```
-2. Ajustement modèle [lm()]
-   - Contrastes: contr.sum (Type III SS)
-   - Formule adaptée selon type modèle
-   - Calcul résidus
-```
-
-### Phase 3: Diagnostics spécifiques ANCOVA (AVANT assomptions)
-```
-3. Multicolinéarité [vif() {car}] - SI ≥2 covariables
-   - Seuils: VIF ≤ 5 (OK), 5 < VIF ≤ 10 (modéré), VIF > 10 (sérieux)
-   - Message si problème détecté
-
-4. Indépendance covariables-facteurs [approche robuste]
-   - Pour chaque combinaison (covariable × facteur):
-     a) Tester normalité covariable par groupe [.normality()]
-     b) Tester homogénéité variances [var.test() ou bartlett.test()]
-     c) Sélectionner test approprié:
-        • ANOVA [aov()] si assomptions OK
-        • Welch ANOVA [oneway.test()] si variances inégales
-        • Kruskal-Wallis [kruskal.test()] si non-normalité
-   - Message consolidé avec résultats toutes combinaisons
-   - WARNING si violation détectée (mais continuer analyse avec précaution)
-   - Référence académique: Maxwell et al. (2018), pp. 401-405
-
-5. Détection outliers [identify_outliers() {rstatix}]
-   - Outliers extrêmes: signal potentiel de problème
-   - Pas d'early stop, mais noter pour interprétation
-```
-
-### Phase 4: Assomptions de base (numérotation selon type modèle)
-```
-ASSOMPTION 1/n: Indépendance observations
-- Message pédagogique (design-level, pas de test statistique)
-
-ASSOMPTION 2/n: Normalité résidus
-- Test selon taille échantillon:
-  • n ≤ 50: Shapiro-Wilk [shapiro.test() {stats}]
-  • 50 < n ≤ 500: Jarque-Bera [jb.norm.test() {KefiR}]
-  • n > 500: Skewness/Kurtosis [{KefiR}]
-- Si violation + variances homogènes + n≥30/groupe: Contrôle tolérant (CLT)
-
-ASSOMPTION 3/n: Homoscédasticité
-- IMPORTANT: Test sur INTERACTION FACTEURS uniquement (pas covariables)
-- Test selon normalité:
-  • Résidus normaux: Bartlett [bartlett.test() {stats}]
-  • Résidus non-normaux: Levene [leveneTest() {car}]
-- EARLY STOP si violation: passage vers robuste (skip linéarité & pentes)
-
-ASSOMPTION 4/n: Linéarité DV ~ covariable
-- Pour chaque covariable:
-  • Ajuster modèle avec I(covariable^2) [lm() with I(covariate^2)]
-  • Tester significativité terme quadratique
-  • Si significatif: relation non-linéaire
-- Message consolidé tous résultats
-
-ASSOMPTION 5/n: Homogénéité pentes (UNIQUEMENT si ANCOVA classique)
-- SKIP si modèle pentes hétérogènes (n=4 assomptions)
-- Pour chaque combinaison (facteur × covariable):
-  • Ajuster modèle avec interaction [lm() + anova()]
-  • Tester significativité interaction
-  • Si significative: pentes hétérogènes
-- Message consolidé tous résultats
-```
-
-### Phase 5: Décision finale
-```
-6. Décision paramétrique vs robuste
-   - SI toutes assomptions OK: ANCOVA paramétrique [car::Anova() Type III]
-   - SINON:
-     • 1 facteur + covariables: Régression robuste [rlm() {MASS}]
-     • ≥2 facteurs + covariables: Erreurs standard robustes HC3 [sandwich + lmtest]
-```
-
-### Phase 6: Post-hocs (si return=TRUE)
-```
-7. Comparaisons post-hoc
-   - ANCOVA classique: Moyennes ajustées [.posthoc_ANCOVA()]
-   - Pentes hétérogènes: Simple effects / Johnson-Neyman
-```
-
-## 13.3 Numérotation dynamique des assomptions
-
-**RÈGLE CRITIQUE**: La numérotation des assomptions DOIT s'adapter au type de modèle
+**RÈGLE CRITIQUE**: La numérotation DOIT s'adapter au type de modèle
 
 ```r
-# Déterminer nombre d'assomptions
 n_assumptions <- if(has_factor_cov_interaction) 4 else 5
-
-# Utiliser dans TOUS les messages
 paste0("ASSUMPTION 1/", n_assumptions, ": Independence...")
-paste0("ASSUMPTION 2/", n_assumptions, ": Normality...")
-paste0("ASSUMPTION 3/", n_assumptions, ": Homoscedasticity...")
-paste0("ASSUMPTION 4/", n_assumptions, ": Linearity...")
-
-# ASSOMPTION 5 CONDITIONNELLE
-if (!has_factor_cov_interaction) {
-  paste0("ASSUMPTION 5/", n_assumptions, ": Slopes homogeneity...")
-} else {
-  # Message expliquant pourquoi pas de 5ème assomption
-  paste0("Slopes homogeneity - NOT REQUIRED\n",
-         "\tThis is a 4-assumption model (heterogeneous slopes allowed)")
-}
-```
-
-## 13.4 Messages consolidés (éviter fragmentation)
-
-**RÈGLE**: Chaque phase de test = 1 message consolidé contenant:
-1. Nom du test + notation [fonction() {package}]
-2. Tous les résultats (toutes combinaisons variables)
-3. Décision finale et recommandation
-
-**BON EXEMPLE** (test indépendance covariables-facteurs):
-```r
-k <- .vbse(
-  paste0("Covariate-factor independence test [robust approach]\n",
-         "\tMethod: [aov() / oneway.test() / kruskal.test()]\n",
-         if (violations) {
-           paste0("\t==> WARNING: Dependencies detected\n",
-                  "\t    ", paste(details, collapse = "\n\t    "))
-         } else {
-           "\t==> All independent (assumption MET)"
-         }),
-  ...
-)
-```
-
-**MAUVAIS EXEMPLE** (fragmenté):
-```r
-# ❌ NE PAS FAIRE
-k <- .vbse("Testing independence...", ...)
-k <- .vbse("Result for B vs F: p=0.001", ...)
-k <- .vbse("Result for C vs F: p=0.05", ...)
-k <- .vbse("Conclusion: violated", ...)
-```
-
-## 13.5 Notation fonctions et packages
-
-**RÈGLE ABSOLUE**: Chaque test DOIT indiquer [fonction() {package}]
-
-```r
-✓ "VIF detection [vif() {car}]"
-✓ "Linearity test [lm() with I(covariate^2)]"
-✓ "Slopes homogeneity [lm() + anova()]"
-✓ "Normality test [shapiro.test() {stats}]"
-✓ "Outliers detection [identify_outliers() {rstatix}]"
-
-❌ "VIF detection"  # Manque notation
-❌ "Linearity test: include quadratic term"  # Pas explicite
-```
-
-## 13.6 Gestion des références bibliographiques
-
-**RÈGLE**: Références UNIQUEMENT en commentaires (JAMAIS en verbose)
-
-```r
-# ✓ BON
-# Référence: Maxwell et al. (2018), pp. 401-405
-k <- .vbse(
-  paste0("Covariate-factor independence test\n",
-         "\t==> WARNING if violated..."),
-  ...
-)
-
-# ❌ MAUVAIS
-k <- .vbse(
-  paste0("Covariate-factor independence test\n",
-         "\tReference: Maxwell et al. (2018), pp. 401-405\n",  # ❌ À ÉVITER
-         "\t==> WARNING if violated..."),
-  ...
-)
-```
-
-## 13.7 Retours à la ligne et aération
-
-**RÈGLE**: Aérer les messages pour lisibilité
-
-```r
-# ✓ BON
-k <- .vbse(
-  paste0("Test homoscédasticité [bartlett.test() {stats}]\n",
-         "\tTest sur groupes FACTEURS uniquement\n",
-         "\n",  # Ligne vide pour aération
-         "\t==> Variances homogènes (p = 0.45)"),
-  ...
-)
-
-# ❌ MAUVAIS (trop dense)
-k <- .vbse(
-  paste0("Test homoscédasticité sur facteurs. Résultat: p=0.45"),
-  ...
-)
-```
-
-## 13.8 Numérotation des étapes de traitement
-
-**RÈGLE GÉNÉRALE**: La numérotation des étapes dans m.test() suit une logique
-de traitement en 3 composantes :
-
-### Structure d'une étape complète
-
-Chaque grande étape de m.test() = UN seul message consolidé contenant:
-
-1. **Description du traitement** (étape N)
-2. **Résultat(s) du traitement** (partie de l'étape N)
-3. **Proposition d'ajustement** (partie de l'étape N)
-
-### Exemple CORRECT (ANCOVA - Homogénéité pentes)
-
-```r
-# ✓ UNE SEULE ÉTAPE consolidée
-k <- .vbse(
-  paste0("ASSUMPTION 5/5: Homogeneity of regression slopes\n",  # 1. Traitement
-         "\tTest: factor:covariate interaction [lm() + anova()]\n",
-         "\n",
-         paste0("\t  ", paste(slopes_details, collapse = "\n\t  ")), "\n",  # 2. Résultats
-         "\n",
-         "\t==> Homogeneous slopes confirmed"),  # 3. Décision/Ajustement
-  ..., k = k, cpt = "on"
-)
-```
-
-### Exemple INCORRECT (fragmenté)
-
-```r
-# ❌ Étape 11 : Nom assomption
-k <- .vbse("ASSUMPTION 5/5: Homogeneity...", ..., k = k, cpt = "on")
-
-# ❌ Étape 12 : Test + Résultats (SÉPARÉ de l'étape 11)
-k <- .vbse(paste0("\tTest: ...\n", results), ..., k = k, cpt = "on")
-```
-
-**PROBLÈME**: L'utilisateur voit deux numéros d'étapes (11, 12) alors qu'il
-s'agit d'une SEULE vérification logique (homogénéité pentes).
-
-### Règles d'incrémentation du compteur d'étapes
-
-**Quand incrémenter le compteur (`cpt = "on"`):**
-- Début d'une NOUVELLE vérification/test conceptuel
-- Changement de phase logique (ex: assomption 2 → assomption 3)
-
-**Quand NE PAS incrémenter (`cpt = "off"`):**
-- Affichage de résultats détaillés d'un test déjà annoncé
-- Messages de continuation/complétion d'une étape
-- Sous-résultats multiples d'une même vérification
-
-### Exemples appliqués
-
-**LINÉARITÉ (plusieurs covariables):**
-```r
-# ✓ UNE SEULE ÉTAPE pour toutes les covariables
-k <- .vbse(
-  paste0("ASSUMPTION 4/5: Linearity of DV ~ covariate\n",
-         "\tTest: [lm() with I(covariate^2)]\n",
-         "\n",
-         paste0("\t  ", paste(linearity_details, collapse = "\n\t  ")), "\n",
-         # linearity_details = c("B: p=0.23 (linear)", "C: p=0.17 (linear)")
-         "\n",
-         "\t==> Linear relationships confirmed"),
-  ..., k = k, cpt = "on"  # Incrémente UNE FOIS
-)
-```
-
-**INDÉPENDANCE COVARIABLES-FACTEURS (plusieurs combinaisons):**
-```r
-# ✓ UNE SEULE ÉTAPE pour toutes les combinaisons
-k <- .vbse(
-  paste0("DIAGNOSTIC: Covariate-factor independence\n",
-         "\tMethod: [aov() / oneway.test() / kruskal.test()]\n",
-         "\n",
-         paste0("\t  ", paste(independence_details, collapse = "\n\t  ")), "\n",
-         # independence_details = c("B vs F: p=5e-12 [ANOVA]", "C vs F: p=0.08 [ANOVA]")
-         "\n",
-         "\t==> WARNING: B depends on F"),
-  ..., k = k, cpt = "on"  # Incrémente UNE FOIS
-)
-```
-
-### RÈGLE STRICTE : Un traitement = UN SEUL numéro (même si plusieurs messages)
-
-**PROBLÈME FRÉQUENT** : Numéroter la conclusion d'un test comme une étape séparée.
-
-```r
-# ❌ INCORRECT : VIF avec 2 numéros d'étape
-k <- .vbse(
-  paste0("4) DIAGNOSTIC: Multicollinearity [vif() {car}]\n",
-         "\tVIF measures correlation among covariates\n",
-         "\tThresholds: VIF ≤ 5 (OK), 5 < VIF ≤ 10 (moderate), VIF > 10 (serious)"),
-  ..., k = k, cpt = "on"  # Incrémente à 4
-)
-
-k <- .vbse(
-  paste0("5)   ==> All VIF values ≤ 5: No multicollinearity concern\n",  # ❌ ERREUR !
-         "    VIF values: B=1.43, C=1.01"),
-  ..., k = k, cpt = "on"  # ❌ Incrémente à 5 (ABSURDE!)
-)
-```
-
-**PROBLÈME** : La conclusion du VIF est numérotée "5)" alors qu'elle fait partie de l'étape 4 !
-
-```r
-# ✓ CORRECT : VIF avec UN SEUL numéro
-k <- .vbse(
-  paste0("4) DIAGNOSTIC: Multicollinearity [vif() {car}]\n",
-         "\tVIF measures correlation among covariates\n",
-         "\tThresholds: VIF ≤ 5 (OK), 5 < VIF ≤ 10 (moderate), VIF > 10 (serious)\n",
-         "\n",
-         "\t==> All VIF values ≤ 5: No multicollinearity concern\n",
-         "\t    VIF values: B=1.43, C=1.01"),
-  ..., k = k, cpt = "on"  # Incrémente à 4 UNE FOIS
-)
-```
-
-**ALTERNATIVE CORRECTE** : Si résultat calculé après, deuxième message avec `cpt = "off"`
-
-```r
-# ✓ CORRECT : VIF header puis résultat (sans nouveau numéro)
-k <- .vbse(
-  paste0("4) DIAGNOSTIC: Multicollinearity [vif() {car}]\n",
-         "\tVIF measures correlation among covariates\n",
-         "\tThresholds: VIF ≤ 5 (OK), 5 < VIF ≤ 10 (moderate), VIF > 10 (serious)"),
-  ..., k = k, cpt = "on"  # Incrémente à 4
-)
-
-# Calcul VIF...
-vif_values <- car::vif(model)
-
-k <- .vbse(
-  paste0("\t==> All VIF values ≤ 5: No multicollinearity concern\n",  # ✓ PAS de numéro
-         "\t    VIF values: B=1.43, C=1.01"),
-  ..., k = k, cpt = "off"  # ✓ Ne change PAS le numéro
-)
-```
-
-### Principe de cohérence logique
-
-**Question clé**: Est-ce que l'utilisateur perçoit ceci comme:
-- UN test conceptuel unique? → UNE étape (`cpt = "on"` une fois, puis `cpt = "off"` pour suite)
-- Plusieurs tests indépendants? → Plusieurs étapes (autant de `cpt = "on"`)
-
-**Exemple 1**: VIF (multicolinéarité)
-- Conceptuellement: UNE vérification (VIF)
-- Messages: Header + Résultat
-- **Décision**: UNE SEULE étape (1× `cpt="on"`, puis 1× `cpt="off"` OU tout en un message)
-
-**Exemple 2**: Homogénéité pentes F×B, F×C, G×B, G×C
-- Conceptuellement: UNE vérification (homogénéité pentes)
-- Techniquement: 4 tests lm()+anova()
-- **Décision**: UNE SEULE étape avec 4 résultats listés
-
-**Exemple 3**: Normalité
-- Conceptuellement: UNE vérification (normalité résidus)
-- Messages: Header (test sélectionné) + Résultat (p-value)
-- **Décision**: UNE SEULE étape (1× `cpt="on"`, puis 1× `cpt="off"` pour résultat)
-
-### Aération des résultats multiples
-
-**RÈGLE**: Remplacer `;` par retours à la ligne (`\n\t  `) pour plusieurs résultats
-
-```r
-# ❌ MAUVAIS (difficile à lire)
-paste(results, collapse = "; ")
-# Affiche: "F×B: p=0.72; F×C: p=0.84; G×B: p=0.58; G×C: p=0.058"
-
-# ✓ BON (lisible, aéré)
-paste0("\t  ", paste(results, collapse = "\n\t  "))
-# Affiche:
-#   F × B: p = 0.72 (homogeneous)
-#   F × C: p = 0.84 (homogeneous)
-#   G × B: p = 0.58 (homogeneous)
-#   G × C: p = 0.058 (homogeneous)
 ```
 
 ================================================================================
-FIN DU GUIDE
-================================================================================
-Ce document doit être consulté régulièrement et mis à jour au besoin.
-Version actuelle: 1.1 (2025-01-19)
-Dernière mise à jour: Section 13 (Ordre logique traitement ANCOVA)
+14. CATALOGUE DES BONNES PRATIQUES (BP-001 à BP-044)
 ================================================================================
 
-================================================================================
-14. MESSAGES DIRECTIONNELS ET COHÉRENCE DU FLUX (Session 18 - 2025-11-24)
-================================================================================
-
-Suite aux modifications 1-8 de la session 18, nouvelles bonnes pratiques
-identifiées pour maintenir cohérence et clarté des messages.
-
-## 14.1 Messages directionnels cohérents (BP-009)
-
-### Principe
-Quand un contrôle avec tolérance CHANGE le verdict d'un test précédent,
-TOUJOURS indiquer explicitement le changement de direction.
-
-### Contexte
-Flux typique `.one_factor_analysis()` pour 2 groupes:
-1. Test normalité strict → NON-NORMAL
-2. Test variances → HOMOGÈNES
-3. Message directionnel : "→ Vers Wilcoxon"
-4. Re-contrôle normalité avec tolérance → NORMAL ACCEPTABLE
-5. **MANQUAIT** : Message "→ Retour vers test paramétrique"
-6. Test appliqué : Student
-
-### Solution (Modification 8)
-
-**AVANT** (incohérent):
-```r
-4) Test Fisher → Variances homogènes
-   --> Vers un test non paramétrique (Wilcoxon)
-5) Contrôle normalité avec tolérance
-   ==> Normalité acceptable
-6) Test de Student [t.test()]  # ← Incohérent avec étape 4!
-```
-
-**APRÈS** (cohérent):
-```r
-4) Test Fisher → Variances homogènes
-   --> Vers un test non paramétrique (Wilcoxon)
-5) Contrôle normalité avec tolérance
-   ==> Normalité acceptable
-   --> Retour vers un test paramétrique (Student)  # ← NOUVEAU
-6) Test de Student [t.test()]  # ← Cohérent!
-```
-
-### Implémentation
-
-```r
-# Dans .one_factor_analysis.R, après auto_ku_sk()
-if (check_normality_before == FALSE && check_normality == TRUE) {
-  k <- .vbse(
-    "--> Returning to a parametric test (Student)",
-    "--> Retour vers un test paramétrique (Student)",
-    verbose = verbose, k = k, cpt = "off"
-  )
-}
-```
-
-### Règle générale
-
-**Chaque changement de direction méthodologique** doit être explicite :
-- ✓ "→ Vers test non-paramétrique"
-- ✓ "→ Retour vers test paramétrique"
-- ✓ "→ Passage vers approche robuste"
-- ✗ Silence (l'utilisateur ne comprend pas le changement)
+Les bonnes pratiques sont organisées par thème pour faciliter la consultation.
 
 ---
 
-## 14.2 Objets de retour complets (BP-010)
+## 14.1 MESSAGES ET FORMAT
 
-### Principe
+### BP-001: Messages directionnels cohérents
+Chaque changement de direction méthodologique doit être explicite :
+- ✓ "--> Vers test non-paramétrique"
+- ✓ "--> Retour vers test paramétrique"
+- ✓ "--> Passage vers approche robuste"
+- ✗ Silence (l'utilisateur ne comprend pas le changement)
+
+**Cas spécial**: Après un re-contrôle avec tolérance:
+- Verdict CHANGE (FALSE → TRUE): "--> Retour vers test paramétrique"
+- Verdict RESTE (FALSE → FALSE): "--> On reste sur test non paramétrique"
+
+### BP-002: Ponctuation des messages
+Tous les messages complets doivent se terminer par un point.
+- Messages complets (phrases): **Point final obligatoire**
+- Lignes de données/résultats isolés: Pas de point
+
+### BP-003: Orthographe et accords
+Vérification systématique:
+- "données" (2 'n', pas 3)
+- Accords pluriel/singulier: "variances hétérogènes"
+- Accents français corrects
+
+### BP-004: Format des listes à puces
+Pour énumérations ≥ 3 éléments, utiliser puces `•` avec `\n\t  •`
+```r
+paste0("Vérifiez que :\n",
+       "\t  • Pas de mesures répétées\n",
+       "\t  • Pas d'effet cluster\n",
+       "\t  • Pas d'effets report")
+```
+
+### BP-005: Recommandations utilisateur entre parenthèses
+Les recommandations, suggestions ou avertissements (actions à faire) doivent
+être formatés avec tabulation et entre parenthèses.
+```r
+"--> Le test MWW sera moins fiable.\n\t",
+"(Vérifiez graphiquement que les groupes ont la même distribution.)"
+```
+
+---
+
+## 14.2 OBJETS DE RETOUR
+
+### BP-006: Objets de retour complets
 TOUTES les fonctions doivent retourner un objet structuré complet,
 MÊME dans les cas particuliers (ex: 2 groupes).
-
-### Contexte (Modification 5-bis)
-Pour 2 groupes, `.one_factor_analysis()` affiche déjà les résultats.
-MAIS l'objet retourné par `m.test()` doit contenir :
-- $groups avec lettres de significativité
-- $p.value avec p-values pairwise
-- $bootstrap avec résultats bootstrap
-
-### Solution
-Appeler `.posthoc()` MÊME pour 2 groupes, avec `verbose=FALSE`
-
-**AVANT** (incomplet):
-```r
-if (number_of_groups == 2) {
-  synth <- NULL  # ← Retour NULL!
-}
-return(synth)  # m.test() retourne NULL
-```
-
-**APRÈS** (complet):
-```r
-if (number_of_groups == 2) {
-  # Appeler .posthoc() en mode silencieux
-  synth <- .posthoc(x, g, ..., verbose = FALSE)  # ← Calcule sans afficher
-}
-return(synth)  # m.test() retourne objet complet
-```
-
-### Résultat
-
-```r
-> res <- m.test(J~F, data=dt)
-> res
-$groups
-  categories Bootstrap_Median Wilcoxon_Holm
-1      catF1                a             a
-2      catF2                a             a
-
-$p.value
-         catF1
-catF2 0.47234
-
-$bootstrap
-  # ... résultats bootstrap complets
-```
-
-### Règle générale
 
 **return=TRUE doit TOUJOURS retourner**:
 - Structure minimale : `$groups`, `$p.value`, `$method`
 - Pas de `NULL` sauf erreur critique
-- Cohérence entre tous types d'analyses (2 groupes, k>2, ANCOVA, MANOVA)
+- Cohérence entre tous types d'analyses
 
 ---
 
-## 14.3 Format messages avec puces (BP-011)
+## 14.3 GRAPHIQUES
 
-### Principe
-Utiliser des listes à puces `•` pour énumérations multiples,
-cohérence entre toutes les fonctions d'analyse.
-
-### Contexte (Modifications 1 et 6)
-Messages d'indépendance incohérents entre fonctions :
-- `.multi_factor_analysis()` : utilise puces `•`
-- `.one_factor_analysis()` : utilisait parenthèses
-
-### Solution
-
-**AVANT** (parenthèses):
-```r
-k <- .vbse(
-  "Control for independence: observations are independent\n\t(no repeated measures, no clustering, no carry-over effects).",
-  verbose = verbose, k = k, cpt = "on"
-)
-```
-
-**APRÈS** (puces):
-```r
-k <- .vbse(
-  paste0("Control for independence: observations are independent.\n",
-         "\tVerify that:\n",
-         "\t  • No repeated measures\n",
-         "\t  • No clustering effects\n",
-         "\t  • No carry-over effects"),
-  verbose = verbose, k = k, cpt = "on"
-)
-```
-
-### Affichage
-
-```
-2) Contrôle de l'indépendance : observations sont indépendantes.
-   Vérifiez que :
-     • Pas de mesures répétées
-     • Pas d'effet cluster
-     • Pas d'effets report
-```
-
-### Règle générale
-
-**Pour énumérations ≥ 3 éléments** :
-- ✓ Utiliser puces `•` avec `\n\t  •`
-- ✓ Un élément par ligne
-- ✗ Parenthèses avec virgules (moins lisible)
-- ✗ Bullets `*` (réservé au markdown, pas aux messages console)
-
-**Pour énumérations < 3 éléments** :
-- Parenthèses acceptables : "(item1, item2)"
-
----
-
-## 14.4 Reset layout graphique (BP-012)
-
-### Principe
+### BP-007: Reset layout graphique
 Toute fonction produisant un graphique doit réinitialiser le layout
 pour éviter problèmes avec `par(mfrow=c(x,y))` précédents.
 
-### Contexte (Modification 7)
-Si utilisateur exécute `par(mfrow=c(2,2))` avant `m.test()`,
-le plot s'affiche dans une seule cellule du layout → graphique tronqué.
-
-### Solution
-
-**Dans `.plot_with_letters.R`**:
 ```r
 .plot_with_letters <- function(...) {
-  # Réinitialiser le layout graphique
   old_par <- par(no.readonly = TRUE)
   on.exit(par(old_par), add = TRUE)
-  
-  # Reset à un layout 1x1 standard
-  par(mfrow = c(1, 1), mar = c(5, 4, 4, 2) + 0.1)
-  
+  par(mfrow = c(1, 1))
   # ... reste de la fonction
 }
 ```
 
-### Avantages
-
-1. **Plot toujours en pleine fenêtre** - Indépendant du layout précédent
-2. **Restauration automatique** - via `on.exit()`, même si erreur
-3. **Bonne pratique R Graphics** - Standard académique
-
-### Règle générale
-
-**TOUTE fonction graphique** doit :
-1. Sauvegarder paramètres actuels : `old_par <- par(no.readonly = TRUE)`
-2. Restaurer à la fin : `on.exit(par(old_par), add = TRUE)`
-3. Réinitialiser layout : `par(mfrow = c(1, 1))`
-
-**Exceptions** :
-- Fonctions internes ne produisant PAS de graphiques (calculs seulement)
-- Fonctions ajoutant à un graphique existant (`add=TRUE` dans boxplot, etc.)
-
 ---
 
-## 14.5 Références bibliographiques en commentaires UNIQUEMENT (BP-013)
+## 14.4 RÉFÉRENCES BIBLIOGRAPHIQUES
 
-### Principe (réaffirmé dans Modification 2 et 5)
-Les références académiques ne doivent JAMAIS apparaître dans les messages
-verbose destinés aux utilisateurs.
-
-### Justification
-
-**Messages verbose** : Pour l'utilisateur final
-- Expliquer QUOI faire
-- Interpréter COMMENT
-- Décider POURQUOI
-
-**Commentaires code** : Pour développeurs/chercheurs
-- Traçabilité académique
-- Justification choix méthodologiques
-- Documentation complète avec DOI
-
-### Solution (Modification 2)
-
-**AVANT** (référence en verbose):
-```r
-k <- .vbse(
-  "Skewness/Kurtosis ≤1/4.5 (n≥20); ≤1.5/5 (n≥30); ≤2/6.5 (n≥50) (Chaffin et al. 1993).",
-  verbose = verbose, k = k
-)
-```
-
-**APRÈS** (référence en commentaire):
-```r
-# Chaffin, W. W., & Rhiel, S. G. (1993). The effect of skewness and kurtosis on the
-# one-sample T test and the impact of knowledge of the population standard deviation.
-# Journal of Statistical Computation and Simulation, 46(1-2), 79-90.
-
-k <- .vbse(
-  "Skewness/Kurtosis ≤1/4.5 (n≥20); ≤1.5/5 (n≥30); ≤2/6.5 (n≥50).",
-  verbose = verbose, k = k
-)
-```
-
-### Règle générale
-
+### BP-008: Références en commentaires uniquement
 **JAMAIS dans verbose** :
 - ❌ "(Chaffin et al. 1993)"
 - ❌ "Reference: Maxwell & Delaney (2018)"
-- ❌ "DOI: 10.xxxx/xxxxx"
 
 **TOUJOURS dans commentaires** :
 - ✓ Format APA complet
@@ -2436,1328 +654,346 @@ k <- .vbse(
 
 ---
 
-## 14.6 Application systématique : Checklist de validation
+## 14.5 PROCÉDURES
 
-### Avant chaque commit impliquant messages utilisateur
-
-□ **Messages directionnels** (BP-009) :
-  - Chaque changement de direction explicité ?
-  - Flèches cohérentes (→, -->, ==>) ?
-
-□ **Objets de retour** (BP-010) :
-  - `return=TRUE` retourne objet structuré ?
-  - Pas de `NULL` sauf erreur ?
-  - Structure cohérente entre types d'analyses ?
-
-□ **Format messages** (BP-011) :
-  - Énumérations ≥3 éléments avec puces `•` ?
-  - Un élément par ligne ?
-  - Indentation cohérente ?
-
-□ **Layout graphique** (BP-012) :
-  - Fonctions graphiques réinitialisent `par()` ?
-  - Restauration via `on.exit()` ?
-
-□ **Références bibliographiques** (BP-013) :
-  - Toutes références déplacées en commentaires ?
-  - Messages verbose épurés ?
-  - Format APA complet dans commentaires ?
-
----
-
-## 14.7 Impact sur les fonctions existantes
-
-### Fonctions à auditer avec ces nouvelles BP
-
-1. **.one_factor_analysis.R**
-   - ✓ BP-009 : Message directionnel ajouté (modif 8)
-   - ✓ BP-011 : Puces ajoutées (modif 1 et 6)
-
-2. **.multi_factor_analysis.R**
-   - ✓ BP-011 : Déjà conforme (utilise puces)
-   - ⚠ BP-009 : À vérifier pour changements de direction
-
-3. **m.test.R**
-   - ✓ BP-010 : Objet complet pour 2 groupes (modif 5-bis)
-
-4. **.normality.R**
-   - ✓ BP-013 : Références en commentaires (modif 2)
-
-5. **.plot_with_letters.R**
-   - ✓ BP-012 : Reset layout (modif 7)
-
-6. **.posthoc.R, .posthoc_ANCOVA.R, .posthoc_MANOVA.R**
-   - ⚠ BP-010 : À vérifier structure retour complète
-
-7. **.variance.R**
-   - ⚠ BP-009 : Messages directionnels à vérifier
-
----
-
-## 14.8 Références académiques pour ces bonnes pratiques
-
-**Messages directionnels** :
-- Tukey, J. W. (1977). Exploratory Data Analysis. Addison-Wesley.
-  > Principe : Transparence du processus analytique
-
-**Objets de retour** :
-- Wickham, H. (2014). Advanced R. CRC Press.
-  > Section on function design: Always return meaningful objects
-
-**Format messages** :
-- Tufte, E. R. (2001). The Visual Display of Quantitative Information (2nd ed.).
-  > Clarté visuelle et hiérarchie de l'information
-
-**Layout graphique** :
-- Murrell, P. (2011). R Graphics (2nd ed.). CRC Press.
-  > Chapter 3: Managing graphical parameters
-
----
-
-## 14.9 Extensions et clarifications (2025-11-25)
-
-### BP-009-EXT: Messages directionnels - Cas "reste sur même direction"
-
-**Extension de BP-009** : Les messages directionnels doivent aussi être affichés quand la logique RESTE sur la même direction après un re-contrôle, pas seulement quand elle CHANGE.
-
-**Contexte Session 19**:
-- Modification 10-B: Après échec du contrôle de tolérance, ajouter message explicatif
-
-**Principe étendu**:
-```
-Si contrôle avec tolérance:
-  - Verdict CHANGE (FALSE → TRUE): "--> Retour vers test paramétrique"
-  - Verdict RESTE (FALSE → FALSE): "--> On reste sur test non paramétrique"
-```
-
-**Exemple d'application** (.one_factor_analysis.R):
-```r
-if (check_normality_before == FALSE && check_normality == TRUE) {
-  k <- .vbse(
-    "--> Returning to a parametric test (Student)",
-    "--> Retour vers un test paramétrique (Student)",
-    verbose = verbose, k = k, cpt = "off"
-  )
-} else if (check_normality_before == FALSE && check_normality == FALSE) {
-  # NOUVEAU: Message quand verdict reste FALSE
-  k <- .vbse(
-    "--> Staying with a non-parametric comparison test.",
-    "--> On reste sur un test de comparaison non paramétrique.",
-    verbose = verbose, k = k, cpt = "off"
-  )
-}
-```
-
-**Justification**:
-- Transparence complète du processus de décision
-- Utilisateur comprend POURQUOI le contrôle avec tolérance a été effectué
-- Cohérence: si on annonce "→ Vers contrôle tolérance", on doit annoncer le résultat
-
----
-
-### BP-014: Format des recommandations et avertissements utilisateur
-
-**Principe**: Les recommandations, suggestions ou avertissements destinés à l'utilisateur (actions à faire, vérifications) doivent être formatés avec tabulation et entre parenthèses.
-
-**Format standard**:
-```
-\t(Recommandation ou avertissement pour l'utilisateur.)
-```
-
-**Contexte Session 19**:
-- Modification 10-C: Simplification et formatting message KS
-
-**AVANT** (.posthoc.R):
-```r
-"==> The Mann-Whitney-Wilcoxon (MWW) test will be less reliable.\n\t",
-"==> For MWW: Verify graphically that groups have the same distribution...\n\t",
-"...Or rely more on the Brunner-Munzel test."
-```
-
-**APRÈS** (BP-014 appliqué):
-```r
-"--> The Mann-Whitney-Wilcoxon test will be less reliable.\n\t",
-"(Please verify graphically that the groups have the same distribution.)"
-```
-
-**Avantages**:
-- Sépare visuellement les RÉSULTATS des ACTIONS RECOMMANDÉES
-- Parenthèses = suggestion/recommandation (pas une conclusion statistique)
-- Plus concis et lisible
-- Cohérence avec conventions académiques
-
-**Champ d'application**:
-- Vérifications graphiques demandées
-- Recommandations d'analyses complémentaires
-- Avertissements sur limitations de tests
-- Suggestions d'approches alternatives
-
-**Contre-exemples** (NE PAS mettre entre parenthèses):
-- ❌ Conclusions statistiques: "==> Différences significatives (p < 0.05)"
-- ❌ Résultats de tests: "Test de Shapiro-Wilk (p = 0.03)"
-- ❌ Messages d'erreur: "Erreur: données manquantes"
-
----
-
-### BP-015: Ponctuation des messages finaux
-
-**Principe**: Tous les messages finaux (version, contact, etc.) doivent se terminer par un point.
-
-**Contexte Session 19**:
-- Modification 10-E: Ajout point après "anomalie"
-
-**Standard uniforme**:
-```r
-# AVANT
-"m.test() - version 02 bêta 2025 - envoyer ce bilan à antoine.masse@u-bordeaux.fr en cas d'anomalie\n"
-
-# APRÈS
-"m.test() - version 02 bêta 2025 - envoyer ce bilan à antoine.masse@u-bordeaux.fr en cas d'anomalie.\n"
-```
-
-**Règle générale**:
-- Messages finaux (version, crédits, contact): Point final obligatoire
-- Messages intermédiaires/informations: Point selon contexte grammatical
-- Lignes de données/résultats: Pas de point (sauf phrase complète)
-
-**Justification**:
-- Cohérence grammaticale française
-- Professionnalisme
-- Complétude visuelle du message
-
----
-
-## 14.10 Checklist de validation étendue (v2 - 2025-11-25)
-
-### Avant chaque commit impliquant messages utilisateur
-
-□ **Messages directionnels** (BP-009 + BP-009-EXT) :
-  - Chaque changement de direction explicité ?
-  - Cas "reste sur même direction" après re-contrôle explicité ?
-  - Flèches cohérentes (→, -->, ==>) ?
-
-□ **Objets de retour** (BP-010) :
-  - `return=TRUE` retourne objet structuré ?
-  - Pas de `NULL` sauf erreur ?
-  - Structure cohérente entre types d'analyses ?
-
-□ **Format messages** (BP-011) :
-  - Énumérations ≥3 éléments avec puces `•` ?
-  - Un élément par ligne ?
-  - Indentation cohérente ?
-
-□ **Layout graphique** (BP-012) :
-  - Fonctions graphiques réinitialisent `par()` ?
-  - Restauration via `on.exit()` ?
-
-□ **Références bibliographiques** (BP-013) :
-  - Toutes références déplacées en commentaires ?
-  - Messages verbose épurés ?
-  - Format APA complet dans commentaires ?
-
-□ **Recommandations utilisateur** (BP-014) ← NOUVEAU :
-  - Actions/vérifications recommandées entre parenthèses ?
-  - Tabulation appropriée ?
-  - Séparation claire résultats/recommandations ?
-
-□ **Ponctuation finale** (BP-015) ← NOUVEAU :
-  - Messages finaux avec point ?
-  - Cohérence grammaticale générale ?
-
----
-
----
-
-## 14.11 Procédure de rechargement du package (2025-11-25)
-
-### BP-016: Utiliser load_all_kefir() pour recharger le package
-
+### BP-009: Utiliser load_all_kefir() pour recharger le package
 **IMPORTANT**: NE PAS utiliser `devtools::load_all()` directement.
 
-**Fonction à utiliser**: `load_all_kefir()`
-
-**Procédure standard**:
-```r
-# Dans R/RStudio:
-load_all_kefir()
-
-# La fonction gère automatiquement:
-# - Le chemin correct vers le package
-# - Le rechargement complet
-# - La configuration appropriée
-```
-
-**Pourquoi cette fonction**:
-- Évite les erreurs de chemin (Desktop vs Claude, R/ vs racine package)
-- Procédure standardisée et testée
-- Gère les spécificités du package KefiR
-
-**À NE PAS FAIRE**:
-```r
-# ❌ NE PAS faire:
-setwd("C:/Users/masse/Desktop/KefiR")
-devtools::load_all("KefiR")
-
-# ❌ NE PAS pointer vers R/:
-setwd("C:/Users/masse/Desktop/KefiR/KefiR/R")
-load_all()
-```
-
-**À FAIRE**:
 ```r
 # ✓ TOUJOURS faire:
 load_all_kefir()
-```
 
-**Note pour assistance**:
-Toujours recommander `load_all_kefir()` plutôt que `devtools::load_all()`.
-Ne jamais changer de procédure de rechargement sans accord utilisateur.
-
----
-
-================================================================================
-FIN SECTION 14
-================================================================================
-Date ajout Section 14: 2025-11-24
-Date extension 14.9-14.10: 2025-11-25
-Date ajout BP-016: 2025-11-25
-Version bp.log: 1.4
-================================================================================
-
----
-
-## 14.12 Cohérence et qualité des bilans (v3 - 2025-11-26)
-
-### Context: Modification 11 - Correction problèmes récurrents
-
-Suite à l'analyse du bilan `m.test(B~G, data=dt)`, plusieurs problèmes de cohérence ont été identifiés et corrigés, conduisant à la création de 6 nouvelles BP pour garantir la qualité de TOUS les bilans m.test().
-
----
-
-### BP-017: Ponctuation des messages
-
-**Principe**: Tous les messages complets doivent se terminer par un point.
-
-**Règle générale**:
-- Messages complets (phrases): **Point final obligatoire**
-- Messages intermédiaires/étapes: Point selon contexte grammatical
-- Lignes de données/résultats isolés: Pas de point (sauf phrase complète)
-
-**Exemples**:
-```r
-# ✓ CORRECT
-"Test de Bartlett [bartlett.test()] - Variances hétérogènes (p = 0.05)."
-"Attention : fanova.hetero() donne résultat différent (p = 0.05)."
-
-# ❌ INCORRECT  
-"Test de Bartlett [bartlett.test()] - Variances hétérogènes (p = 0.05)"
-"Attention : fanova.hetero() donne résultat différent (p = 0.05)"
-```
-
-**Justification**:
-- Cohérence grammaticale française
-- Professionnalisme
-- Complétude visuelle
-
----
-
-### BP-018: Orthographe et accords
-
-**Principe**: Vérification systématique de l'orthographe et des accords pluriel/singulier.
-
-**Points de vigilance**:
-- **"données"**: toujours 2 'n' (pas "donnnées")
-- **Accords pluriel/singulier**: "variances hétérogènes", "données normales", etc.
-- **Accents**: "hétérogènes", "paramétrique", "médiane", etc.
-
-**Checklist systématique**:
-□ Orthographe "données" (2 'n')
-□ Accords adjectifs avec noms
-□ Accents français corrects  
-□ Terminologie statistique standard
-
-**Exemples d'erreurs à éviter**:
-```r
-# ❌ INCORRECT
-"donnnées normales"           # 3 'n'
-"variance non-homogènes"      # singulier + pluriel
-"données hetérogènes"         # accent manquant
-
-# ✓ CORRECT
-"données normales"
-"variances non-homogènes"
-"données hétérogènes"
+# ❌ NE PAS faire:
+setwd("C:/Users/masse/Desktop/KefiR")
+devtools::load_all("KefiR")
 ```
 
 ---
 
-### BP-019: Format standard des étapes de contrôle
+## 14.6 STRUCTURE DES ÉTAPES
 
-**Principe**: Chaque étape de contrôle académique doit suivre un format standardisé.
-
-**Format standard pour contrôles académiques**:
+### BP-010: Format standard des contrôles académiques
 ```r
 "Contrôle ACADÉMIQUE de [ce qui est contrôlé]."
 ```
+- "Contrôle ACADÉMIQUE de la normalité des résidus du modèle ANOVA."
+- "Contrôle ACADÉMIQUE de l'homogénéité de la variance des groupes."
 
-**Applications**:
-- Normalité des résidus: "Contrôle ACADÉMIQUE de la normalité des résidus du modèle ANOVA."
-- Homogénéité des variances: "Contrôle ACADÉMIQUE de l'homogénéité de la variance des groupes."
-- Indépendance: "Contrôle de l'indépendance : vérifiez que les observations entre les groupes sont indépendantes."
+### BP-011: Annonce de l'ajustement du modèle
+Pour les ANOVA/analyses multi-groupes, annoncer explicitement l'ajustement
+du modèle avant les contrôles de résidus.
+```r
+"Ajustement du modèle ANOVA [aov()]."
+// puis
+"Contrôle ACADÉMIQUE de la normalité des résidus du modèle ANOVA."
+```
 
-**Avantages**:
-- Identifie clairement les contrôles rigoureux
-- Cohérence avec terminologie académique
-- Structure reconnaissable pour utilisateurs
+### BP-012: Éviter étapes redondantes
+Si une fonction appelée (ex: `.posthoc()`) affiche déjà son propre titre
+d'étape, l'appelant ne doit PAS afficher un titre général redondant.
 
 ---
 
-### BP-020: Messages directionnels après anomalie
+## 14.7 LOGIQUE POST-HOCS
 
-**Principe**: Toute détection d'anomalie/problème doit être suivie d'un message directionnel "-->" indiquant la stratégie adoptée.
+### BP-013: Post-hocs TOUJOURS effectués dans KefiR
+**Philosophie KefiR**: Les tests post-hoc sont **TOUJOURS** effectués et
+affichés, indépendamment de la significativité du test global.
 
-**Format standard**:
-```
-[Détection anomalie]
---> [Action corrective/Stratégie adoptée]
-```
-
-**Exemples d'application**:
-
-1. **Variances hétérogènes**:
-```r
-"Test de Bartlett [bartlett.test()] - Variances hétérogènes (p = 3e-06).\n\t",
-"--> Passage de l'ANOVA à un test F de Welch."
-```
-
-2. **Non-normalité détectée**:
-```r
-"==> Au moins un des groupes est non-normal.\n\t",
-"--> Vers tests non paramétriques."
-```
-
-3. **Outliers extrêmes**:
-```r
-"Résultat : 12.5% outliers EXTRÊMES\n\t",
-"==> Valeurs extrêmes peuvent fortement influencer tests paramétriques.\n\t",
-"--> Préférer approche robuste ou non paramétrique."
-```
+- Test global significatif → Post-hocs effectués
+- Test global non significatif → Post-hocs effectués **QUAND MÊME**
 
 **Justification**:
-- Transparence de la logique de décision
-- Utilisateur comprend POURQUOI le changement
-- Traçabilité de la méthodologie
-
-**Lien avec BP-009**: BP-009 couvre les messages directionnels après contrôles de normalité/variance. BP-020 généralise ce principe à TOUTES les anomalies détectées.
+1. Vue complète pour l'utilisateur
+2. Transparence (cohérence résultats globaux/post-hocs)
+3. Pédagogique (voir quand post-hocs et test global divergent)
 
 ---
 
-### BP-021: Annonce de l'ajustement du modèle
+## 14.8 CORRECTIONS TECHNIQUES CODE R
 
-**Principe**: Pour les ANOVA/analyses multi-groupes, annoncer explicitement l'ajustement du modèle avant les contrôles de résidus.
+### BP-014: do.call() avec noms de colonnes
+Avec `do.call()`, tout argument qui référence un **nom de colonne** doit
+être passé via `as.name("nom_colonne")`.
 
-**Format standard**:
 ```r
-// Étape N)
-"Ajustement du modèle ANOVA [aov()]."
+# ✓ BON
+ez_args <- list(
+  data = ez_data,
+  dv = as.name("DV"),
+  wid = as.name("id")
+)
+result <- do.call(ez::ezANOVA, ez_args)
 
-// Étape N+1)
-"Contrôle ACADÉMIQUE de la normalité des résidus du modèle ANOVA."
-  "==> Les résidus sont normaux. (p-value : 0.76)"
+# ❌ MAUVAIS
+ez_args <- list(dv = DV, wid = id)  # Erreur "objet introuvable"
 ```
 
-**Contexte d'application**:
-- Analyses >2 groupes normaux
-- Avant contrôle normalité des résidus  
-- Après contrôles outliers/indépendance
+### BP-015: Éviter espaces inutiles avec paste()
+Utiliser **`paste0()`** par défaut pour tous les messages formatés.
+Réserver **`paste()`** UNIQUEMENT quand on veut explicitement des espaces.
 
-**Implémentation**:
+### BP-016: Préférer rstatix::anova_test() à ezANOVA
+Pour ANOVA mesures répétées avec test de Mauchly, utiliser rstatix::anova_test()
+au lieu d'ezANOVA (NSE plus robuste avec rlang).
+
+---
+
+## 14.9 PROTECTION NA
+
+### BP-017: Protection NA dans comparaisons booléennes
+Quand une comparaison peut retourner NA, utiliser `isTRUE()` ou vérifier
+`!is.na()` AVANT la comparaison dans un `if()`.
+
 ```r
-# Dans .one_factor_analysis.R pour >2 groupes
-if (check_number > 2) {
-  # Annonce ajustement
-  k <- .vbse(
-    "Fitting ANOVA model [aov()].",
-    "Ajustement du modèle ANOVA [aov()].",
-    verbose = verbose, k = k, cpt = "on"
-  )
-  
-  # Ajustement
-  myaov <- aov(x~g)
-  
-  # Annonce contrôle résidus
-  k <- .vbse(
-    "ACADEMIC check of ANOVA model residuals normality.",
-    "Contrôle ACADÉMIQUE de la normalité des résidus du modèle ANOVA.",
-    verbose = verbose, k = k, cpt = "on"
-  )
-  
-  # Contrôle (sans numérotation pour éviter double comptage)
-  check_normality <- .normality(myaov$residuals, alpha=alpha, k=k, verbose=verbose, cpt="off")
+# ❌ INCORRECT
+wilcox_signif <- (pvals <= alpha)
+if (wilcox_signif != sign_signif) {  # ERREUR si NA!
+
+# ✓ CORRECT
+wilcox_signif <- if (is.na(pvals)) FALSE else (pvals <= alpha)
+if (isTRUE(wilcox_signif != sign_signif)) {
+```
+
+### BP-018: Exclure NA de unique() pour comptage groupes
+Utiliser `unique(g[!is.na(g)])` au lieu de `unique(g)` pour compter les
+groupes réels. `unique()` inclut NA comme valeur unique.
+
+```r
+# ❌ INCORRECT
+check_number <- length(unique(g))  # Compte NA comme un groupe!
+
+# ✓ CORRECT
+check_number <- length(unique(g[!is.na(g)]))
+```
+
+### BP-019: Condition de filtrage NA pour factors
+La condition de filtrage des NA doit inclure les factors, pas seulement
+les vectors (`is.vector(factor)` retourne FALSE).
+
+```r
+# ❌ INCORRECT
+if (is.vector(x) && is.vector(g)) {
+
+# ✓ CORRECT
+if ((is.vector(x) || is.numeric(x)) && (is.vector(g) || is.factor(g))) {
+```
+
+### BP-020: Protection NULL avec isTRUE() dans %in%
+`NULL %in% c("a","b")` retourne `logical(0)`, pas FALSE.
+
+```r
+# ❌ INCORRECT
+!(chosen_test %in% c("med1way", "kruskal"))
+
+# ✓ CORRECT
+!(isTRUE(chosen_test %in% c("med1way", "kruskal")))
+```
+
+---
+
+## 14.10 TITRE GRAPHIQUE
+
+### BP-021: Titre dynamique selon test post-hoc
+1. Identifier la première colonne contenant des lettres de groupement
+2. Utiliser le nom de cette colonne comme titre
+3. Ne PAS filtrer les colonnes contenant "mean" dans le nom (ex: "Bootstrap (mean)")
+
+**Logique de scan**:
+```r
+# Sauter UNIQUEMENT les colonnes de statistiques (noms exacts)
+if (tolower(cn) %in% c("categories", "category", "mean", "std", "se", "n", "sd")) next
+```
+
+**Fallback selon contexte**:
+```r
+if (n_groups_plot == 2) {
+  plot_title <- if (isTRUE(check_normality)) "Student t-test" else "Wilcoxon"
+} else {
+  plot_title <- if (isTRUE(check_normality)) "ANOVA" else "Kruskal-Wallis"
 }
 ```
 
-**Avantages**:
-- Explicite que résidus ≠ données brutes
-- Montre la séquence logique (ajustement → diagnostic)
-- Pédagogique pour utilisateurs
+---
+
+## 14.11 TESTS NON-PARAMÉTRIQUES
+
+### BP-022: Exécuter explicitement tous les tests
+Chaque branche de l'arbre de décision DOIT exécuter explicitement son test:
+- `chosen_test == "med1way"` → `med1way(x~g)$p.value`
+- `chosen_test == "t1way"` → `t1way(x~g)$p.value`
+- `chosen_test == "kruskal"` → `kruskal.test(x, g)$p.value`
+
+### BP-023: Synchroniser pvals pour le retour
+Après l'exécution des tests non-paramétriques, TOUJOURS synchroniser:
+```r
+pvals <- pvals3
+```
+
+### BP-024: Initialiser et propager chosen_test
+1. Initialiser `chosen_test <- NULL` au début
+2. L'assigner dans le diagnostic: `chosen_test <- recommended_test`
+3. L'ajouter à `synth` avant le return
 
 ---
 
-### BP-022: Post-hocs TOUJOURS effectués dans KefiR
+## 14.12 SYNCHRONISATION RETOURS
 
-**Principe FONDAMENTAL**: Dans KefiR, les tests post-hoc sont **TOUJOURS** effectués et affichés, indépendamment de la significativité du test global.
-
-**Règle KefiR** (différente de la pratique académique standard):
-- Test global significatif (p ≤ α) → Post-hocs effectués
-- Test global non significatif (p > α) → Post-hocs effectués **QUAND MÊME**
-
-**Justification philosophique**:
-1. **Vue complète**: Donner à l'utilisateur toutes les informations disponibles
-2. **Transparence**: L'utilisateur peut juger par lui-même de la cohérence résultats globaux/post-hocs
-3. **Pédagogique**: Permet de voir quand post-hocs et test global divergent
-4. **Flexibilité**: Certains contextes (exploratoire, didactique) bénéficient de cette approche
-
-**Implémentation**:
+### BP-025: Synchroniser global_pvalue
+Après l'appel à `.posthoc()`, synchroniser `global_pvalue` si manquant:
 ```r
-# Dans m.test.R
-# Post-hocs TOUJOURS effectués pour >2 groupes (sauf modèles spéciaux)
-if (!is_mixed_model && !is_ancova && length(unique(g)) > 2) {
-  # Afficher titre et effectuer post-hocs (TOUJOURS)
-  k <- .vbse("Post-hoc pairwise comparisons:", ...)
-  synth <- .posthoc(...)  # Pas de condition sur global_pvalue
+if (!is.null(synth) && is.null(synth$global_pvalue)) {
+  if (!is.null(synth$p.value)) {
+    synth$global_pvalue <- synth$p.value
+  }
 }
 ```
 
-**Cas particuliers**:
-- **Modèles mixtes**: Logique propre (effets multiples)
-- **ANCOVA**: Post-hocs avec emmeans sur effets ajustés
-- **2 groupes**: Test principal = comparaison directe (pas de "post-hoc")
+### BP-026: Éviter duplication de paramètres
+TOUJOURS vérifier qu'un paramètre n'apparaît qu'UNE SEULE FOIS dans un appel.
 
-**ATTENTION - Erreur récurrente à éviter**:
-❌ **NE JAMAIS** conditionner l'appel à `.posthoc()` à la significativité du test global
-❌ **NE JAMAIS** masquer les post-hocs si test global non significatif
-✓ **TOUJOURS** effectuer et afficher les post-hocs pour >2 groupes
+### BP-027: Passer x, g, id explicitement pour cas appariés
+Quand `.multi_factor_analysis()` délègue à `.one_factor_analysis()` pour
+2 conditions appariées, passer `x`, `g`, et `id` DIRECTEMENT.
 
-**Note historique**: Cette erreur a été faite plusieurs fois lors du développement. La philosophie de KefiR est de donner TOUTES les informations à l'utilisateur, pas de filtrer selon significativité.
+### BP-028: Supprimer les print() de debug avant commit
+TOUJOURS supprimer ou commenter les `print()` de debug avant commit.
+Utiliser `.dbg()` à la place pour messages conditionnels.
 
----
+================================================================================
+15. CHECKLIST UNIFIÉE
+================================================================================
 
----
+Cette checklist remplace toutes les versions précédentes (v1, v2, v3).
+À appliquer avant chaque commit impliquant messages utilisateur.
 
-## 14.13 Checklist de validation complète (v3 - 2025-11-26)
-
-### Avant chaque commit impliquant messages utilisateur
-
-**ORTHOGRAPHE ET GRAMMAIRE** (BP-017, BP-018):
+## ORTHOGRAPHE ET GRAMMAIRE (BP-002, BP-003)
 □ Tous messages complets se terminent par un point ?
 □ Orthographe "données" correcte (2 'n') ?
 □ Accords pluriel/singulier cohérents ?
 □ Accents français corrects ?
 □ Terminologie statistique standard ?
 
-**STRUCTURE DES ÉTAPES** (BP-019, BP-021):
+## STRUCTURE DES ÉTAPES (BP-010, BP-011, BP-012)
 □ Contrôles académiques avec préfixe "Contrôle ACADÉMIQUE" ?
-□ Ajustement modèle ANOVA annoncé avant contrôle résidus ?
-□ Format standard respecté pour chaque type d'étape ?
+□ Ajustement modèle annoncé avant contrôle résidus ?
+□ Pas d'étapes redondantes entre appelant et fonction appelée ?
 □ Séquence logique (ajustement → diagnostic) ?
 
-**MESSAGES DIRECTIONNELS** (BP-009, BP-009-EXT, BP-020):
+## MESSAGES DIRECTIONNELS (BP-001)
 □ Chaque changement de direction explicité ?
 □ Cas "reste sur même direction" après re-contrôle explicité ?
 □ Chaque anomalie détectée suivie d'un "-->" ?
 □ Stratégie adoptée explicite ?
 □ Cohérence avec décisions ultérieures ?
 
-**LOGIQUE POST-HOCS** (BP-022):
+## LOGIQUE POST-HOCS (BP-013)
 □ Post-hocs TOUJOURS effectués pour >2 groupes (philosophie KefiR) ?
 □ Pas d'affichage inapproprié pour 2 groupes ?
 □ Cohérence avec type d'analyse (ANCOVA, mixte, standard) ?
-□ Exceptions (modèles spéciaux) bien gérées ?
 
-**OBJETS ET FORMAT** (BP-010, BP-011, BP-012, BP-013):
+## PROTECTION NA (BP-017 à BP-020)
+□ Comparaisons booléennes protégées avec isTRUE() ou !is.na() ?
+□ Comptage groupes avec unique(g[!is.na(g)]) ?
+□ Filtrage NA inclut factors et vectors ?
+□ chosen_test protégé avec isTRUE() pour %in% ?
+
+## OBJETS ET FORMAT (BP-006, BP-004, BP-007, BP-008)
 □ `return=TRUE` retourne objet structuré ?
 □ Énumérations ≥3 éléments avec puces `•` ?
 □ Fonctions graphiques réinitialisent `par()` ?
 □ Références bibliographiques en commentaires ?
 
-**RECOMMANDATIONS ET PONCTUATION** (BP-014, BP-015):
+## RECOMMANDATIONS (BP-005)
 □ Actions/vérifications recommandées entre parenthèses ?
-□ Messages finaux avec point ?
-□ Cohérence grammaticale générale ?
+□ Tabulation appropriée ?
 
----
-
-## 14.14 Procédure d'audit complet m.test()
-
-### Objectif
-
-Vérifier que TOUTES les branches de code de m.test() respectent les BP-001 à BP-022, quels que soient :
-- Le nombre de groupes (2, >2)
-- La normalité (normale, non-normale, tolérance)
-- Les variances (homogènes, hétérogènes)
-- Le type d'analyse (standard, ANCOVA, modèle mixte)
-- Les outliers (aucun, modérés, extrêmes)
-
-### Méthodologie
-
-**Phase 1: Identification des chemins**
-1. Lister tous les chemins de décision dans m.test()
-2. Créer matrice de tous les cas possibles
-3. Identifier les fichiers impliqués par chemin
-
-**Phase 2: Audit par chemin**
-Pour chaque chemin:
-□ Vérifier BP-017 (ponctuation)
-□ Vérifier BP-018 (orthographe/accords)
-□ Vérifier BP-019 (format étapes contrôle)
-□ Vérifier BP-020 (messages directionnels)
-□ Vérifier BP-021 (annonce ajustement modèle si applicable)
-□ Vérifier BP-022 (post-hocs conditionnels si applicable)
-□ Vérifier BP-009 à BP-016 (si applicable)
-
-**Phase 3: Tests de validation**
-- Créer jeux de données couvrant tous les cas
-- Exécuter m.test() sur chaque jeu
-- Vérifier sortie conforme aux BP
-
-**Phase 4: Documentation**
-- Documenter non-conformités détectées
-- Prioriser corrections
-- Appliquer corrections
-- Re-auditer
-
-### Fichiers à auditer systématiquement
-
-- `m.test.R` : Point d'entrée, routage, post-hocs
-- `.one_factor_analysis.R` : Analyses univariées, ANOVA
-- `.multi_factor_analysis.R` : Analyses multi-factorielles
-- `.variance.R` : Contrôles homogénéité variance
-- `.normality.R` : Contrôles normalité
-- `.posthoc.R` : Tests post-hoc paramétriques/non-paramétriques
-- `.posthoc_ANCOVA.R` : Post-hocs ANCOVA
-- `.posthoc_MANOVA.R` : Post-hocs MANOVA
-- `.posthoc_mixed_model.R` : Post-hocs modèles mixtes
-- `print_methods.R` : Affichage résultats
-
-**Total**: 10 fichiers principaux
-
----
+## TECHNIQUE (BP-014 à BP-016, BP-022 à BP-028)
+□ do.call() avec as.name() pour noms de colonnes ?
+□ paste0() par défaut pour messages ?
+□ Tests non-paramétriques explicitement exécutés ?
+□ pvals synchronisé avec pvals3 ?
+□ global_pvalue synchronisé dans synth ?
+□ Pas de print() de debug ?
 
 ================================================================================
-FIN SECTION 14 (ÉTENDUE)
-================================================================================
-Date création Section 14: 2025-11-24
-Date ajout BP-014, BP-015: 2025-11-25
-Date ajout BP-016: 2025-11-25
-Date ajout BP-017 à BP-022: 2025-11-26
-Version bp.log: 1.5
+16. HISTORIQUE DES MODIFICATIONS
 ================================================================================
 
----
-
-### BP-023: Utilisation correcte de do.call() avec noms de colonnes
-
-**Date**: 2025-11-26  
-**Contexte**: Correction erreur "objet 'DV' introuvable" dans test de sphéricité (ezANOVA)
-
-**Problème**:  
-Lors de l'utilisation de `do.call()` pour appeler une fonction avec des arguments construits dynamiquement, les noms de colonnes passés comme arguments doivent être convertis en symboles avec `as.name()`, sinon R cherche un objet dans l'environnement au lieu de la colonne dans le data.frame.
-
-**Symptôme typique**:
-```
-Error in ... : objet 'DV' introuvable
-Error in ... : object 'id' not found
-```
-
-**MAUVAIS CODE**:
-```r
-ez_data <- data.frame(
-  id = factor(data[[id]]),
-  DV = x
-)
-
-ez_args <- list(
-  data = ez_data,
-  dv = DV,        # ❌ Cherche objet DV dans environnement
-  wid = id,       # ❌ Cherche objet id dans environnement
-  detailed = TRUE
-)
-
-result <- do.call(ez::ezANOVA, ez_args)  # ❌ ERREUR!
-```
-
-**BON CODE**:
-```r
-ez_data <- data.frame(
-  id = factor(data[[id]]),
-  DV = x
-)
-
-ez_args <- list(
-  data = ez_data,
-  dv = as.name("DV"),      # ✓ Converti en symbole
-  wid = as.name("id"),     # ✓ Converti en symbole
-  detailed = TRUE
-)
-
-result <- do.call(ez::ezANOVA, ez_args)  # ✓ FONCTIONNE
-```
-
-**Règle générale**:  
-Avec `do.call()`, tout argument qui référence un **nom de colonne** (et non une valeur) doit être passé via `as.name("nom_colonne")`.
-
-**Application dans KefiR**:  
-- `.multi_factor_analysis.R` ligne 1248-1249: ezANOVA avec dv/wid
-- Toute utilisation future de do.call() avec noms de colonnes
-
-**Fichier modifié**: `.multi_factor_analysis.R` (lignes 1245-1252)
+Ce log chronologique documente l'évolution des bonnes pratiques.
 
 ---
 
-### BP-024: Éviter espaces inutiles avec paste()
+### 2025-11-04 - Création initiale
+- Sections 1-12 : Structure de base du guide
+- Version 1.0
 
-**Date**: 2025-11-26  
-**Contexte**: Correction espacement inutile dans messages de résultats ANOVA mesures répétées
+### 2025-01-19 - Section 13 ANCOVA
+- Ajout section 13 : Ordre logique traitement ANCOVA
+- Numérotation dynamique des assomptions
+- Version 1.1
 
-**Problème**:  
-L'utilisation de `paste()` au lieu de `paste0()` ajoute des espaces entre les éléments, ce qui peut créer des espacements non désirés dans les messages formatés, notamment avec `sapply()` et `collapse`.
+### 2025-11-24 - Session 18
+- BP-001 (ex BP-009): Messages directionnels cohérents
+- BP-006 (ex BP-010): Objets de retour complets
+- BP-004 (ex BP-011): Format des listes à puces
+- BP-007 (ex BP-012): Reset layout graphique
+- BP-008 (ex BP-013): Références en commentaires
+- Version 1.4
 
-**Symptôme**:
-```
-Strate 'Error: Within' : Aucun effet significatif (testés : G         (p=0.5))
-                                                              ^^^^^^^^^
-                                                          Espaces en trop
-```
+### 2025-11-25 - Session 19
+- BP-001 étendu: Cas "reste sur même direction"
+- BP-005 (ex BP-014): Recommandations entre parenthèses
+- BP-002 (ex BP-015): Ponctuation messages finaux
+- BP-009 (ex BP-016): Utiliser load_all_kefir()
+- Version 1.5
 
-**MAUVAIS CODE**:
-```r
-effects_summary <- paste(sapply(seq_along(info$effects), function(i) {
-  paste0(info$effects[i], " (p=", .format_pval(info$p_values[i]), ")")
-}), collapse = ", ")
-# paste() ajoute des espaces entre les résultats de sapply()
-```
+### 2025-11-26 - Modification 12
+- BP-002 fusionné (ex BP-015+BP-017): Ponctuation unifiée
+- BP-003 (ex BP-018): Orthographe et accords
+- BP-010 (ex BP-019): Format étapes contrôle
+- BP-001 étendu (ex BP-020): Messages après anomalie
+- BP-011 (ex BP-021): Annonce ajustement modèle
+- BP-013 (ex BP-022): Post-hocs toujours effectués
+- BP-014 (ex BP-023): do.call() avec as.name()
+- BP-015 (ex BP-024): paste0() vs paste()
+- BP-012 (ex BP-025): Éviter étapes redondantes
+- BP-016 (ex BP-026): rstatix vs ezANOVA
+- Version 1.7
 
-**BON CODE**:
-```r
-effects_summary <- paste0(sapply(seq_along(info$effects), function(i) {
-  paste0(info$effects[i], " (p=", .format_pval(info$p_values[i]), ")")
-}), collapse = ", ")
-# paste0() ne laisse AUCUN espace entre les éléments
-```
+### 2025-11-27 - Modification 12 (suite)
+- Correction erreur ks.test
+- Mise à jour documentation 6 fonctions
+- Paramètre code= ajouté à .vbse()
+- Version 1.8
 
-**Règle générale**:  
-- Utiliser **`paste0()`** par défaut pour tous les messages formatés
-- Réserver **`paste()`** UNIQUEMENT quand on veut explicitement des espaces entre éléments
+### 2025-01-04 - Modification 14
+- BP-022 (ex BP-031): Exécuter tests explicitement
+- BP-023 (ex BP-032): Synchroniser pvals
+- BP-024 (ex BP-033): Initialiser chosen_test
+- Génération code pour tests non-paramétriques
+- Version 2.0
 
-**Application dans KefiR**:  
-- Tous les messages utilisateur construits dynamiquement
-- Particulièrement avec `sapply()` + `collapse`
-- Messages multi-lignes avec `\n\t`
+### 2025-12-06 - Modification 15
+- BP-025 (ex BP-035): Synchroniser global_pvalue
+- BP-026 (ex BP-036): Éviter duplication paramètres
+- BP-027 (ex BP-037): Passer x,g,id pour appariés
+- BP-028 (ex BP-038): Supprimer print() debug
+- Version 2.1
 
-**Fichier modifié**: `.multi_factor_analysis.R` (ligne 3964)
-
----
-
-### BP-025: Éviter étapes redondantes dans bilans
-
-**Date**: 2025-11-26  
-**Contexte**: Suppression étape "Comparaisons post-hoc par paires :" redondante avec sous-étapes
-
-**Problème**:  
-Afficher un titre d'étape général (ex: "Comparaisons post-hoc par paires :") PUIS une sous-étape plus spécifique avec le même numéro (ex: "Posthoc - Tests post-hoc sur groupes normaux.") crée une redondance et un doublon d'étapes.
-
-**Symptôme dans le bilan**:
-```
-8) Comparaisons post-hoc par paires :              <-- Étape vide/redondante
-9) Posthoc - Tests post-hoc sur groupes normaux.   <-- Vraie étape avec contenu
-   a) Posthoc - Analyse des différences...
-   b) Posthoc - Test de Student...
-```
-
-**Règle**:  
-Si une fonction appelée (ex: `.posthoc()`) affiche déjà son propre titre d'étape détaillé et numéroté, alors l'appelant (ex: `m.test()`) ne doit PAS afficher un titre général redondant.
-
-**MAUVAIS CODE** (`m.test.R`):
-```r
-# Affichage titre général
-k <- .vbse(
-  "Post-hoc pairwise comparisons:",
-  "Comparaisons post-hoc par paires :",
-  verbose = verbose, k = k, cpt = "on"
-)
-
-# Appel fonction qui affiche SON PROPRE titre
-synth <- .posthoc(x, g, ...)  # Affiche "Posthoc - Tests post-hoc..."
-# ❌ RÉSULTAT: Deux étapes successives redondantes
-```
-
-**BON CODE**:
-```r
-# PAS de titre général ici, .posthoc() s'en charge
-# Note: Le titre "Posthoc - Tests post-hoc..." est affiché par .posthoc() lui-même
-
-synth <- .posthoc(x, g, ...)  # Affiche directement son titre
-# ✓ RÉSULTAT: Une seule étape claire et précise
-```
-
-**Exception**:  
-Si le titre général apporte une information COMPLÉMENTAIRE (pas juste une reformulation), il peut être conservé.
-
-**Application dans KefiR**:  
-- `m.test.R` : Retrait titre "Comparaisons post-hoc par paires :" (ligne 1398-1404 supprimées)
-- Vérifier TOUS les appels à fonctions qui créent leur propre étape numérotée
-- `.posthoc()`, `.posthoc_ANCOVA()`, `.posthoc_mixed_model()` : Ces fonctions affichent leur propre titre
-
-**Fichier modifié**: `m.test.R` (lignes 1398-1404 → commentaire explicatif uniquement)
-
----
-
-### BP-026: Préférer rstatix::anova_test() à ezANOVA pour sphéricité
-
-**Date**: 2025-11-26
-**Contexte**: Remplacement ezANOVA par rstatix::anova_test() pour test de sphéricité
-
-**Problème**:
-ezANOVA utilise une non-standard evaluation (NSE) complexe qui nécessite des constructions compliquées avec `bquote()` et `eval()` pour passer les noms de colonnes dynamiquement. De plus, ezANOVA a des limitations avec do.call() car les arguments `dv` et `wid` attendent des noms non-quotés (bare names).
-
-**Symptômes avec ezANOVA**:
-```
-Error: l'argument n'est pas une chaîne de caractères
-Error: objet 'DV' introuvable
-```
-
-**Limitations ezANOVA**:
-- Nécessite bquote() + eval() pour NSE dynamique
-- Arguments within/between doivent être vecteurs caractères
-- Arguments dv/wid doivent rester bare names (non-évalués)
-- Code complexe et fragile
-
-**MAUVAIS CODE (ezANOVA)**:
-```r
-# Construction complexe avec bquote()
-ez_expr <- bquote(
-  ez::ezANOVA(
-    data = .(ez_data),
-    dv = DV,           # Bare name
-    wid = id,          # Bare name
-    within = .(ez_within),
-    detailed = TRUE
-  )
-)
-ez_result <- eval(ez_expr)  # ❌ Complexe et fragile
-```
-
-**BON CODE (rstatix)**:
-```r
-# Construction simple avec rlang
-if (requireNamespace("rstatix", quietly = TRUE) &&
-    requireNamespace("rlang", quietly = TRUE)) {
-
-  test_data$.dv_outcome <- x
-  dv_sym <- rlang::sym(".dv_outcome")
-  wid_sym <- rlang::sym(id)
-
-  anova_result <- suppressMessages(
-    rstatix::anova_test(
-      data = test_data,
-      dv = !!dv_sym,         # ✓ Tidyeval avec rlang
-      wid = !!wid_sym,
-      within = within_vars,   # Vecteur caractères
-      detailed = TRUE
-    )
-  )
-}
-```
-
-**Avantages rstatix**:
-- Utilise tidyeval (rlang) plus robuste
-- Wrapper autour de car::Anova()
-- Retourne automatiquement test de Mauchly
-- Syntaxe plus simple avec !!
-- Moins de code, plus lisible
-- Gestion erreurs plus claire
-
-**Structure résultat identique**:
-- `anova_result$'Mauchly's Test for Sphericity'` : test de Mauchly
-- `anova_result$'Sphericity Corrections'` : corrections GG/HF
-- Format compatible avec code existant
-
-**Dépendances**:
-- Package {rstatix} (CRAN)
-- Package {rlang} (CRAN, dépendance de rstatix)
-
-**Application dans KefiR**:
-- `.multi_factor_analysis.R` lignes 1974-2101 : Test sphéricité mesures répétées
-- Remplace complètement ezANOVA
-
-**Règle générale**:
-Pour ANOVA mesures répétées avec test de Mauchly, **toujours utiliser rstatix::anova_test()** au lieu d'ezANOVA.
-
-**Fichier modifié**: `.multi_factor_analysis.R` (lignes 1974-2101)
-
----
-
-## 14.15 Checklist Modification 12 (CORRECTIONS BILANS)
-
-### Corrections appliquées
-
-**CORRECTION 12-A**: Ponctuation ANOVA/Welch (BP-017)
-□ `.one_factor_analysis.R` lignes 1108-1115: ANOVA à un facteur - points ajoutés
-□ `.one_factor_analysis.R` lignes 1134-1141: Test de Welch - points ajoutés
-
-**CORRECTION 12-B**: Erreur "DV introuvable" (BP-023)
-□ `.multi_factor_analysis.R` lignes 1248-1249: as.name("DV") et as.name("id")
-
-**CORRECTION 12-C**: Espacement inutile (BP-024)
-□ `.multi_factor_analysis.R` ligne 3964: paste() → paste0()
-
-**CORRECTION 12-D**: Étape redondante (BP-025)
-□ `m.test.R` lignes 1398-1404: Suppression titre "Comparaisons post-hoc par paires :"
-
-### Corrections à valider (mesures répétées)
-
-**À VALIDER** avant implémentation dans `.multi_factor_analysis.R`:
-
-□ Restructurer ordre étapes (Indépendance AVANT ajustement)
-□ Ajouter numérotation ASSOMPTION 1/4, 2/4, 3/4, 4/4
-□ Clarifier conclusions test sphéricité avec ajustements
-□ Ajouter annonce ajustement ANOVA mesures répétées
-□ Clarifier commentaire homogénéité variances selon between
-□ Supprimer étape redondante "Le plan factoriel est équilibré..."
-□ Clarifier commentaires strates pour non-spécialistes
-
----
+### 2026-02-08 - Correction NA
+- BP-017 (ex BP-040): Protection NA avec isTRUE()
+- BP-018 (ex BP-041): unique() sans NA
+- BP-019 (ex BP-042): Filtrage NA pour factors
+- BP-021 (ex BP-043): Titre dynamique graphique
+- BP-020 (ex BP-044): Protection NULL avec isTRUE()
+- **Restructuration complète du document**
+- Version 2.0 (restructuré)
 
 ================================================================================
-MISE À JOUR bp.log - MODIFICATION 12 (SUITE 4)
+FIN DU GUIDE DES BONNES PRATIQUES
 ================================================================================
-Date: 2025-11-27 (Correction doublon "Test de Student" avec code=T)
-Correction: Doublon messages dans output code=T
-
-**PROBLÈME IDENTIFIÉ**:
-Quand m.test(code=T) était appelé, "Test de Student" apparaissait DEUX FOIS:
-1. Via cat("# Test de Student\n",...) - commentaire de code (ligne 234 sys_posthoc.R)
-2. Via .vbse("b) Test de Student [t.test()]",...) - message explicatif (ligne 364-368)
-
-**SOLUTION IMPLÉMENTÉE**:
-
-1. `sys_vbse.R`:
-   - Ajout paramètre code=FALSE à fonction .vbse()
-   - Quand code==TRUE: n'affiche aucun message mais incrémente k si cpt="on"
-   - Quand code==FALSE: comportement normal (affichage si verbose==TRUE)
-   - Permet de conserver numérotation des étapes même en mode code
-
-2. Mise à jour tous appels .vbse() dans 14 fichiers:
-   - sys_posthoc.R (79 occurrences)
-   - sys_multi_factor_analysis.R
-   - sys_one_factor_analysis.R
-   - sys_manova_analysis.R
-   - sys_ancova_analysis.R
-   - sys_mixed_model_analysis.R
-   - sys_posthoc_MANOVA.R
-   - sys_posthoc_ANCOVA.R
-   - sys_posthoc_mixed_model.R
-   - sys_normality.R
-   - sys_variance.R
-   - sys_analyze_ancova_structure.R
-   - m.test.R
-   - valreg.R
-
-   Remplacement automatique: verbose = verbose, → verbose = verbose, code = code,
-
-**RÉSULTAT**:
-En mode code=T, seul le code R simplifié s'affiche (via cat/message)
-Les explications textuelles (.vbse) sont supprimées, éliminant tous les doublons
-La numérotation des étapes reste cohérente grâce à l'incrémentation de k
-
-Version bp.log: 1.8
-
----
-
+Version actuelle: 2.0 (restructuré)
+Date: 2026-02-08
+Prochaine révision: À chaque session majeure de développement
 ================================================================================
-MISE À JOUR bp.log - MODIFICATION 12 (SUITE 3)
-================================================================================
-Date: 2025-11-27 (Corrections R CMD check)
-Corrections: Erreur ks.test + mise à jour documentation 6 fonctions
-
-**CORRECTION R CMD check - ERROR ks.test**:
-- `pairwise.R` lignes 312-321 : Ajout validation données avant ks.test
-- Vérification length(x_i) >= 2 && length(x_j) >= 2 avant appel ks.test
-- Retourne NA si données insuffisantes au lieu de générer erreur
-- Correction erreur "not enough 'y' data" dans evolreg() example
-
-**CORRECTION R CMD check - WARNINGS documentation**:
-
-1. `man/biplt.Rd`:
-   - Ajout 7 paramètres manquants: main, legend, legend.labels, legend.pos,
-     legend.pch, legend.title, legend.col
-   - Synchronisation usage et arguments avec fonction réelle
-
-2. `man/catego.Rd`:
-   - Ajout paramètre manquant: debug
-   - Description: "logical, if TRUE enables debug mode for troubleshooting"
-
-3. `man/m.test.Rd`:
-   - Changement signature complète: data, cat, paired → formula, data, id
-   - Mise à jour pour refléter notation formule (A~F) et mesures répétées
-   - Ajout paramètre id pour identifiants sujets
-
-4. `man/pairwise.Rd`:
-   - Ajout 4 paramètres manquants: debug, p.adjust.method, conf.level, alternative
-   - Documentation complète des nouveaux paramètres
-
-5. `man/pairwise.boot.Rd`:
-   - Ajout 4 paramètres manquants: debug, p.adjust.method, conf.level, alternative
-   - Mêmes paramètres que pairwise()
-
-6. `man/valreg.Rd`:
-   - Ajout 1 paramètre manquant: code
-   - Description: affichage code R source simplifié
-
-Version bp.log: 1.8
-Status: Toutes corrections R CMD check appliquées, package prêt pour re-validation
-
----
-
-================================================================================
-MISE À JOUR bp.log - MODIFICATION 12 (SUITE 2)
-================================================================================
-Date: 2025-11-27 (3ème round de corrections - tests utilisateur)
-Corrections appliquées: 12-K, 12-L, 12-M, 12-N, 12-O
-
-**CORRECTION 12-K**: Erreur diagnostic_influence avec aovlist
-- `.multi_factor_analysis.R` ligne 1756 : Ajout vérification !inherits(model, "aovlist")
-- Skip diagnostic d'influence pour modèles avec Error term (mesures répétées)
-- Correction erreur "Model must be of class 'lm'"
-
-**CORRECTION 12-L**: Amélioration tabulation point 9
-- `.multi_factor_analysis.R` lignes 4117-4127 : Indentation Note améliorée
-- "Note :" à 4 espaces, "Chaque strate" à 8 espaces, bullets "•" à 12 espaces
-
-**CORRECTION 12-M**: Suppression sauts ligne diagnostic outliers
-- `.multi_factor_analysis.R` lignes 1772, 1833, 1837, 1898
-- Enlevé `\n` inutiles avant sections outliers et diagnostic
-
-**CORRECTION 12-N**: Labels A)/B) conditionnels dans diagnostic
-- `.multi_factor_analysis.R` lignes 1769-1774
-- A) et B) affichés seulement si les deux sections existent
-- Si diagnostic d'influence non disponible : pas de préfixe A)
-
-**CORRECTION 12-O**: Création étape séparée corrections sphéricité
-- `.multi_factor_analysis.R` lignes 1980-1982 : Initialisation variables tracking
-- `.multi_factor_analysis.R` lignes 2056-2088 : Modification messages violation
-- `.multi_factor_analysis.R` lignes 2127-2180 : NOUVELLE ÉTAPE 9 (conditionnelle)
-- Étape 9 affichée seulement si violation sphéricité détectée
-- Présentation des corrections Greenhouse-Geisser et Huynh-Feldt
-- Recommandation basée sur epsilon (< 0.75 → GG, >= 0.75 → HF)
-- Décalage numérotation : Résultats ANOVA devient point 10, Posthoc devient point 11
-
-Version bp.log: 1.8
-
----
-
-================================================================================
-MISE À JOUR bp.log - MODIFICATION 12 (SUITE)
-================================================================================
-Date: 2025-11-26 (2ème round de corrections)
-BP ajoutée: BP-026 (rstatix::anova_test() vs ezANOVA)
-Corrections appliquées: 12-E, 12-F, 12-G, 12-H, 12-P
-
-**CORRECTION 12-E**: Séparation Note normalité ligne dédiée
-- `.multi_factor_analysis.R` lignes 1951-1963 : Note sur ligne séparée avec indentation
-
-**CORRECTION 12-F**: Correction espacement trimws()
-- `.multi_factor_analysis.R` lignes 4156, 4168 : trimws() pour nettoyer espaces rownames
-
-**CORRECTION 12-G**: Reformatage point 9 (Note avant résultats)
-- `.multi_factor_analysis.R` lignes 4135-4151 : Note déplacée AVANT résultats
-- `.multi_factor_analysis.R` lignes 4208-4247 : Format simplifié si 1 seul effet
-
-**CORRECTION 12-H**: Suppression Note redondante après résultats
-- `.multi_factor_analysis.R` ligne 4236 : Note supprimée (déplacée avant)
-
-**CORRECTION 12-P (PRIORITAIRE)**: Remplacement ezANOVA par rstatix::anova_test() (BP-026)
-- `.multi_factor_analysis.R` lignes 1974-2101 : Test sphéricité avec rstatix
-- Correction erreur NSE "l'argument n'est pas une chaîne de caractères"
-- Utilisation rlang::sym() et !! pour tidyeval
-- Code plus simple et robuste
-
-Version bp.log: 1.7
-
----
-
-================================================================================
-MISE À JOUR bp.log - MODIFICATION 14 (AUDIT ONE-FACTOR + CORRECTIONS)
-================================================================================
-Date: 2025-01-04
-BP ajoutées: BP-031, BP-032, BP-033, BP-034
-Fichiers modifiés: sys_one_factor_analysis.R, m.test.R
-Version bp.log: 2.0
-
----
-
-### BP-031: Exécuter explicitement tous les tests non-paramétriques
-
-**Date**: 2025-01-04
-**Contexte**: Le bloc Kruskal-Wallis ne faisait que `pvals3 <- pvals` sans exécuter le test
-
-**RÈGLE**:
-Chaque branche de l'arbre de décision DOIT exécuter explicitement son test:
-- `chosen_test == "med1way"` → `med1way(x~g)$p.value`
-- `chosen_test == "t1way"` → `t1way(x~g)$p.value`
-- `chosen_test == "kruskal"` → `kruskal.test(x, g)$p.value`
-
-**Correction appliquée** (`sys_one_factor_analysis.R` lignes 1195-1211):
-```r
-# Bloc Kruskal-Wallis
-pvals3 <- kruskal.test(x, g)$p.value
-if (pvals3 <= alpha) {
-  # Message significatif
-} else {
-  # Message non-significatif
-}
-```
-
----
-
-### BP-032: Synchroniser pvals avec pvals3 pour le retour
-
-**Date**: 2025-01-04
-**Contexte**: `global_pvalue` retournait NA car `pvals` n'était pas mis à jour
-
-**RÈGLE**:
-Après l'exécution des tests non-paramétriques, TOUJOURS synchroniser:
-```r
-pvals <- pvals3
-```
-
-**Correction appliquée** (`sys_one_factor_analysis.R` lignes 1214-1215):
-```r
-} # fin choix test selon diagnostic pragmatique
-
-# Mettre à jour pvals avec la p-value du test choisi (pour le retour)
-pvals <- pvals3
-```
-
----
-
-### BP-033: Initialiser et propager chosen_test correctement
-
-**Date**: 2025-01-04
-**Contexte**: `chosen_test` n'était pas accessible au niveau fonction, ni inclus dans synth
-
-**RÈGLE**:
-1. Initialiser `chosen_test <- NULL` au début de `.one_factor_analysis()`
-2. L'assigner dans le diagnostic pragmatique: `chosen_test <- recommended_test`
-3. L'ajouter à `synth` avant le return de `m.test()`
-
-**Corrections appliquées**:
-
-`sys_one_factor_analysis.R` (ligne 147):
-```r
-pvals <- NA
-chosen_test <- NULL  # Initialize: NULL=parametric, "med1way", "t1way", or "kruskal"
-```
-
-`m.test.R` (lignes 1608-1611):
-```r
-# Ajouter chosen_test à l'objet synth pour le retour
-if (!is.null(synth)) {
-  synth$chosen_test <- chosen_test
-}
-```
-
----
-
-### BP-034: Générer le code pour tous les tests non-paramétriques (étape 9)
-
-**Date**: 2025-01-04
-**Contexte**: Mode code=TRUE ne générait pas le code pour med1way/t1way/kruskal
-
-**RÈGLE**:
-Chaque branche de l'arbre de décision DOIT appeler `.code_anova()` si `code=TRUE`:
-
-**Corrections appliquées** (`sys_one_factor_analysis.R`):
-
-```r
-# Pour med1way (ligne 1137)
-if (isTRUE(code)) {
-  .code_anova(9, "ANOVA sur médianes (outliers/asymétrie)", c(
-    "library(WRS2)",
-    "med1way(x ~ g)"
-  ))
-}
-
-# Pour t1way (ligne 1167)
-if (isTRUE(code)) {
-  .code_anova(9, "ANOVA sur moyennes tronquées (variances hétérogènes)", c(
-    "library(WRS2)",
-    "t1way(x ~ g)"
-  ))
-}
-
-# Pour Kruskal-Wallis (ligne 1189)
-if (isTRUE(code)) {
-  .code_anova(9, "Test de Kruskal-Wallis (formes similaires)", c(
-    "kruskal.test(x, g)"
-  ))
-}
-```
-
----
-
-## Checklist validation Modification 14
-
-### Tests de validation
-[x] CAS 1: Formes similaires + variances hétérogènes → KW + Dunn
-[x] CAS 3: Asymétrie forte (|skew| >= 2) → med1way + medpb2
-[x] CAS 5: Données normales + variances homogènes → ANOVA classique
-
-### Mode code=TRUE
-[x] Numérotation 2→3→4→5→6→8→9→10 cohérente
-[x] `myaov <- aov(x ~ g)` apparaît UNE SEULE FOIS (étape 4)
-[x] Code généré pour med1way/t1way/kruskal à l'étape 9
-
-### Retour de m.test()
-[x] `synth$chosen_test` contient la valeur correcte
-[x] `synth$global_pvalue` contient la p-value du test choisi
-
----
-
-================================================================================
-MISE À JOUR bp.log - MODIFICATION 15 (AUDIT COMPLET m.test())
-================================================================================
-Date: 2025-12-06
-BP ajoutées: BP-035, BP-036, BP-037, BP-038, BP-039
-Version bp.log: 2.1
-
----
-
-### BP-035: Synchroniser global_pvalue pour le retour de m.test()
-
-**Date**: 2025-12-06
-**Contexte**: `.posthoc()` définit `synth$p.value` mais m.test() attend `synth$global_pvalue`
-
-**RÈGLE**:
-Après l'appel à `.posthoc()`, synchroniser `global_pvalue` si manquant:
-
-**Correction appliquée** (`m.test.R` après bloc posthoc):
-```r
-# Synchroniser global_pvalue pour le retour
-if (!is.null(synth) && is.null(synth$global_pvalue)) {
-  if (!is.null(synth$p.value)) {
-    synth$global_pvalue <- synth$p.value
-  } else if (!is.null(pvals) && !is.na(pvals)) {
-    synth$global_pvalue <- pvals
-  }
-}
-```
-
----
-
-### BP-036: Éviter duplication de paramètres dans appels de fonction
-
-**Date**: 2025-12-06
-**Contexte**: Appel à `.one_factor_analysis()` avait `code=code` dupliqué
-
-**RÈGLE**:
-TOUJOURS vérifier qu'un paramètre n'apparaît qu'UNE SEULE FOIS dans un appel de fonction.
-
-**Avant (incorrect)**:
-```r
-.one_factor_analysis(..., verbose = verbose, code = code, code = code, k = k)
-```
-
-**Après (correct)**:
-```r
-.one_factor_analysis(..., verbose = verbose, code = code, k = k)
-```
-
----
-
-### BP-037: Passer x, g, id explicitement pour cas appariés
-
-**Date**: 2025-12-06
-**Contexte**: `.one_factor_analysis()` ne sait pas extraire variables de formula pour mesures répétées
-
-**RÈGLE**:
-Quand `.multi_factor_analysis()` délègue à `.one_factor_analysis()` pour 2 conditions appariées,
-passer `x`, `g`, et `id` DIRECTEMENT, pas via `formula` et `data`:
-
-**Correction appliquée** (`sys_multi_factor_analysis.R` ligne 1400):
-```r
-return(.one_factor_analysis(
-  x = x,
-  g = ginteract,  # Facteur à 2 niveaux pour les données appariées
-  data = data,
-  id = id,
-  alpha = alpha,
-  paired = TRUE,
-  ...
-))
-```
-
----
-
-### BP-038: Supprimer vérification de réplicats erronée dans .posthoc()
-
-**Date**: 2025-12-06
-**Contexte**: Heuristique de détection de réplicats basée sur divisibilité donnait faux positifs
-
-**RÈGLE**:
-Ne PAS utiliser la divisibilité de n pour détecter les réplicats.
-Pour données appariées, la structure a DÉJÀ été vérifiée par `.one_factor_analysis()` via `.align_pairs()`.
-
-**Avant (incorrect)**:
-```r
-if (n_g1 %% 2 == 0 || n_g1 %% 3 == 0) has_replicates <- TRUE  # FAUX!
-```
-
-**Après (correct)**:
-```r
-# NOTE: Vérification supprimée - structure déjà validée en amont
-```
-
----
-
-### BP-039: Supprimer les print() de debug avant commit
-
-**Date**: 2025-12-06
-**Contexte**: Messages debug (`print("id")`, `print(head(dfc))`) visibles en production
-
-**RÈGLE**:
-TOUJOURS supprimer ou commenter les `print()` de debug avant commit.
-Utiliser `.dbg()` à la place pour messages de debug conditionnels.
-
----
-
-## Checklist validation Audit 2025-12-06
-
-### Tests validés
-[x] CAS 0: 2 groupes normaux → Student + bootstrap
-[x] CAS 1: Formes similaires + variances hétérogènes → KW + Dunn
-[x] CAS 3: Asymétrie forte (|skew| >= 2) → med1way + medpb2
-[x] CAS 5: Données normales + variances homogènes → ANOVA classique
-[x] CAS 6: 2 groupes appariés → Student apparié
-[x] CAS 7: >2 groupes appariés → ANOVA mesures répétées
-[x] CAS 8: ANOVA 2 facteurs (plan factoriel 3x2)
-[x] CAS 9: ANCOVA (1 facteur + 1 covariable)
-
-### Fonctions auditées
-[x] m.test() - Point d'entrée principal
-[x] .one_factor_analysis() - 1 facteur (2 groupes, >2 groupes, apparié)
-[x] .multi_factor_analysis() - Multi-facteurs et mesures répétées
-[x] .ancova_analysis() - ANCOVA avec 5 vérifications d'assomptions
-[x] .posthoc() - Tests post-hoc adaptatifs
-
----
-
-================================================================================
-MISE À JOUR bp.log - MODIFICATION 12 (INITIAL)
-================================================================================
-Date: 2025-11-26 (1er round de corrections)
-BP ajoutées: BP-023, BP-024, BP-025
-Corrections appliquées: 12-A, 12-B, 12-C, 12-D
-Corrections en attente validation: Restructuration mesures répétées
-Version bp.log: 1.6

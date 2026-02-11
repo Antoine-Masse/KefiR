@@ -73,14 +73,13 @@
 #'   oneway.test formula terms reshape contr.helmert residuals kruskal.test friedman.test
 #'   rstudent rstandard
 #' @importFrom car Anova leveneTest
-#' @importFrom ez ezANOVA
 #' @importFrom DescTools GTest
 #' @importFrom rstatix identify_outliers
 #' @importFrom withr with_options
 #'
 #' @seealso
 #' \code{\link{.one_factor_analysis}}, \code{\link[car]{Anova}},
-#' \code{\link[ez]{ezANOVA}}, \code{\link[lme4]{lmer}}
+#' \code{\link[lme4]{lmer}}
 #'
 #' @keywords internal
 .multi_factor_analysis <- function(
@@ -1378,150 +1377,6 @@
         # apr\u00e8s l'ajustement du mod\u00e8le pour respecter l'ordre logique:
         # 1) Ind\u00e9pendance \u2192 2) Ajustement \u2192 3) Normalit\u00e9 r\u00e9sidus \u2192 4) Sph\u00e9ricit\u00e9
         if (!robuste) {
-
-          #----------------------------------------------------------------------
-          # Test de sph\u00e9ricit\u00e9 (Mauchly) - sera effectu\u00e9 APR\u00c8S normalit\u00e9
-          #----------------------------------------------------------------------
-          # NOTE: Test d\u00e9plac\u00e9 apr\u00e8s ajustement et normalit\u00e9 pour ordre logique
-          # Voir ligne ~1955+ pour le test r\u00e9el
-
-          # RIEN ICI - test d\u00e9plac\u00e9 plus bas
-
-          # Ancienne position du test - SUPPRIM\u00c9
-          # Le test sera fait apr\u00e8s le test de normalit\u00e9 (ligne ~1955)
-
-          #}} D\u00c9BUT BLOC \u00c0 SUPPRIMER COMPL\u00c8TEMENT
-          if (FALSE) {  # D\u00e9sactiv\u00e9 - d\u00e9plac\u00e9 plus bas
-          if (nlevels(ginteract) >= 3) {
-
-          if (requireNamespace("ez", quietly = TRUE)) {
-            tryCatch({
-              # Pr\u00e9parer les donn\u00e9es pour ezANOVA
-              ez_data <- data.frame(
-                id = factor(data[[id]]),
-                DV = x
-              )
-
-              # Ajouter les facteurs within
-              if (!is.null(within)) {
-                for (w in within) {
-                  ez_data[[w]] <- factor(data[[w]])
-                }
-              }
-
-              # Ajouter les facteurs between si pr\u00e9sents
-              if (!is.null(between)) {
-                for (b in between) {
-                  ez_data[[b]] <- factor(data[[b]])
-                }
-              }
-
-              # Construire la formule ezANOVA
-              # IMPORTANT: ez::ezANOVA attend:
-              # - dv, wid: bare names (via as.name())
-              # - within, between: vecteurs de CARACT\u00c8RES
-              ez_within <- if (!is.null(within)) as.character(within) else NULL
-              ez_between <- if (!is.null(between)) as.character(between) else NULL
-
-              # Appel ezANOVA - construire dynamiquement les arguments
-              ez_args <- list(
-                data = ez_data,
-                dv = as.name("DV"),        # Bare name pour colonne DV
-                wid = as.name("id"),        # Bare name pour colonne id
-                detailed = TRUE,
-                return_aov = TRUE
-              )
-
-              # Ajouter within seulement si non NULL
-              if (!is.null(ez_within)) {
-                ez_args$within <- ez_within  # Vecteur de caract\u00e8res
-              }
-
-              # Ajouter between seulement si non NULL
-              if (!is.null(ez_between)) {
-                ez_args$between <- ez_between  # Vecteur de caract\u00e8res
-              }
-
-              # Appel ezANOVA avec les arguments conditionnels
-              ez_result <- do.call(ez::ezANOVA, ez_args)
-
-              # Extraire les r\u00e9sultats de sph\u00e9ricit\u00e9
-              if (!is.null(ez_result$`Mauchly's Test for Sphericity`)) {
-                mauchly_results <- ez_result$`Mauchly's Test for Sphericity`
-                p_mauchly <- mauchly_results$p[1]
-
-                if (!is.na(p_mauchly)) {
-                  if (p_mauchly < alpha) {
-                    k <- .vbse(
-                      paste0("==> Sphericity assumption VIOLATED (Mauchly's test p = ",
-                             .format_pval(p_mauchly), ").\n",
-                             "    --> Use Greenhouse-Geisser correction to avoid false positives."),
-                      paste0("==> Hypoth\u00e8se de sph\u00e9ricit\u00e9 VIOL\u00c9E (test de Mauchly p = ",
-                             .format_pval(p_mauchly), ").\n",
-                             "    --> Faire une correction de Greenhouse-Geisser pour \u00e9viter les Faux positifs."),
-                      verbose = verbose, code = code, k = k, cpt = "off"
-                    )
-
-                    # NOUVELLE \u00c9TAPE : Correction de Greenhouse-Geisser
-                    k <- .vbse(
-                      "Greenhouse-Geisser correction:",
-                      "Correction de Greenhouse-Geisser :",
-                      verbose = verbose, code = code, k = k, cpt = "on"
-                    )
-                    k <- .vbse(
-                      "    (Adjustment of ANOVA degrees of freedom)",
-                      "    (Ajustement des degr\u00e9s de libert\u00e9 de l'ANOVA)",
-                      verbose = verbose, code = code, k = k, cpt = "off"
-                    )
-
-                    # Extraire epsilon de Greenhouse-Geisser
-                    if (!is.null(ez_result$`Sphericity Corrections`)) {
-                      gg_eps <- ez_result$`Sphericity Corrections`$GGe[1]
-                      k <- .vbse(
-                        paste0("    a) Measure of sphericity violation\n",
-                               "        ==> Greenhouse-Geisser epsilon = ", round(gg_eps, 3),
-                               " (closer to 1 = less severe violation)."),
-                        paste0("    a) Mesure de la violation de la sph\u00e9ricit\u00e9\n",
-                               "        ==> Epsilon de Greenhouse-Geisser = ", round(gg_eps, 3),
-                               " (plus proche de 1 = violation moins s\u00e9v\u00e8re)."),
-                        verbose = verbose, code = code, k = k, cpt = "off"
-                      )
-                      k <- .vbse(
-                        "    b) Greenhouse-Geisser correction applied (ANOVA p-value adjusted) [anova_test() from {rstatix}].",
-                        "    b) Correction de Greenhouse-Geisser effectu\u00e9e (p-value de l'ANOVA modifi\u00e9e) [anova_test() de {rstatix}].",
-                        verbose = verbose, code = code, k = k, cpt = "off"
-                      )
-                    }
-                  } else {
-                    k <- .vbse(
-                      paste0("==> Sphericity assumption SATISFIED (Mauchly's test p = ",
-                             .format_pval(p_mauchly), ").\n",
-                             "\t--> No correction needed. Standard F-test degrees of freedom apply."),
-                      paste0("==> Hypoth\u00e8se de sph\u00e9ricit\u00e9 RESPECT\u00c9E (test de Mauchly p = ",
-                             .format_pval(p_mauchly), ").\n",
-                             "\t--> Aucune correction n\u00e9cessaire. Les degr\u00e9s de libert\u00e9 standard du test F s'appliquent."),
-                      verbose = verbose, code = code, k = k, cpt = "off"
-                    )
-                  }
-                }
-              } else {
-                k <- .vbse(
-                  "Note: Mauchly's test could not be performed (may require specific design structure).",
-                  "Note : Le test de Mauchly n'a pas pu \u00eatre effectu\u00e9 (peut n\u00e9cessiter une structure de plan sp\u00e9cifique).",
-                  verbose = verbose, code = code, k = k, cpt = "off"
-                )
-              }
-            }, error = function(e) {
-              k <- .vbse(
-                paste0("Warning: Could not perform ezANOVA for sphericity test: ", e$message),
-                paste0("Attention : Impossible d'effectuer ezANOVA pour le test de sph\u00e9ricit\u00e9 : ", e$message),
-                verbose = verbose, code = code, k = k, cpt = "off"
-              )
-            })
-          }
-        }
-          }  # Fin if(FALSE) - bloc d\u00e9sactiv\u00e9
-          #}} FIN BLOC \u00c0 SUPPRIMER
 
         } # Fin if (!robuste) - Tests normalit\u00e9/sph\u00e9ricit\u00e9 D\u00c9PLAC\u00c9S
 

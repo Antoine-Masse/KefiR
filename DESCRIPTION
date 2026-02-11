@@ -53,8 +53,7 @@ Imports:
     vioplot,
     withr,
     MVN,
-    biotools,
-    ez
+    biotools
 Suggests:
     dae,
     doParallel,

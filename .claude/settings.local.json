@@ -7,7 +7,11 @@
       "Bash(Rscript -e \"tryCatch(parse(file=''R/sys_multi_factor_analysis.R''), error=function(e) cat(''PARSE ERROR:'', e$message, ''\\n'')); cat(''sys_multi_factor_analysis.R: OK\\n'')\")",
       "Bash(grep:*)",
       "Bash(Rscript:*)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(ls:*)",
+      "Bash(wc:*)",
+      "Bash(cp:*)",
+      "Bash(xxd:*)"
     ]
   }
 }

@@ -1,3 +1,8 @@
+TDDO List - à faire après le 2026-02-05
+* > corrigraph(data, mu=TRUE, prop=TRUE)
+Erreur dans if (pvals <= alpha) { : 
+  valeur manquante là où TRUE / FALSE est requis ==> Corriger cette erreur lorsque toutes les catégories d'une variable quantitative (sauf une) ont NA pour variable quantitative, l'introduction de mu=TRUE renvoie cette erreur, là où un simple message d'avertissement devrait suffir.
+
 TODO LIST — audit m.test() / sys_multi_factor_analysis.R (2026-02-05)
 
 Objectif
