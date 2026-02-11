@@ -1195,11 +1195,28 @@
 						  ))
 						}
 
-						pvals3 <- med1way(x~g)$p.value
+						pvals3 <- tryCatch(med1way(x~g)$p.value, error = function(e) NA)
 						if (is.na(pvals3)) {
-						  ang <- paste0("Oneway ANOVA of medians [med1way()] - Failed, return NA. The Kruskal-Wallis test should be used for interpretation.")
-						  fr <- paste0("Analyse de la variance \u00e0 un facteur des m\u00e9dianes [med1way()] - \u00c9chec, retourne NA. Le test de Kruskal-Wallis doit \u00eatre utilis\u00e9 pour l'interpr\u00e9tation.")
-						  k <- .vbse(ang, fr, verbose = verbose, code = code, k = k)
+						  k <- .vbse(
+						    "Oneway ANOVA of medians [med1way()] - Failed, return NA.\n\t--> Fallback: Kruskal-Wallis test [kruskal.test()].",
+						    "Analyse de la variance \u00e0 un facteur des m\u00e9dianes [med1way()] - \u00c9chec, retourne NA.\n\t--> Repli : test de Kruskal-Wallis [kruskal.test()].",
+						    verbose = verbose, code = code, k = k
+						  )
+						  pvals3 <- kruskal.test(x, g)$p.value
+						  chosen_test <- "kruskal"
+						  if (!is.na(pvals3) && pvals3 <= alpha) {
+						    k <- .vbse(
+						      paste0("Kruskal-Wallis rank sum test [kruskal.test()]:\n\t==> Significant differences between groups. p-value: ", .format_pval(pvals3), "."),
+						      paste0("Test de Kruskal-Wallis [kruskal.test()] :\n\t==> Diff\u00e9rences significatives entre les groupes. p-value : ", .format_pval(pvals3), "."),
+						      verbose = verbose, code = code, k = k
+						    )
+						  } else if (!is.na(pvals3)) {
+						    k <- .vbse(
+						      paste0("Kruskal-Wallis rank sum test [kruskal.test()]:\n\t==> Non-significant differences between groups. p-value: ", .format_pval(pvals3), "."),
+						      paste0("Test de Kruskal-Wallis [kruskal.test()] :\n\t==> Diff\u00e9rences non significatives entre les groupes. p-value : ", .format_pval(pvals3), "."),
+						      verbose = verbose, code = code, k = k
+						    )
+						  }
 						} else {
 						  if (pvals3 <= alpha) {
 						    ang <- paste0("Oneway ANOVA of medians [med1way()]:\n\t==> Significant differences between the median of groups.\n\t==> p-value: ",  .format_pval(pvals3), ".")

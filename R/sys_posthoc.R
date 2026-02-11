@@ -1776,8 +1776,8 @@
           }
 
           k <- .vbse(
-            "c) Posthoc - Robust median comparisons [medpb2() from {WRS2}, Holm correction].",
-            "c) Posthoc - Comparaisons robustes de m\u00e9dianes [medpb2() de {WRS2}, correction de Holm].",
+            "d) Posthoc - Robust median comparisons [medpb2() from {WRS2}, Holm correction].",
+            "d) Posthoc - Comparaisons robustes de m\u00e9dianes [medpb2() de {WRS2}, correction de Holm].",
             verbose = verbose, code = code, k = k, cpt = "off"
           )
 

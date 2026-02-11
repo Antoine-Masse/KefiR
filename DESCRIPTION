@@ -53,12 +53,12 @@ Imports:
     vioplot,
     withr,
     MVN,
-    biotools
+    biotools,
+    rcompanion
 Suggests:
     dae,
     doParallel,
     rrcov,
-    rcompanion,
     knitr,
     rmarkdown,
     testthat (>= 3.0.0),

@@ -76,6 +76,7 @@
 #' @importFrom DescTools GTest
 #' @importFrom rstatix identify_outliers
 #' @importFrom lmPerm aovp lmp
+#' @importFrom rcompanion scheirerRayHare
 #' @importFrom withr with_options
 #'
 #' @seealso
@@ -3602,8 +3603,7 @@
           verbose = verbose, code = code, k = k, cpt = "on"
         )
 
-        if (requireNamespace("rcompanion", quietly = TRUE)) {
-          tryCatch({
+        tryCatch({
             # Construire formule pour Scheirer-Ray-Hare (main effects + interaction)
             response_var <- all.vars(formula)[1]
             srh_formula <- as.formula(paste0(
@@ -3611,7 +3611,7 @@
             ))
 
             # Test de Scheirer-Ray-Hare
-            # Capturer la sortie pour \u00e9viter l'affichage automatique (DV, Observations, D, MS total)
+            # Capturer la sortie pour\u00e9viter l'affichage automatique (DV, Observations, D, MS total)
             invisible(capture.output({
               srh_result <- rcompanion::scheirerRayHare(
                 formula = srh_formula,
@@ -3678,17 +3678,6 @@
               verbose = verbose, code = code, k = k, cpt = "on"
             )
           })
-        } else {
-          k <- .vbse(
-            "Package 'rcompanion' not available for Scheirer-Ray-Hare. Switching to permutation ANOVA...",
-            "Package 'rcompanion' non disponible pour Scheirer-Ray-Hare. Passage vers ANOVA par permutation...",
-            verbose = verbose, code = code, k = k, cpt = "on"
-          )
-          robust_results$method <- "Scheirer_Ray_Hare_Unavailable"
-
-          # Rediriger vers permutation ANOVA (trait\u00e9 dans CAS 4)
-          n_factors <- 999  # Force passage \u00e0 CAS 4
-        }
 
       }
 
