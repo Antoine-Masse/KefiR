@@ -1720,11 +1720,11 @@
 
             if (differences_detected) {
               k <- .vbse(
-                paste0("Warning! Brunner-Munzel gives different groupings than other tests.\n\t",
-                       "\u2192 Brunner-Munzel is more reliable with different distributions.\n\t",
+                paste0("Warning! Brunner-Munzel gives different groupings than other tests.\n\t\t",
+                       "\u2192 Brunner-Munzel is more reliable with different distributions.\n\t\t",
                        "\u2192 Prioritize Brunner-Munzel results (rightmost column)."),
-                paste0("Attention ! Brunner-Munzel donne des groupements diff\u00e9rents des autres tests.\n\t",
-                       "\u2192 Brunner-Munzel est plus fiable avec des distributions diff\u00e9rentes.\n\t",
+                paste0("Attention ! Brunner-Munzel donne des groupements diff\u00e9rents des autres tests.\n\t\t",
+                       "\u2192 Brunner-Munzel est plus fiable avec des distributions diff\u00e9rentes.\n\t\t",
                        "\u2192 Prioriser les r\u00e9sultats de Brunner-Munzel (colonne la plus \u00e0 droite)."),
                 verbose = verbose, code = code, k = k, cpt = "off"
               )
@@ -1822,8 +1822,8 @@
           }
 
           k <- .vbse(
-            "c) Posthoc - Dunn test [dunnTest() of {FSA}].",
-            "c) Posthoc - Test de Dunn [dunnTest() de {FSA}].",
+            "d) Posthoc - Dunn test [dunnTest() of {FSA}].",
+            "d) Posthoc - Test de Dunn [dunnTest() de {FSA}].",
             verbose = verbose, code = code, k = k, cpt = "off"
           )
 
@@ -1917,8 +1917,8 @@
         }
 
         k <- .vbse(
-          "c) Posthoc - Dunn test [dunnTest() of {FSA}].",
-          "c) Posthoc - Test de Dunn [dunnTest() de {FSA}].",
+          "d) Posthoc - Dunn test [dunnTest() of {FSA}].",
+          "d) Posthoc - Test de Dunn [dunnTest() de {FSA}].",
           verbose = verbose, code = code, k = k, cpt = "off"
         )
 

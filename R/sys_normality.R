@@ -171,6 +171,7 @@
         # Blanca, M.J., Alarcon, R., Arnau, J., Bono, R., & Bendayan, R. (2017). Non-normal data: Is ANOVA still a valid option? Psicothema, 29(4), 552-557. DOI 10.7334/psicothema2016.383
         mysk <- abs(skewness(vector))
         myku <- abs(kurtosis(vector))
+        if (is.na(mysk) || is.na(myku)) return(0)
         if ((mysk<=1) & (myku<=1.5)) {
           return(1)
         } else {
@@ -180,6 +181,7 @@
     } else if (tolerance=="extrem") {
       mysk <- abs(skewness(vector))
       myku <- abs(kurtosis(vector))
+      if (is.na(mysk) || is.na(myku)) return(0)
       if (multi==TRUE) { # Controle des groupes Chaffin et al.
         # Chaffin, W. W., & Rhiel, S. G. (1993). The effect of skewness and kurtosis on the one-sample T test and the impact of knowledge of the population standard deviation. Journal of Statistical Computation and Simulation, 46(1-2), 79-90.
         if ((mysk<=1) & (myku<=4.5) & (n>=20)) {
