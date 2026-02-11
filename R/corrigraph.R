@@ -417,7 +417,7 @@ net <-               delete.edges(net, E(net)[ abs(E(net)$weight) < exclude[1] ]
 			  #print("GTEST")
 			  #print(pvals)
 			  #cat("Test entre",colnames(data)[i],"&",colnames(data)[j],"pval",pvals,"\n")
-			  if (pvals <= alpha) {
+			  if (!inherits(pvals, "try-error") && !is.na(pvals) && pvals <= alpha) {
 				#print(pvals)
 				log10(1/pvals)/10 -> temp ; ifelse(temp>1 ,1 ,temp)-> temp
 				mymat[i,j] <- temp ; mymat[j,i] <- temp
@@ -434,6 +434,7 @@ net <-               delete.edges(net, E(net)[ abs(E(net)$weight) < exclude[1] ]
 	  #	mu=TRUE
 	  #########################
 	  if ((mu == TRUE)&(length(temp_id_factor)>0)) {
+		mu_skipped <- c()
 		if (length(temp_id_factor)>5){
 			barre <- txtProgressBar(min=0,max=length(temp_id_factor),width=50)
 			cat("\nmu calculation\n")
@@ -451,13 +452,23 @@ net <-               delete.edges(net, E(net)[ abs(E(net)$weight) < exclude[1] ]
 			if (NAcat==TRUE) {
 				data_temp[which(is.na(data_temp[,1])),1]<-"MANQUANTES"
 			}
-			pvals <- m.test(data_temp[,2],data_temp[,1],alpha=alpha,return=FALSE,verbose=FALSE,plot=FALSE,boot=FALSE)
+			pvals <- tryCatch(
+				m.test(data_temp[,2],data_temp[,1],alpha=alpha,return=FALSE,verbose=FALSE,plot=FALSE,boot=FALSE),
+				error = function(e) NA
+			)
+			if (is.na(pvals)) {
+				n_grp <- length(unique(data_temp[!is.na(data_temp[,1]),1]))
+				n_obs <- sum(complete.cases(data_temp))
+				mu_skipped <- c(mu_skipped,
+					paste0(colnames(data)[i], " vs ", colnames(data)[j],
+						   " (", n_grp, " groups, ", n_obs, " obs)"))
+			}
 			#print("Message de contrôle")
 			#print(pvals)
 			#print(data_temp[1:10,2])
 			#print(data_temp[1:10,1])
 			# Plante si une variable numérique a été déguisée en facteur
-			if (pvals < alpha) {
+			if (!is.na(pvals) && pvals < alpha) {
 			  log10(1/pvals)/10 -> temp ; ifelse(temp>1 ,1 ,temp)-> temp
 			  mymat[i,j] <- temp ; mymat[j,i] <- temp
 			  mymat2[i,j] <- pvals ; mymat2[j,i] <- pvals
@@ -466,6 +477,10 @@ net <-               delete.edges(net, E(net)[ abs(E(net)$weight) < exclude[1] ]
 		  }
 		}
 		if (length(temp_id_factor)>5){close(barre)}
+		if (length(mu_skipped) > 0) {
+			warning("mu=TRUE: ", length(mu_skipped), " pair(s) returned NA from m.test() and were skipped:\n",
+					paste("  -", mu_skipped, collapse="\n"), "\n")
+		}
 	  }
 	}
 

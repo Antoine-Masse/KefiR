@@ -11,7 +11,8 @@
       "Bash(ls:*)",
       "Bash(wc:*)",
       "Bash(cp:*)",
-      "Bash(xxd:*)"
+      "Bash(xxd:*)",
+      "Bash(git add:*)"
     ]
   }
 }

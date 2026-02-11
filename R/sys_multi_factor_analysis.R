@@ -75,6 +75,7 @@
 #' @importFrom car Anova leveneTest
 #' @importFrom DescTools GTest
 #' @importFrom rstatix identify_outliers
+#' @importFrom lmPerm aovp lmp
 #' @importFrom withr with_options
 #'
 #' @seealso

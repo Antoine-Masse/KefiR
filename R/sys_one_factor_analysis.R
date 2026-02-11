@@ -1314,6 +1314,9 @@
   						k <- .vbse(ang, fr, verbose = verbose, code = code, k = k)
 					  }
 					  } # Fin affichage KS
+					} else {
+					  # return=FALSE & verbose=FALSE : fallback Kruskal-Wallis pour obtenir une p-value
+					  pvals <- kruskal.test(x, g)$p.value
 					} # test uniquement pour aller au bout du raisonnement
 				} # fin d'ajustement \u00e0 la normalit\u00e9 malgr\u00e9 tout
 	  } else { # Si NORMAL
