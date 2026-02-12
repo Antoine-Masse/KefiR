@@ -855,6 +855,30 @@
 						  fr <- paste0("Test d'Ansari-Bradley [ansari.test()] - Les donn\u00e9es ont la m\u00eame variance. p-value : ", .format_pval(pvals))
 						  k <- .vbse(ang,fr,verbose = verbose, code = code, k = k)
 						}
+
+						# Test de Wilcoxon pour la comparaison de position (compl\u00e8te Mood/Ansari)
+						pvals <- suppressWarnings(wilcox.test(x[g==unique(g)[1]],x[g==unique(g)[2]]))$p.value
+						if (!is.na(pvals) && pvals <= alpha) {
+						  ang <- paste0("Non-parametric tests for comparing two groups.\n\t",
+						               "a) Bootstrap median differences analysis [pairwise.boot(mu='median') from {KefiR}]\n\t",
+						               "b) Wilcoxon-Mann-Whitney test [wilcox.test()].\n\t",
+						               "\t==> Significant differences between groups (p = ", .format_pval(pvals), ").")
+						  fr <- paste0("Tests non param\u00e9triques de comparaison des deux groupes.\n\t",
+						              "a) Analyse des diff\u00e9rences de m\u00e9dianes par bootstrap [pairwise.boot(mu='median') de {KefiR}]\n\t",
+						              "b) Test de Wilcoxon-Mann-Whitney [wilcox.test()].\n\t",
+						              "\t==> Diff\u00e9rences significatives entre les groupes (p = ", .format_pval(pvals), ").")
+						  k <- .vbse(ang, fr, verbose = verbose, code = code, k = k)
+						} else {
+						  ang <- paste0("Non-parametric tests for comparing two groups.\n\t",
+						               "a) Bootstrap median differences analysis [pairwise.boot(mu='median') from {KefiR}]\n\t",
+						               "b) Wilcoxon-Mann-Whitney test [wilcox.test()].\n\t",
+						               "\t==> No significant differences between groups (p = ", .format_pval(pvals), ").")
+						  fr <- paste0("Tests non param\u00e9triques de comparaison des deux groupes.\n\t",
+						              "a) Analyse des diff\u00e9rences de m\u00e9dianes par bootstrap [pairwise.boot(mu='median') de {KefiR}]\n\t",
+						              "b) Test de Wilcoxon-Mann-Whitney [wilcox.test()].\n\t",
+						              "\t==> Pas de diff\u00e9rences significatives entre les groupes (p = ", .format_pval(pvals), ").")
+						  k <- .vbse(ang, fr, verbose = verbose, code = code, k = k)
+						}
   						#========================================================
   						#			NON-NORMAL		2 categories		Variances h\u00e9t\u00e9rog\u00e8nes + NON discret
   						#========================================================
