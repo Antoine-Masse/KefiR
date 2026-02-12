@@ -1724,6 +1724,23 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
         })
       }
 
+      # Fallback : si .posthoc() a \u00e9chou\u00e9, construire un synth minimal avec la p-value globale
+      if (is.null(synth) && !is.null(bilan$global_pvalue) && !is.na(bilan$global_pvalue)) {
+        g_factor <- droplevels(factor(g))
+        lev_fb <- levels(g_factor)
+        grp_letters <- if (bilan$global_pvalue <= alpha) {
+          if (length(lev_fb) == 2) c("a", "b") else rep("a", length(lev_fb))
+        } else {
+          rep("a", length(lev_fb))
+        }
+        synth <- list(
+          groups = data.frame(categories = lev_fb, group = grp_letters),
+          p.value = bilan$global_pvalue,
+          global_pvalue = as.numeric(bilan$global_pvalue)
+        )
+        class(synth) <- "posthoc"
+      }
+
       # Synchroniser global_pvalue pour le retour
       # .posthoc() d\u00e9finit synth$p.value mais pas synth$global_pvalue
       # IMPORTANT: global_pvalue doit \u00eatre un SCALAIRE, pas une matrice

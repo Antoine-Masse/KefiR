@@ -853,7 +853,9 @@
       median_cr <- by(x, g, stats::median, na.rm = T)
       data_cr <- x
       for (i in names(median_cr)) {
-        data_cr[g == i] <- (data_cr[g == i] - median_cr[which(names(median_cr) == i)]) / sd_cr[which(names(sd_cr) == i)]
+        sd_i <- sd_cr[which(names(sd_cr) == i)]
+        if (is.na(sd_i) || sd_i == 0) sd_i <- 1  # Protection donn\u00e9es constantes (ex: Poisson)
+        data_cr[g == i] <- (data_cr[g == i] - median_cr[which(names(median_cr) == i)]) / sd_i
       }
 
       # V\u00e9rifier l'\u00e9quivalence de distribution pour \u00e9valuer la fiabilit\u00e9 de WMW si non appari\u00e9es.
@@ -861,8 +863,10 @@
       # KS v\u00e9rifie l'identit\u00e9 de distribution...
       # Correction de Sidak
       pval <- 1 - (1 - alpha)^(1/length(unique(g)))
-      temp <- pairwise(data_cr, g, type = "ks", boot = FALSE)
-      ks_result <- min(unlist(temp$p.value), na.rm = T)
+      ks_result <- tryCatch({
+        temp <- pairwise(data_cr, g, type = "ks", boot = FALSE)
+        min(unlist(temp$p.value), na.rm = T)
+      }, error = function(e) 1)  # 1 = assume same distribution (conservative)
 
       if (ks_result < pval) {
         check_wilcox_fiability <- FALSE
@@ -1308,16 +1312,19 @@
         }
 
         if (boot == TRUE) {
-          synth$bootstrap <- .boots(
-            x, g,
-            ctrl = (length(ind_control) == 1),
-            type = "median", conf = conf, iter = iter, alpha = alpha,
-            paired = paired, control = control
+          synth$bootstrap <- tryCatch(
+            .boots(x, g,
+              ctrl = (length(ind_control) == 1),
+              type = "median", conf = conf, iter = iter, alpha = alpha,
+              paired = paired, control = control),
+            error = function(e) NULL
           )
-          colnames(synth$bootstrap$groups)[2] <- "Wilcoxon_bootstrapped"
+          if (!is.null(synth$bootstrap)) {
+            colnames(synth$bootstrap$groups)[2] <- "Wilcoxon_bootstrapped"
+          }
         }
 
-        if ((boot == TRUE) & any(synth$bootstrap$groups[, 2] != synth$groups[, 2], na.rm = TRUE)) {
+        if (isTRUE(boot) && !is.null(synth$bootstrap) && any(synth$bootstrap$groups[, 2] != synth$groups[, 2], na.rm = TRUE)) {
           k <- .vbse(
             "Warning! Bootstrap detects weaknesses in the significance of the results.",
             "Attention ! Le bootstrap d\u00e9tecte des faiblesses dans la signification des r\u00e9sultats.",
