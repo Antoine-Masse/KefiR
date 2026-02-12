@@ -800,10 +800,14 @@
 			sd_cr <- by(x,g,stats::sd,na.rm=T) ; median_cr <- by(x,g,stats::median,na.rm=T)
 			data_cr <- x
 			for (i in names(median_cr)) {
-				data_cr[g==i] <- (data_cr[g==i]-median_cr[which(names(median_cr)==i)])/sd_cr[which(names(sd_cr)==i)]
+				sd_i <- sd_cr[which(names(sd_cr)==i)]
+				if (is.na(sd_i) || sd_i == 0) sd_i <- 1  # Protection données constantes (ex: Poisson)
+				data_cr[g==i] <- (data_cr[g==i]-median_cr[which(names(median_cr)==i)])/sd_i
 			}
-			temp <- pairwise(data_cr,g,type="ks",silent=silent,boot=FALSE)
-			ks_result <- min(unlist(temp$p.value),na.rm=T)
+			ks_result <- tryCatch({
+				temp <- pairwise(data_cr,g,type="ks",silent=silent,boot=FALSE)
+				min(unlist(temp$p.value),na.rm=T)
+			}, error = function(e) 1)  # 1 = assume same distribution (conservative)
 
 			#========================================================
 			#			NON-NORMAL		2 categories

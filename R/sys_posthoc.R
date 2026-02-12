@@ -1260,10 +1260,12 @@
         #       Si non appari\u00e9
         #=====================================================
 
-        # a) Bootstrap sur l'indice moyen
+        # Bootstrap sur l'indice moyen
+        ph_idx <- 0  # Compteur dynamique pour la num\u00e9rotation des posthocs
+        ph_idx <- ph_idx + 1; ph_lbl <- paste0(letters[ph_idx], ")")
         k <- .vbse(
-          "a) Posthoc - Analysis of median differences by bootstrap [pairwise.boot(mu='median') from {KefiR}].",
-          "a) Posthoc - Analyse des diff\u00e9rences de m\u00e9dianes par bootstrap [pairwise.boot(mu='median') de {KefiR}]",
+          paste0(ph_lbl, " Posthoc - Analysis of median differences by bootstrap [pairwise.boot(mu='median') from {KefiR}]."),
+          paste0(ph_lbl, " Posthoc - Analyse des diff\u00e9rences de m\u00e9dianes par bootstrap [pairwise.boot(mu='median') de {KefiR}]."),
           verbose = verbose, code = code, k = k, cpt = "off"
         )
 
@@ -1272,10 +1274,11 @@
         synth2 <- pairwise(x, g, type = "boot", alpha = alpha, control = control, boot = FALSE,
                            boot_type = final_boot_type, conf = conf, iter = iter, debug = debug)
 
-        # b) Test de Wilcoxon
+        # Test de Wilcoxon
+        ph_idx <- ph_idx + 1; ph_lbl <- paste0(letters[ph_idx], ")")
         k <- .vbse(
-          "b) Post-hoc - Test de Wilcoxon-Mann-Whitney [wilcox.test()].",
-          "b) Posthoc - Test de Wilcoxon-Mann-Witney [wilcox.test()].",
+          paste0(ph_lbl, " Post-hoc - Wilcoxon-Mann-Whitney test [wilcox.test()]."),
+          paste0(ph_lbl, " Posthoc - Test de Wilcoxon-Mann-Whitney [wilcox.test()]."),
           verbose = verbose, code = code, k = k, cpt = "off"
         )
 
@@ -1375,11 +1378,12 @@
               # TOUJOURS afficher ce message (verbose=TRUE) m\u00eame si .posthoc() est en mode silencieux
               # car c'est un test suppl\u00e9mentaire non mentionn\u00e9 dans .one_factor_analysis()
               BM_signif <- (synth_BM$p.value <= alpha)
+              ph_idx <- ph_idx + 1; ph_lbl <- paste0(letters[ph_idx], ")")
               k <- .vbse(
-                paste0("c) Posthoc - Brunner-Munzel test [brunner.munzel.test()].\n\t",
+                paste0(ph_lbl, " Posthoc - Brunner-Munzel test [brunner.munzel.test()].\n\t",
                        if (BM_signif) "\t==> Significant differences between groups (p = " else "\t==> No significant differences between groups (p = ",
                        .format_pval(synth_BM$p.value), ")."),
-                paste0("c) Posthoc - Test de Brunner-Munzel [brunner.munzel.test()].\n\t",
+                paste0(ph_lbl, " Posthoc - Test de Brunner-Munzel [brunner.munzel.test()].\n\t",
                        if (BM_signif) "\t==> Diff\u00e9rences significatives entre les groupes (p = " else "\t==> Pas de diff\u00e9rences significatives entre les groupes (p = ",
                        .format_pval(synth_BM$p.value), ")."),
                 verbose = TRUE, k = k, cpt = "off"  # Force display even in silent mode
@@ -1524,6 +1528,8 @@
         )
       }
 
+      ph_idx <- 0  # Compteur dynamique pour la numérotation des posthocs
+
       #------------------------------------------
       # 0) Bootstrap sur l'indice median (Wilcoxon)
       #------------------------------------------
@@ -1531,9 +1537,10 @@
         cat("# Analyse des diff\u00e9rences de m\u00e9dianes par bootstrap\npairwise(x,g,type='boot')")
       }
 
+      ph_idx <- ph_idx + 1; ph_lbl <- paste0(letters[ph_idx], ")")
       k <- .vbse(
-        "a) Posthoc - Analysis of median differences using bootstrap [pairwise.boot() from {KefiR}].",
-        "a) Posthoc - Analyse des diff\u00e9rences de m\u00e9dianes par bootstrap [pairwise.boot() de {KefiR}].",
+        paste0(ph_lbl, " Posthoc - Analysis of median differences using bootstrap [pairwise.boot() from {KefiR}]."),
+        paste0(ph_lbl, " Posthoc - Analyse des diff\u00e9rences de m\u00e9dianes par bootstrap [pairwise.boot() de {KefiR}]."),
         verbose = verbose, code = code, k = k, cpt = "off"
       )
 
@@ -1547,9 +1554,10 @@
         cat("# Wilcoxon par paires#pairwise.wilcox.test(x,g,p.adjust.method='BH')\n")
       }
 
+      ph_idx <- ph_idx + 1; ph_lbl <- paste0(letters[ph_idx], ")")
       k <- .vbse(
-        "b) Posthoc - Wilcoxon-Mann-Whitney test [pairwise.wilcox.test()].",
-        "b) Posthoc - Test de Wilcoxon-Mann-Whitney [pairwise.wilcox.test()].",
+        paste0(ph_lbl, " Posthoc - Wilcoxon-Mann-Whitney test [pairwise.wilcox.test()]."),
+        paste0(ph_lbl, " Posthoc - Test de Wilcoxon-Mann-Whitney [pairwise.wilcox.test()]."),
         verbose = verbose, code = code, k = k, cpt = "off"
       )
 
@@ -1582,9 +1590,10 @@
           cat("# Nemenyi - post-hoc sur donn\u00e9es appari\u00e9es\nlibrary(PMCMRplus)\nfrdAllPairsNemenyiTest(x~g)\n")
         }
 
+        ph_idx <- ph_idx + 1; ph_lbl <- paste0(letters[ph_idx], ")")
         k <- .vbse(
-          "c) Posthoc - Paired groups [frdAllPairsNemenyiTest() of {PMCMRplus}].",
-          "c) Posthoc - Test post-hoc sur groupes non normaux appari\u00e9s [frdAllPairsNemenyiTest() of {PMCMRplus}].",
+          paste0(ph_lbl, " Posthoc - Paired groups [frdAllPairsNemenyiTest() of {PMCMRplus}]."),
+          paste0(ph_lbl, " Posthoc - Test post-hoc sur groupes non normaux appari\u00e9s [frdAllPairsNemenyiTest() of {PMCMRplus}]."),
           verbose = verbose, code = code, k = k, cpt = "off"
         )
 
@@ -1630,9 +1639,10 @@
                   "p.adjust(p_values_vector, method='holm')\n")
         }
 
+        ph_idx <- ph_idx + 1; ph_lbl <- paste0(letters[ph_idx], ")")
         k <- .vbse(
-          "c) Posthoc - Brunner-Munzel pairwise test [brunner.munzel.test() from {lawstat}, Holm correction].",
-          "c) Posthoc - Test de Brunner-Munzel par paires [brunner.munzel.test() de {lawstat}, correction de Holm].",
+          paste0(ph_lbl, " Posthoc - Brunner-Munzel pairwise test [brunner.munzel.test() from {lawstat}, Holm correction]."),
+          paste0(ph_lbl, " Posthoc - Test de Brunner-Munzel par paires [brunner.munzel.test() de {lawstat}, correction de Holm]."),
           verbose = verbose, code = code, k = k, cpt = "off"
         )
 
@@ -1775,9 +1785,10 @@
                 "result_medpb2 <- .pairwise_medpb2(x, g, alpha = ", alpha, ", nboot = ", iter, ")\n")
           }
 
+          ph_idx <- ph_idx + 1; ph_lbl <- paste0(letters[ph_idx], ")")
           k <- .vbse(
-            "d) Posthoc - Robust median comparisons [medpb2() from {WRS2}, Holm correction].",
-            "d) Posthoc - Comparaisons robustes de m\u00e9dianes [medpb2() de {WRS2}, correction de Holm].",
+            paste0(ph_lbl, " Posthoc - Robust median comparisons [medpb2() from {WRS2}, Holm correction]."),
+            paste0(ph_lbl, " Posthoc - Comparaisons robustes de m\u00e9dianes [medpb2() de {WRS2}, correction de Holm]."),
             verbose = verbose, code = code, k = k, cpt = "off"
           )
 
@@ -1821,9 +1832,10 @@
             cat("# Test de Dunn\nlibrary(FSA)\ndunnTest(x ~ g, method = 'holm')\n")
           }
 
+          ph_idx <- ph_idx + 1; ph_lbl <- paste0(letters[ph_idx], ")")
           k <- .vbse(
-            "d) Posthoc - Dunn test [dunnTest() of {FSA}].",
-            "d) Posthoc - Test de Dunn [dunnTest() de {FSA}].",
+            paste0(ph_lbl, " Posthoc - Dunn test [dunnTest() of {FSA}]."),
+            paste0(ph_lbl, " Posthoc - Test de Dunn [dunnTest() de {FSA}]."),
             verbose = verbose, code = code, k = k, cpt = "off"
           )
 
@@ -1858,10 +1870,11 @@
                 "lincon(x ~ g, tr = ", round(trimmage, 3), ")\n")
           }
 
+          ph_idx <- ph_idx + 1; ph_lbl <- paste0(letters[ph_idx], ")")
           k <- .vbse(
-            paste0("c) Posthoc - Robust comparisons on trimmed means [lincon() from {WRS2}].\n",
+            paste0(ph_lbl, " Posthoc - Robust comparisons on trimmed means [lincon() from {WRS2}].\n",
                    "\t\tTrimming level: ", round(trimmage * 100, 1), "% (lower and upper)."),
-            paste0("c) Posthoc - Comparaisons robustes sur moyennes tronqu\u00e9es [lincon() de {WRS2}].\n",
+            paste0(ph_lbl, " Posthoc - Comparaisons robustes sur moyennes tronqu\u00e9es [lincon() de {WRS2}].\n",
                    "\t\tNiveau de troncature : ", round(trimmage * 100, 1), "% (inf\u00e9rieur et sup\u00e9rieur)."),
             verbose = verbose, code = code, k = k, cpt = "off"
           )
@@ -1916,9 +1929,10 @@
           cat("# Test de Dunn\nlibrary(FSA)\ndunnTest(x ~ g, method = 'holm')\n")
         }
 
+        ph_idx <- ph_idx + 1; ph_lbl <- paste0(letters[ph_idx], ")")
         k <- .vbse(
-          "d) Posthoc - Dunn test [dunnTest() of {FSA}].",
-          "d) Posthoc - Test de Dunn [dunnTest() de {FSA}].",
+          paste0(ph_lbl, " Posthoc - Dunn test [dunnTest() of {FSA}]."),
+          paste0(ph_lbl, " Posthoc - Test de Dunn [dunnTest() de {FSA}]."),
           verbose = verbose, code = code, k = k, cpt = "off"
         )
 
