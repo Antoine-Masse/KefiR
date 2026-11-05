@@ -1,0 +1,7 @@
+.libPaths(c("C:/Users/masse/Desktop/KefiR/mbay-lib", .libPaths()))
+suppressMessages(library(BayesFactor)); set.seed(4242)
+N<-300; n<-c(5,5,40); s<-c(4,4,1); g<-factor(rep(1:3,n))
+res<-t(replicate(N,{y<-rnorm(sum(n),0,rep(s,n)); bf<-exp(anovaBF(y~g,data=data.frame(y,g),progress=FALSE)@bayesFactor$bf); c(P=bf/(1+bf),pa=anova(lm(y~g))[1,5],pw=oneway.test(y~g)$p.value,pk=kruskal.test(y,g)$p.value)}))
+cat("H0 vraie, n=(5,5,40), sd=(4,4,1), N=",N,"\n")
+cat("P>0.95:",mean(res[,"P"]>.95)," IC:",binom.test(sum(res[,"P"]>.95),N)$conf.int," P>0.5:",mean(res[,"P"]>.5),"\n")
+cat("aov p<.05:",mean(res[,"pa"]<.05)," Welch p<.05:",mean(res[,"pw"]<.05)," Kruskal p<.05:",mean(res[,"pk"]<.05),"\n")

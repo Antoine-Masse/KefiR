@@ -1,0 +1,5 @@
+g++: C:\RBUILD~1\4.4\X86_64~1.POS\bin\G__~1.EXE 
+[1] "G__~1.EXE (GCC) 13.2.0"
+[1] TRUE
+
+-- brm(y~F) n=60, 2 chaines, 1000 it, save_pars(all) 

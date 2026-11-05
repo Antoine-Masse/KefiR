@@ -1,0 +1,127 @@
+BayesFactor 0.9.12.4.8 ; bayestestR 0.20.0 
+
+=== 1. Source de bayestestR : la definition appariee ===
+La regle est lue dans bayesfactor_inclusion.bayesfactor_models et .includes_interaction :
+function (eff, effnames) 
+{
+    eff_b <- strsplit(eff, ":", fixed = TRUE)
+    effnames_b <- strsplit(effnames, ":", fixed = TRUE)
+    is_int <- lengths(effnames_b) > 1
+    temp <- logical(length(effnames))
+    for (rr in seq_along(effnames)) {
+        if (is_int[rr]) {
+            temp[rr] <- all(eff_b[[1]] %in% effnames_b[[rr]]) & 
+                !all(effnames_b[[rr]] %in% eff_b[[1]])
+        }
+    }
+    temp
+}
+<bytecode: 0x000001ff01a345b8>
+<environment: namespace:bayestestR>
+function (models, match_models = FALSE, prior_odds = NULL, ...) 
+{
+    models <- bayesfactor_models.BFBayesFactor(models)
+    bayesfactor_inclusion.bayesfactor_models(models, match_models = match_models, 
+        prior_odds = prior_odds)
+}
+<bytecode: 0x000001ff01a52188>
+<environment: namespace:bayestestR>
+        if (isTRUE(match_models)) {
+            idx1 <- df.interaction[eff, ]
+            idx2 <- df.interaction[, eff]
+            has_not_high_order_interactions <- !apply(effects.matrix[, 
+                idx1, drop = FALSE], 1, any)
+            ind_include <- has_not_high_order_interactions & 
+                effects.matrix[, eff]
+            ind_exclude <- apply(effects.matrix[, idx2, drop = FALSE], 
+                1, all) & has_not_high_order_interactions & !effects.matrix[, 
+                eff]
+            df.model_temp <- df.model[ind_include | ind_exclude, 
+                , drop = FALSE]
+        }
+        else {
+            df.model_temp <- df.model
+        }
+        mwith <- which(df.model_temp[[eff]])
+
+extractBF lit des valeurs deja stockees ; le source de bayesfactor_models.BFBayesFactor
+ne contient aucun appel d'echantillonnage (recompute est absent) :
+  appel a recompute dans le source : FALSE 
+  extractBF dans le source : TRUE 
+
+=== 2. Le calcul de agent_02 : graine 221, whichModels = 'all' ===
+      modele         bf        error
+           A 18.1343746 2.734386e-09
+           B  0.3145700 9.867519e-05
+         A:B  0.4048160 3.250280e-04
+       A + B  6.4448757 2.690464e-02
+     A + A:B  7.9178313 9.635558e-03
+     B + A:B  0.1298609 1.283711e-02
+ A + B + A:B  2.9305522 1.256905e-02
+Objet inchange apres l'appel a bayestestR : TRUE 
+  bayestestR apparie, A:B                                    : 0.441555
+  A la main (A+B+A:B)/(A+B)                                  : 0.454710
+  mean(A:B, A+A:B, B+A:B, A+B+A:B)/(A+B), MEME objet         : 0.441555
+  ecart bayestestR - formule 4 modeles                       : -5.55e-17
+  p_prior bayestestR de A:B = 0.500, soit 4/8 modeles dans M+ (non renormalise)
+  .bay_inclusion sur cet espace, 'matched' : refus : Inclusion appariée refusée, marginalité violée par : A:B, A+A:B, A:B+B. 
+
+=== 3. Variabilite Monte Carlo de ce rapport, a titre de comparaison ===
+Meme jeu de donnees, nouveaux anovaBF. L'ecart agent_02 a log = 0.0294
+  (A+B+A:B)/(A+B)   : 0.4671 0.4615 0.47 0.459 0.444 0.453 0.4738 0.4495 
+  formule 4 modeles : 0.459 0.451 0.4702 0.4503 0.4352 0.44 0.4456 0.4381 
+  ET de log(rapport) : 0.0227 ; ecart moyen des deux definitions (log, meme objet) : 0.0245
+
+=== 4. Espace marginal : anovaBF whichModels = 'withmain', graine 221 ===
+                   bf        error
+A           18.134375 2.734386e-09
+B            0.314570 9.867519e-05
+A + B        6.576269 5.101764e-02
+A + B + A:B  2.956789 1.687295e-02
+
+-- match_models = TRUE contre type = 'matched' (meme objet)
+ term log_bf_kefir log_bf_bayestestR        ecart prior_kefir prior_bt
+    A     2.933724          2.933724  0.00000e+00         0.5      0.4
+    B    -1.021294         -1.021294 -2.22045e-16         0.5      0.4
+  A:B    -0.799364         -0.799364 -2.22045e-16         0.5      0.2
+ p_h1_kefir p_post_bt
+   0.949489  0.852620
+   0.264775  0.237763
+   0.310162  0.102022
+
+-- match_models = FALSE contre type = 'all' (meme objet)
+ term log_bf_kefir log_bf_bayestestR        ecart prior_kefir prior_bt
+    A     2.641281          2.641281  0.00000e+00         0.6      0.6
+    B    -1.069721         -1.069721  0.00000e+00         0.6      0.6
+  A:B    -0.788668         -0.788668 -4.44089e-16         0.2      0.2
+ p_h1_kefir p_post_bt
+   0.954642  0.954642
+   0.339784  0.339784
+   0.102022  0.102022
+
+=== 5. Second jeu, desequilibre, graine fixe ===
+                     bf        error
+A             0.6109658 2.733456e-04
+B           124.2654133 1.254371e-10
+A + B       101.5084814 1.255070e-02
+A + B + A:B  54.2153481 1.296073e-02
+
+-- match_models = TRUE contre type = 'matched'
+ term log_bf_kefir log_bf_bayestestR       ecart prior_kefir prior_bt
+    A    -0.204292         -0.204292 3.33067e-16         0.5      0.4
+    B     4.942700          4.942700 0.00000e+00         0.5      0.4
+  A:B    -0.627178         -0.627178 0.00000e+00         0.5      0.2
+ p_h1_kefir p_post_bt
+   0.449104  0.362640
+   0.992915  0.801753
+   0.348151  0.192526
+
+-- match_models = FALSE contre type = 'all'
+ term log_bf_kefir log_bf_bayestestR        ecart prior_kefir prior_bt
+    A   -0.1839001        -0.1839001 -1.11022e-16         0.6      0.6
+    B    4.7524522         4.7524522  0.00000e+00         0.6      0.6
+  A:B   -0.0473856        -0.0473856  2.22045e-16         0.2      0.2
+ p_h1_kefir p_post_bt
+   0.555166  0.555166
+   0.994279  0.994279
+   0.192526  0.192526

@@ -1,0 +1,2 @@
+k <- c("Westfall1997","Mathot2017","bayestestRrope","Sellke2001","BarbieriBerger2004","vanDoorn2021","Heck2021","Oelrich2020","Gelman2008","Mulder2019","Peixoto1990","Modrak2025","Hoijtink2019","Kruschke2018","MoreyRouder2011","Chipman1996","ScottBerger2010","Barr2013","Hoeting1999","Rouder2016","vanDoorn2020","Kruschke2013","Gelman2006","Langsrud2003","MulderGu2022")
+set.seed(20261105); cat(sample(k,8),"\n")

@@ -1,0 +1,121 @@
+Levene p: 4.637707e-15  bf.test p: 0.6665359 
+formula= : ERREUR: Le paramètre 'formula' doit être une formule valide. 
+1) Type de modèle détecté : ANOVA (facteurs catégoriques uniquement).
+2) Effets aléatoires détectés dans la formule (terme Error) : y ~ G * T + Error(id/T)
+	Structure d'effets aléatoires complexe détectée (plan emboîté ou plusieurs facteurs intra-sujet).
+3) Plan apparié / mesures répétées détecté. Réalisation de contrôles spécifiques...
+	Facteur(s) intra-sujet auto-détecté(s) : G, T
+4) Vérification de la structure du plan à mesures répétées (équilibrage et unicité)...
+	Structure ATTENDUE du plan (vérification des réplicats) :
+	• Nombre de sujets : 24
+	• Conditions par sujet : 6 (toutes combinaisons facteurs intra-sujet)
+	• Total observations : 72
+	PROBLÈMES détectés dans la structure du plan :
+	• Déséquilibre : 24 sujet(s) n'ont pas 6 observations
+	  Sujets problématiques : 1, 2, 3, 4, 5, ...
+	• Données manquantes : 72 cellule(s) avec 0 observation (attendu 1)
+	• Observations réelles : 72 (attendu 144)
+	RECOMMANDATION : Modèle à effets mixtes (lmer) requis.
+	Raison : Déséquilibre/doublons/données manquantes violent hypothèses ANOVA-RM standard.
+	--> Vers modèle à effets mixtes (lmer)
+5) ASSOMPTION DE BASE : Indépendance des observations (contexte mesures répétées).
+	C'est une assomption de PLAN qui ne peut pas être testée statistiquement.
+	Vérifiez que :
+	  • Mesures répétées sur les mêmes sujets (attendu)
+	  • Pas de cluster supplémentaire au-delà du sujet
+	  • Effets d'ordre/report contrôlés
+	  • Pas d'abandon systématique
+6) Modèle mixte sélectionné selon les caractéristiques du design :
+	- Nombre de facteurs : 2
+	- Design : déséquilibré
+	- Doublons : non
+	- Sujets incomplets : 24 sujets
+7) Ajustement modèle à effets mixtes [lmer() {lmerTest}]
+	Formule : y ~ G + T + (1 | id)
+	Effets aléatoires : intercept aléatoire
+	Méthode : REML (Maximum vraisemblance restreinte)
+	Approximation DL : Satterthwaite (pour p-values)
+8) Analyse des p-values du modèle et de ses coefficients.
+	Veuillez noter, modèle mixte.
+	==> Calcul d'une p-value globale pour la comparaison du modèle avec effets aléatoires seuls par test du rapport de vraisemblance (LRT).
+	L'effet fixe combiné à l'effet aléatoire est plus pertinent que l'effet aléatoire seul. p-value : 0.049
+	L'effet aléatoire améliore le modèle par rapport aux effets fixes seuls.
+		Confirmation par ranova().
+		Attention !
+	Mauvaise signification d'au moins un terme du modèle. max(p.value) : 0.54
+9) Contrôle de la normalité des résidus avec tolérance si n>15.
+	==> Skewness <=2 et Kurtosis <=7.
+	==> Les résidus présentent une normalité acceptable.
+10) Normalité des effets aléatoires pour au moins une variable aléatoire. p.value : 0.73
+11) Analyse de l'indépendance des résidus
+	Attention : uniquement en triant les valeurs en fonction de Y et en fonction des variables d'effet aléatoire.
+	Test de Durbin-Watson (dwtest()) - Bonne indépendance des résidus. p.value : 0.35
+12) - Analyse de la variance des résidus.
+13) - Analyse de l'effet de levier.
+	Attention !
+	Distance de Cook (cooks.distance()) - Effet de levier. max(cooks.distance()) : 1.0148
+14) ATTENTION : Certaines vérifications ont échoué (voir bilan valreg() ci-dessus).
+            Évaluer si les violations sont sévères pour votre analyse :
+            - Coefficients non-significatifs : Effets faibles possibles ou multicolinéarité
+            - Violations normalité : Transformation données (log, sqrt, Box-Cox) ou GLMM
+            - Hétéroscédasticité : Utiliser nlme::lme() avec structure de variance
+            - Simplification modèle : Réduire structure effets aléatoires si problèmes convergence
+	ANOVA Type III pour modèle mixte [anova() {lmerTest}]
+	Approximation DL : Satterthwaite
+
+Type III Analysis of Variance Table with Satterthwaite's method
+   Sum Sq Mean Sq NumDF DenDF F value Pr(>F)  
+G  0.6106  0.6106     1    22  0.3923 0.5376  
+T 11.9780  5.9890     2    46  3.8476 0.0285 *
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+		Interprétation : Effet(s) fixe(s) significatif(s) : T
+	                 Ces facteurs montrent des effets au niveau populationnel.
+	                 Les effets aléatoires capturent les variations inter-sujets.
+
+	Composantes variance [VarCorr() {lme4}] :
+
+ Groups   Name        Std.Dev.
+ id       (Intercept) 1.2124  
+ Residual             1.2476  
+
+	Coefficients effets fixes [fixef() {lme4}] :
+
+(Intercept)          Gb         Tt2         Tt3 
+ -0.0370132   0.3605852  -0.4937076   0.5053511 
+
+15) Comparaisons post-hoc par paires pour modèle mixte (méthode emmeans) :
+	Effet(s) significatif(s) : T
+	Méthode d'ajustement : tukey
+	Niveau de confiance : 0.95
+Note: adjust = "tukey" was changed to "sidak"
+because "tukey" is only appropriate for one set of pairwise comparisons
+		Effet : T
+		  t1 - t2 : diff = 0.494 (SE = 0.36), p = 0.36 ns
+		  t1 - t3 : diff = -0.505 (SE = 0.36), p = 0.35 ns
+		  t2 - t3 : diff = -0.999 (SE = 0.36), p = 0.021 *
+		Affichage compact par lettres (groupes ne partageant pas une lettre diffèrent à alpha = 0.05) :
+		  t2 : EMM = -0.35, groupe = a
+		  t1 : EMM = 0.143, groupe = ab
+		  t3 : EMM = 0.649, groupe = b
+
+m.test() - version 02 bêta 2026 - envoyer ce bilan à antoine.masse@u-bordeaux.fr en cas d'anomalie.
+---effects---
+  term    p.value
+1    G 0.53755828
+2    T 0.02850395
+verbose=FALSE: ERREUR: $ operator is invalid for atomic vectors 
+
+Error: id
+          Df Sum Sq Mean Sq F value Pr(>F)
+G          1   2.34   2.340   0.392  0.538
+Residuals 22 131.26   5.966               
+
+Error: id:T
+          Df Sum Sq Mean Sq F value Pr(>F)  
+T          2  11.98   5.989   4.264 0.0203 *
+G:T        2   9.80   4.898   3.487 0.0393 *
+Residuals 44  61.81   1.405                 
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1

@@ -1,0 +1,91 @@
+# Décisions structurantes de m.bay
+
+État : **PROPOSÉ** = attend l'avis d'Antoine (rien de difficile à défaire n'a été engagé) ; **ACQUIS** = imposé par sa consigne ou sans alternative sérieuse. Chiffres : `VALIDATION.md`. Modèles et formules : `METHODOLOGIE.md`.
+
+## D1. Moteur de calcul : PROPOSÉ
+
+| Plan | Moteur proposé | Coût pour `install_github` |
+|---|---|---|
+| 2 groupes, k groupes, multi-facteurs, ANCOVA, apparié, mesures répétées, split-plot (gaussien) | **BayesFactor en Imports** | 5 paquets de plus que KefiR, environ 17 Mo, 35 s, sans compilateur |
+| BF d'inclusion par terme | Code interne (`R/sys_bay_core.R`) | aucun |
+| MANOVA | Code interne (formule Normal-Inverse-Wishart) | aucun |
+| Pentes aléatoires, non gaussien, robuste | **rstanarm en Suggests**, appel conditionnel avec message d'installation | au moins 26 paquets, 207 Mo, 189 s, seulement pour qui le demande |
+
+**Écartés.**
+- **brms par défaut** : échoue sans compilateur (« 'make' not found » mesuré) ; un étudiant sous Windows n'a pas Rtools en général. Avec Rtools 4.4 hors PATH, la compilation a dépassé 6 minutes sans conclusion.
+- **rstanarm en Imports** : 207 Mo au minimum imposés à tous les utilisateurs de KefiR, y compris ceux de `m.test()`.
+- **BayesFactor en Suggests** : `install_github` ne l'installerait pas, `m.bay()` serait cassé d'origine pour son usage principal.
+- **BAS** : installé, jamais comparé. Non écarté sur le fond, reste à évaluer pour l'exploration au-delà de 4 facteurs.
+- **bayestestR en Imports** : son calcul d'inclusion est reproduit à la main ; pas de raison d'ajouter deux paquets.
+
+**Réserves à connaître.**
+- BayesFactor ne protège pas : `family=binomial()` et `var.equal=FALSE` sont acceptés et ignorés en silence, `cbind` et `(1+x|id)` donnent une erreur obscure, `x:id` aléatoire donne `BF=NA`. **`m.bay()` doit refuser lui-même ces cas.**
+- L'erreur numérique annoncée monte jusqu'à 80 % sur certains modèles à 3 facteurs (n=100) : elle doit être lue, recalculée (`recompute`) ou signalée à l'utilisateur.
+- 4 facteurs : 205 s à n=100, non terminé à n=500 au bout de 5 minutes. Temps à arbitrer.
+- Sur les mêmes données, **rstanarm + bridgesampling donne BF=0,207 et anovaBF BF=3,46**, parce que les a priori diffèrent. Changer de moteur peut renverser la conclusion : on ne bascule jamais de moteur sans le dire, et le bilan annonce l'a priori de la voie employée. Le défaut de rstanarm n'est pas comparable au défaut JZS : une voie Stan devra fixer des a priori alignés sur le défaut, et cette équivalence reste à établir.
+
+## D2. Définition de P(terme a un effet | données) : PROPOSÉ
+
+BF d'inclusion **apparié** (analogue Type II) avec π = 1/2 par terme. Alternatives : tous modèles (cohérent, mais uniforme sur les modèles donne 0,6/0,2 à 2 facteurs et 0,737/0,316/0,053 à 3 facteurs, donc pas neutre) ; modèle plein moins T (analogue Type III).
+Prix franc : les probabilités de termes ne sont pas les marginales d'une même loi jointe.
+
+**Cette proposition est mise en défaut (bloquant).** Reproduit à la main (`scripts/agent_11_verif_croisement.R`) sur un croisement 2×2 pur : P(A) apparié = **0,215**, soit « Non 0,785 », alors que P(A:B) = 1,000 et que A agit manifestement, avec un signe opposé selon B. Le BF apparié A est de plus exactement le conditionnel de l'uniforme sur {B, A+B} (identité vérifiée) : « π = 1/2 » n'est donc pas un a priori distinct de celui qu'on prétendait rejeter.
+
+**Nouvelle proposition.** La question d'Antoine est « ce facteur joue-t-il un rôle ? », pas « son effet principal moyen est-il non nul ? ». Répondre donc :
+1. en première ligne, **P(A joue un rôle, seul ou en interaction)**, marginale d'une loi jointe unique et cohérente sur les modèles respectant la marginalité (type `all` de `.bay_inclusion`), avec la loi a priori annoncée ; dans le croisement ci-dessus elle vaut 1,000 ;
+2. en seconde ligne, pour décrire, l'effet principal apparié, explicitement conditionnel et jamais présenté comme « Non, A n'a pas d'effet » ; l'effet de A selon les niveaux de B si l'interaction est crédible.
+
+Loi jointe à arbitrer : uniforme sur les modèles (a priori 0,6 sur chaque facteur et 0,2 sur A:B à 2 facteurs) ou hérédité forte à π réglé pour que chaque facteur parte de 1/2 (A:B part alors de 1/8 ; réglage KefiR, non publié tel quel). Annoncée dans tous les cas. Non simulée à ce stade pour cette forme finale.
+
+## D3. H0 ponctuelle ou ROPE : PROPOSÉ
+
+H0 ponctuelle en première ligne, ROPE toujours affiché en seconde, avec sa masse a priori. Largeur par défaut |δ|<0,1 (f<0,05), convention remplaçable par une valeur métier.
+
+**Mis en défaut (bloquant, relecteur, non reproduit par moi).** Pour un terme à 3 niveaux ou plus, f est positif par construction et son postérieur est biaisé vers le haut : vérité nulle, a=5, n=100, médiane de f à 0,105, soit deux fois le seuil ; la ligne ROPE recopie alors presque la ligne H0. **Proposition** : ROPE seulement sur des quantités à 1 ddl (paires, contrastes, pentes), pas de ROPE sur un terme à plusieurs ddl tant qu'une définition valide n'est pas trouvée. La masse a priori de 0,545 ne vaut que pour a=2.
+
+## D4. Probabilité a priori des hypothèses et sensibilité : ACQUIS sur le principe, PROPOSÉ sur les valeurs
+
+P(H0)=P(H1)=1/2 par défaut, annoncée sur la même ligne que le résultat. Grille r × cotes a priori (r/2, r, 2r ; 1:4, 1:1, 4:1) toujours imprimée. Si la plage traverse 1/2, le bilan dit « les données ne tranchent pas ».
+
+## D5. Échelles a priori : PROPOSÉ
+
+Celles de BayesFactor, pour rester comparable à JASP et à la littérature : facteur fixe r=1/2 ; deux groupes r=√2/2 sur δ (même a priori) ; covariable r=√2/4 ; effet aléatoire r=1.
+
+## D6. Pas d'aiguillage par test préliminaire : PROPOSÉ
+
+Contrairement à `m.test()`, pas de bascule automatique vers une méthode selon une p-value de normalité, de variance, etc. Le gaussien est toujours calculé ; les diagnostics deviennent des alertes ; la voie robuste s'y ajoute et un désaccord s'affiche. Conséquence à accepter : `m.bay()` ne reproduit **pas** l'arbre de décision de `m.test()`, et pas de « Kruskal bayésien » pour k>2 (aucune méthode publiée trouvée ; cotes proportionnelles proposées sous leur vrai nom).
+
+**Mis en défaut (bloquant).** La voie gaussienne seule n'est pas défendable en cas d'hétéroscédasticité : H0 vraie, n=(5,5,40), sd=(4,4,1), **P>0,95 dans 16 % des jeux** (IC 95 % 12 à 21 %, N=300, `scripts/agent_12_verif_heterosc.R` ; 25,5 % chez le relecteur sur un autre tirage, écart non élucidé, tailles de simulation à comparer) ; aov 46 % de p<0,05, Welch 7 %. Et la voie de secours prévue ne se calcule pas sans Stan, et rstanarm n'a pas de variances hétérogènes prêtes à l'emploi. **Proposition** : écrire une voie interne sans compilateur pour les variances par groupe (intégration numérique), et refuser de répondre « Oui » sans réserve quand le diagnostic d'hétéroscédasticité est net, tant que cette voie n'existe pas. À ce jour, m.bay ne doit donc pas être publié sur ce cas.
+
+## D7. MANOVA : PROPOSÉ
+
+Forme analytique Normal-Inverse-Wishart, g par terme, Jeffreys sur Σ. **Réglage propre à KefiR, pas une méthode publiée telle quelle.** Algèbre contrôlée (réduction à `anovaBF` à d=1 ; invariance) ; calibration non faite. Le banc d'essai a mesuré un autre réglage (IW propre, S0 ∝ cov(Y), lambda fixe) : très conservateur, P>0,5 dans 43 à 72 % des jeux à effet connu contre 89,5 % de p<0,05 en manova. Le réglage retenu devra faire mieux par simulation avant d'être annoncé.
+
+**Mis en défaut (bloquant, relecteur, non reproduit par moi).** L'algèbre tient, mais l'a priori impose sur la distance de Mahalanobis une échelle qui croît en √d (médiane 0,50 à 2,69) : effet réel f=0,41 sur une VD parmi 20, n=30, P médiane 0,016 alors que Pillai détecte 37 %. **Proposition** : ne pas livrer la MANOVA avant d'avoir un r qui dépend de d, calibré par simulation.
+
+## D13. Multiplicité entre les termes : PROPOSÉ (ajouté après relecture)
+
+**Bloquant (relecteur, calcul maison non recoupé avec anovaBF).** Plan 2³ sous H0, au moins un « Oui » (P>0,5) sur 7 termes dans 57 à 74 % des jeux selon N. π fixe par terme n'ajuste rien, et le seuil « Beta-binomial au-delà de 3 facteurs » tombe précisément sur le plan d'expériences type de l'industriel. **Proposition** : ne jamais utiliser P>0,5 comme verdict ; annoncer le nombre de termes testés et la probabilité que le modèle soit le nul ; Beta-binomial dès 3 facteurs, à valider.
+
+## D8. Plans que m.test ne couvre pas : PROPOSÉ
+
+Covariable seule, ANCOVA appariée, MANOVA répétée, MANCOVA, pentes aléatoires réelles : `m.test()` les refuse ou efface la pente. Le bayésien peut couvrir certaines de ces voies. Proposition : pentes aléatoires et covariable seule inclus ; les autres plus tard.
+
+## D9. Reprise de la normalisation des entrées : PROPOSÉ
+
+Toute la normalisation est en ligne dans `m.test()` (lignes 262-1031) : rien n'est réutilisable en bloc. Options :
+- **A (proposée)** : extraire une fonction commune `.mtest_normalize_input()` et faire appeler `m.test()` et `m.bay()` dessus. Seule façon d'accepter durablement « exactement les mêmes entrées », mais touche `m.test()`, donc demande les tests de non-régression et ton accord.
+- **B** : recopier dans `m.bay()` sans toucher `m.test()`. Sans risque immédiat, mais divergence garantie, et les bugs d'entrée s'y recopient.
+
+## D10. Retour : ACQUIS sur le principe
+
+Même structure que `m.test()` quand elle a un sens, classe distincte. `$effects` existe même à un facteur (une ligne), mêmes noms de termes, colonnes `term`, `bf10`, `log_bf`, `p_h1`, `p_h0`, `prior_h1`, `rscale`, `error_pct`, `analogue`. Aucune colonne ne se nomme `p.value`. Mode `return=FALSE` : valeur à décider (le « modèle complet contre nul » plutôt que le premier facteur, comme `$global_pvalue`).
+Lettres de groupes : pas par défaut (tableau des paires à la place).
+
+## D11. Post-hoc : PROPOSÉ
+
+Partitions de moyennes jusqu'à k=5, puis paires à cotes a priori ajustées. Dérivation propre pour le second cas, à présenter comme réglage de KefiR.
+
+## D12. Socle commun : ACQUIS
+
+Fonctions internes de `R/sys_bay_core.R`, réutilisables par `cor.bay` et `g.bay`, sans développer ces deux fonctions avant ta demande.

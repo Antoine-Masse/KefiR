@@ -1,0 +1,184 @@
+g++:  
+rstanarm charge: TRUE 
+
+-- stan_aov n=60 (2 chaines 1000 it) 
+  ERREUR: R2 prior error. The mode of the beta distribution does not exist with fewer than three predictors. Specify 'what' as 'mean', 'median', or 'log' instead. 
+  temps: 0.0 s
+
+-- stan_glm n=60 (2 chaines 1000 it) 
+  temps: 1.8 s
+  Rhat max=1.014 ; n_eff min=383
+
+-- stan_lmer (1|id) n=60 (2 chaines 1000 it) 
+  temps: 5.8 s
+  Rhat max=1.003 ; n_eff min=290
+
+=== bridge sampling sur rstanarm ===
+
+-- bridge_sampler(stanreg) stan_glm 
+  ERREUR: the 'diagnostic_file' option must be specified in the call to stan_glm to use the 'bridge_sampler' 
+  temps: 0.0 s
+NULL
+
+-- bridge_sampler(fit$stanfit) 
+  ERREUR: Exception: variable does not exist; processing stage=parameter initialization; variable name=gamma; base type=double (in 'string', line 905, column 2 to line 906, column 66) 
+  temps: 0.4 s
+NULL
+
+-- stan_glm diagnostic_file puis bridge 
+  temps: 1.7 s
+
+-- bridge_sampler(stanreg avec diagnostic_file) 
+  temps: 1.3 s
+Bridge sampling estimate of the log marginal likelihood: -97.7803
+Estimate obtained in 6 iteration(s) via method "normal".
+
+-- modele nul stan_glm 
+  temps: 2.3 s
+
+-- bridge_sampler nul 
+  temps: 0.8 s
+Bridge sampling estimate of the log marginal likelihood: -96.20677
+Estimate obtained in 5 iteration(s) via method "normal".
+  BF10 rstanarm+bridge :
+Estimated Bayes factor in favor of b3 over b4: 0.20731
+  erreur: 0% 0% 
+  anovaBF meme donnees (A PRIORI DIFFERENTS) :
+        bf        error
+F 3.463001 6.990625e-05
+
+-- stan_mvmer (2 reponses, (1|id)) 
+Fitting a multivariate glmer model.
+
+Please note the warmup may be much slower than later iterations!
+  [warning] The largest R-hat is 1.09, indicating chains have not mixed.
+Running the chains for more iterations may help. See
+https://mc-stan.org/misc/warnings.html#r-hat 
+  [warning] Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.
+Running the chains for more iterations may help. See
+https://mc-stan.org/misc/warnings.html#bulk 
+  [warning] Tail Effective Samples Size (ESS) is too low, indicating posterior variances and tail quantiles may be unreliable.
+Running the chains for more iterations may help. See
+https://mc-stan.org/misc/warning 
+  temps: 3.0 s
+  Rhat max=1.035 ; n_eff min=52
+
+-- stan_mvmer sans effet aleatoire 
+  ERREUR: No random effects terms specified in formula 
+  temps: 0.0 s
+
+=== brms sans compilateur ===
+brms charge: TRUE 
+
+-- brm(y~F) sans compilateur 
+Running "C:/Users/masse/AppData/Local/Programs/R/R-4.6.1/bin/x64/Rcmd.exe" \
+  SHLIB foo.c
+Erreur dans system(paste(MAKE, p1(paste("-f", shQuote(makefiles))), "compilers"),  : 
+  'make' not found
+Appels : <Anonymous> -> .shlib_internal -> system
+Exécution arrêtée
+specified C++17
+make cmd is
+  make -f "C:/Users/masse/AppData/Local/Programs/R/R-46~1.1/etc/x64/Makeconf" -f "C:/Users/masse/AppData/Local/Programs/R/R-46~1.1/share/make/winshlib.mk" CXX='$(CXX17) $(CXX17STD)' CXXFLAGS='$(CXX17FLAGS)' CXXPICFLAGS='$(CXX17PICFLAGS)' SHLIB_LDFLAGS='$(SHLIB_CXX17LDFLAGS)' SHLIB_LD='$(SHLIB_CXX17LD)' SHLIB="file340c7d455dba.dll" WIN=64 TCLBIN= OBJECTS="file340c7d455dba.o"
+
+make would use
+Message d'avis :
+Dans system(paste(cmd, "-n")) : 'make' not found
+Error in sink(type = "output") : connexion incorrecte
+WARNING: Rtools is required to build R packages, but is not currently installed.
+
+Please download and install the appropriate version of Rtools for 4.6.1 from
+https://cran.r-project.org/bin/windows/Rtools/.
+Trying to compile a simple C file
+Running "C:/Users/masse/AppData/Local/Programs/R/R-4.6.1/bin/x64/Rcmd.exe" \
+  SHLIB foo.c
+Erreur dans system(paste(MAKE, p1(paste("-f", shQuote(makefiles))), "compilers"),  : 
+  'make' not found
+Appels : <Anonymous> -> .shlib_internal -> system
+Exécution arrêtée
+WARNING: Rtools is required to build R packages, but is not currently installed.
+
+Please download and install the appropriate version of Rtools for 4.6.1 from
+https://cran.r-project.org/bin/windows/Rtools/.
+WARNING: Rtools is required to build R packages, but no version of Rtools compatible with R 4.6.1 was found. (Only the following incompatible version(s) of Rtools were found: 4.4.6104)
+
+Please download and install Rtools 4.5 from https://cran.r-project.org/bin/windows/Rtools/.
+specified C++17
+make cmd is
+  make -f "C:/Users/masse/AppData/Local/Programs/R/R-46~1.1/etc/x64/Makeconf" -f "C:/Users/masse/AppData/Local/Programs/R/R-46~1.1/share/make/winshlib.mk" CXX='$(CXX17) $(CXX17STD)' CXXFLAGS='$(CXX17FLAGS)' CXXPICFLAGS='$(CXX17PICFLAGS)' SHLIB_LDFLAGS='$(SHLIB_CXX17LDFLAGS)' SHLIB_LD='$(SHLIB_CXX17LD)' SHLIB="file340c5f8c276a.dll" WIN=64 TCLBIN= OBJECTS="file340c5f8c276a.o"
+
+make would use
+Message d'avis :
+Dans system(paste(cmd, "-n")) : 'make' not found
+  ERREUR: connexion incorrecte 
+  temps: 26.2 s
+  stancode (sans compilation) :
+// generated with brms 2.23.0
+functions {
+}
+data {
+  int<lower=1> N;  // total number of observations
+  vector[N] Y;  // response variable
+  int<lower=1> K;  // number of population-level effects
+  ma ...
+
+-- make_stancode mvbind (sans compilation) 
+  temps: 1.3 s
+  mvbind code genere: TRUE 
+
+FIN
+R version 4.6.1 (2026-06-24 ucrt)
+Platform: x86_64-w64-mingw32/x64
+Running under: Windows 11 x64 (build 26300)
+
+Matrix products: default
+  LAPACK version 3.12.1
+
+locale:
+[1] LC_COLLATE=French_France.utf8  LC_CTYPE=French_France.utf8   
+[3] LC_MONETARY=French_France.utf8 LC_NUMERIC=C                  
+[5] LC_TIME=French_France.utf8    
+
+time zone: Europe/Paris
+tzcode source: internal
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] brms_2.23.0            BayesFactor_0.9.12-4.8 Matrix_1.7-5          
+[4] coda_0.19-4.1          rstanarm_2.32.2        Rcpp_1.1.2            
+
+loaded via a namespace (and not attached):
+ [1] tidyselect_1.2.1     dplyr_1.2.1          farver_2.1.2        
+ [4] loo_2.10.1           S7_0.2.2             fastmap_1.2.0       
+ [7] TH.data_1.1-5        tensorA_0.36.2.1     shinystan_2.7.0     
+[10] promises_1.5.0       shinyjs_2.1.1        digest_0.6.39       
+[13] estimability_2.0.0   mime_0.13            lifecycle_1.0.5     
+[16] StanHeaders_2.39.1.1 processx_3.9.0       survival_3.8-6      
+[19] magrittr_2.0.5       posterior_1.7.0      compiler_4.6.1      
+[22] rlang_1.3.0          tools_4.6.1          igraph_2.3.4        
+[25] bridgesampling_1.2-1 htmlwidgets_1.6.4    pkgbuild_1.4.8      
+[28] plyr_1.8.9           RColorBrewer_1.1-3   dygraphs_1.1.1.6    
+[31] multcomp_1.4-32      abind_1.4-8          miniUI_0.1.2        
+[34] grid_4.6.1           stats4_4.6.1         xts_0.14.3          
+[37] xtable_1.8-8         inline_0.3.21        ggplot2_4.0.3       
+[40] emmeans_2.0.4        scales_1.4.0         gtools_3.9.5        
+[43] MASS_7.3-65          mvtnorm_1.4-2        cli_3.6.6           
+[46] reformulas_0.4.4     generics_0.1.4       otel_0.2.0          
+[49] RcppParallel_6.2.1   reshape2_1.4.5       pbapply_1.7-5       
+[52] minqa_1.2.8          rstan_2.32.7         stringr_1.6.0       
+[55] shinythemes_1.2.0    splines_4.6.1        bayesplot_1.16.0    
+[58] parallel_4.6.1       matrixStats_1.5.0    base64enc_0.1-6     
+[61] vctrs_0.7.3          sandwich_3.1-3       boot_1.3-32         
+[64] callr_3.8.0          crosstalk_1.2.2      glue_1.8.1          
+[67] nloptr_2.2.1         codetools_0.2-20     DT_0.34.0           
+[70] distributional_0.9.0 stringi_1.8.9        gtable_0.3.6        
+[73] later_1.4.8          QuickJSR_1.11.0      lme4_2.1-0          
+[76] tibble_3.3.1         colourpicker_1.3.0   pillar_1.11.1       
+[79] htmltools_0.5.9      Brobdingnag_1.3-1    R6_2.6.1            
+[82] Rdpack_2.6.6         shiny_1.14.0         lattice_0.22-9      
+[85] markdown_2.1         rbibutils_2.4.1      backports_1.5.1     
+[88] threejs_0.3.4        httpuv_1.6.17        MatrixModels_0.5-4  
+[91] rstantools_2.7.1     gridExtra_2.3.1      nlme_3.1-169        
+[94] checkmate_2.3.4      zoo_1.9-1            pkgconfig_2.0.3     

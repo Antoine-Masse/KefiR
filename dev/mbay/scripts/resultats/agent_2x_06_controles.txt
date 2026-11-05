@@ -1,0 +1,11 @@
+P minimale atteignable (F tres petit, pi=1/2, r defaut):
+k 2 n 10 P_min 0.2844 
+k 2 n 30 P_min 0.2078 
+k 2 n 100 P_min 0.1333 
+k 3 n 10 P_min 0.1753 
+k 3 n 30 P_min 0.0905 
+k 3 n 100 P_min 0.0347 
+jeux erreur MC rel >10%: 77  >5%: 204 
+parmi >10%, P_AB entre .05 et .95 : 71 
+       50%        90%        99%       100% 
+0.00490514 0.01166153 0.04469581 0.16069538 

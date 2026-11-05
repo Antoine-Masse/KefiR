@@ -1,0 +1,135 @@
+options(warn = 1, width = 110)
+suppressMessages(pkgload::load_all("C:/Users/masse/Desktop/KefiR/KefiR-mbay", quiet = TRUE))
+
+mk <- function(n) {
+  set.seed(42)
+  d <- expand.grid(A = c("a1","a2"), B = c("b1","b2"), rep = seq_len(n), stringsAsFactors = FALSE)
+  d$y <- 10 + (d$A == "a2") * 1.5 + (d$B == "b2") * 1 + rnorm(nrow(d))
+  d$A <- factor(d$A); d$B <- factor(d$B)
+  d
+}
+
+run <- function(label, expr) {
+  cat("\n\n############################################################\n")
+  cat("## CAS :", label, "\n")
+  cat("############################################################\n")
+  warns <- character(0); res <- NULL; err <- NULL
+  t0 <- Sys.time()
+  invisible(capture.output({
+    res <- tryCatch(withCallingHandlers(eval(expr, envir = parent.frame()),
+        warning = function(w) { warns <<- c(warns, conditionMessage(w)); invokeRestart("muffleWarning") }),
+      error = function(e) { err <<- conditionMessage(e); NULL })
+  }))
+  cat("duree (s):", round(as.numeric(difftime(Sys.time(), t0, units = "secs")), 1), "\n")
+  if (!is.null(err)) cat("ERREUR:", err, "\n")
+  if (length(warns)) cat("WARNINGS (", length(warns), "):", paste(unique(substr(warns, 1, 160)), collapse = " || "), "\n")
+  cat("class:", class(res), "\n")
+  cat("names:", paste(names(res), collapse = ", "), "\n")
+  cat("--- str(max.level=2)\n")
+  str(res, max.level = 2, give.attr = FALSE, list.len = 25, vec.len = 3)
+  cat("--- $method:", paste(res$method, collapse = " | "), "\n")
+  cat("--- $global_pvalue:", paste(res$global_pvalue, collapse = " | "), "\n")
+  cat("--- $chosen_test:", paste(res$chosen_test, collapse = " | "), "\n")
+  cat("--- $effects:\n"); print(res$effects)
+  invisible(res)
+}
+
+set.seed(1)
+d2 <- data.frame(F = factor(rep(c("A","B"), each = 25))); d2$y <- 10 + (d2$F == "B") + rnorm(50)
+d3 <- data.frame(F = factor(rep(c("A","B","C"), each = 25))); d3$y <- 10 + as.numeric(d3$F) + rnorm(75)
+dab <- mk(15)
+set.seed(2)
+dcov <- data.frame(F = factor(rep(c("A","B","C"), each = 25)), cov = runif(75, 0, 10))
+dcov$y <- 5 + as.numeric(dcov$F) + 0.5 * dcov$cov + rnorm(75)
+set.seed(3)
+dman <- data.frame(F = factor(rep(c("A","B","C"), each = 25)))
+dman$y1 <- as.numeric(dman$F) + rnorm(75); dman$y2 <- 0.5 * dman$y1 + rnorm(75)
+set.seed(4)
+n <- 20
+drm <- data.frame(id = factor(rep(seq_len(n), times = 3)), F = factor(rep(c("t1","t2","t3"), each = n)))
+drm$y <- rep(rnorm(n, 0, 2), 3) + as.numeric(drm$F) + rnorm(3 * n, 0, 0.7)
+dp <- droplevels(drm[drm$F != "t3", ])
+set.seed(5)
+dsp <- expand.grid(id = 1:24, T = c("t1","t2","t3")); dsp$G <- factor(ifelse(dsp$id <= 12, "g1", "g2")); dsp$id <- factor(dsp$id)
+dsp$y <- rep(rnorm(24, 0, 2), 3) + as.numeric(dsp$T) + (dsp$G == "g2") + rnorm(72, 0, 0.7)
+set.seed(6)
+dmix <- expand.grid(id = 1:15, F = c("a","b"), rep = 1:4); dmix$id <- factor(dmix$id)
+dmix$y <- rep(rnorm(15, 0, 2), 8) + (dmix$F == "b") + rnorm(nrow(dmix), 0, 0.7)
+set.seed(7)
+dskew <- data.frame(F = factor(rep(c("A","B","C"), each = 30))); dskew$y <- rexp(90, c(1, .5, .2)[as.numeric(dskew$F)])
+set.seed(8)
+dhet <- data.frame(F = factor(rep(c("A","B","C"), each = 30))); dhet$y <- rnorm(90, 10, c(0.5, 2, 5)[as.numeric(dhet$F)])
+set.seed(9)
+ddisc <- data.frame(F = factor(rep(c("A","B","C"), each = 40))); ddisc$y <- rpois(120, 2)
+set.seed(10)
+dsmall <- data.frame(F = factor(c(rep("A", 2), rep("B", 6), rep("C", 6)))); dsmall$y <- rnorm(14)
+set.seed(11)
+dslope <- data.frame(F = factor(rep(c("A","B","C"), each = 30)), cov = runif(90, 0, 10))
+dslope$y <- 5 + c(1, 3, -2)[as.numeric(dslope$F)] * dslope$cov + rnorm(90)
+set.seed(12)
+dcov2 <- dcov; dcov2$cov2 <- rnorm(75)
+set.seed(13)
+dcovonly <- data.frame(c1 = runif(40), c2 = runif(40)); dcovonly$y <- dcovonly$c1 + rnorm(40)
+set.seed(14)
+dman2 <- expand.grid(A = c("a1","a2"), B = c("b1","b2"), r = 1:20)
+dman2$y1 <- (dman2$A == "a2") + rnorm(80); dman2$y2 <- (dman2$B == "b2") + rnorm(80)
+dunb <- dab[-c(1:8, 20:22), ]
+
+args0 <- quote(list(return = TRUE, verbose = FALSE, plot = FALSE))
+
+## Les 6 cas exiges
+r1 <- run("1. y~F (2 niveaux)", quote(m.test(y ~ F, data = d2, return = TRUE, verbose = FALSE, plot = FALSE)))
+r2 <- run("2. y~F (3 niveaux)", quote(m.test(y ~ F, data = d3, return = TRUE, verbose = FALSE, plot = FALSE)))
+r3 <- run("3. y~A*B", quote(m.test(y ~ A * B, data = dab, return = TRUE, verbose = FALSE, plot = FALSE)))
+r4 <- run("4. y~F+cov", quote(m.test(y ~ F + cov, data = dcov, return = TRUE, verbose = FALSE, plot = FALSE)))
+r5 <- run("5. cbind(y1,y2)~F", quote(m.test(cbind(y1, y2) ~ F, data = dman, return = TRUE, verbose = FALSE, plot = FALSE)))
+r6a <- run("6a. y~F+Error(id/F)", quote(m.test(y ~ F + Error(id/F), data = drm, return = TRUE, verbose = FALSE, plot = FALSE)))
+r6b <- run("6b. y~F+(1|id)", quote(m.test(y ~ F + (1|id), data = drm, return = TRUE, verbose = FALSE, plot = FALSE)))
+
+## Cas supplementaires : formes d'entree
+run("7. x,g vecteurs", quote(m.test(d3$y, d3$F, return = TRUE, verbose = FALSE, plot = FALSE)))
+run("8. x vecteur, g data.frame", quote(m.test(dab$y, dab[, c("A","B")], return = TRUE, verbose = FALSE, plot = FALSE)))
+run("9. formule data$ sans data", quote(m.test(d3$y ~ d3$F, return = TRUE, verbose = FALSE, plot = FALSE)))
+run("10. x,g noms + data", quote(m.test("y", "F", data = d3, return = TRUE, verbose = FALSE, plot = FALSE)))
+run("11. x matrice, g facteur (MANOVA sans formule)", quote(m.test(as.matrix(dman[, c("y1","y2")]), dman$F, return = TRUE, verbose = FALSE, plot = FALSE)))
+run("12. x seul sans g", quote(m.test(d3$y, return = TRUE, verbose = FALSE, plot = FALSE)))
+run("13. y~F+1 | id", quote(m.test(y ~ F | id, data = drm, return = TRUE, verbose = FALSE, plot = FALSE)))
+run("14. paired=TRUE sans id, 2 niveaux, x,g", quote(m.test(dp$y, dp$F, paired = TRUE, return = TRUE, verbose = FALSE, plot = FALSE)))
+run("15. paired+id=nom, formule 2 niveaux", quote(m.test(y ~ F, data = dp, id = "id", return = TRUE, verbose = FALSE, plot = FALSE)))
+run("16. id=nom, wt=nom, split-plot", quote(m.test(y ~ G, data = dsp, id = "id", wt = "T", return = TRUE, verbose = FALSE, plot = FALSE)))
+run("17. within alias", quote(m.test(y ~ T, data = dsp[dsp$G == "g1", ], id = "id", within = "T", return = TRUE, verbose = FALSE, plot = FALSE)))
+run("18. Error(id/T) split-plot formule", quote(m.test(y ~ G * T + Error(id/T), data = dsp, return = TRUE, verbose = FALSE, plot = FALSE)))
+run("19. (T|id) pentes aleatoires", quote(m.test(y ~ T + (T|id), data = dsp, return = TRUE, verbose = FALSE, plot = FALSE)))
+run("20. repliques (mixte) y~F+(1|id)", quote(m.test(y ~ F + (1|id), data = dmix, return = TRUE, verbose = FALSE, plot = FALSE)))
+run("21. factor(F) dans la formule", quote(m.test(y ~ factor(F), data = d3, return = TRUE, verbose = FALSE, plot = FALSE)))
+run("22. log(y)~F", quote(m.test(log(y) ~ F, data = d3, return = TRUE, verbose = FALSE, plot = FALSE)))
+
+## Plans
+run("23. y~F*cov (pentes heterogenes)", quote(m.test(y ~ F * cov, data = dslope, return = TRUE, verbose = FALSE, plot = FALSE)))
+run("24. y~F*cov (interaction nulle)", quote(m.test(y ~ F * cov, data = dcov, return = TRUE, verbose = FALSE, plot = FALSE)))
+run("25. y~F+cov+cov2", quote(m.test(y ~ F + cov + cov2, data = dcov2, return = TRUE, verbose = FALSE, plot = FALSE)))
+run("26. covariable seule y~c1", quote(m.test(y ~ c1, data = dcovonly, return = TRUE, verbose = FALSE, plot = FALSE)))
+run("27. covariables seules y~c1+c2", quote(m.test(y ~ c1 + c2, data = dcovonly, return = TRUE, verbose = FALSE, plot = FALSE)))
+run("28. MANOVA 2 facteurs", quote(m.test(cbind(y1, y2) ~ A * B, data = dman2, return = TRUE, verbose = FALSE, plot = FALSE)))
+run("29. MANOVA avec id", quote(m.test(cbind(y1, y2) ~ F, data = cbind(dman, id = factor(rep(1:25, 3))), id = "id", return = TRUE, verbose = FALSE, plot = FALSE)))
+run("30. asymetrique 3 groupes (Kruskal ?)", quote(m.test(y ~ F, data = dskew, return = TRUE, verbose = FALSE, plot = FALSE)))
+run("31. heteroscedastique (Welch ?)", quote(m.test(y ~ F, data = dhet, return = TRUE, verbose = FALSE, plot = FALSE)))
+run("32. discret Poisson", quote(m.test(y ~ F, data = ddisc, return = TRUE, verbose = FALSE, plot = FALSE)))
+run("33. petit groupe n=2 filtre", quote(m.test(y ~ F, data = dsmall, return = TRUE, verbose = FALSE, plot = FALSE)))
+run("34. desequilibre A*B", quote(m.test(y ~ A * B, data = dunb, return = TRUE, verbose = FALSE, plot = FALSE)))
+
+## return = FALSE
+cat("\n\n## return=FALSE\n")
+print(suppressWarnings(m.test(y ~ F, data = d3, return = FALSE)))
+print(suppressWarnings(m.test(y ~ A * B, data = dab, return = FALSE)))
+
+## Details des objets principaux
+cat("\n\n## groups / p.value r1\n"); print(r1$groups); print(r1$p.value)
+cat("\n\n## groups / p.value r2\n"); print(r2$groups); print(r2$p.value); print(r2$descriptive_stats)
+cat("\n\n## groups r3\n"); print(r3$groups); print(r3$p.value); print(r3$descriptive_stats)
+cat("\n\n## r4\n"); print(r4$groups); print(r4$p.value); print(r4$descriptive_stats); if (!is.null(r4$details)) str(r4$details, max.level = 1)
+cat("\n\n## r5\n"); print(r5$test_statistics); print(r5$effects); print(r5$effects_by_dv); print(r5$groups)
+
+cat("\n\n## Internes : .normalize_from_formula (quelle definition gagne ?)\n")
+print(body(KefiR:::.normalize_from_formula)[[2]])
+cat("appels:", "\n")

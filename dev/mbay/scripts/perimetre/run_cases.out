@@ -1,0 +1,1330 @@
+
+
+############################################################
+## CAS : 1. y~F (2 niveaux) 
+############################################################
+duree (s): 1.2 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, bootstrap 
+--- str(max.level=2)
+List of 6
+ $ groups           :'data.frame':	2 obs. of  3 variables:
+  ..$ categories      : chr [1:2] "A" "B"
+  ..$ Bootstrap (mean): chr [1:2] "a" "b"
+  ..$ Student_Holm    : chr [1:2] "a" "b"
+ $ p.value          : num 0.000652
+ $ global_pvalue    : num 0.000652
+ $ descriptive_stats:'data.frame':	2 obs. of  6 variables:
+  ..$ group: chr [1:2] "A" "B"
+  ..$ mean : num [1:2] 10.2 11
+  ..$ SD   : num [1:2] 0.95 0.706
+  ..$ SE   : num [1:2] 0.19 0.141
+  ..$ n    : num [1:2] 25 25
+  ..$ type : chr [1:2] "mean" "mean"
+ $ method           : chr "Student t-test"
+ $ bootstrap        :List of 2
+  ..$ groups :'data.frame':	2 obs. of  2 variables:
+  ..$ p.value: Named num 0.0249
+--- $method: Student t-test 
+--- $global_pvalue: 0.000651620781233769 
+--- $chosen_test:  
+--- $effects:
+NULL
+
+
+############################################################
+## CAS : 2. y~F (3 niveaux) 
+############################################################
+duree (s): 16.2 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, bootstrap 
+--- str(max.level=2)
+List of 6
+ $ groups           :'data.frame':	3 obs. of  7 variables:
+  ..$ categories      : chr [1:3] "A" "B" "C"
+  ..$ Bootstrap (mean): chr [1:3] "a" "b" "c"
+  ..$ Student_Holm    : chr [1:3] "a" "b" "c"
+  ..$ Scheffe         : chr [1:3] "c" "b" "a"
+  ..$ Tukey           : chr [1:3] "c" "b" "a"
+  ..$ SNK             : chr [1:3] "c" "b" "a"
+  ..$ Waller-Duncan   : chr [1:3] "c" "b" "a"
+ $ p.value          : num [1:2, 1:2] 8.48e-04 4.41e-10 NA 3.14e-04
+ $ global_pvalue    : num 1.03e-09
+ $ descriptive_stats:'data.frame':	3 obs. of  6 variables:
+  ..$ group: chr [1:3] "A" "B" "C"
+  ..$ mean : num [1:3] 11.2 12.1 13.1
+  ..$ SD   : num [1:3] 1.105 0.831 0.783
+  ..$ SE   : num [1:3] 0.221 0.166 0.157
+  ..$ n    : num [1:3] 25 25 25
+  ..$ type : chr [1:3] "mean" "mean" "mean"
+ $ method           : chr "Parametric ANOVA/t-test"
+ $ bootstrap        :List of 2
+  ..$ groups : chr [1:3, 1:2] "A" "B" "C" ...
+  ..$ p.value: num [1:2, 1:2] 4.18e-02 2.65e-07 NA 9.90e-03
+--- $method: Parametric ANOVA/t-test 
+--- $global_pvalue: 1.02850552560807e-09 
+--- $chosen_test:  
+--- $effects:
+NULL
+
+
+############################################################
+## CAS : 3. y~A*B 
+############################################################
+duree (s): 2.3 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, effects, bootstrap 
+--- str(max.level=2)
+List of 7
+ $ groups           :'data.frame':	4 obs. of  7 variables:
+  ..$ categories      : chr [1:4] "a1.b1" "a2.b1" "a1.b2" ...
+  ..$ Bootstrap (mean): chr [1:4] "a" "a" "a" ...
+  ..$ Student_Holm    : chr [1:4] "a" "a" "a" ...
+  ..$ Scheffe         : chr [1:4] "b" "b" "b" ...
+  ..$ Tukey           : chr [1:4] "b" "b" "b" ...
+  ..$ SNK             : chr [1:4] "b" "b" "b" ...
+  ..$ Waller-Duncan   : chr [1:4] "b" "b" "b" ...
+ $ p.value          : num [1:3, 1:3] 6.73e-01 2.53e-01 1.69e-06 NA ...
+ $ global_pvalue    : num 1.84e-05
+ $ descriptive_stats:'data.frame':	4 obs. of  6 variables:
+  ..$ group: chr [1:4] "a1.b1" "a2.b1" "a1.b2" ...
+  ..$ mean : num [1:4] 10.3 11.1 10.7 12.8
+  ..$ SD   : num [1:4] 1.103 0.873 1.357 1.142
+  ..$ SE   : num [1:4] 0.285 0.225 0.35 0.295
+  ..$ n    : num [1:4] 15 15 15 15
+  ..$ type : chr [1:4] "mean" "mean" "mean" ...
+ $ method           : chr "Parametric ANOVA/t-test"
+ $ effects          :'data.frame':	3 obs. of  2 variables:
+  ..$ term   : chr [1:3] "A" "B" "A:B"
+  ..$ p.value: num [1:3] 1.84e-05 7.46e-04 3.21e-02
+ $ bootstrap        :List of 2
+  ..$ groups : chr [1:4, 1:2] "a1.b1" "a2.b1" "a1.b2" ...
+  ..$ p.value: num [1:3, 1:3] 1 1 0.000368 NA ...
+--- $method: Parametric ANOVA/t-test 
+--- $global_pvalue: 1.83552499564903e-05 
+--- $chosen_test:  
+--- $effects:
+  term      p.value
+1    A 1.835525e-05
+2    B 7.459972e-04
+3  A:B 3.213384e-02
+
+
+############################################################
+## CAS : 4. y~F+cov 
+############################################################
+duree (s): 34.5 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, effects, details 
+--- str(max.level=2)
+List of 7
+ $ groups           :'data.frame':	3 obs. of  2 variables:
+  ..$ categories: chr [1:3] "A" "B" "C"
+  ..$ ANCOVA    : chr [1:3] "a" "b" "c"
+ $ p.value          : num [1:3, 1:3] 1.00 8.47e-05 2.45e-09 8.47e-05 ...
+ $ global_pvalue    : num 4.15e-09
+ $ descriptive_stats:'data.frame':	3 obs. of  4 variables:
+  ..$ group        : chr [1:3] "A" "B" "C"
+  ..$ adjusted_mean: num [1:3] 8.52 9.67 10.34
+  ..$ SE           : num [1:3] 0.181 0.181 0.181
+  ..$ type         : chr [1:3] "adjusted_mean" "adjusted_mean" "adjusted_mean"
+ $ method           : chr "ANCOVA post-hoc (tukey adjustment)"
+ $ effects          :'data.frame':	2 obs. of  2 variables:
+  ..$ term   : chr [1:2] "F" "cov"
+  ..$ p.value: num [1:2] 4.15e-09 2.56e-24
+ $ details          :List of 5
+  ..$ pairwise_comparisons:'data.frame':	3 obs. of  6 variables:
+  ..$ emm_result          :'emmGrid' object with variables:
+    F = A, B, C
+  ..$ pairs_result        :'emmGrid' object with variables:
+    contrast = A - B, A - C, B - C
+  ..$ note                : chr "Post-hoc comparisons performed on adjusted means. Covariates held at their mean values: cov = 4.98"
+  ..$ adjusted_means      :'data.frame':	3 obs. of  5 variables:
+--- $method: ANCOVA post-hoc (tukey adjustment) 
+--- $global_pvalue: 4.14815914671471e-09 
+--- $chosen_test:  
+--- $effects:
+  term      p.value
+1    F 4.148159e-09
+2  cov 2.564704e-24
+
+
+############################################################
+## CAS : 5. cbind(y1,y2)~F 
+############################################################
+duree (s): 5.7 
+class: posthoc 
+names: groups, p.value, test_statistics, global_pvalue, discriminant_analysis, protected_anovas, method, effects, effects_by_dv, pairwise_multivariate, groups_multivariate 
+--- str(max.level=2)
+List of 11
+ $ groups               :'data.frame':	2 obs. of  3 variables:
+  ..$ dependent_variable: chr [1:2] "y1" "y2"
+  ..$ significance      : chr [1:2] "significant" "ns"
+  ..$ p_value           : num [1:2] 1.21e-13 2.63e-02
+ $ p.value              : Named num [1:2] 1.21e-13 2.63e-02
+ $ test_statistics      :List of 4
+  ..$ Wilks          :List of 5
+  ..$ Pillai         :List of 5
+  ..$ HotellingLawley:List of 5
+  ..$ Roy            :List of 5
+ $ global_pvalue        : num 2.15e-12
+ $ discriminant_analysis:List of 3
+  ..$ n_functions     : int 2
+  ..$ prop_variance   : num [1:2] 0.99461 0.00539
+  ..$ structure_matrix: num [1:2, 1:2] 0.987 0.275 -0.161 -0.961
+ $ protected_anovas     :List of 2
+  ..$ y1:List of 8
+  ..$ y2:List of 8
+ $ method               : chr "MANOVA (Wilks' Lambda)"
+ $ effects              : NULL
+ $ effects_by_dv        : NULL
+ $ pairwise_multivariate: num [1:2, 1:2] 4.87e-06 3.85e-12 NA 3.97e-03
+ $ groups_multivariate  :'data.frame':	3 obs. of  2 variables:
+  ..$ categories : chr [1:3] "A" "B" "C"
+  ..$ Pillai_Holm: chr [1:3] "a" "b" "c"
+--- $method: MANOVA (Wilks' Lambda) 
+--- $global_pvalue: 2.14982418992206e-12 
+--- $chosen_test:  
+--- $effects:
+NULL
+
+
+############################################################
+## CAS : 6a. y~F+Error(id/F) 
+############################################################
+duree (s): 7.4 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, effects, bootstrap 
+--- str(max.level=2)
+List of 7
+ $ groups           :'data.frame':	3 obs. of  3 variables:
+  ..$ categories      : chr [1:3] "t1" "t2" "t3"
+  ..$ Bootstrap (mean): chr [1:3] "a" "ab" "b"
+  ..$ Student_Holm    : chr [1:3] "a" "b" "c"
+ $ p.value          : num [1:2, 1:2] 2.08e-03 5.53e-08 NA 8.24e-04
+ $ global_pvalue    : num 3.29e-09
+ $ descriptive_stats:'data.frame':	3 obs. of  6 variables:
+  ..$ group: chr [1:3] "t1" "t2" "t3"
+  ..$ mean : num [1:3] 1.97 2.75 3.73
+  ..$ SD   : num [1:3] 1.68 1.53 1.73
+  ..$ SE   : num [1:3] 0.376 0.343 0.386
+  ..$ n    : num [1:3] 20 20 20
+  ..$ type : chr [1:3] "mean" "mean" "mean"
+ $ method           : chr "Parametric ANOVA/t-test"
+ $ effects          :'data.frame':	1 obs. of  2 variables:
+  ..$ term   : chr "F"
+  ..$ p.value: num 3.29e-09
+ $ bootstrap        :List of 2
+  ..$ groups : chr [1:3, 1:2] "t1" "t2" "t3" ...
+  ..$ p.value: num [1:2, 1:2] 0.841 0.281 NA 0.747
+--- $method: Parametric ANOVA/t-test 
+--- $global_pvalue: 3.28871907669094e-09 
+--- $chosen_test:  
+--- $effects:
+  term      p.value
+1    F 3.288719e-09
+
+
+############################################################
+## CAS : 6b. y~F+(1|id) 
+############################################################
+duree (s): 1 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, effects, bootstrap 
+--- str(max.level=2)
+List of 7
+ $ groups           :'data.frame':	3 obs. of  7 variables:
+  ..$ categories      : chr [1:3] "t1" "t2" "t3"
+  ..$ Bootstrap (mean): chr [1:3] "a" "ab" "b"
+  ..$ Student_Holm    : chr [1:3] "a" "ab" "b"
+  ..$ Scheffe         : chr [1:3] "b" "ab" "a"
+  ..$ Tukey           : chr [1:3] "b" "ab" "a"
+  ..$ SNK             : chr [1:3] "b" "ab" "a"
+  ..$ Waller-Duncan   : chr [1:3] "b" "ab" "a"
+ $ p.value          : num [1:2, 1:2] 0.13941 0.00383 NA 0.1276
+ $ global_pvalue    : num 3.29e-09
+ $ descriptive_stats:'data.frame':	3 obs. of  6 variables:
+  ..$ group: chr [1:3] "t1" "t2" "t3"
+  ..$ mean : num [1:3] 1.97 2.75 3.73
+  ..$ SD   : num [1:3] 1.68 1.53 1.73
+  ..$ SE   : num [1:3] 0.376 0.343 0.386
+  ..$ n    : num [1:3] 20 20 20
+  ..$ type : chr [1:3] "mean" "mean" "mean"
+ $ method           : chr "Parametric ANOVA/t-test"
+ $ effects          :'data.frame':	1 obs. of  2 variables:
+  ..$ term   : chr "F"
+  ..$ p.value: num 3.29e-09
+ $ bootstrap        :List of 2
+  ..$ groups : chr [1:3, 1:2] "t1" "t2" "t3" ...
+  ..$ p.value: num [1:2, 1:2] 0.7599 0.0903 NA 0.6402
+--- $method: Parametric ANOVA/t-test 
+--- $global_pvalue: 3.28871907669094e-09 
+--- $chosen_test:  
+--- $effects:
+  term      p.value
+1    F 3.288719e-09
+
+
+############################################################
+## CAS : 7. x,g vecteurs 
+############################################################
+duree (s): 4.2 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, bootstrap 
+--- str(max.level=2)
+List of 6
+ $ groups           :'data.frame':	3 obs. of  7 variables:
+  ..$ categories      : chr [1:3] "A" "B" "C"
+  ..$ Bootstrap (mean): chr [1:3] "a" "b" "c"
+  ..$ Student_Holm    : chr [1:3] "a" "b" "c"
+  ..$ Scheffe         : chr [1:3] "c" "b" "a"
+  ..$ Tukey           : chr [1:3] "c" "b" "a"
+  ..$ SNK             : chr [1:3] "c" "b" "a"
+  ..$ Waller-Duncan   : chr [1:3] "c" "b" "a"
+ $ p.value          : num [1:2, 1:2] 8.48e-04 4.41e-10 NA 3.14e-04
+ $ global_pvalue    : num 1.03e-09
+ $ descriptive_stats:'data.frame':	3 obs. of  6 variables:
+  ..$ group: chr [1:3] "A" "B" "C"
+  ..$ mean : num [1:3] 11.2 12.1 13.1
+  ..$ SD   : num [1:3] 1.105 0.831 0.783
+  ..$ SE   : num [1:3] 0.221 0.166 0.157
+  ..$ n    : num [1:3] 25 25 25
+  ..$ type : chr [1:3] "mean" "mean" "mean"
+ $ method           : chr "Parametric ANOVA/t-test"
+ $ bootstrap        :List of 2
+  ..$ groups : chr [1:3, 1:2] "A" "B" "C" ...
+  ..$ p.value: num [1:2, 1:2] 9.03e-02 3.27e-07 NA 4.09e-03
+--- $method: Parametric ANOVA/t-test 
+--- $global_pvalue: 1.02850552560807e-09 
+--- $chosen_test:  
+--- $effects:
+NULL
+
+
+############################################################
+## CAS : 8. x vecteur, g data.frame 
+############################################################
+duree (s): 0 
+ERREUR: colonnes non définies sélectionnées 
+class: NULL 
+names:  
+--- str(max.level=2)
+ NULL
+--- $method:  
+--- $global_pvalue:  
+--- $chosen_test:  
+--- $effects:
+NULL
+
+
+############################################################
+## CAS : 9. formule data$ sans data 
+############################################################
+duree (s): 1.8 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, bootstrap 
+--- str(max.level=2)
+List of 6
+ $ groups           :'data.frame':	3 obs. of  7 variables:
+  ..$ categories      : chr [1:3] "A" "B" "C"
+  ..$ Bootstrap (mean): chr [1:3] "a" "b" "c"
+  ..$ Student_Holm    : chr [1:3] "a" "b" "c"
+  ..$ Scheffe         : chr [1:3] "c" "b" "a"
+  ..$ Tukey           : chr [1:3] "c" "b" "a"
+  ..$ SNK             : chr [1:3] "c" "b" "a"
+  ..$ Waller-Duncan   : chr [1:3] "c" "b" "a"
+ $ p.value          : num [1:2, 1:2] 8.48e-04 4.41e-10 NA 3.14e-04
+ $ global_pvalue    : num 1.03e-09
+ $ descriptive_stats:'data.frame':	3 obs. of  6 variables:
+  ..$ group: chr [1:3] "A" "B" "C"
+  ..$ mean : num [1:3] 11.2 12.1 13.1
+  ..$ SD   : num [1:3] 1.105 0.831 0.783
+  ..$ SE   : num [1:3] 0.221 0.166 0.157
+  ..$ n    : num [1:3] 25 25 25
+  ..$ type : chr [1:3] "mean" "mean" "mean"
+ $ method           : chr "Parametric ANOVA/t-test"
+ $ bootstrap        :List of 2
+  ..$ groups : chr [1:3, 1:2] "A" "B" "C" ...
+  ..$ p.value: num [1:2, 1:2] 8.32e-02 7.12e-07 NA 1.28e-02
+--- $method: Parametric ANOVA/t-test 
+--- $global_pvalue: 1.02850552560807e-09 
+--- $chosen_test:  
+--- $effects:
+NULL
+
+
+############################################################
+## CAS : 10. x,g noms + data 
+############################################################
+duree (s): 2.3 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, bootstrap 
+--- str(max.level=2)
+List of 6
+ $ groups           :'data.frame':	3 obs. of  7 variables:
+  ..$ categories      : chr [1:3] "A" "B" "C"
+  ..$ Bootstrap (mean): chr [1:3] "a" "b" "c"
+  ..$ Student_Holm    : chr [1:3] "a" "b" "c"
+  ..$ Scheffe         : chr [1:3] "c" "b" "a"
+  ..$ Tukey           : chr [1:3] "c" "b" "a"
+  ..$ SNK             : chr [1:3] "c" "b" "a"
+  ..$ Waller-Duncan   : chr [1:3] "c" "b" "a"
+ $ p.value          : num [1:2, 1:2] 8.48e-04 4.41e-10 NA 3.14e-04
+ $ global_pvalue    : num 1.03e-09
+ $ descriptive_stats:'data.frame':	3 obs. of  6 variables:
+  ..$ group: chr [1:3] "A" "B" "C"
+  ..$ mean : num [1:3] 11.2 12.1 13.1
+  ..$ SD   : num [1:3] 1.105 0.831 0.783
+  ..$ SE   : num [1:3] 0.221 0.166 0.157
+  ..$ n    : num [1:3] 25 25 25
+  ..$ type : chr [1:3] "mean" "mean" "mean"
+ $ method           : chr "Parametric ANOVA/t-test"
+ $ bootstrap        :List of 2
+  ..$ groups : chr [1:3, 1:2] "A" "B" "C" ...
+  ..$ p.value: num [1:2, 1:2] 1.80e-01 4.24e-07 NA 4.86e-03
+--- $method: Parametric ANOVA/t-test 
+--- $global_pvalue: 1.02850552560807e-09 
+--- $chosen_test:  
+--- $effects:
+NULL
+
+
+############################################################
+## CAS : 11. x matrice, g facteur (MANOVA sans formule) 
+############################################################
+duree (s): 6.6 
+class: posthoc 
+names: groups, p.value, test_statistics, global_pvalue, discriminant_analysis, protected_anovas, method, effects, effects_by_dv, pairwise_multivariate, groups_multivariate 
+--- str(max.level=2)
+List of 11
+ $ groups               :'data.frame':	2 obs. of  3 variables:
+  ..$ dependent_variable: chr [1:2] "y1" "y2"
+  ..$ significance      : chr [1:2] "significant" "ns"
+  ..$ p_value           : num [1:2] 1.21e-13 2.63e-02
+ $ p.value              : Named num [1:2] 1.21e-13 2.63e-02
+ $ test_statistics      :List of 4
+  ..$ Wilks          :List of 5
+  ..$ Pillai         :List of 5
+  ..$ HotellingLawley:List of 5
+  ..$ Roy            :List of 5
+ $ global_pvalue        : num 2.15e-12
+ $ discriminant_analysis:List of 3
+  ..$ n_functions     : int 2
+  ..$ prop_variance   : num [1:2] 0.99461 0.00539
+  ..$ structure_matrix: num [1:2, 1:2] 0.987 0.275 -0.161 -0.961
+ $ protected_anovas     :List of 2
+  ..$ y1:List of 8
+  ..$ y2:List of 8
+ $ method               : chr "MANOVA (Wilks' Lambda)"
+ $ effects              : NULL
+ $ effects_by_dv        : NULL
+ $ pairwise_multivariate: num [1:2, 1:2] 4.87e-06 3.85e-12 NA 3.97e-03
+ $ groups_multivariate  :'data.frame':	3 obs. of  2 variables:
+  ..$ categories : chr [1:3] "A" "B" "C"
+  ..$ Pillai_Holm: chr [1:3] "a" "b" "c"
+--- $method: MANOVA (Wilks' Lambda) 
+--- $global_pvalue: 2.14982418992206e-12 
+--- $chosen_test:  
+--- $effects:
+NULL
+
+
+############################################################
+## CAS : 12. x seul sans g 
+############################################################
+duree (s): 0 
+ERREUR: 'x' et 'g' (ou 'formula') doivent être spécifiés. 
+class: NULL 
+names:  
+--- str(max.level=2)
+ NULL
+--- $method:  
+--- $global_pvalue:  
+--- $chosen_test:  
+--- $effects:
+NULL
+
+
+############################################################
+## CAS : 13. y~F+1 | id 
+############################################################
+duree (s): 2.1 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, effects, bootstrap 
+--- str(max.level=2)
+List of 7
+ $ groups           :'data.frame':	3 obs. of  3 variables:
+  ..$ categories      : chr [1:3] "t1" "t2" "t3"
+  ..$ Bootstrap (mean): chr [1:3] "a" "a" "b"
+  ..$ Student_Holm    : chr [1:3] "a" "b" "c"
+ $ p.value          : num [1:2, 1:2] 2.08e-03 5.53e-08 NA 8.24e-04
+ $ global_pvalue    : num 3.29e-09
+ $ descriptive_stats:'data.frame':	3 obs. of  6 variables:
+  ..$ group: chr [1:3] "t1" "t2" "t3"
+  ..$ mean : num [1:3] 1.97 2.75 3.73
+  ..$ SD   : num [1:3] 1.68 1.53 1.73
+  ..$ SE   : num [1:3] 0.376 0.343 0.386
+  ..$ n    : num [1:3] 20 20 20
+  ..$ type : chr [1:3] "mean" "mean" "mean"
+ $ method           : chr "Parametric ANOVA/t-test"
+ $ effects          :'data.frame':	1 obs. of  2 variables:
+  ..$ term   : chr "F"
+  ..$ p.value: num 3.29e-09
+ $ bootstrap        :List of 2
+  ..$ groups : chr [1:3, 1:2] "t1" "t2" "t3" ...
+  ..$ p.value: num [1:2, 1:2] 0.904 0.261 NA 0.796
+--- $method: Parametric ANOVA/t-test 
+--- $global_pvalue: 3.28871907669094e-09 
+--- $chosen_test:  
+--- $effects:
+  term      p.value
+1    F 3.288719e-09
+
+
+############################################################
+## CAS : 14. paired=TRUE sans id, 2 niveaux, x,g 
+############################################################
+duree (s): 0.8 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, bootstrap 
+--- str(max.level=2)
+List of 6
+ $ groups           :'data.frame':	2 obs. of  2 variables:
+  ..$ categories  : chr [1:2] "t1" "t2"
+  ..$ Student_Holm: chr [1:2] "a" "b"
+ $ p.value          : num 0.00208
+ $ global_pvalue    : num 0.00208
+ $ descriptive_stats:'data.frame':	2 obs. of  6 variables:
+  ..$ group: chr [1:2] "t1" "t2"
+  ..$ mean : num [1:2] 1.97 2.75
+  ..$ SD   : num [1:2] 1.68 1.53
+  ..$ SE   : num [1:2] 0.376 0.343
+  ..$ n    : num [1:2] 20 20
+  ..$ type : chr [1:2] "mean" "mean"
+ $ method           : chr "Paired Student t-test"
+ $ bootstrap        :List of 2
+  ..$ groups :'data.frame':	2 obs. of  2 variables:
+  ..$ p.value: Named num 0.748
+--- $method: Paired Student t-test 
+--- $global_pvalue: 0.00207678341997136 
+--- $chosen_test:  
+--- $effects:
+NULL
+
+
+############################################################
+## CAS : 15. paired+id=nom, formule 2 niveaux 
+############################################################
+duree (s): 0.7 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, bootstrap 
+--- str(max.level=2)
+List of 6
+ $ groups           :'data.frame':	2 obs. of  2 variables:
+  ..$ categories  : chr [1:2] "t1" "t2"
+  ..$ Student_Holm: chr [1:2] "a" "b"
+ $ p.value          : num 0.00208
+ $ global_pvalue    : num 0.00208
+ $ descriptive_stats:'data.frame':	2 obs. of  6 variables:
+  ..$ group: chr [1:2] "t1" "t2"
+  ..$ mean : num [1:2] 1.97 2.75
+  ..$ SD   : num [1:2] 1.68 1.53
+  ..$ SE   : num [1:2] 0.376 0.343
+  ..$ n    : num [1:2] 20 20
+  ..$ type : chr [1:2] "mean" "mean"
+ $ method           : chr "Paired Student t-test"
+ $ bootstrap        :List of 2
+  ..$ groups :'data.frame':	2 obs. of  2 variables:
+  ..$ p.value: Named num 0.873
+--- $method: Paired Student t-test 
+--- $global_pvalue: 0.00207678341997136 
+--- $chosen_test:  
+--- $effects:
+NULL
+
+
+############################################################
+## CAS : 16. id=nom, wt=nom, split-plot 
+############################################################
+duree (s): 0.5 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, bootstrap 
+--- str(max.level=2)
+List of 6
+ $ groups           :'data.frame':	2 obs. of  2 variables:
+  ..$ categories   : chr [1:2] "g1" "g2"
+  ..$ Wilcoxon_Holm: chr [1:2] "a" "a"
+ $ p.value          : num 0.157
+ $ global_pvalue    : num 0.157
+ $ descriptive_stats:'data.frame':	2 obs. of  6 variables:
+  ..$ group: chr [1:2] "g1" "g2"
+  ..$ mean : num [1:2] 2.16 2.69
+  ..$ SD   : num [1:2] 2.06 2.42
+  ..$ SE   : num [1:2] 0.343 0.403
+  ..$ n    : num [1:2] 36 36
+  ..$ type : chr [1:2] "mean" "mean"
+ $ method           : chr "Parametric ANOVA/t-test"
+ $ bootstrap        :List of 2
+  ..$ groups :'data.frame':	2 obs. of  2 variables:
+  ..$ p.value: Named num 0.857
+--- $method: Parametric ANOVA/t-test 
+--- $global_pvalue: 0.156815970054595 
+--- $chosen_test:  
+--- $effects:
+NULL
+
+
+############################################################
+## CAS : 17. within alias 
+############################################################
+duree (s): 2.6 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, effects, bootstrap 
+--- str(max.level=2)
+List of 7
+ $ groups           :'data.frame':	3 obs. of  4 variables:
+  ..$ categories        : chr [1:3] "t1" "t2" "t3"
+  ..$ Bootstrap (median): chr [1:3] "a" "a" "a"
+  ..$ Wilcoxon_Holm     : chr [1:3] "a" "a" "a"
+  ..$ Neminyi           : chr [1:3] "a" "a" "b"
+ $ p.value          : num [1:2, 1:2] 0.388 0.378 NA 0.388
+ $ global_pvalue    : num 0.00138
+ $ descriptive_stats:'data.frame':	3 obs. of  6 variables:
+  ..$ group: chr [1:3] "t1" "t2" "t3"
+  ..$ mean : num [1:3] 1.48 2 3
+  ..$ SD   : num [1:3] 1.83 2.06 2.13
+  ..$ SE   : num [1:3] 0.529 0.596 0.614
+  ..$ n    : num [1:3] 12 12 12
+  ..$ type : chr [1:3] "mean" "mean" "mean"
+ $ method           : chr "Parametric ANOVA/t-test"
+ $ effects          :'data.frame':	1 obs. of  2 variables:
+  ..$ term   : chr "global"
+  ..$ p.value: num 0.00138
+ $ bootstrap        :List of 2
+  ..$ groups : chr [1:3, 1:3] "t1" "t2" "t3" ...
+  ..$ p.value: num [1:2, 1:2] 1 1 NA 1
+--- $method: Parametric ANOVA/t-test 
+--- $global_pvalue: 0.00138323083223383 
+--- $chosen_test:  
+--- $effects:
+    term     p.value
+1 global 0.001383231
+
+
+############################################################
+## CAS : 18. Error(id/T) split-plot formule 
+############################################################
+duree (s): 6.8 
+ERREUR: $ operator is invalid for atomic vectors 
+class: NULL 
+names:  
+--- str(max.level=2)
+ NULL
+--- $method:  
+--- $global_pvalue:  
+--- $chosen_test:  
+--- $effects:
+NULL
+
+
+############################################################
+## CAS : 19. (T|id) pentes aleatoires 
+############################################################
+duree (s): 7.7 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, effects, bootstrap 
+--- str(max.level=2)
+List of 7
+ $ groups           :'data.frame':	3 obs. of  7 variables:
+  ..$ categories      : chr [1:3] "t1" "t2" "t3"
+  ..$ Bootstrap (mean): chr [1:3] "a" "a" "b"
+  ..$ Student_Holm    : chr [1:3] "a" "ab" "b"
+  ..$ Scheffe         : chr [1:3] "b" "ab" "a"
+  ..$ Tukey           : chr [1:3] "b" "ab" "a"
+  ..$ SNK             : chr [1:3] "b" "b" "a"
+  ..$ Waller-Duncan   : chr [1:3] "b" "b" "a"
+ $ p.value          : num [1:2, 1:2] 0.25884 0.00546 NA 0.07784
+ $ global_pvalue    : num 3.45e-12
+ $ descriptive_stats:'data.frame':	3 obs. of  6 variables:
+  ..$ group: chr [1:3] "t1" "t2" "t3"
+  ..$ mean : num [1:3] 1.53 2.23 3.51
+  ..$ SD   : num [1:3] 2.05 2.07 2.23
+  ..$ SE   : num [1:3] 0.418 0.423 0.455
+  ..$ n    : num [1:3] 24 24 24
+  ..$ type : chr [1:3] "mean" "mean" "mean"
+ $ method           : chr "Parametric ANOVA/t-test"
+ $ effects          :'data.frame':	1 obs. of  2 variables:
+  ..$ term   : chr "T"
+  ..$ p.value: num 3.45e-12
+ $ bootstrap        :List of 2
+  ..$ groups : chr [1:3, 1:2] "t1" "t2" "t3" ...
+  ..$ p.value: num [1:2, 1:2] 0.764 0.11 NA 0.594
+--- $method: Parametric ANOVA/t-test 
+--- $global_pvalue: 3.44640317411026e-12 
+--- $chosen_test:  
+--- $effects:
+  term      p.value
+1    T 3.446403e-12
+
+
+############################################################
+## CAS : 20. repliques (mixte) y~F+(1|id) 
+############################################################
+duree (s): 2.7 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, effects, bootstrap 
+--- str(max.level=2)
+List of 7
+ $ groups           :'data.frame':	2 obs. of  3 variables:
+  ..$ categories        : chr [1:2] "a" "b"
+  ..$ Bootstrap (median): chr [1:2] "a" "a"
+  ..$ Wilcoxon_Holm     : chr [1:2] "a" "a"
+ $ p.value          : num 0.0592
+ $ global_pvalue    : num 2.27e-08
+ $ descriptive_stats:'data.frame':	2 obs. of  6 variables:
+  ..$ group: chr [1:2] "a" "b"
+  ..$ mean : num [1:2] 0.235 0.991
+  ..$ SD   : num [1:2] 2.12 1.9
+  ..$ SE   : num [1:2] 0.273 0.245
+  ..$ n    : num [1:2] 60 60
+  ..$ type : chr [1:2] "mean" "mean"
+ $ method           : chr "Parametric ANOVA/t-test"
+ $ effects          :'data.frame':	1 obs. of  2 variables:
+  ..$ term   : chr "F"
+  ..$ p.value: num 2.27e-08
+ $ bootstrap        :List of 2
+  ..$ groups :'data.frame':	2 obs. of  2 variables:
+  ..$ p.value: Named num 0.634
+--- $method: Parametric ANOVA/t-test 
+--- $global_pvalue: 2.27220639943843e-08 
+--- $chosen_test:  
+--- $effects:
+  term      p.value
+1    F 2.272206e-08
+
+
+############################################################
+## CAS : 21. factor(F) dans la formule 
+############################################################
+duree (s): 16.6 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, bootstrap 
+--- str(max.level=2)
+List of 6
+ $ groups           :'data.frame':	3 obs. of  7 variables:
+  ..$ categories      : chr [1:3] "A" "B" "C"
+  ..$ Bootstrap (mean): chr [1:3] "a" "b" "c"
+  ..$ Student_Holm    : chr [1:3] "a" "b" "c"
+  ..$ Scheffe         : chr [1:3] "c" "b" "a"
+  ..$ Tukey           : chr [1:3] "c" "b" "a"
+  ..$ SNK             : chr [1:3] "c" "b" "a"
+  ..$ Waller-Duncan   : chr [1:3] "c" "b" "a"
+ $ p.value          : num [1:2, 1:2] 8.48e-04 4.41e-10 NA 3.14e-04
+ $ global_pvalue    : num 1.03e-09
+ $ descriptive_stats:'data.frame':	3 obs. of  6 variables:
+  ..$ group: chr [1:3] "A" "B" "C"
+  ..$ mean : num [1:3] 11.2 12.1 13.1
+  ..$ SD   : num [1:3] 1.105 0.831 0.783
+  ..$ SE   : num [1:3] 0.221 0.166 0.157
+  ..$ n    : num [1:3] 25 25 25
+  ..$ type : chr [1:3] "mean" "mean" "mean"
+ $ method           : chr "Parametric ANOVA/t-test"
+ $ bootstrap        :List of 2
+  ..$ groups : chr [1:3, 1:2] "A" "B" "C" ...
+  ..$ p.value: num [1:2, 1:2] 1.51e-01 6.68e-07 NA 1.24e-02
+--- $method: Parametric ANOVA/t-test 
+--- $global_pvalue: 1.02850552560807e-09 
+--- $chosen_test:  
+--- $effects:
+NULL
+
+
+############################################################
+## CAS : 22. log(y)~F 
+############################################################
+duree (s): 4.8 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, bootstrap 
+--- str(max.level=2)
+List of 6
+ $ groups           :'data.frame':	3 obs. of  5 variables:
+  ..$ categories      : chr [1:3] "A" "B" "C"
+  ..$ Bootstrap (mean): chr [1:3] "a" "b" "c"
+  ..$ Student_Holm    : chr [1:3] "a" "b" "c"
+  ..$ Games-Howell    : chr [1:3] "a" "b" "c"
+  ..$ Dunnett T3      : chr [1:3] "a" "b" "c"
+ $ p.value          : num [1:2, 1:2] 1.74e-03 3.98e-08 NA 6.99e-05
+ $ global_pvalue    : num 1.12e-08
+ $ descriptive_stats:'data.frame':	3 obs. of  6 variables:
+  ..$ group: chr [1:3] "A" "B" "C"
+  ..$ mean : num [1:3] 2.41 2.49 2.57
+  ..$ SD   : num [1:3] 0.0981 0.0693 0.0584
+  ..$ SE   : num [1:3] 0.0196 0.0139 0.0117
+  ..$ n    : num [1:3] 25 25 25
+  ..$ type : chr [1:3] "mean" "mean" "mean"
+ $ method           : chr "Welch ANOVA"
+ $ bootstrap        :List of 2
+  ..$ groups : chr [1:3, 1:2] "A" "B" "C" ...
+  ..$ p.value: num [1:2, 1:2] 5.04e-02 9.04e-06 NA 5.20e-03
+--- $method: Welch ANOVA 
+--- $global_pvalue: 1.12097694783694e-08 
+--- $chosen_test:  
+--- $effects:
+NULL
+
+
+############################################################
+## CAS : 23. y~F*cov (pentes heterogenes) 
+############################################################
+duree (s): 8.2 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, effects, details 
+--- str(max.level=2)
+List of 7
+ $ groups           :'data.frame':	3 obs. of  2 variables:
+  ..$ categories: chr [1:3] "C" "A" "B"
+  ..$ ANCOVA    : chr [1:3] "a" "b" "c"
+ $ p.value          : num [1:3, 1:3] 1.00 1.58e-10 1.58e-10 1.58e-10 ...
+ $ global_pvalue    : num 1.48e-79
+ $ descriptive_stats:'data.frame':	3 obs. of  4 variables:
+  ..$ group        : chr [1:3] "A" "B" "C"
+  ..$ adjusted_mean: num [1:3] 9.25 17.23 -3
+  ..$ SE           : num [1:3] 0.183 0.183 0.182
+  ..$ type         : chr [1:3] "adjusted_mean" "adjusted_mean" "adjusted_mean"
+ $ method           : chr "ANCOVA post-hoc (tukey adjustment)"
+ $ effects          :'data.frame':	3 obs. of  2 variables:
+  ..$ term   : chr [1:3] "F" "cov" "F:cov"
+  ..$ p.value: num [1:3] 1.48e-79 1.47e-28 2.87e-61
+ $ details          :List of 5
+  ..$ pairwise_comparisons:'data.frame':	3 obs. of  6 variables:
+  ..$ emm_result          :'emmGrid' object with variables:
+    F = A, B, C
+  ..$ pairs_result        :'emmGrid' object with variables:
+    contrast = A - B, A - C, B - C
+  ..$ note                : chr "Post-hoc comparisons performed on adjusted means. Covariates held at their mean values: cov = 4.12"
+  ..$ adjusted_means      :'data.frame':	3 obs. of  5 variables:
+--- $method: ANCOVA post-hoc (tukey adjustment) 
+--- $global_pvalue: 1.48266600088218e-79 
+--- $chosen_test:  
+--- $effects:
+   term      p.value
+1     F 1.482666e-79
+2   cov 1.469756e-28
+3 F:cov 2.871242e-61
+
+
+############################################################
+## CAS : 24. y~F*cov (interaction nulle) 
+############################################################
+duree (s): 0.8 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, effects, details 
+--- str(max.level=2)
+List of 7
+ $ groups           :'data.frame':	3 obs. of  2 variables:
+  ..$ categories: chr [1:3] "A" "B" "C"
+  ..$ ANCOVA    : chr [1:3] "a" "b" "c"
+ $ p.value          : num [1:3, 1:3] 1.00 8.47e-05 2.45e-09 8.47e-05 ...
+ $ global_pvalue    : num 4.15e-09
+ $ descriptive_stats:'data.frame':	3 obs. of  4 variables:
+  ..$ group        : chr [1:3] "A" "B" "C"
+  ..$ adjusted_mean: num [1:3] 8.52 9.67 10.34
+  ..$ SE           : num [1:3] 0.181 0.181 0.181
+  ..$ type         : chr [1:3] "adjusted_mean" "adjusted_mean" "adjusted_mean"
+ $ method           : chr "ANCOVA post-hoc (tukey adjustment)"
+ $ effects          :'data.frame':	2 obs. of  2 variables:
+  ..$ term   : chr [1:2] "F" "cov"
+  ..$ p.value: num [1:2] 4.15e-09 2.56e-24
+ $ details          :List of 5
+  ..$ pairwise_comparisons:'data.frame':	3 obs. of  6 variables:
+  ..$ emm_result          :'emmGrid' object with variables:
+    F = A, B, C
+  ..$ pairs_result        :'emmGrid' object with variables:
+    contrast = A - B, A - C, B - C
+  ..$ note                : chr "Post-hoc comparisons performed on adjusted means. Covariates held at their mean values: cov = 4.98"
+  ..$ adjusted_means      :'data.frame':	3 obs. of  5 variables:
+--- $method: ANCOVA post-hoc (tukey adjustment) 
+--- $global_pvalue: 4.14815914671471e-09 
+--- $chosen_test:  
+--- $effects:
+  term      p.value
+1    F 4.148159e-09
+2  cov 2.564704e-24
+
+
+############################################################
+## CAS : 25. y~F+cov+cov2 
+############################################################
+duree (s): 0.8 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, effects, details 
+--- str(max.level=2)
+List of 7
+ $ groups           :'data.frame':	3 obs. of  2 variables:
+  ..$ categories: chr [1:3] "A" "B" "C"
+  ..$ ANCOVA    : chr [1:3] "a" "b" "c"
+ $ p.value          : num [1:3, 1:3] 1.00 1.02e-04 8.33e-09 1.02e-04 ...
+ $ global_pvalue    : num 1.23e-08
+ $ descriptive_stats:'data.frame':	3 obs. of  4 variables:
+  ..$ group        : chr [1:3] "A" "B" "C"
+  ..$ adjusted_mean: num [1:3] 8.53 9.67 10.32
+  ..$ SE           : num [1:3] 0.183 0.182 0.185
+  ..$ type         : chr [1:3] "adjusted_mean" "adjusted_mean" "adjusted_mean"
+ $ method           : chr "ANCOVA post-hoc (tukey adjustment)"
+ $ effects          :'data.frame':	3 obs. of  2 variables:
+  ..$ term   : chr [1:3] "F" "cov" "cov2"
+  ..$ p.value: num [1:3] 1.23e-08 6.19e-24 6.95e-01
+ $ details          :List of 5
+  ..$ pairwise_comparisons:'data.frame':	3 obs. of  6 variables:
+  ..$ emm_result          :'emmGrid' object with variables:
+    F = A, B, C
+  ..$ pairs_result        :'emmGrid' object with variables:
+    contrast = A - B, A - C, B - C
+  ..$ note                : chr "Post-hoc comparisons performed on adjusted means. Covariates held at their mean values: cov = 4.98, cov2 = -0.01"
+  ..$ adjusted_means      :'data.frame':	3 obs. of  5 variables:
+--- $method: ANCOVA post-hoc (tukey adjustment) 
+--- $global_pvalue: 1.22843610205949e-08 
+--- $chosen_test:  
+--- $effects:
+  term      p.value
+1    F 1.228436e-08
+2  cov 6.190389e-24
+3 cov2 6.948670e-01
+
+
+############################################################
+## CAS : 26. covariable seule y~c1 
+############################################################
+duree (s): 0 
+ERREUR: Après suppression des groupes avec effectifs insuffisants, il reste moins de 2 groupes. 
+class: NULL 
+names:  
+--- str(max.level=2)
+ NULL
+--- $method:  
+--- $global_pvalue:  
+--- $chosen_test:  
+--- $effects:
+NULL
+
+
+############################################################
+## CAS : 27. covariables seules y~c1+c2 
+############################################################
+duree (s): 0 
+ERREUR: Au moins 2 groupes sont nécessaires pour une comparaison. 
+class: NULL 
+names:  
+--- str(max.level=2)
+ NULL
+--- $method:  
+--- $global_pvalue:  
+--- $chosen_test:  
+--- $effects:
+NULL
+
+
+############################################################
+## CAS : 28. MANOVA 2 facteurs 
+############################################################
+duree (s): 0.8 
+class: posthoc 
+names: groups, p.value, test_statistics, global_pvalue, discriminant_analysis, protected_anovas, method, effects, effects_by_dv, pairwise_multivariate, groups_multivariate 
+--- str(max.level=2)
+List of 11
+ $ groups               :'data.frame':	2 obs. of  3 variables:
+  ..$ dependent_variable: chr [1:2] "y1" "y2"
+  ..$ significance      : chr [1:2] "significant" "significant"
+  ..$ p_value           : num [1:2] 1.39e-05 1.71e-03
+ $ p.value              : Named num [1:2] 1.39e-05 1.71e-03
+ $ test_statistics      :List of 4
+  ..$ Wilks          :List of 5
+  ..$ Pillai         :List of 5
+  ..$ HotellingLawley:List of 5
+  ..$ Roy            :List of 5
+ $ global_pvalue        : num 3.2e-06
+ $ discriminant_analysis:List of 3
+  ..$ n_functions     : int 2
+  ..$ prop_variance   : num [1:2] 0.669 0.331
+  ..$ structure_matrix: num [1:2, 1:2] 0.961 -0.291 0.277 0.957
+ $ protected_anovas     :List of 2
+  ..$ y1:List of 8
+  ..$ y2:List of 8
+ $ method               : chr "MANOVA (Wilks' Lambda)"
+ $ effects              :'data.frame':	3 obs. of  5 variables:
+  ..$ term    : chr [1:3] "A" "B" "A:B"
+  ..$ Wilks   : num [1:3] 0.714 0.839 0.986
+  ..$ p.Wilks : num [1:3] 3.20e-06 1.37e-03 5.85e-01
+  ..$ Pillai  : num [1:3] 0.2864 0.1611 0.0142
+  ..$ p.Pillai: num [1:3] 3.20e-06 1.37e-03 5.85e-01
+ $ effects_by_dv        :List of 2
+  ..$ y1:'data.frame':	3 obs. of  2 variables:
+  ..$ y2:'data.frame':	3 obs. of  2 variables:
+ $ pairwise_multivariate: num [1:3, 1:3] 0.016947 0.016947 0.000126 NA ...
+ $ groups_multivariate  :'data.frame':	4 obs. of  2 variables:
+  ..$ categories : chr [1:4] "a1.b1" "a2.b1" "a1.b2" ...
+  ..$ Pillai_Holm: chr [1:4] "b" "c" "a" ...
+--- $method: MANOVA (Wilks' Lambda) 
+--- $global_pvalue: 3.19902149767395e-06 
+--- $chosen_test:  
+--- $effects:
+  term     Wilks      p.Wilks     Pillai     p.Pillai
+1    A 0.7136202 3.199021e-06 0.28637982 3.199021e-06
+2    B 0.8388505 1.374586e-03 0.16114946 1.374586e-03
+3  A:B 0.9858162 5.852587e-01 0.01418382 5.852587e-01
+
+
+############################################################
+## CAS : 29. MANOVA avec id 
+############################################################
+duree (s): 0 
+ERREUR: ERREUR: MANOVA à mesures répétées (facteurs intra-sujets) non encore implémentée.
+
+Pour mesures répétées avec variables dépendantes multiples, considérez:
+  1. Modèles mixtes avec réponse multivariée (packages: nlme, lme4)
+  2. ANOVAs à mesures répétées séparées pour chaque VD (correction Bonferroni)
+  3. Analyse de profils (si VD représentent des points temporels)
+
+Packages R recommandés:
+  - nlme::lme() pour modèles linéaires mixtes
+  - lme4::lmer() pour modèles mixtes avec effets aléatoires
+  - car::Anova() avec type='III' pour mesures répétées
+
+Référence académique:
+  Davis, C. S. (2002). Statistical Methods for the Analysis of
+  Repeated Measurements. Springer. Chapitre 7.
+  https://doi.org/10.1007/b97287 
+class: NULL 
+names:  
+--- str(max.level=2)
+ NULL
+--- $method:  
+--- $global_pvalue:  
+--- $chosen_test:  
+--- $effects:
+NULL
+
+
+############################################################
+## CAS : 30. asymetrique 3 groupes (Kruskal ?) 
+############################################################
+duree (s): 7.7 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, bootstrap, chosen_test 
+--- str(max.level=2)
+List of 7
+ $ groups           :'data.frame':	3 obs. of  4 variables:
+  ..$ categories        : chr [1:3] "A" "B" "C"
+  ..$ Bootstrap (median): chr [1:3] "a" "a" "b"
+  ..$ Wilcoxon_Holm     : chr [1:3] "a" "b" "c"
+  ..$ Dunn_Holm         : chr [1:3] "a" "ab" "b"
+ $ p.value          : num [1:2, 1:2] 0.042067 0.000504 NA 0.03391
+ $ global_pvalue    : num 0.000325
+ $ descriptive_stats:'data.frame':	3 obs. of  4 variables:
+  ..$ group : chr [1:3] "A" "B" "C"
+  ..$ median: num [1:3] 0.782 1.681 2.842
+  ..$ IQR   : num [1:3] 1.21 1.88 3.84
+  ..$ type  : chr [1:3] "median" "median" "median"
+ $ method           : chr "Kruskal-Wallis"
+ $ bootstrap        :List of 2
+  ..$ groups :'data.frame':	3 obs. of  3 variables:
+  ..$ p.value: num [1:2, 1:2] 0.6424 0.0427 NA 0.4228
+ $ chosen_test      : chr "kruskal"
+--- $method: Kruskal-Wallis 
+--- $global_pvalue: 0.000324869201979912 
+--- $chosen_test: kruskal 
+--- $effects:
+NULL
+
+
+############################################################
+## CAS : 31. heteroscedastique (Welch ?) 
+############################################################
+duree (s): 1.9 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, bootstrap 
+--- str(max.level=2)
+List of 6
+ $ groups           :'data.frame':	3 obs. of  7 variables:
+  ..$ categories      : chr [1:3] "A" "B" "C"
+  ..$ Bootstrap (mean): chr [1:3] "a" "a" "a"
+  ..$ Student_Holm    : chr [1:3] "a" "a" "a"
+  ..$ Scheffe         : chr [1:3] "a" "a" "a"
+  ..$ Tukey           : chr [1:3] "a" "a" "a"
+  ..$ SNK             : chr [1:3] "a" "a" "a"
+  ..$ Waller-Duncan   : chr [1:3] "a" "a" "a"
+ $ p.value          : num [1:2, 1:2] 0.677 0.677 NA 0.927
+ $ global_pvalue    : num 0.401
+ $ descriptive_stats:'data.frame':	3 obs. of  6 variables:
+  ..$ group: chr [1:3] "A" "B" "C"
+  ..$ mean : num [1:3] 9.95 10.04 8.81
+  ..$ SD   : num [1:3] 0.554 1.74 6.555
+  ..$ SE   : num [1:3] 0.101 0.318 1.197
+  ..$ n    : num [1:3] 30 30 30
+  ..$ type : chr [1:3] "mean" "mean" "mean"
+ $ method           : chr "Parametric ANOVA/t-test"
+ $ bootstrap        :List of 2
+  ..$ groups : chr [1:3, 1:2] "A" "B" "C" ...
+  ..$ p.value: num [1:2, 1:2] 1 1 NA 1
+--- $method: Parametric ANOVA/t-test 
+--- $global_pvalue: 0.401035070139036 
+--- $chosen_test:  
+--- $effects:
+NULL
+
+
+############################################################
+## CAS : 32. discret Poisson 
+############################################################
+duree (s): 3.2 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, bootstrap 
+--- str(max.level=2)
+List of 6
+ $ groups           :'data.frame':	3 obs. of  7 variables:
+  ..$ categories      : chr [1:3] "A" "B" "C"
+  ..$ Bootstrap (mean): chr [1:3] "a" "a" "a"
+  ..$ Student_Holm    : chr [1:3] "a" "a" "a"
+  ..$ Scheffe         : chr [1:3] "a" "a" "a"
+  ..$ Tukey           : chr [1:3] "a" "a" "a"
+  ..$ SNK             : chr [1:3] "a" "a" "a"
+  ..$ Waller-Duncan   : chr [1:3] "a" "a" "a"
+ $ p.value          : num [1:2, 1:2] 1 1 NA 1
+ $ global_pvalue    : num 0.706
+ $ descriptive_stats:'data.frame':	3 obs. of  6 variables:
+  ..$ group: chr [1:3] "A" "B" "C"
+  ..$ mean : num [1:3] 2.02 2.17 1.88
+  ..$ SD   : num [1:3] 1.69 1.6 1.52
+  ..$ SE   : num [1:3] 0.267 0.253 0.241
+  ..$ n    : num [1:3] 40 40 40
+  ..$ type : chr [1:3] "mean" "mean" "mean"
+ $ method           : chr "Parametric ANOVA/t-test"
+ $ bootstrap        :List of 2
+  ..$ groups : chr [1:3, 1:2] "A" "B" "C" ...
+  ..$ p.value: num [1:2, 1:2] 1 1 NA 1
+--- $method: Parametric ANOVA/t-test 
+--- $global_pvalue: 0.705641707209637 
+--- $chosen_test:  
+--- $effects:
+NULL
+
+
+############################################################
+## CAS : 33. petit groupe n=2 filtre 
+############################################################
+duree (s): 0.5 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, bootstrap 
+--- str(max.level=2)
+List of 6
+ $ groups           :'data.frame':	2 obs. of  3 variables:
+  ..$ categories      : chr [1:2] "B" "C"
+  ..$ Bootstrap (mean): chr [1:2] "a" "a"
+  ..$ Student_Holm    : chr [1:2] "a" "a"
+ $ p.value          : num 0.279
+ $ global_pvalue    : num 0.279
+ $ descriptive_stats:'data.frame':	2 obs. of  6 variables:
+  ..$ group: chr [1:2] "B" "C"
+  ..$ mean : num [1:2] -0.476 0.121
+  ..$ SD   : num [1:2] 0.736 1.043
+  ..$ SE   : num [1:2] 0.3 0.426
+  ..$ n    : num [1:2] 6 6
+  ..$ type : chr [1:2] "mean" "mean"
+ $ method           : chr "Student t-test"
+ $ bootstrap        :List of 2
+  ..$ groups :'data.frame':	2 obs. of  2 variables:
+  ..$ p.value: Named num 0.793
+--- $method: Student t-test 
+--- $global_pvalue: 0.278780524661334 
+--- $chosen_test:  
+--- $effects:
+NULL
+
+
+############################################################
+## CAS : 34. desequilibre A*B 
+############################################################
+duree (s): 2.2 
+class: posthoc 
+names: groups, p.value, global_pvalue, descriptive_stats, method, effects, bootstrap 
+--- str(max.level=2)
+List of 7
+ $ groups           :'data.frame':	4 obs. of  7 variables:
+  ..$ categories      : chr [1:4] "a1.b1" "a2.b1" "a1.b2" ...
+  ..$ Bootstrap (mean): chr [1:4] "a" "a" "a" ...
+  ..$ Student_Holm    : chr [1:4] "a" "a" "a" ...
+  ..$ Scheffe         : chr [1:4] "b" "b" "b" ...
+  ..$ Tukey           : chr [1:4] "b" "b" "b" ...
+  ..$ SNK             : chr [1:4] "b" "b" "b" ...
+  ..$ Waller-Duncan   : chr [1:4] "b" "b" "b" ...
+ $ p.value          : num [1:3, 1:3] 5.94e-01 2.43e-01 7.93e-05 NA ...
+ $ global_pvalue    : num 6.02e-05
+ $ descriptive_stats:'data.frame':	4 obs. of  6 variables:
+  ..$ group: chr [1:4] "a1.b1" "a2.b1" "a1.b2" ...
+  ..$ mean : num [1:4] 10.3 11.2 10.6 12.7
+  ..$ SD   : num [1:4] 1.188 0.885 1.348 1.234
+  ..$ SE   : num [1:4] 0.343 0.256 0.374 0.356
+  ..$ n    : num [1:4] 12 12 13 12
+  ..$ type : chr [1:4] "mean" "mean" "mean" ...
+ $ method           : chr "Parametric ANOVA/t-test"
+ $ effects          :'data.frame':	3 obs. of  2 variables:
+  ..$ term   : chr [1:3] "A" "B" "A:B"
+  ..$ p.value: num [1:3] 6.02e-05 1.40e-02 7.21e-02
+ $ bootstrap        :List of 2
+  ..$ groups : chr [1:4, 1:2] "a1.b1" "a2.b1" "a1.b2" ...
+  ..$ p.value: num [1:3, 1:3] 0.9953 1 0.00329 NA ...
+--- $method: Parametric ANOVA/t-test 
+--- $global_pvalue: 6.02265557481571e-05 
+--- $chosen_test:  
+--- $effects:
+  term      p.value
+1    A 6.022656e-05
+2    B 1.395238e-02
+3  A:B 7.211025e-02
+
+
+## return=FALSE
+[1] 1.028506e-09
+[1] 1.835525e-05
+
+
+## groups / p.value r1
+  categories Bootstrap (mean) Student_Holm
+1          A                a            a
+2          B                b            b
+[1] 0.0006516208
+
+
+## groups / p.value r2
+  categories Bootstrap (mean) Student_Holm Scheffe Tukey SNK Waller-Duncan
+1          A                a            a       c     c   c             c
+2          B                b            b       b     b   b             b
+3          C                c            c       a     a   a             a
+             A            B
+B 8.475013e-04           NA
+C 4.407133e-10 0.0003137925
+  group     mean        SD        SE  n type
+1     A 11.16541 1.1051952 0.2210390 25 mean
+2     B 12.06924 0.8307175 0.1661435 25 mean
+3     C 13.10477 0.7834642 0.1566928 25 mean
+
+
+## groups r3
+  categories Bootstrap (mean) Student_Holm Scheffe Tukey SNK Waller-Duncan
+1      a1.b1                a            a       b     b   b             b
+2      a2.b1                a            a       b     b   b             b
+3      a1.b2                a            a       b     b   b             b
+4      a2.b2                b            b       a     a   a             a
+             a1.b1        a1.b2        a2.b1
+a1.b2 6.733677e-01           NA           NA
+a2.b1 2.525409e-01 6.733677e-01           NA
+a2.b2 1.689322e-06 4.830135e-05 0.0005825469
+  group     mean       SD        SE  n type
+1 a1.b1 10.33874 1.103079 0.2848137 15 mean
+2 a2.b1 11.06532 0.872847 0.2253681 15 mean
+3 a1.b2 10.73921 1.356537 0.3502565 15 mean
+4 a2.b2 12.75009 1.142151 0.2949022 15 mean
+
+
+## r4
+  categories ANCOVA
+1          A      a
+2          B      b
+3          C      c
+             A            B            C
+A 1.000000e+00 8.467997e-05 2.450904e-09
+B 8.467997e-05 1.000000e+00 2.956030e-02
+C 2.450904e-09 2.956030e-02 1.000000e+00
+  group adjusted_mean        SE          type
+1     A      8.523855 0.1808409 adjusted_mean
+2     B      9.667623 0.1809665 adjusted_mean
+3     C     10.335692 0.1810536 adjusted_mean
+List of 5
+ $ pairwise_comparisons:'data.frame':	3 obs. of  6 variables:
+ $ emm_result          :'emmGrid' object with variables:
+    F = A, B, C
+ $ pairs_result        :'emmGrid' object with variables:
+    contrast = A - B, A - C, B - C
+ $ note                : chr "Post-hoc comparisons performed on adjusted means. Covariates held at their mean values: cov = 4.98"
+ $ adjusted_means      :'data.frame':	3 obs. of  5 variables:
+
+
+## r5
+$Wilks
+$Wilks$statistic
+[1] 0.4282493
+
+$Wilks$F_value
+[1] 18.74754
+
+$Wilks$df1
+[1] 4
+
+$Wilks$df2
+[1] 142
+
+$Wilks$p_value
+[1] 2.149824e-12
+
+
+$Pillai
+$Pillai$statistic
+[1] 0.5757884
+
+$Pillai$F_value
+[1] 14.55429
+
+$Pillai$df1
+[1] 4
+
+$Pillai$df2
+[1] 144
+
+$Pillai$p_value
+[1] 5.25089e-10
+
+
+$HotellingLawley
+$HotellingLawley$statistic
+[1] 1.32566
+
+$HotellingLawley$F_value
+[1] 23.19905
+
+$HotellingLawley$df1
+[1] 4
+
+$HotellingLawley$df2
+[1] 140
+
+$HotellingLawley$p_value
+[1] 1.00368e-14
+
+
+$Roy
+$Roy$statistic
+[1] 1.318509
+
+$Roy$F_value
+[1] 47.46633
+
+$Roy$df1
+[1] 2
+
+$Roy$df2
+[1] 72
+
+$Roy$p_value
+[1] 7.120049e-14
+
+
+NULL
+NULL
+   dependent_variable significance      p_value
+y1                 y1  significant 1.213090e-13
+y2                 y2           ns 2.626278e-02
+
+
+## Internes : .normalize_from_formula (quelle definition gagne ?)
+na_strategy <- match.arg(na_strategy)
+appels: 

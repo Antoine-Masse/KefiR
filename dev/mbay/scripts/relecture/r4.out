@@ -1,0 +1,18 @@
+=== 0. BFbal vs BFman :-2.121739 -2.121739 
+
+=== 1. Calibration sous l'a priori exact (Sigma=I par invariance), a=3 ; pi=1/2
+ d=3 n/gr=10 : moyenne P=0.493 (se 0.009)
+        [0,0.1] (0.1,0.3] (0.3,0.5] (0.5,0.7] (0.7,0.9] (0.9,1]
+annonce   0.075     0.174     0.382     0.601     0.807    0.99
+realise   0.051     0.173     0.457     0.676     0.791    0.99
+ d=5 n/gr=10 : moyenne P=0.509 (se 0.009)
+        [0,0.1] (0.1,0.3] (0.3,0.5] (0.5,0.7] (0.7,0.9] (0.9,1]
+annonce   0.059     0.174     0.380     0.597     0.809   0.992
+realise   0.062     0.173     0.331     0.505     0.845   0.992
+
+=== 2. Effet sur une seule DV (moyennes -.5,0,.5 ; f=.408), DV ajoutees sans rapport, 300 jeux
+ d  n/gr | H1: med P, P>.5, P>.95, P<.25, Pillai<.05 | H0: med P, P>.5, P<.05, Pillai<.05 | med Mahalanobis f a priori
+Erreur dans h(simpleError(msg, call)) : 
+  erreur d'ï¿½valuation de l'argument 'x' lors de la sï¿½lection d'une mï¿½thode pour la fonction 't' : erreur d'ï¿½valuation de l'argument 'object' lors de la sï¿½lection d'une mï¿½thode pour la fonction 'summary' : réponses multiples nécessaires
+Appels : s ... sapply -> lapply -> FUN -> pil -> summary -> manova
+Exécution arrêtée

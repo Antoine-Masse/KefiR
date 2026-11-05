@@ -1,0 +1,138 @@
+installation des dépendances 'elliptic', 'contfrac', 'coda', 'pbapply', 'hypergeo'
+
+package 'elliptic' successfully unpacked and MD5 sums checked
+package 'contfrac' successfully unpacked and MD5 sums checked
+package 'coda' successfully unpacked and MD5 sums checked
+package 'pbapply' successfully unpacked and MD5 sums checked
+package 'hypergeo' successfully unpacked and MD5 sums checked
+package 'BayesFactor' successfully unpacked and MD5 sums checked
+
+### BayesFactor : 35 s ; statut=ok ; 6 nouveaux paquets ; +16.6 Mo ; total lib 16.6 Mo
+  nouveaux: BayesFactor coda contfrac elliptic hypergeo pbapply
+installation des dépendances 'insight', 'datawizard'
+
+package 'insight' successfully unpacked and MD5 sums checked
+package 'datawizard' successfully unpacked and MD5 sums checked
+package 'bayestestR' successfully unpacked and MD5 sums checked
+
+### bayestestR : 13 s ; statut=ok ; 3 nouveaux paquets ; +6.5 Mo ; total lib 23.1 Mo
+  nouveaux: bayestestR datawizard insight
+package 'BAS' successfully unpacked and MD5 sums checked
+
+### BAS : 7 s ; statut=ok ; 1 nouveaux paquets ; +2.1 Mo ; total lib 25.2 Mo
+  nouveaux: BAS
+installation de la dépendance 'Brobdingnag'
+
+package 'Brobdingnag' successfully unpacked and MD5 sums checked
+package 'bridgesampling' successfully unpacked and MD5 sums checked
+
+### bridgesampling : 9 s ; statut=ok ; 2 nouveaux paquets ; +2.9 Mo ; total lib 28.1 Mo
+  nouveaux: bridgesampling Brobdingnag
+installation des dépendances 'xfun', 'litedown', 'ggdist', 'ggridges', 'reshape2', 'checkmate', 'tensorA', 'distributional', 'inline', 'QuickJSR', 'colourpicker', 'dygraphs', 'markdown', 'shinyjs', 'shinythemes', 'threejs', 'bayesplot', 'loo', 'posterior', 'rstan', 'rstantools', 'shinystan', 'RcppParallel', 'StanHeaders', 'BH'
+
+package 'xfun' successfully unpacked and MD5 sums checked
+package 'litedown' successfully unpacked and MD5 sums checked
+package 'ggdist' successfully unpacked and MD5 sums checked
+package 'ggridges' successfully unpacked and MD5 sums checked
+package 'reshape2' successfully unpacked and MD5 sums checked
+package 'checkmate' successfully unpacked and MD5 sums checked
+package 'tensorA' successfully unpacked and MD5 sums checked
+package 'distributional' successfully unpacked and MD5 sums checked
+package 'inline' successfully unpacked and MD5 sums checked
+package 'QuickJSR' successfully unpacked and MD5 sums checked
+package 'colourpicker' successfully unpacked and MD5 sums checked
+package 'dygraphs' successfully unpacked and MD5 sums checked
+package 'markdown' successfully unpacked and MD5 sums checked
+package 'shinyjs' successfully unpacked and MD5 sums checked
+package 'shinythemes' successfully unpacked and MD5 sums checked
+package 'threejs' successfully unpacked and MD5 sums checked
+package 'bayesplot' successfully unpacked and MD5 sums checked
+package 'loo' successfully unpacked and MD5 sums checked
+package 'posterior' successfully unpacked and MD5 sums checked
+package 'rstan' successfully unpacked and MD5 sums checked
+package 'rstantools' successfully unpacked and MD5 sums checked
+package 'shinystan' successfully unpacked and MD5 sums checked
+package 'RcppParallel' successfully unpacked and MD5 sums checked
+package 'StanHeaders' successfully unpacked and MD5 sums checked
+package 'BH' successfully unpacked and MD5 sums checked
+package 'rstanarm' successfully unpacked and MD5 sums checked
+
+### rstanarm : 189 s ; statut=ok ; 26 nouveaux paquets ; +206.8 Mo ; total lib 234.9 Mo
+  nouveaux: bayesplot BH checkmate colourpicker distributional dygraphs ggdist ggridges inline litedown loo markdown posterior QuickJSR RcppParallel reshape2 rstan rstanarm rstantools shinyjs shinystan shinythemes StanHeaders tensorA threejs xfun
+installation des dépendances 'globals', 'listenv', 'parallelly', 'future', 'future.apply', 'nleqslv'
+
+package 'globals' successfully unpacked and MD5 sums checked
+package 'listenv' successfully unpacked and MD5 sums checked
+package 'parallelly' successfully unpacked and MD5 sums checked
+package 'future' successfully unpacked and MD5 sums checked
+package 'future.apply' successfully unpacked and MD5 sums checked
+package 'nleqslv' successfully unpacked and MD5 sums checked
+package 'brms' successfully unpacked and MD5 sums checked
+
+### brms : 49 s ; statut=ok ; 7 nouveaux paquets ; +12.3 Mo ; total lib 247.2 Mo
+  nouveaux: brms future future.apply globals listenv nleqslv parallelly
+               Package        Version   
+BAS            BAS            2.0.2     
+BayesFactor    BayesFactor    0.9.12-4.8
+bayesplot      bayesplot      1.16.0    
+bayestestR     bayestestR     0.20.0    
+BH             BH             1.90.0-1  
+bridgesampling bridgesampling 1.2-1     
+brms           brms           2.23.0    
+Brobdingnag    Brobdingnag    1.3-1     
+checkmate      checkmate      2.3.4     
+coda           coda           0.19-4.1  
+colourpicker   colourpicker   1.3.0     
+contfrac       contfrac       1.1-13    
+datawizard     datawizard     1.4.1     
+distributional distributional 0.9.0     
+dygraphs       dygraphs       1.1.1.6   
+elliptic       elliptic       1.5-1     
+future         future         1.82.0    
+future.apply   future.apply   1.21.0    
+ggdist         ggdist         3.3.3     
+ggridges       ggridges       0.5.7     
+globals        globals        0.20.0    
+hypergeo       hypergeo       1.2-15    
+inline         inline         0.3.21    
+insight        insight        1.7.0     
+listenv        listenv        1.1.0     
+litedown       litedown       1.0       
+loo            loo            2.10.1    
+markdown       markdown       2.1       
+nleqslv        nleqslv        3.3.7     
+parallelly     parallelly     1.50.0    
+pbapply        pbapply        1.7-5     
+posterior      posterior      1.7.0     
+QuickJSR       QuickJSR       1.11.0    
+RcppParallel   RcppParallel   6.2.1     
+reshape2       reshape2       1.4.5     
+rstan          rstan          2.32.7    
+rstanarm       rstanarm       2.32.2    
+rstantools     rstantools     2.7.1     
+shinyjs        shinyjs        2.1.1     
+shinystan      shinystan      2.7.0     
+shinythemes    shinythemes    1.2.0     
+StanHeaders    StanHeaders    2.39.1.1  
+tensorA        tensorA        0.36.2.1  
+threejs        threejs        0.3.4     
+xfun           xfun           0.62      
+            BH       rstanarm    BayesFactor    StanHeaders           brms 
+         123.2           21.3           13.2           11.4            8.6 
+     bayesplot          rstan   RcppParallel         ggdist        insight 
+           7.0            6.6            5.8            4.3            3.6 
+      QuickJSR    shinythemes       ggridges            loo            BAS 
+           3.4            3.1            2.9            2.5            2.1 
+    rstantools         future     bayestestR   colourpicker      shinystan 
+           2.0            1.7            1.7            1.6            1.5 
+   Brobdingnag       hypergeo        shinyjs        threejs bridgesampling 
+           1.5            1.5            1.4            1.4            1.3 
+     posterior     datawizard       elliptic       dygraphs       reshape2 
+           1.3            1.3            1.3            1.2            1.1 
+     checkmate     parallelly       litedown           xfun distributional 
+           1.0            1.0            0.8            0.8            0.8 
+          coda   future.apply        globals        listenv        tensorA 
+           0.3            0.3            0.3            0.3            0.2 
+       nleqslv         inline       contfrac        pbapply       markdown 
+           0.2            0.2            0.1            0.1            0.1 
+FIN INSTALL

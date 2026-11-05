@@ -1,0 +1,217 @@
+BayesFactor 0.9.12.4.8 
+
+=== 2a. ttestBF vs integration JZS (Rouder 2009) ===
+  n=20,20 d=0.0 t=-0.3847 : ttestBF=0.32755749 (propErr 4.8e-05) ; integrate=0.32755749 ; ecart relatif=8.12e-13
+  n=20,25 d=0.6 t=3.1433 : ttestBF=12.619268 (propErr 1.1e-08) ; integrate=12.619268 ; ecart relatif=2.03e-12
+  n=100,100 d=0.3 t=1.7695 : ttestBF=0.66193194 (propErr 0.00023) ; integrate=0.66193194 ; ecart relatif=9.09e-11
+
+=== 2b. anovaBF 3 groupes vs Zellner-Siow programme a la main (MEME a priori : Rouder 2012, g~IG(1/2,r^2/2), contrastes orthonormes, mu plat, sigma Jeffreys) ===
+  n=15 eff=0.0 : anovaBF=0.20496348 (propErr 8.1e-05) ; integrate ZS=0.20496347 ; ecart relatif=5.37e-08
+  n=15 eff=0.5 : anovaBF=0.92388933 (propErr 5.6e-05) ; integrate ZS=0.92388929 ; ecart relatif=3.63e-08
+  n=10,15,20 eff=0.5 : anovaBF=22.397595 (propErr 0.0001) ; integrate ZS=22.397594 ; ecart relatif=4.60e-08
+  y~A+B (2 g, 2D) : lmBF=0.323062 (propErr 0.0088) ; double integrate=0.327914 ; ecart relatif=1.48e-02
+  y~x continu (Liang, g~IG(1/2,r^2 n/2), r=sqrt(2)/4) : lmBF=497.077 ; integrate=497.077 ; ecart relatif=1.78e-09
+
+=== 2c. y~A*B : BF d'inclusion a la main ===
+  Temps whichModels=all : 2.48 secs 
+      modele         bf        error
+           A 18.1343746 2.734386e-09
+           B  0.3145700 9.867519e-05
+         A:B  0.4048160 3.250280e-04
+       A + B  6.4448757 2.690464e-02
+     A + A:B  7.9178313 9.635558e-03
+     B + A:B  0.1298609 1.283711e-02
+ A + B + A:B  2.9305522 1.256905e-02
+  Inclusion 'tous modeles' (8 modeles) : A=19.16 B=0.3576 A:B=0.4396
+  Inclusion 'apparies'  : A=18.7 B=0.3533 A:B=0.4547
+  bayestestR match_models=FALSE:
+    p_prior p_posterior    log_BF
+A       0.5   0.9503916  2.952714
+B       0.5   0.2634303 -1.028215
+A:B     0.5   0.3053652 -0.821878
+  bayestestR match_models=TRUE:
+    p_prior p_posterior     log_BF
+A      0.25   0.6593698  2.9283929
+B      0.25   0.1813308 -1.0405455
+A:B    0.50   0.3053652 -0.8174534
+Analysis of Variance Table
+
+Response: y
+          Df Sum Sq Mean Sq F value   Pr(>F)   
+A          1  7.941  7.9414 10.8012 0.001786 **
+B          2  2.000  1.0000  1.3602 0.265269   
+A:B        2  1.786  0.8932  1.2148 0.304751   
+Residuals 54 39.702  0.7352                    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+-- ANCOVA y~F+x : lmBF(y~F+x)/lmBF(y~x)
+            bf      error
+F + x 3.952803 0.01263655
+Analysis of Variance Table
+
+Response: y
+  Df Sum Sq Mean Sq F value  Pr(>F)  
+F  2 9.2317  4.6158  4.6044 0.01408 *
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+-- Apparie : lmBF whichRandom=id vs ttestBF(paired=TRUE)
+              bf       error
+tm + id 1.353692 0.007639792
+                    bf        error
+Alt., r=0.707 1.273736 0.0002325567
+[1] 0.05590378
+
+-- Split-plot : y~G*T+id, id aleatoire
+                        bf       error
+T + id           0.4169951 0.005127204
+G + id           0.7180909 0.010870188
+T + G + id       0.3053547 0.010047906
+T + G + T:G + id 0.1874380 0.028351453
+  temps: 3.65 secs 
+  A:B apparie :
+                  bf      error
+G * T + id 0.5727081 0.02016258
+
+=== 2d. Limites : on essaie ===
+
+-- cbind multivarie anovaBF 
+  ERREUR: colonnes non définies sélectionnées 
+NULL
+
+-- cbind multivarie lmBF 
+  ERREUR: colonnes non définies sélectionnées 
+NULL
+
+-- pente aleatoire (1+x|id) lmBF 
+  ERREUR: colonnes non définies sélectionnées 
+NULL
+
+-- pente aleatoire par x:id whichRandom (interaction continue-facteur) 
+  [warning] Some NAs were removed from sampling results: 10000 in total. 
+Bayes factor analysis
+--------------
+[1] x + id + x:id : NA ±NA%
+
+Against denominator:
+  Intercept only 
+---
+Bayes factor type: BFlinearModel, JZS
+
+
+-- pente aleatoire par T:id (facteur:id, ce que BayesFactor sait faire) 
+Bayes factor analysis
+--------------
+[1] G + T + id + T:id : 0.2797216 ±1.93%
+
+Against denominator:
+  Intercept only 
+---
+Bayes factor type: BFlinearModel, JZS
+
+
+-- variances heterogenes : aucun argument dans lmBF/anovaBF :
+ [1] "formula"       "data"          "whichRandom"   "rscaleFixed"  
+ [5] "rscaleRandom"  "rscaleCont"    "rscaleEffects" "posterior"    
+ [9] "progress"      "..."          
+ [1] "formula"       "data"          "whichRandom"   "whichModels"  
+ [5] "iterations"    "progress"      "rscaleFixed"   "rscaleRandom" 
+ [9] "rscaleEffects" "multicore"     "method"        "noSample"     
+[13] "callback"     
+
+-- var.equal dans ttestBF 
+Bayes factor analysis
+--------------
+[1] Alt., r=0.707 : 0.353686 ±0%
+
+Against denominator:
+  Null, mu1-mu2 = 0 
+---
+Bayes factor type: BFindepSample, JZS
+
+
+-- family=binomial lmBF 
+Bayes factor analysis
+--------------
+[1] F : 0.2516328 ±0.01%
+
+Against denominator:
+  Intercept only 
+---
+Bayes factor type: BFlinearModel, JZS
+
+
+-- y binaire lmBF traite comme gaussien 
+Bayes factor analysis
+--------------
+[1] F : 0.2516328 ±0.01%
+
+Against denominator:
+  Intercept only 
+---
+Bayes factor type: BFlinearModel, JZS
+
+
+-- y comptage anovaBF traite comme gaussien 
+Bayes factor analysis
+--------------
+[1] F : 2.048964 ±0.01%
+
+Against denominator:
+  Intercept only 
+---
+Bayes factor type: BFlinearModel, JZS
+
+
+-- generalTestBF multivarie 
+  ERREUR: colonnes non définies sélectionnées 
+NULL
+
+-- contingencyTableBF (binaire en table, seul non gaussien) 
+Bayes factor analysis
+--------------
+[1] Non-indep. (a=1) : 0.5996825 ±0%
+
+Against denominator:
+  Null, independence, a = 1 
+---
+Bayes factor type: BFcontingencyTable, joint multinomial
+
+
+-- donnees manquantes 
+  ERREUR: Dependent variable must not contain missing or infinite values. 
+NULL
+
+-- y~F desequilibre avec une cellule a 1 obs 
+Bayes factor analysis
+--------------
+[1] F : 0.3856911 ±0.02%
+
+Against denominator:
+  Intercept only 
+---
+Bayes factor type: BFlinearModel, JZS
+
+
+=== 2c bis. Temps anovaBF(whichModels='withmain'), limite 60 s/cas ===
+  n= 30 facteurs=1 : 0.04 s ; 1 modeles ; propErr max=2.74e-05 ; mediane=2.74e-05 
+  n= 30 facteurs=2 : 1.70 s ; 4 modeles ; propErr max=0.0112 ; mediane=0.00423 
+  n= 30 facteurs=3 : 5.08 s ; 18 modeles ; propErr max=0.0421 ; mediane=0.0148 
+Erreur dans .Call("_BayesFactor_jzs_sampler", PACKAGE = "BayesFactor", iterations,  : 
+  la limite de temps est atteinte
+Error : Operation cancelled by interrupt.
+Error in BFtry(jzs_sampler(iterations, y, X, rscale, gMap, incCont, apx$mu,  : 
+  Operation cancelled by interrupt.
+  n= 30 facteurs=4 : ECHEC/limite 60 s depassee (60.2 s) 
+  n=100 facteurs=1 : 0.11 s ; 1 modeles ; propErr max=0.000252 ; mediane=0.000252 
+  n=100 facteurs=2 : 1.67 s ; 4 modeles ; propErr max=0.0229 ; mediane=0.00901 
+  n=100 facteurs=3 : 12.97 s ; 18 modeles ; propErr max=0.805 ; mediane=0.0204 
+Error in h(simpleError(msg, call)) : 
+  erreur d'ï¿½valuation de l'argument 'Y' lors de la sï¿½lection d'une mï¿½thode pour la fonction 'kronecker' : la limite de temps est atteinte
+  n=100 facteurs=4 : 205.05 s ; 166 modeles ; propErr max=0.753 ; mediane=0.0466 
+  n=500 facteurs=1 : 0.04 s ; 1 modeles ; propErr max=1.21e-05 ; mediane=1.21e-05 
+  n=500 facteurs=2 : 2.08 s ; 4 modeles ; propErr max=0.0366 ; mediane=0.00611 
+  n=500 facteurs=3 : 21.39 s ; 18 modeles ; propErr max=0.0433 ; mediane=0.0224 
+Error in h(simpleError(msg, call)) : 
+  erreur d'ï¿½valuation de l'argument 'X' lors de la sï¿½lection d'une mï¿½thode pour la fonction 'kronecker' : la limite de temps est atteinte

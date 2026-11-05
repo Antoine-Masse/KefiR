@@ -1,0 +1,67 @@
+=== A. Croisement pur 2x2, n=10/cellule, A sans effet moyen, A:B fort
+ modeles : A=0.309 B=0.355 A+B=0.109 plein=8.514e+06
+ Apparie : P(A)=0.236  P(A:B)=1.00000  => P(A:B)>P(A) ; 'Non pour A avec p=0.764'
+ Uniforme 5 modeles : P(A)=1.00000 ; Chipman (1/4,1/4,1/4,1/8,1/8): P(A)=1.00000
+Analysis of Variance Table
+
+Response: y
+          Df Sum Sq Mean Sq F value   Pr(>F)    
+A          1  0.000   0.000  0.0000   1.0000    
+B          1  0.641   0.641  1.0354   0.3157    
+A:B        1 47.921  47.921 77.4511 1.68e-10 ***
+Residuals 36 22.274   0.619                     
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+           1            2 
+1.831299e-05 2.234128e-06 
+
+=== B. Apparie = conditionnel de la loi uniforme rejetee (identite)
+ bfA/(1+bfA)=0.235841 ; [m(A)+m(A+B)]/[1+m(A)+m(B)+m(A+B)]=0.235841
+ Type II exact A+B vs B : BF=0.308 ; apparie : 0.309 (agent_02 : 6.4449/0.31457=20.49 contre 18.7)
+
+=== C. Calibration du P(A) apparie sous la loi jointe (2x2, n=10/cell, quadrature)
+ validation quadrature / lmBF :  167.025 166.966 53.675 53.763 21.973 21.888 
+ temps 7.297252 secs 
+  Generation uniforme 5 modeles, P(A) apparie, A dans le modele vrai 
+        [0,0.1] (0.1,0.3] (0.3,0.5] (0.5,0.7] (0.7,0.9] (0.9,0.99] (0.99,1]
+annonce      NA     0.255     0.371     0.591     0.800      0.959    0.999
+realise      NA     0.356     0.459     0.664     0.884      0.978    1.000
+eff          NA   590.000   316.000   122.000    95.000     92.000  285.000
+   moyenne p annonce= 0.526  frequence vraie= 0.597 
+  Temoin : P(A) coherent uniforme 
+        [0,0.1] (0.1,0.3] (0.3,0.5] (0.5,0.7] (0.7,0.9] (0.9,0.99] (0.99,1]
+annonce      NA     0.275     0.369     0.589     0.804      0.956    0.999
+realise      NA     0.242     0.361     0.581     0.836      0.960    0.997
+eff          NA   260.000   488.000   167.000   128.000    101.000  356.000
+   moyenne p annonce= 0.603  frequence vraie= 0.597 
+  Idem P(A) apparie, restreint aux modeles sans interaction (la seule lecture correcte) 
+        [0,0.1] (0.1,0.3] (0.3,0.5] (0.5,0.7] (0.7,0.9] (0.9,0.99] (0.99,1]
+annonce      NA     0.256     0.370     0.592     0.795      0.957    0.999
+realise      NA     0.248     0.362     0.586     0.841      0.968    1.000
+eff          NA   505.000   268.000    99.000    69.000     62.000  199.000
+   moyenne p annonce= 0.499  frequence vraie= 0.497 
+  Generation Chipman (ce que veut dire 'pi=1/2 par terme'), P(A) apparie 
+        [0,0.1] (0.1,0.3] (0.3,0.5] (0.5,0.7] (0.7,0.9] (0.9,0.99] (0.99,1]
+annonce      NA     0.254     0.372     0.591     0.792      0.952    0.999
+realise      NA     0.274     0.390     0.672     0.756      0.971    0.996
+eff          NA   645.000   336.000   125.000    86.000     70.000  238.000
+   moyenne p annonce= 0.49  frequence vraie= 0.508 
+ Dans ces simulations : P(A)<.5 et A vrai parmi donnees a A:B vrai : 0.446 
+
+=== D. Multiplicite : 2^3 sous H0 globale, 7 termes, pi=1/2 apparie (MC a priori)
+ N=16 (2 rep/cellule)
+   seuil P>0.50 : par terme 0.174 ; au moins 1 sur 7 : 0.740
+   seuil P>0.75 : par terme 0.036 ; au moins 1 sur 7 : 0.227
+   seuil P>0.90 : par terme 0.011 ; au moins 1 sur 7 : 0.080
+   seuil P>0.95 : par terme 0.003 ; au moins 1 sur 7 : 0.020
+   p<.05 : par terme 0.051 ; au moins 1 sur 7 : 0.257
+   nombre moyen de termes 'Oui' (P>.5) : 1.22 ; mediane du max des P sur 7 : 0.587 ; P mediane par terme : 0.378
+ N=40 (5 rep/cellule)
+   seuil P>0.50 : par terme 0.114 ; au moins 1 sur 7 : 0.570
+   seuil P>0.75 : par terme 0.021 ; au moins 1 sur 7 : 0.130
+   seuil P>0.90 : par terme 0.005 ; au moins 1 sur 7 : 0.033
+   seuil P>0.95 : par terme 0.002 ; au moins 1 sur 7 : 0.017
+   p<.05 : par terme 0.050 ; au moins 1 sur 7 : 0.283
+   nombre moyen de termes 'Oui' (P>.5) : 0.80 ; mediane du max des P sur 7 : 0.526 ; P mediane par terme : 0.320
+
+FIN

@@ -1,0 +1,46 @@
+function (F, N, J, rscale = "medium", simple = FALSE) 
+{
+    rscale = rpriorValues("allNways", "fixed", rscale)
+    res = list(bf = NA, properror = NA, method = "quadrature")
+    BFtry({
+        log.const = marginal.g.oneWay(1, F = F, N = N, J = J, 
+            rscale = rscale, log = TRUE)
+        integral = integrate(marginal.g.oneWay, lower = 0, upper = Inf, 
+            F = F, N = N, J = J, rscale = rscale, log.const = log.const)
+        properror = exp(log(integral[[2]]) - log(integral[[1]]))
+        bf = log(integral[[1]]) + log.const
+        res = list(bf = bf, properror = properror, method = "quadrature")
+    })
+    if (simple) {
+        return(c(B10 = exp(res[["bf"]])))
+    }
+    else {
+        return(res)
+    }
+}
+<bytecode: 0x00000219f167d8c8>
+<environment: namespace:BayesFactor>
+k 3 n 10 max|anovaBF/ttestBF - voie rapide| = 2.131628e-14  NA: 0  max|repli - rapide| = 2.83009e-06 
+  aov p vs pF : 1.110223e-16 
+k 3 n 30 max|anovaBF/ttestBF - voie rapide| = 2.273737e-13  NA: 0  max|repli - rapide| = 9.75142e-07 
+  aov p vs pF : -1.665335e-16 
+k 2 n 10 max|anovaBF/ttestBF - voie rapide| = 6.843053e-07  NA: 0  max|repli - rapide| = 0.007897199 
+  aov p vs pF : -2.220446e-16 
+k 2 n 30 max|anovaBF/ttestBF - voie rapide| = 1.051603e-12  NA: 0  max|repli - rapide| = 0.001106106 
+  aov p vs pF : -1.387779e-17 
+r=1 : -1.629408 -1.629408  ; k2 r=.25 : -0.5330553 -0.5330553 
+Error in integrate(marginal.g.oneWay, lower = 0, upper = Inf, F = F, N = N,  : 
+  roundoff error is detected in the extrapolation table
+Error in integrate(marginal.g.oneWay, lower = 0, upper = Inf, F = F, N = N,  : 
+  roundoff error is detected in the extrapolation table
+Error in integrate(marginal.g.oneWay, lower = 0, upper = Inf, F = F, N = N,  : 
+  roundoff error is detected in the extrapolation table
+Error in integrate(marginal.g.oneWay, lower = 0, upper = Inf, F = F, N = N,  : 
+  roundoff error is detected in the extrapolation table
+Error in integrate(marginal.g.oneWay, lower = 0, upper = Inf, F = F, N = N,  : 
+  roundoff error is detected in the extrapolation table
+utilisateur     système      écoulé 
+      14.46        0.85       16.61 
+utilisateur     système      écoulé 
+      22.84        1.03       24.54 
+replis : 5 
