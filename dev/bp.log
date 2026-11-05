@@ -860,6 +860,29 @@ Quand `.multi_factor_analysis()` délègue à `.one_factor_analysis()` pour
 TOUJOURS supprimer ou commenter les `print()` de debug avant commit.
 Utiliser `.dbg()` à la place pour messages conditionnels.
 
+---
+
+## 14.13 ANCOVA ET TYPE III
+
+### BP-029: Un modèle annoncé doit être le modèle ajusté
+Dans `.ancova_analysis()`, tout ajustement utilise `formula_to_use` et `data_fit`,
+jamais la `formula` saisie. `has_factor_cov_interaction` signifie « l'interaction
+reste dans le modèle », pas « elle figurait dans la formule ».
+
+### BP-030: Type III avec interaction : centrer la covariable
+En Type III avec interaction facteur×covariable, l'effet du facteur est testé à
+covariable = 0. Centrer la covariable sur sa moyenne, et l'annoncer dans le bilan.
+Tout test de contrôle (linéarité...) se fait sur le modèle retenu, interaction incluse.
+
+### BP-031: P-value globale ANCOVA = test F du facteur
+`$global_pvalue` et `return=FALSE` renvoient le test du premier facteur (celui des
+post-hocs), repéré par son nom : jamais la première ligne de la table, qui peut être
+la covariable.
+
+### BP-032: Sorties de packages tiers dans une boucle
+Une fonction tierce appelée dans une boucle (bootstrap) est testée en vérifiant
+stdout ET message() : `capture.output()` ne voit pas les message().
+
 ================================================================================
 15. CHECKLIST UNIFIÉE
 ================================================================================
@@ -989,6 +1012,12 @@ Ce log chronologique documente l'évolution des bonnes pratiques.
 - BP-020 (ex BP-044): Protection NULL avec isTRUE()
 - **Restructuration complète du document**
 - Version 2.0 (restructuré)
+
+### 2026-11-05 - Correction ANCOVA
+- BP-029: Modèle annoncé = modèle ajusté
+- BP-030: Type III avec interaction : centrer la covariable
+- BP-031: P-value globale ANCOVA = test F du facteur
+- BP-032: Sorties de packages tiers dans une boucle
 
 ================================================================================
 FIN DU GUIDE DES BONNES PRATIQUES

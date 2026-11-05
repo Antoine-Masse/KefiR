@@ -207,35 +207,22 @@
     # COMPACT LETTER DISPLAY
     # ============================================================================
 
-    # Cr\u00e9er matrice de significativit\u00e9
-    signif_matrix <- (p_adjusted_matrix <= alpha)
-    diag(signif_matrix) <- FALSE  # Groupe avec lui-m\u00eame : non significatif
-
-    # Algorithme de g\u00e9n\u00e9ration de lettres
-    # Approche : groupes qui ne diff\u00e8rent pas significativement partagent lettres
-    letters_vec <- rep("", ng)
-
-    # Initialiser avec "a" pour tous
-    letters_vec <- rep("a", ng)
-
-    # Pour chaque groupe, v\u00e9rifier s'il diff\u00e8re des pr\u00e9c\u00e9dents
-    for (i in 2:ng) {
-      # Trouver groupes diff\u00e9rents de i
-      differs_from <- which(signif_matrix[i, 1:(i-1)])
-
-      if (length(differs_from) > 0) {
-        # i diff\u00e8re d'au moins un groupe pr\u00e9c\u00e9dent
-        # Trouver la lettre maximale utilis\u00e9e jusqu'ici
-        max_letter_code <- max(sapply(letters_vec[1:(i-1)], function(l) {
-          if (nchar(l) == 0) return(0)
-          utf8ToInt(substr(l, 1, 1)) - utf8ToInt("a") + 1
-        }))
-
-        # Assigner lettre suivante
-        letters_vec[i] <- intToUtf8(utf8ToInt("a") + max_letter_code)
-      }
-      # Sinon, garder "a" (ne diff\u00e8re de personne)
+    # Lettres attribu\u00e9es par catego(), comme pour les autres post-hocs.
+    # catego() attend des groupes tri\u00e9s (par m\u00e9diane, ou contr\u00f4le en t\u00eate) et une
+    # matrice triangulaire inf\u00e9rieure au format de pairwise.t.test().
+    has_control <- !is.null(control) && as.character(control)[1] %in% lev
+    ord <- if (has_control) {
+      c(match(as.character(control)[1], lev), setdiff(seq_len(ng), match(as.character(control)[1], lev)))
+    } else {
+      order(tapply(x, g, median, na.rm = TRUE)[lev])
     }
+    p_sorted <- p_adjusted_matrix[ord, ord, drop = FALSE]
+    p_sorted[upper.tri(p_sorted, diag = TRUE)] <- NA
+    p_sorted <- p_sorted[-1, -ng, drop = FALSE]
+    letters_sorted <- catego(list(p.value = p_sorted),
+                             control = if (has_control) as.character(control)[1] else c(),
+                             alpha = alpha)$groups
+    letters_vec <- letters_sorted[match(lev, letters_sorted[, "categories"]), "groups"]
 
     groups_df <- data.frame(
       categories = lev,

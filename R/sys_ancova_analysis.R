@@ -196,7 +196,10 @@
   model_type <- ancova_structure$model_type  # "ANCOVA" ou "Heterogeneous_Slopes"
   factor_vars <- ancova_structure$factor_vars
   numeric_vars <- ancova_structure$covariate_vars
-  has_factor_cov_interaction <- ancova_structure$has_interaction
+  # IMPORTANT: TRUE seulement si l'interaction RESTE dans le modele ajuste.
+  # $has_interaction indique sa presence dans la formule saisie, meme si le
+  # test hierarchique l'a ensuite rejetee.
+  has_factor_cov_interaction <- model_type == "Heterogeneous_Slopes"
   hierarchical_test_result <- ancova_structure$hierarchical_test
 
   # ==========================================================================
@@ -245,6 +248,23 @@
     # Pas d'interaction d\u00e8s le d\u00e9part
     formula_to_use <- formula
   }
+
+  # Centrage des covariables engag\u00e9es dans une interaction conserv\u00e9e.
+  # En Type III, l'effet du facteur est test\u00e9 \u00e0 covariable = 0 : sans centrage,
+  # ce point peut se situer loin des donn\u00e9es et rendre le test sans objet.
+  # R\u00e9f\u00e9rence: Aiken, L. S., & West, S. G. (1991). Multiple Regression: Testing
+  # and Interpreting Interactions. Sage. ISBN: 978-0761907121
+  data_fit <- data
+  covariate_centers <- numeric(0)
+  if (has_factor_cov_interaction) {
+    interacting_parts <- unlist(strsplit(ancova_structure$interaction_terms, ":", fixed = TRUE))
+    for (cov in intersect(numeric_vars, interacting_parts)) {
+      covariate_centers[cov] <- mean(data[[cov]], na.rm = TRUE)
+      data_fit[[cov]] <- data[[cov]] - covariate_centers[cov]
+    }
+  }
+  # emmeans r\u00e9\u00e9value l'appel lm() dans l'environnement de la formule
+  environment(formula_to_use) <- environment()
 
   .dbg(paste0("Model type determined: ", model_type),
        paste0("Type de mod\u00e8le d\u00e9termin\u00e9 : ", model_type),
@@ -349,7 +369,7 @@
       contrast_list[[fvar]] <- "contr.sum"
     }
 
-    lm(formula, data = data, contrasts = contrast_list)
+    lm(formula_to_use, data = data_fit, contrasts = contrast_list)
   }, error = function(e) {
     k <<- .vbse(
       paste0("Error fitting model: ", e$message),
@@ -374,9 +394,12 @@
   # S\u00c9LECTION INTELLIGENTE DU TYPE DE SOMMES DES CARR\u00c9S (AVANT message ajustement)
   # ==========================================================================
   # D\u00e9terminer le type de SS optimal selon contexte (\u00e9quilibre, ordre formule, etc.)
+  # Conserv\u00e9 sur le mod\u00e8le : .posthoc_ANCOVA() annonce les moyennes d'origine
+  if (length(covariate_centers) > 0) model$covariate_centers <- covariate_centers
+
   ss_selection <- .select_ss_type(
-    formula = formula,
-    data = data,
+    formula = formula_to_use,
+    data = data_fit,
     model = model,
     analysis_type = "ANCOVA",
     alpha = alpha,
@@ -408,65 +431,53 @@
   # D\u00e9terminer si covariables mal plac\u00e9es (pour message restructur\u00e9)
   has_warnings <- length(ss_selection$warnings) > 0
 
-  # MESSAGE RESTRUCTUR\u00c9 \u00c9TAPE 3 : Ajustement mod\u00e8le ANCOVA
-  # Structure : Formule \u2192 Type SS (si warning) \u2192 Contrastes \u2192 Mod\u00e8le ajust\u00e9 \u2192 Avertissements d\u00e9taill\u00e9s
-  if (has_warnings && selected_type == "III") {
-    # Cas covariables mal plac\u00e9es : Type III forc\u00e9
+  # MESSAGE \u00c9TAPE 3 : Ajustement mod\u00e8le ANCOVA
+  k <- .vbse(
+    paste0("Model fitting: ANCOVA with ", length(factor_vars), " factor(s) [lm()]\n",
+           "\tFormula: ", deparse(formula_to_use), "\n",
+           "\tContrasts: contr.sum (effects coding for unbiased estimates)\n",
+           "\t==> Model fitted successfully (n=", nrow(data), ", residuals computed)\n",
+           "\t    Type of Sums of Squares selected: Type ", selected_type, " [", method_text_en, "]"),
+    paste0("Ajustement du mod\u00e8le ANCOVA \u00e0 ", length(factor_vars), " facteur(s) [lm()]\n",
+           "\tFormule : ", deparse(formula_to_use), "\n",
+           "\tContrastes : contr.sum (codage effets pour estimations non biais\u00e9es)\n",
+           "\t==> Mod\u00e8le ajust\u00e9 avec succ\u00e8s (n=", nrow(data), ", r\u00e9sidus calcul\u00e9s)\n",
+           "\t    Type de Sommes de Carr\u00e9s s\u00e9lectionn\u00e9 : Type ", selected_type, " [", method_text_fr, "]"),
+    verbose = verbose, code = code, k = k, cpt = "on"
+  )
+
+  # Annoncer le centrage : il change le sens du test du facteur
+  if (length(covariate_centers) > 0) {
+    centers_txt <- paste0(names(covariate_centers), " = ",
+                          signif(covariate_centers, 4), collapse = ", ")
     k <- .vbse(
-      paste0("Model fitting: ANCOVA with ", length(factor_vars), " factor(s) [lm()]\n",
-             "\tFormula: ", deparse(formula), "\n",
-             "\t==> Covariate(s) not placed first in formula:\n",
-             "\t    ==> Current analysis will use Type III (robust to order)\n",
-             "\t    --> Type III Sum of Squares (order-dependent Type I not optimal)\n",
-             "\tContrasts: contr.sum (effects coding for unbiased estimates)\n",
-             "\t    ==> Model fitted successfully (n=", nrow(data), ", residuals computed)\n",
-             "\t        Type of Sums of Squares selected: Type ", selected_type, " [", method_text_en, "]"),
-      paste0("Ajustement du mod\u00e8le ANCOVA \u00e0 ", length(factor_vars), " facteur(s) [lm()]\n",
-             "\tFormule : ", deparse(formula), "\n",
-             "\t==> Covariable(s) non plac\u00e9e(s) en premier dans la formule :\n",
-             "\t    ==> Analyse actuelle utilisera Type III (robuste \u00e0 l'ordre)\n",
-             "\t    --> Sommes des Carr\u00e9s Type III (Type I d\u00e9pendant de l'ordre non optimal)\n",
-             "\tContrastes : contr.sum (codage effets pour estimations non biais\u00e9es)\n",
-             "\t    ==> Mod\u00e8le ajust\u00e9 avec succ\u00e8s (n=", nrow(data), ", r\u00e9sidus calcul\u00e9s)\n",
-             "\t        Type de Sommes de Carr\u00e9s s\u00e9lectionn\u00e9 : Type ", selected_type, " [", method_text_fr, "]"),
-      verbose = verbose, code = code, k = k, cpt = "on"
-    )
-  } else {
-    # Cas normal (pas de warning ou Type I)
-    k <- .vbse(
-      paste0("Model fitting: ANCOVA with ", length(factor_vars), " factor(s) [lm()]\n",
-             "\tFormula: ", deparse(formula), "\n",
-             "\tContrasts: contr.sum (effects coding for unbiased estimates)\n",
-             "\t==> Model fitted successfully (n=", nrow(data), ", residuals computed)\n",
-             "\t    Type of Sums of Squares selected: Type ", selected_type, " [", method_text_en, "]"),
-      paste0("Ajustement du mod\u00e8le ANCOVA \u00e0 ", length(factor_vars), " facteur(s) [lm()]\n",
-             "\tFormule : ", deparse(formula), "\n",
-             "\tContrastes : contr.sum (codage effets pour estimations non biais\u00e9es)\n",
-             "\t==> Mod\u00e8le ajust\u00e9 avec succ\u00e8s (n=", nrow(data), ", r\u00e9sidus calcul\u00e9s)\n",
-             "\t    Type de Sommes de Carr\u00e9s s\u00e9lectionn\u00e9 : Type ", selected_type, " [", method_text_fr, "]"),
-      verbose = verbose, code = code, k = k, cpt = "on"
+      paste0("Covariate(s) centered on their mean (", centers_txt, ").\n",
+             "\t\tThe factor is tested at this value, not at covariate = 0.\n",
+             "\t\t(Slopes differ: the gap between groups varies with the covariate.)"),
+      paste0("Covariable(s) centr\u00e9e(s) sur leur moyenne (", centers_txt, ").\n",
+             "\t\tLe facteur est test\u00e9 \u00e0 cette valeur, et non \u00e0 covariable = 0.\n",
+             "\t\t(Les pentes diff\u00e8rent : l'\u00e9cart entre groupes varie avec la covariable.)"),
+      verbose = verbose, code = code, k = k, cpt = "off"
     )
   }
 
-  # Afficher warnings d\u00e9taill\u00e9s si formule non-optimale
+  # Ordre des termes : information, pas d'anomalie (le Type III n'en d\u00e9pend pas)
   if (has_warnings) {
     k <- .vbse(
-      paste0("FORMULA OPTIMIZATION WARNINGS:\n",
-             paste0("\t", ss_selection$warnings, collapse = "\n")),
-      paste0("AVERTISSEMENTS OPTIMISATION FORMULE :\n",
-             paste0("\t", ss_selection$warnings, collapse = "\n")),
+      paste0("Note on the order of terms:\n",
+             paste0("\t\t", ss_selection$warnings, collapse = "\n")),
+      paste0("Note sur l'ordre des termes :\n",
+             paste0("\t\t", ss_selection$warnings, collapse = "\n")),
       verbose = verbose, k = k, cpt = "off"
     )
 
-    # Sugg\u00e9rer formule am\u00e9lior\u00e9e
+    # Formule proposee uniquement si elle permet reellement un Type I
     if (!is.null(ss_selection$suggested_formula)) {
       k <- .vbse(
-        paste0("SUGGESTED FORMULA (for optimal Type I analysis):\n",
-               "\t", deparse(ss_selection$suggested_formula), "\n",
-               "--> Rerun m.test() with this formula for Type I Sum of Squares"),
-        paste0("FORMULE SUGG\u00c9R\u00c9E (pour analyse Type I optimale) :\n",
-               "\t", deparse(ss_selection$suggested_formula), "\n",
-               "--> Relancer m.test() avec cette formule pour Sommes des Carr\u00e9s Type I"),
+        paste0("(Optional, for a sequential Type I test: ",
+               deparse(ss_selection$suggested_formula), ".)"),
+        paste0("(Facultatif, pour un test s\u00e9quentiel de Type I : ",
+               deparse(ss_selection$suggested_formula), ".)"),
         verbose = verbose, k = k, cpt = "off"
       )
     }
@@ -474,13 +485,17 @@
 
   # CODE: \u00c9tape 3 - Ajustement mod\u00e8le ANCOVA
   if (isTRUE(code)) {
-    formula_str <- deparse(formula)
+    formula_str <- deparse(formula_to_use)
     contrast_code <- paste0("contrasts_list <- list(",
       paste(sapply(factor_vars, function(f) paste0(f, " = 'contr.sum'")), collapse = ", "),
       ")")
 
     k_code <- k_code + 1
     .code_ancova(k_code, "Ajustement du mod\u00e8le ANCOVA", c(
+      if (length(covariate_centers) > 0) paste0(
+        "dt$", names(covariate_centers), " <- dt$", names(covariate_centers),
+        " - mean(dt$", names(covariate_centers), ", na.rm = TRUE)  # centrage"
+      ),
       contrast_code,
       paste0("ancova_model <- lm(", formula_str, ", data = dt, contrasts = contrasts_list)"),
       "residuals_model <- residuals(ancova_model)",
@@ -847,7 +862,7 @@
 
   influence_results <- .diagnostic_influence(
     model = model,
-    data = data,
+    data = data_fit,
     alpha = alpha,
     verbose = FALSE,
     k = k,
@@ -1197,16 +1212,17 @@
   linearity_details <- c()
 
   for (cov in numeric_vars) {
-    # Construire formule avec terme quadratique
+    # Construire formule avec terme quadratique, sur le mod\u00e8le retenu : omettre une
+    # interaction conserv\u00e9e ferait passer des pentes diff\u00e9rentes pour une courbure
     formula_quad_str <- paste(
-      as.character(formula)[2],
-      "~",
-      paste(c(factor_vars, cov, paste0("I(", cov, "^2)")), collapse = " + ")
+      paste(deparse(formula_to_use), collapse = ""),
+      "+",
+      paste0("I(", cov, "^2)")
     )
     formula_quad <- as.formula(formula_quad_str)
 
     model_quad <- tryCatch({
-      lm(formula_quad, data = data)
+      lm(formula_quad, data = data_fit)
     }, error = function(e) NULL)
 
     if (!is.null(model_quad)) {
@@ -1265,7 +1281,7 @@
     for (cov in numeric_vars) {
       lin_lines <- c(lin_lines,
         paste0("# Test pour ", cov, ":"),
-        paste0("model_quad_", cov, " <- lm(", deparse(formula[[2]]), " ~ ", cov, " + I(", cov, "^2) + ", paste(factor_vars, collapse = " + "), ", data = dt)"),
+        paste0("model_quad_", cov, " <- lm(", paste(deparse(formula_to_use), collapse = ""), " + I(", cov, "^2), data = dt)"),
         paste0("lin_test_", cov, " <- anova(ancova_model, model_quad_", cov, ")"),
         paste0("# Si p < 0.05 => terme quadratique significatif (relation non-lin\u00e9aire)")
       )
@@ -1486,45 +1502,44 @@
       }
     }
 
-    if (verbose) {
-      # Type I utilise anova() de base, Type II/III utilisent car::Anova()
-      if (selected_type == "I") {
-        # Type I: Sommes des carr\u00e9s s\u00e9quentielles (anova de base)
-        anova_result <- anova(model)
-        cat("\n")
-        print(anova_result)
-        cat("\n")
-
-      } else if (selected_type %in% c("II", "III") && requireNamespace("car", quietly = TRUE)) {
-        # Type II/III: Tentative avec car::Anova (peut \u00e9chouer si coefficients alias\u00e9s)
-        anova_result <- tryCatch({
-          car::Anova(model, type = selected_type)
-        }, error = function(e) {
-          if (grepl("aliased", conditionMessage(e), ignore.case = TRUE)) {
-            # Coefficients alias\u00e9s (typique avec interactions facteur\u00d7facteur et contr.sum)
-            # Basculer vers Type II si on \u00e9tait en Type III
-            if (selected_type == "III") {
-              k <<- .vbse(
-                paste0("\tNote: Aliased coefficients detected (factor\u00d7factor interactions with sum contrasts)\n",
-                       "\tSwitching to Type II Sum of Squares [car::Anova(type='II')]\n",
-                       "\tType II: Each effect adjusted for all others at same or lower order"),
-                paste0("\tNote : Coefficients alias\u00e9s d\u00e9tect\u00e9s (interactions facteur\u00d7facteur avec contrastes somme)\n",
-                       "\tPassage vers Sommes des Carr\u00e9s Type II [car::Anova(type='II')]\n",
-                       "\tType II : Chaque effet ajust\u00e9 pour tous les autres de m\u00eame ordre ou inf\u00e9rieur"),
-                verbose = verbose, code = code, k = k, cpt = "off"
-              )
-              car::Anova(model, type = "II")
-            } else {
-              stop(e)  # Re-throw si d\u00e9j\u00e0 Type II
-            }
+    # Table calcul\u00e9e m\u00eame si verbose=FALSE : elle fournit la p-value globale (return=FALSE)
+    # Type I utilise anova() de base, Type II/III utilisent car::Anova()
+    if (selected_type == "I") {
+      # Type I: Sommes des carr\u00e9s s\u00e9quentielles (anova de base)
+      anova_result <- anova(model)
+    } else {
+      # Type II/III: Tentative avec car::Anova (peut \u00e9chouer si coefficients alias\u00e9s)
+      anova_result <- tryCatch({
+        car::Anova(model, type = selected_type)
+      }, error = function(e) {
+        if (grepl("aliased", conditionMessage(e), ignore.case = TRUE)) {
+          # Coefficients alias\u00e9s (typique avec interactions facteur\u00d7facteur et contr.sum)
+          # Basculer vers Type II si on \u00e9tait en Type III
+          if (selected_type == "III") {
+            k <<- .vbse(
+              paste0("\tNote: Aliased coefficients detected (factor\u00d7factor interactions with sum contrasts)\n",
+                     "\tSwitching to Type II Sum of Squares [car::Anova(type='II')]\n",
+                     "\tType II: Each effect adjusted for all others at same or lower order"),
+              paste0("\tNote : Coefficients alias\u00e9s d\u00e9tect\u00e9s (interactions facteur\u00d7facteur avec contrastes somme)\n",
+                     "\tPassage vers Sommes des Carr\u00e9s Type II [car::Anova(type='II')]\n",
+                     "\tType II : Chaque effet ajust\u00e9 pour tous les autres de m\u00eame ordre ou inf\u00e9rieur"),
+              verbose = verbose, code = code, k = k, cpt = "off"
+            )
+            car::Anova(model, type = "II")
           } else {
-            stop(e)  # Re-throw si autre erreur
+            stop(e)  # Re-throw si d\u00e9j\u00e0 Type II
           }
-        })
-        cat("\n")
-        print(anova_result)
-        cat("\n")
-      }
+        } else {
+          stop(e)  # Re-throw si autre erreur
+        }
+      })
+    }
+    global_pvalue <- .ancova_factor_pvalue(anova_result, factor_vars)
+
+    if (verbose) {
+      cat("\n")
+      print(anova_result)
+      cat("\n")
 
       # CONCLUSION: Identifier effets significatifs (distinguer facteurs vs covariables)
       pval_col <- which(colnames(anova_result) %in% c("Pr(>F)", "p.value", "P(>|F|)", "Pr(>Chisq)"))
@@ -1573,6 +1588,15 @@
                 verbose = verbose, code = code, k = k, cpt = "off"
               )
             }
+            # Ne pas taire une interaction significative a cote d'un effet principal
+            sig_interactions <- setdiff(sig_effects, c(sig_factors, sig_covariates))
+            if (length(sig_interactions) > 0 && length(c(sig_factors, sig_covariates)) > 0) {
+              k <- .vbse(
+                paste0("\t  Interactions: ", paste(sig_interactions, collapse = ", ")),
+                paste0("\t  Interactions : ", paste(sig_interactions, collapse = ", ")),
+                verbose = verbose, code = code, k = k, cpt = "off"
+              )
+            }
           } else {
             k <- .vbse(
               paste0("\tNo significant effects at alpha = ", alpha),
@@ -1589,6 +1613,8 @@
       assumptions_checked = assumptions_checked,
       robust = FALSE,
       g_cat = g_cat,
+      global_pvalue = global_pvalue,
+      formula_used = formula_to_use,
       k = k
     ))
 
@@ -1618,6 +1644,9 @@
     # Appeler logique robuste ANCOVA (d\u00e9j\u00e0 impl\u00e9ment\u00e9e en session 15)
     n_categorical_factors <- length(factor_vars)
     n_continuous_covariates <- length(numeric_vars)
+
+    # Reste NULL pour rlm() : pas de test F, m.test() se rabat alors sur les post-hocs
+    global_pvalue <- NULL
 
     robust_results <- list(
       method = NULL,
@@ -1649,7 +1678,7 @@
 
       if (requireNamespace("MASS", quietly = TRUE)) {
         robust_model <- tryCatch({
-          MASS::rlm(formula, data = data, method = "MM")
+          MASS::rlm(formula_to_use, data = data_fit, method = "MM")
         }, error = function(e) {
           k <<- .vbse(
             paste0("Error: ", e$message),
@@ -1736,7 +1765,7 @@
 
                   # Appeler rlm() comme fallback
                   if (requireNamespace("MASS", quietly = TRUE)) {
-                    robust_model <- MASS::rlm(formula, data = data, method = "MM")
+                    robust_model <- MASS::rlm(formula_to_use, data = data_fit, method = "MM")
                     robust_results$method <<- "Robust_Regression_RLM_Fallback"
                     robust_results$model <<- robust_model
                     robust_results$posthoc_applicable <<- TRUE
@@ -1830,6 +1859,15 @@
                         verbose = verbose, code = code, k = k, cpt = "off"
                       )
                     }
+                    # Ne pas taire une interaction significative a cote d'un effet principal
+                    sig_interactions <- setdiff(sig_effects, c(sig_factors, sig_covariates))
+                    if (length(sig_interactions) > 0 && length(c(sig_factors, sig_covariates)) > 0) {
+                      k <- .vbse(
+                        paste0("\t  Interactions: ", paste(sig_interactions, collapse = ", ")),
+                        paste0("\t  Interactions : ", paste(sig_interactions, collapse = ", ")),
+                        verbose = verbose, code = code, k = k, cpt = "off"
+                      )
+                    }
                   } else {
                     k <- .vbse(
                       paste0("\tNo significant effects at alpha = ", alpha),
@@ -1845,6 +1883,7 @@
             robust_results$test_result <- robust_tests
             robust_results$vcov_robust <- robust_vcov
             robust_results$posthoc_applicable <- TRUE
+            global_pvalue <- .ancova_factor_pvalue(robust_tests, factor_vars)
           }
         }
 
@@ -1868,10 +1907,21 @@
       robust = TRUE,
       robust_results = robust_results,
       g_cat = g_cat,
+      global_pvalue = global_pvalue,
+      formula_used = formula_to_use,
       k = k
     ))
   }
 }
+
+  # P-value du premier facteur dans une table d'ANOVA (m\u00eame facteur que les post-hocs).
+  # Jamais la premi\u00e8re ligne : ce peut \u00eatre la covariable.
+  .ancova_factor_pvalue <- function(anova_table, factor_vars) {
+    pval_col <- which(colnames(anova_table) %in% c("Pr(>F)", "p.value", "P(>|F|)", "Pr(>Chisq)"))
+    factor_rows <- intersect(factor_vars, rownames(anova_table))
+    if (length(pval_col) == 0 || length(factor_rows) == 0) return(NULL)
+    as.numeric(anova_table[factor_rows[1], pval_col[1]])
+  }
 
   # Fonction auxiliaire locale pour afficher code R avec num\u00e9rotation
   .code_ancova <- function(step_num, title, code_lines) {

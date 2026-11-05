@@ -1617,9 +1617,9 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
       if (!is.null(bilan$model)) {
         ancova_model <- bilan$model
       } else if (!is.null(formula) && !is.null(data)) {
-        # Reconstruire le mod\u00e8le
+        # Reconstruire le mod\u00e8le retenu par .ancova_analysis() (interaction \u00e9ventuellement supprim\u00e9e)
         ancova_model <- tryCatch({
-          aov(formula, data = data)
+          aov(if (!is.null(bilan$formula_used)) bilan$formula_used else formula, data = data)
         }, error = function(e) {
           k <<- .vbse(
             paste0("Warning: Could not reconstruct ANCOVA model for post-hocs: ", e$message),
@@ -1946,6 +1946,17 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
             "kruskal" = "Kruskal-Wallis",
             "Parametric ANOVA/t-test"
           )
+        } else if (is.null(bilan$check_ancova) && !is.null(synth$groups) && nrow(synth$groups) == 2) {
+          # 2 groupes sans chosen_test : nommer le test r\u00e9ellement conduit par le bilan
+          if (!isTRUE(check_normality)) {
+            if (isTRUE(paired)) "Wilcoxon signed-rank test" else "Wilcoxon-Mann-Whitney test"
+          } else if (isTRUE(paired)) {
+            "Paired Student t-test"
+          } else if (isTRUE(check_variance_equal)) {
+            "Student t-test"
+          } else {
+            "Welch t-test"
+          }
         } else {
           "Parametric ANOVA/t-test"
         }

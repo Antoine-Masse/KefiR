@@ -192,7 +192,8 @@
 
   # Construire formule R\u00c9DUITE (sans interactions facteur\u00d7covariable)
   reduced_terms <- setdiff(term_labels, factor_covariate_interactions)
-  response_var <- as.character(formula[[2]])
+  # deparse() et non as.character() : log(y) donnerait c("log", "y")
+  response_var <- paste(deparse(formula[[2]]), collapse = "")
   formula_reduced <- as.formula(paste(response_var, "~", paste(reduced_terms, collapse = " + ")))
 
   # Construire formule COMPL\u00c8TE (avec interactions) - c'est la formule originale

@@ -473,6 +473,8 @@
       k = ancova_result$k,
       model = ancova_result$model,
       robuste = ancova_result$robust,
+      global_pvalue = ancova_result$global_pvalue,
+      formula_used = ancova_result$formula_used,
       check_ancova = TRUE,
       check_discret = FALSE,
       alea = FALSE,

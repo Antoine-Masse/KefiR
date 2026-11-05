@@ -379,7 +379,9 @@ pairwise <- function(x, g, type = "mean", alpha = 0.05, control = c(),
 			if (is.ordered(g)) {
 				g <- factor(as.character(g), levels = levels(g))
 			}
-			result <- FSA::dunnTest(x ~ g, method = "holm")
+			# dunn.test >= 1.4 affiche ses tableaux par message() : sans cela, ils sont
+			# reimprimes a chaque iteration du bootstrap
+			result <- suppressMessages(FSA::dunnTest(x ~ g, method = "holm"))
 			# Extraire les comparaisons et les p-valeurs ajust\u00e9es
 			comparisons <- result$res[, "Comparison"]
 			p_values <- result$res[, "P.adj"]

@@ -205,6 +205,24 @@
     # Extraire ordre des termes dans la formule
     formula_terms <- attr(terms(formula), "term.labels")
 
+    # Interaction facteur\u00d7covariable CONSERV\u00c9E (pentes h\u00e9t\u00e9rog\u00e8nes) => Type III
+    # L'ordre des termes est alors sans objet, et les tests restent align\u00e9s sur les
+    # post-hocs (moyennes ajust\u00e9es \u00e0 la moyenne de la covariable centr\u00e9e).
+    has_factor_cov_interaction <- any(vapply(
+      strsplit(formula_terms[grepl(":", formula_terms, fixed = TRUE)], ":", fixed = TRUE),
+      function(parts) any(parts %in% factor_vars) && any(parts %in% numeric_vars),
+      logical(1)
+    ))
+
+    if (has_factor_cov_interaction) {
+      result$ss_type <- "III"
+      result$reason <- .msg(
+        "Factor\u00d7covariate interaction kept in model: Type III Sum of Squares",
+        "Interaction facteur\u00d7covariable conserv\u00e9e dans le mod\u00e8le : Sommes des Carr\u00e9s Type III"
+      )
+      return(result)
+    }
+
     # Identifier position des covariables et facteurs
     cov_positions <- which(formula_terms %in% numeric_vars)
     factor_positions <- which(formula_terms %in% factor_vars)
@@ -217,8 +235,8 @@
     if (!covariates_first) {
       result$formula_optimal <- FALSE
       result$warnings <- c(result$warnings,
-        .msg("Covariates should appear BEFORE factors in ANCOVA formula",
-             "Les covariables doivent appara\u00eetre AVANT les facteurs dans la formule ANCOVA")
+        .msg("Type III does not depend on the order of terms: this result stands as is.",
+             "Le Type III ne d\u00e9pend pas de l'ordre des termes : ce r\u00e9sultat reste valable tel quel.")
       )
 
       # Construire formule sugg\u00e9r\u00e9e (covariables puis facteurs)
@@ -281,6 +299,10 @@
     # V\u00e9rifier si d\u00e9s\u00e9quilibre \u2192 Type III obligatoire
     if (!balanced) {
       result$ss_type <- "III"
+      # Type III impos\u00e9 quel que soit l'ordre : ne pas sugg\u00e9rer une formule
+      # qui n'aboutirait de toute fa\u00e7on pas \u00e0 un Type I
+      result$warnings <- character(0)
+      result$suggested_formula <- NULL
       # Ajouter raison d\u00e9s\u00e9quilibre sans \u00e9craser les warnings pr\u00e9c\u00e9dents
       if (nchar(result$reason) == 0) {
         result$reason <- .msg(
@@ -295,29 +317,6 @@
         ))
       }
       return(result)
-    }
-
-    # V\u00e9rifier interactions facteur\u00d7covariable
-    formula_str <- deparse(formula)
-    has_factor_cov_interaction <- FALSE
-
-    for (fac in factor_vars) {
-      for (cov in numeric_vars) {
-        if (grepl(paste0(fac, ":", cov, "|", cov, ":", fac, "|", fac, "\\*", cov, "|", cov, "\\*", fac),
-                  formula_str)) {
-          has_factor_cov_interaction <- TRUE
-          break
-        }
-      }
-      if (has_factor_cov_interaction) break
-    }
-
-    if (has_factor_cov_interaction) {
-      result$warnings <- c(result$warnings,
-        .msg("Factor\u00d7Covariate interaction detected: this tests slope homogeneity (ANCOVA assumption)",
-             "Interaction Facteur\u00d7Covariable d\u00e9tect\u00e9e: teste l'homog\u00e9n\u00e9it\u00e9 des pentes (assomption ANCOVA)")
-      )
-      # Note: le pipeline normal g\u00e9rera cela via test homog\u00e9n\u00e9it\u00e9 pentes
     }
 
     # Si formule non-optimale mais plan \u00e9quilibr\u00e9 \u2192 garder Type III avec warnings

@@ -645,7 +645,7 @@
           myscheffe <- agricolae::scheffe.test(mya, "g", alpha = alpha)
 
           ind_temp <- match(synth$groups[, 1], rownames(myscheffe$groups))
-          synth$groups <- data.frame(synth$groups, "Scheffe" = myscheffe$groups$groups[ind_temp])
+          synth$groups <- data.frame(synth$groups, "Scheffe" = myscheffe$groups$groups[ind_temp], check.names = FALSE)
 
           ################
           # d) Test de Tukey
@@ -662,7 +662,7 @@
           mytukey <- agricolae::HSD.test(mya, "g", alpha = alpha)
 
           ind_temp <- match(synth$groups[, 1], rownames(mytukey$groups))
-          synth$groups <- data.frame(synth$groups, "Tukey" = mytukey$groups$groups[ind_temp])
+          synth$groups <- data.frame(synth$groups, "Tukey" = mytukey$groups$groups[ind_temp], check.names = FALSE)
 
           ################
           # e) Test de Newman-Keuls
@@ -679,7 +679,7 @@
           mynk <- agricolae::SNK.test(mya, "g", alpha = alpha)
 
           ind_temp <- match(synth$groups[, 1], rownames(mynk$groups))
-          synth$groups <- data.frame(synth$groups, "SNK" = mynk$groups$groups[ind_temp])
+          synth$groups <- data.frame(synth$groups, "SNK" = mynk$groups$groups[ind_temp], check.names = FALSE)
 
           cat1 <- unique(unlist(strsplit(synth$groups[, 3], "")))
           cat2 <- unique(unlist(strsplit(mynk$groups$groups, "")))
@@ -711,7 +711,7 @@
             )
 
             ind_temp <- match(synth$groups[, 1], rownames(mywd$groups))
-            synth$groups <- data.frame(synth$groups, "Waller-Duncan" = mywd$groups$groups[ind_temp])
+            synth$groups <- data.frame(synth$groups, "Waller-Duncan" = mywd$groups$groups[ind_temp], check.names = FALSE)
           }
         } else {
           # agricolae non disponible - informer l'utilisateur
@@ -1851,7 +1851,7 @@
 
           if (!is.null(synth2) && !is.null(synth2$groups) && nrow(synth2$groups) > 0) {
             ind_temp <- match(synth$groups[, 1], synth2$groups[, 1])
-            synth$groups <- data.frame(synth$groups, "Dunn_Holm" = synth2$groups[ind_temp, 2])
+            synth$groups <- data.frame(synth$groups, "Dunn_Holm" = synth2$groups[ind_temp, 2], check.names = FALSE)
 
             if (boot == TRUE && !is.null(synth2$bootstrap) && !is.null(synth2$bootstrap$groups)) {
               if (any(synth$bootstrap$groups[, 2] != synth$groups[, 2], na.rm = TRUE)) {
@@ -1968,7 +1968,7 @@
                            conf = conf, iter = iter, debug = debug)
 
         ind_temp <- match(synth$groups[, 1], synth2$groups[, 1])
-        synth$groups <- data.frame(synth$groups, "Dunn_Holm" = synth2$groups[ind_temp, 2])
+        synth$groups <- data.frame(synth$groups, "Dunn_Holm" = synth2$groups[ind_temp, 2], check.names = FALSE)
 
         if (boot == TRUE) {
           if (any(synth$bootstrap$groups[, 2] != synth$groups[, 2], na.rm = TRUE)) {

@@ -6335,3 +6335,40 @@ Date: 2025-11-25
 Statut: ✓ MODIFICATIONS APPLIQUÉES - RECHARGEMENT REQUIS
 Impact: Messages cohérents, complets, professionnels - Conformité BP 100%
 ================================================================================
+
+================================================================================
+2026-11-05 - CORRECTION ANCOVA m.test() ET ANOMALIES ANNEXES
+================================================================================
+Signalement : session "Controle S5 BUT3". m.test(fourrage~Variete*Temperature)
+donnait Variete p = 0.996 et "Aucun effet", le post-hoc p = 0.02.
+Cause : interaction annoncee supprimee mais conservee (lm(formula) au lieu de
+formula_to_use), et facteur teste a covariable = 0 en Type III.
+
+ANCOVA
+- sys_ancova_analysis.R : ajustement sur formula_to_use et data_fit ; covariable
+  centree si interaction conservee ; linearite testee sur le modele retenu ;
+  global_pvalue et formula_used renvoyes ; interactions citees dans la conclusion.
+- sys_analyze_ancova_structure.R : reponse transformee (log(y)) acceptee.
+- sys_select_ss_type.R : Type III si interaction conservee ; note d'ordre reformulee ;
+  formule Type I suggeree seulement en plan equilibre.
+- sys_multi_factor_analysis.R, m.test.R : transmission de global_pvalue et formula_used.
+- sys_posthoc_ANCOVA.R : matrice de p correcte pour les niveaux numeriques ;
+  message anglais de cld() supprime ; moyenne d'origine dans la note.
+
+ANNEXES
+- m.test.R : $method nomme le test reel a 2 groupes.
+- pairwise.R : tableaux de dunnTest() supprimes (deluge sous bootstrap).
+- sys_pairwise_medpb2.R : lettres attribuees par catego().
+- sys_posthoc.R : check.names = FALSE, noms de colonnes stables.
+  Changement visible : Waller.Duncan devient Waller-Duncan.
+- valreg.R, man/valreg.Rd : message explicite et argument nvar documente.
+
+Archives : dev/save/*.2026-11-05
+Test : dev/test/agent_test_ancova_interaction.R
+bp.log : BP-029 a BP-032.
+
+NON TRAITE (a decider)
+- Voie robuste rlm() : post-hocs sur aov() non robuste ; return=FALSE renvoie NA.
+- m.test(mpg~cyl*am+wt, data=mtcars) : erreur rlm() "x singuliere" en repli.
+- m.test(y~factor(F)*x) : erreur "objet introuvable".
+================================================================================

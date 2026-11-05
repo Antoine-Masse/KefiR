@@ -29,7 +29,7 @@ valreg(
 
 \item{verbose}{To see the detailed balance sheet}
 
-\item{nvar}{The maximum number of variables allowed}
+\item{nvar}{The maximum number of coefficients allowed, intercept included (default 5). Beyond it, the model is not tested and FALSE is returned: a factor with k levels counts for k-1 coefficients, so increase nvar for such models.}
 
 \item{boot}{For checking the model by bootstrap with bootreg() (FALSE or TRUE)}
 

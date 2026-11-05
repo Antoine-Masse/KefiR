@@ -451,8 +451,9 @@
        "Calcul de l'affichage compact par lettres...", debug = debug)
 
   # Utiliser multcomp::cld() pour generer compact letter display
+  # Supprimer le message anglais "adjust = tukey was changed to sidak"
   cld_result <- tryCatch({
-    multcomp::cld(emm_result, alpha = alpha, Letters = letters, adjust = emmeans_method)
+    suppressMessages(multcomp::cld(emm_result, alpha = alpha, Letters = letters, adjust = emmeans_method))
   }, error = function(e) {
     .dbg(paste0("Warning: Could not compute CLD: ", e$message),
          paste0("Attention : Impossible de calculer le CLD : ", e$message),
@@ -538,6 +539,9 @@
     if (length(parts) == 2) {
       g1 <- trimws(parts[1])
       g2 <- trimws(parts[2])
+      # emmeans pr\u00e9fixe les niveaux num\u00e9riques par le nom du facteur ("am0 - am1")
+      if (!g1 %in% factor_levels) g1 <- sub(factor_name, "", g1, fixed = TRUE)
+      if (!g2 %in% factor_levels) g2 <- sub(factor_name, "", g2, fixed = TRUE)
       if (g1 %in% factor_levels && g2 %in% factor_levels) {
         p_val <- pairwise_comparisons$p_value[i]
         p_value_matrix[g1, g2] <- p_val
@@ -570,9 +574,13 @@
       pairs_result = pairs_result,
       note = paste0("Post-hoc comparisons performed on adjusted means. ",
                     "Covariates held at their mean values: ",
+                    # Covariable centr\u00e9e par .ancova_analysis() : rajouter sa moyenne d'origine
                     paste(paste0(covariate_vars, " = ",
-                                 round(sapply(covariate_vars, function(cv)
-                                   mean(model_data[[cv]], na.rm = TRUE)), 2)),
+                                 round(sapply(covariate_vars, function(cv) {
+                                   center <- ancova_model$covariate_centers[cv]
+                                   mean(model_data[[cv]], na.rm = TRUE) +
+                                     if (is.null(center) || is.na(center)) 0 else center
+                                 }), 2)),
                           collapse = ", "))
     )
   )

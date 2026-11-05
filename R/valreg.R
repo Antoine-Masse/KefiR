@@ -4,7 +4,7 @@
 #'
 #' @param reg A regression model
 #' @param verbose To see the detailed balance sheet
-#' @param nvar The maximum number of variables allowed
+#' @param nvar The maximum number of coefficients allowed, intercept included (default 5). Beyond it, the model is not tested and FALSE is returned: a factor with k levels counts for k-1 coefficients, so increase nvar for such models.
 #' @param boot For checking the model by bootstrap with bootreg() (FALSE or TRUE)
 #' @param alpha Maximum value accepted for the p-values of the model and its coefficients
 #' @param conf.level Confidence interval accepted to validate the regression model by bootstrap
@@ -299,8 +299,11 @@ valreg <- function(reg, verbose = TRUE, nvar = 5, boot = TRUE, alpha = 0.05,
 		.dbg(NULL, "valreg() - analyse du nombre de variables.",debug=debug)
   nvar1 <- length(coef(reg))
   if (nvar1 > nvar) {
-    .vbse(ang=paste0("More than ", nvar, " variables"),
-          fr=paste0("Plus de ", nvar, " variables"),
+    # Un facteur a k modalites compte pour k-1 coefficients, plus la constante
+    .vbse(ang=paste0("More than ", nvar, " coefficients (", nvar1, "): model NOT tested, FALSE returned.\n",
+                     "\t(To test it anyway: valreg(reg, nvar = ", nvar1, ").)"),
+          fr=paste0("Plus de ", nvar, " coefficients (", nvar1, ") : mod\u00e8le NON test\u00e9, FALSE renvoy\u00e9.\n",
+                    "\t(Pour le tester quand m\u00eame : valreg(reg, nvar = ", nvar1, ").)"),
           k=counter, cpt="off", verbose=verbose)
     error <- FALSE
   } else if (length(fitted(reg)) < (nvar + 1)) {
