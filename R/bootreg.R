@@ -23,7 +23,7 @@ bootreg <- function(reg, data=c(), plot=TRUE, verbose=TRUE, conf.level=0.95, alp
 
 #  clean_formula <- function(formula, data) {
 #    # Convertir la formule en texte pour manipulation
-#    formula_text <- deparse(formula)#
+#    formula_text <- deparse1(formula)#
 
     # Remplacer toutes les formes d'accès (data$var, data[["var"]], dt$var, etc.)
 #    formula_text <- gsub("([a-zA-Z0-9._]+)\\$([a-zA-Z0-9._]+)", "\\2", formula_text) # data$densite -> densite

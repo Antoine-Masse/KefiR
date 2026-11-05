@@ -222,6 +222,8 @@
   robust <- FALSE
   manova_model <- NULL
   test_statistics <- list()
+  effects_table <- NULL
+  term_labels <- NULL
 
   #============================================================================
   #                     FORMULA PROCESSING
@@ -409,6 +411,16 @@
     n_obs <- nrow(x)
   }
 
+  # Un NA dans un facteur ne figure pas dans x : le retirer m\u00eame si x est complet
+  if (!is.null(g)) {
+    g_complete <- if (is.data.frame(g)) complete.cases(g) else !is.na(g)
+    if (!all(g_complete)) {
+      x <- x[g_complete, , drop = FALSE]
+      g <- if (is.data.frame(g)) g[g_complete, , drop = FALSE] else g[g_complete]
+      n_obs <- nrow(x)
+    }
+  }
+
   # Validate grouping variable
   if (is.null(g)) {
     .exit("Grouping variable g is NULL.",
@@ -419,6 +431,7 @@
   # Convert g to factor if needed
   if (is.data.frame(g)) {
     # Multiple factors: create interaction
+    g_terms <- data.frame(lapply(g, factor), check.names = TRUE)
     g_interaction <- interaction(g, drop=TRUE)
     n_groups <- nlevels(g_interaction)
     k <- .vbse(paste0("Multiple grouping factors detected. Creating interaction with ", n_groups, " groups."),
@@ -426,6 +439,7 @@
                verbose=verbose, k=k, cpt="off")
     g_factor <- g_interaction
   } else {
+    g_terms <- NULL
     g_factor <- droplevels(factor(g))
     n_groups <- nlevels(g_factor)
     k <- .vbse(paste0("Single grouping factor with ", n_groups, " groups."),
@@ -532,8 +546,8 @@
   # Reference: Stevens (2009) recommends n > p + number of groups
   min_sample_size <- n_dv + n_groups
   if (n_obs <= min_sample_size) {
-    k <- .vbse(paste0("Warning: Sample size (n=", n_obs, ") is small relative to the number of variables and groups.\n\tRecommended minimum: n > ", min_sample_size, " (Stevens, 2009)."),
-               paste0("Attention : Taille d'\u00e9chantillon (n=", n_obs, ") faible par rapport au nombre de variables et groupes.\n\tMinimum recommand\u00e9 : n > ", min_sample_size, " (Stevens, 2009)."),
+    k <- .vbse(paste0("Warning: Sample size (n=", n_obs, ") is small relative to the number of variables and groups.\n\tRecommended minimum: n > ", min_sample_size, "."),
+               paste0("Attention : Taille d'\u00e9chantillon (n=", n_obs, ") faible par rapport au nombre de variables et groupes.\n\tMinimum recommand\u00e9 : n > ", min_sample_size, "."),
                verbose=verbose, k=k, cpt="on")
   }
 
@@ -574,7 +588,14 @@
   dv_names[dv_names == ""] <- paste0("Y", seq_along(dv_names))[dv_names == ""]
   colnames(x) <- make.unique(make.names(dv_names))
 
-  cor_matrix <- cor(x, use="complete.obs")
+  # Les assomptions portent sur la dispersion INTRA-groupes : sur les donn\u00e9es brutes,
+  # la diff\u00e9rence entre groupes (l'effet recherch\u00e9) passerait pour une non-normalit\u00e9,
+  # des outliers ou une corr\u00e9lation.
+  # R\u00e9f\u00e9rence: Tabachnick & Fidell (2019). Using Multivariate Statistics (7th ed.). Chapter 7.
+  x_resid <- residuals(lm(x ~ g_factor))
+  colnames(x_resid) <- colnames(x)
+
+  cor_matrix <- cor(x_resid)
   cor_upper <- cor_matrix[upper.tri(cor_matrix)]
   max_cor <- max(abs(cor_upper))
 
@@ -645,17 +666,18 @@
        "Contr\u00f4le: Outliers multivari\u00e9s (distance de Mahalanobis).", debug=debug)
 
   # Calculate Mahalanobis distance for each observation
-  center <- colMeans(x, na.rm=TRUE)
-  cov_matrix <- cov(x, use="complete.obs")
+  # Distance au centre de son groupe, avec la covariance intra-groupes
+  center <- rep(0, n_dv)
+  cov_matrix <- crossprod(x_resid) / (n_obs - n_groups)
 
   # Check if covariance matrix is invertible
-  if (det(cov_matrix) == 0) {
+  if (rcond(cov_matrix) < 1e-10) {
     k <- .vbse("Warning: Covariance matrix is singular. Cannot compute Mahalanobis distance.\n\tThis may indicate perfect multicollinearity.",
                "Attention : Matrice de covariance singuli\u00e8re. Impossible de calculer la distance de Mahalanobis.\n\tCela peut indiquer une multicolin\u00e9arit\u00e9 parfaite.",
                verbose=verbose, k=k, cpt="on")
     check_outliers_mv <- FALSE
   } else {
-    maha_dist <- mahalanobis(x, center, cov_matrix)
+    maha_dist <- mahalanobis(x_resid, center, cov_matrix)
 
     # Critical value: chi-square with p degrees of freedom at alpha=0.001
     # Reference: Using conservative alpha for outlier detection
@@ -697,6 +719,9 @@
              "ASSOMPTION 5/6 : Normalit\u00e9 multivari\u00e9e [mvn() {MVN}]\n\tTest de Mardia (asym\u00e9trie, kurtosis) et test de Henze-Zirkler",
              verbose=verbose, k=k, cpt="on")
 
+  # Ne pas afficher une valeur interne quand le test annonce seulement un seuil
+  .mvn_fmt <- function(p) if (isTRUE(p < 0.001)) "< 0.001" else .format_pval(p)
+
   # Use MVN package for multivariate normality testing
   if (requireNamespace("MVN", quietly = TRUE)) {
     # MVN >= 6 : mvn_test et $multivariate_normality$p.value (parfois "<0.001") ;
@@ -704,9 +729,9 @@
     .mvn_pvalues <- function(test_name) {
       res <- tryCatch(suppressWarnings(suppressMessages(
         if ("mvn_test" %in% names(formals(MVN::mvn))) {
-          MVN::mvn(data = x, mvn_test = test_name)$multivariate_normality$p.value
+          MVN::mvn(data = x_resid, mvn_test = test_name)$multivariate_normality$p.value
         } else {
-          MVN::mvn(data = x, mvnTest = test_name, multivariatePlot = "none")$multivariateNormality$`p value`
+          MVN::mvn(data = x_resid, mvnTest = test_name, multivariatePlot = "none")$multivariateNormality$`p value`
         }
       )), error = function(e) NULL)
       if (is.null(res)) return(NULL)
@@ -716,9 +741,6 @@
       res[is_below] <- res[is_below] / 2  # sous le seuil annonc\u00e9
       res
     }
-
-    # Ne pas afficher la valeur interne quand MVN annonce seulement "<0.001"
-    .mvn_fmt <- function(p) if (isTRUE(p < 0.001)) "< 0.001" else .format_pval(p)
 
     # Mardia's test
     mvn_mardia <- .mvn_pvalues("mardia")
@@ -857,7 +879,7 @@
                paste0("Violations multiples d'assomptions d\u00e9tect\u00e9es (", violations, " sur 4).\n\tPassage \u00e0 une approche MANOVA robuste."),
                verbose=verbose, k=k, cpt="on")
   } else if (violations == 1) {
-    if (!isTRUE(check_covariance_homogeneity)) {
+    if (isFALSE(check_covariance_homogeneity)) {
       k <- .vbse("Covariance heterogeneity detected.\n\tWill use Pillai's trace (most robust to this violation).",
                  "H\u00e9t\u00e9rog\u00e9n\u00e9it\u00e9 de covariance d\u00e9tect\u00e9e.\n\tUtilisation de la trace de Pillai (la plus robuste \u00e0 cette violation).",
                  verbose=verbose, k=k, cpt="off")
@@ -885,11 +907,41 @@
     }
     colnames(x) <- response_names
 
-    manova_data <- data.frame(x, g_factor=g_factor)
-
     # Construct formula
     response_formula <- paste0("cbind(", paste(response_names, collapse=", "), ")")
-    manova_formula <- as.formula(paste(response_formula, "~ g_factor"))
+
+    # Plusieurs facteurs : un test par terme (Type II, car::Manova), et non un seul test sur
+    # les croisements. L'erreur est celle du mod\u00e8le complet, y compris pour les effets principaux.
+    # R\u00e9f\u00e9rence: Fox, J., & Weisberg, S. (2019). An R Companion to Applied Regression (3rd ed.). Sage.
+    term_labels <- NULL
+    mv_summary <- NULL
+    if (!is.null(g_terms)) {
+      manova_data <- data.frame(x, g_terms)
+      if (!is.null(formula) && !is.null(updated_rhs <- tryCatch(formula[[3]], error = function(e) NULL))) {
+        term_labels <- attr(terms(as.formula(paste("~", paste(deparse(updated_rhs), collapse = "")))), "term.labels")
+        term_labels <- term_labels[!grepl("^Error\\(", term_labels)]
+      }
+      if (length(term_labels) == 0) term_labels <- colnames(g_terms)
+      if (!all(unlist(strsplit(term_labels, ":", fixed = TRUE)) %in% colnames(manova_data))) {
+        term_labels <- colnames(g_terms)
+      }
+      manova_formula <- as.formula(paste(response_formula, "~", paste(term_labels, collapse = " + ")))
+      car_manova <- car::Manova(lm(manova_formula, data = manova_data), type = "II")
+      # Statistique multivari\u00e9e d'un terme, au format d'une ligne de summary.manova()
+      .term_stats <- function(term, test) {
+        eig <- Re(eigen(solve(car_manova$SSPE, car_manova$SSP[[term]]), only.values = TRUE)$values)
+        .manova_stat(eig, q = car_manova$df[[term]], df_res = car_manova$error.df, test = test)
+      }
+      mv_summary <- function(test) {
+        list(stats = matrix(.term_stats(term_labels[1], test), nrow = 1,
+                            dimnames = list(term_labels[1], c(test, "approx F", "num Df", "den Df", "Pr(>F)"))))
+      }
+      test_row <- 1
+    } else {
+      manova_data <- data.frame(x, g_factor=g_factor)
+      manova_formula <- as.formula(paste(response_formula, "~ g_factor"))
+      test_row <- 1
+    }
 
     # Fit MANOVA model
     manova_model <- tryCatch({
@@ -904,13 +956,13 @@
     if (!is.null(manova_model)) {
       # Extract test statistics
       # Default tests: Wilks, Pillai, Hotelling-Lawley, Roy
-      k <- .vbse("Multivariate tests [manova()]\n\tWilks' Lambda, Pillai's trace, Hotelling-Lawley trace, Roy's largest root",
-                 "Tests multivari\u00e9s [manova()]\n\tLambda de Wilks, trace de Pillai, trace de Hotelling-Lawley, plus grande racine de Roy",
+      k <- .vbse(paste0("Multivariate tests [", if (is.null(term_labels)) "manova()" else "car::Manova(type='II')", "]\n\tWilks' Lambda, Pillai's trace, Hotelling-Lawley trace, Roy's largest root"),
+                 paste0("Tests multivari\u00e9s [", if (is.null(term_labels)) "manova()" else "car::Manova(type='II')", "]\n\tLambda de Wilks, trace de Pillai, trace de Hotelling-Lawley, plus grande racine de Roy"),
                  verbose=verbose, k=k, cpt="off")
       if (isTRUE(code)) {
         k_code <- k_code + 1
         .code_manova(k_code, "Tests multivari\u00e9s MANOVA", c(
-          paste0("manova_formula <- ", deparse(manova_formula)),
+          paste0("manova_formula <- ", deparse1(manova_formula)),
           "manova_model <- manova(manova_formula, data = data)",
           "summary(manova_model, test = 'Wilks')",
           "summary(manova_model, test = 'Pillai')",
@@ -921,103 +973,132 @@
 
       # Wilks' Lambda
       wilks_summary <- tryCatch({
-        summary(manova_model, test="Wilks")
+        if (is.null(mv_summary)) summary(manova_model, test="Wilks") else mv_summary("Wilks")
       }, error=function(e) NULL)
 
       if (!is.null(wilks_summary)) {
         wilks_stats <- wilks_summary$stats
-        wilks_pval <- wilks_stats[1, "Pr(>F)"]
+        wilks_pval <- wilks_stats[test_row, "Pr(>F)"]
         test_statistics$Wilks <- list(
-          statistic = wilks_stats[1, "Wilks"],
-          F_value = wilks_stats[1, "approx F"],
-          df1 = wilks_stats[1, "num Df"],
-          df2 = wilks_stats[1, "den Df"],
+          statistic = wilks_stats[test_row, "Wilks"],
+          F_value = wilks_stats[test_row, "approx F"],
+          df1 = wilks_stats[test_row, "num Df"],
+          df2 = wilks_stats[test_row, "den Df"],
           p_value = wilks_pval
         )
 
         if (wilks_pval <= alpha) {
           k <- .vbse(paste0("Wilks' Lambda test: Significant multivariate effect, p-value = ", .format_pval(wilks_pval)),
                      paste0("Test Lambda de Wilks : Effet multivari\u00e9 significatif, p-value = ", .format_pval(wilks_pval)),
-                     verbose=verbose, k=k, cpt="off")
+                     verbose=verbose && is.null(term_labels), k=k, cpt="off")
         } else {
           k <- .vbse(paste0("Wilks' Lambda test: Non-significant multivariate effect, p-value = ", .format_pval(wilks_pval)),
                      paste0("Test Lambda de Wilks : Effet multivari\u00e9 non significatif, p-value = ", .format_pval(wilks_pval)),
-                     verbose=verbose, k=k, cpt="off")
+                     verbose=verbose && is.null(term_labels), k=k, cpt="off")
         }
       }
 
       # Pillai's trace (most robust to violations)
       pillai_summary <- tryCatch({
-        summary(manova_model, test="Pillai")
+        if (is.null(mv_summary)) summary(manova_model, test="Pillai") else mv_summary("Pillai")
       }, error=function(e) NULL)
 
       if (!is.null(pillai_summary)) {
         pillai_stats <- pillai_summary$stats
-        pillai_pval <- pillai_stats[1, "Pr(>F)"]
+        pillai_pval <- pillai_stats[test_row, "Pr(>F)"]
         test_statistics$Pillai <- list(
-          statistic = pillai_stats[1, "Pillai"],
-          F_value = pillai_stats[1, "approx F"],
-          df1 = pillai_stats[1, "num Df"],
-          df2 = pillai_stats[1, "den Df"],
+          statistic = pillai_stats[test_row, "Pillai"],
+          F_value = pillai_stats[test_row, "approx F"],
+          df1 = pillai_stats[test_row, "num Df"],
+          df2 = pillai_stats[test_row, "den Df"],
           p_value = pillai_pval
         )
 
         if (pillai_pval <= alpha) {
           k <- .vbse(paste0("Pillai's trace test: Significant multivariate effect, p-value = ", .format_pval(pillai_pval)),
                      paste0("Test trace de Pillai : Effet multivari\u00e9 significatif, p-value = ", .format_pval(pillai_pval)),
-                     verbose=verbose, k=k, cpt="off")
+                     verbose=verbose && is.null(term_labels), k=k, cpt="off")
         } else {
           k <- .vbse(paste0("Pillai's trace test: Non-significant multivariate effect, p-value = ", .format_pval(pillai_pval)),
                      paste0("Test trace de Pillai : Effet multivari\u00e9 non significatif, p-value = ", .format_pval(pillai_pval)),
-                     verbose=verbose, k=k, cpt="off")
+                     verbose=verbose && is.null(term_labels), k=k, cpt="off")
         }
       }
 
       # Hotelling-Lawley trace
       hotelling_summary <- tryCatch({
-        summary(manova_model, test="Hotelling-Lawley")
+        if (is.null(mv_summary)) summary(manova_model, test="Hotelling-Lawley") else mv_summary("Hotelling-Lawley")
       }, error=function(e) NULL)
 
       if (!is.null(hotelling_summary)) {
         hotelling_stats <- hotelling_summary$stats
-        hotelling_pval <- hotelling_stats[1, "Pr(>F)"]
+        hotelling_pval <- hotelling_stats[test_row, "Pr(>F)"]
         test_statistics$HotellingLawley <- list(
-          statistic = hotelling_stats[1, "Hotelling-Lawley"],
-          F_value = hotelling_stats[1, "approx F"],
-          df1 = hotelling_stats[1, "num Df"],
-          df2 = hotelling_stats[1, "den Df"],
+          statistic = hotelling_stats[test_row, "Hotelling-Lawley"],
+          F_value = hotelling_stats[test_row, "approx F"],
+          df1 = hotelling_stats[test_row, "num Df"],
+          df2 = hotelling_stats[test_row, "den Df"],
           p_value = hotelling_pval
         )
       }
 
       # Roy's largest root
       roy_summary <- tryCatch({
-        summary(manova_model, test="Roy")
+        if (is.null(mv_summary)) summary(manova_model, test="Roy") else mv_summary("Roy")
       }, error=function(e) NULL)
 
       if (!is.null(roy_summary)) {
         roy_stats <- roy_summary$stats
-        roy_pval <- roy_stats[1, "Pr(>F)"]
+        roy_pval <- roy_stats[test_row, "Pr(>F)"]
         test_statistics$Roy <- list(
-          statistic = roy_stats[1, "Roy"],
-          F_value = roy_stats[1, "approx F"],
-          df1 = roy_stats[1, "num Df"],
-          df2 = roy_stats[1, "den Df"],
+          statistic = roy_stats[test_row, "Roy"],
+          F_value = roy_stats[test_row, "approx F"],
+          df1 = roy_stats[test_row, "num Df"],
+          df2 = roy_stats[test_row, "den Df"],
           p_value = roy_pval
         )
       }
 
+      # Plusieurs facteurs : afficher le test de chaque terme
+      if (!is.null(term_labels)) {
+        term_rows <- lapply(term_labels, function(term) {
+          wilks_row <- .term_stats(term, "Wilks")
+          pillai_row <- .term_stats(term, "Pillai")
+          data.frame(term = term, Wilks = wilks_row[[1]], p.Wilks = wilks_row[[5]],
+                     Pillai = pillai_row[[1]], p.Pillai = pillai_row[[5]],
+                     stringsAsFactors = FALSE)
+        })
+        effects_table <- do.call(rbind, term_rows)
+        k <- .vbse("Multivariate test of each model term (Type II):",
+                   "Test multivari\u00e9 de chaque terme du mod\u00e8le (Type II) :",
+                   verbose = verbose, k = k, cpt = "off")
+        if (verbose) {
+          print(effects_table, row.names = FALSE, digits = 4)
+          cat("\n")
+        }
+        # Conclusion sur le test retenu : Wilks, ou Pillai si une assomption est viol\u00e9e
+        retained_p <- if (violations > 0) effects_table$p.Pillai else effects_table$p.Wilks
+        sig_terms <- effects_table$term[retained_p <= alpha]
+        k <- .vbse(
+          if (length(sig_terms) > 0) paste0("\tSignificant term(s): ", paste(sig_terms, collapse = ", "), ".")
+          else "\tNo significant term.",
+          if (length(sig_terms) > 0) paste0("\tTerme(s) significatif(s) : ", paste(sig_terms, collapse = ", "), ".")
+          else "\tAucun terme significatif.",
+          verbose = verbose, k = k, cpt = "off"
+        )
+      }
+
       # Recommendation on which test to trust
-      if (!isTRUE(check_covariance_homogeneity)) {
-        k <- .vbse("Recommendation: Given covariance heterogeneity, prioritize Pillai's trace (most robust).",
-                   "Recommandation : \u00c9tant donn\u00e9 l'h\u00e9t\u00e9rog\u00e9n\u00e9it\u00e9 de covariance, privil\u00e9gier la trace de Pillai (la plus robuste).",
+      if (violations > 0) {
+        k <- .vbse("Recommendation: given the violated assumption, Pillai's trace is retained (most robust).",
+                   "Recommandation : \u00e9tant donn\u00e9 l'assomption viol\u00e9e, la trace de Pillai est retenue (la plus robuste).",
                    verbose=verbose, k=k, cpt="off")
       }
     }
 
   } else {
     #==========================================================================
-    #                    ROBUST MANOVA (NON-PARAMETRIC)
+    #                    ROBUST MANOVA (MCD ESTIMATOR)
     #==========================================================================
 
     k <- .vbse("Executing robust MANOVA (Wilks test with robust estimator).",
@@ -1030,42 +1111,58 @@
                  "Utilisation de l'estimateur MCD (Minimum Covariance Determinant) pour MANOVA robuste [package rrcov].",
                  verbose=verbose, k=k, cpt="off")
 
+      if (!is.null(g_terms)) {
+        k <- .vbse("Robust test on the crossed groups (no test per factor with this method).",
+                   "Test robuste sur les groupes crois\u00e9s (pas de test par facteur avec cette m\u00e9thode).",
+                   verbose=verbose, k=k, cpt="off")
+      }
+
+      # MCD et loi du test reposent sur un tirage : graine fixe pour un bilan reproductible
       robust_result <- tryCatch({
-        rrcov::Wilks.test(x, grouping=g_factor, method="mcd")
-      }, error=function(e) {
-        k <- .vbse(paste0("Error in robust MANOVA: ", e$message),
-                   paste0("Erreur dans la MANOVA robuste : ", e$message),
-                   verbose=verbose, k=k, cpt="on")
-        return(NULL)
-      })
+        suppressWarnings(withr::with_seed(2026, rrcov::Wilks.test(x, grouping=g_factor, method="mcd")))
+      }, error=function(e) NULL)
 
       if (!is.null(robust_result)) {
-        robust_pval <- robust_result$p.value
+        robust_pval <- unname(robust_result$p.value)
         test_statistics$RobustWilks <- list(
           statistic = robust_result$statistic,
           p_value = robust_pval
         )
 
         if (robust_pval <= alpha) {
-          k <- .vbse(paste0("Robust Wilks' test (MCD): Significant multivariate effect, p-value = ", .format_pval(robust_pval)),
-                     paste0("Test de Wilks robuste (MCD) : Effet multivari\u00e9 significatif, p-value = ", .format_pval(robust_pval)),
+          k <- .vbse(paste0("Robust Wilks' test (MCD): Significant multivariate effect, p-value = ", .mvn_fmt(robust_pval)),
+                     paste0("Test de Wilks robuste (MCD) : Effet multivari\u00e9 significatif, p-value = ", .mvn_fmt(robust_pval)),
                      verbose=verbose, k=k, cpt="off")
         } else {
-          k <- .vbse(paste0("Robust Wilks' test (MCD): Non-significant multivariate effect, p-value = ", .format_pval(robust_pval)),
-                     paste0("Test de Wilks robuste (MCD) : Effet multivari\u00e9 non significatif, p-value = ", .format_pval(robust_pval)),
+          k <- .vbse(paste0("Robust Wilks' test (MCD): Non-significant multivariate effect, p-value = ", .mvn_fmt(robust_pval)),
+                     paste0("Test de Wilks robuste (MCD) : Effet multivari\u00e9 non significatif, p-value = ", .mvn_fmt(robust_pval)),
                      verbose=verbose, k=k, cpt="off")
         }
       }
     } else {
-      k <- .vbse("Warning: rrcov package not available. Robust MANOVA cannot be performed.\n\tInstall with: install.packages('rrcov')\n\tFalling back to permutation test.",
-                 "Attention : Package rrcov non disponible. MANOVA robuste impossible.\n\tInstaller avec : install.packages('rrcov')\n\tRetour au test de permutation.",
+      k <- .vbse("Warning: rrcov package not available. Robust MANOVA cannot be performed.\n\tInstall with: install.packages('rrcov')",
+                 "Attention : Package rrcov non disponible. MANOVA robuste impossible.\n\tInstaller avec : install.packages('rrcov')",
                  verbose=verbose, k=k, cpt="on")
 
-      # TODO: Implement permutation MANOVA as fallback
-      k <- .vbse("Permutation MANOVA: Not yet implemented in this function.\n\tConsider using adonis() from vegan package manually.",
-                 "MANOVA par permutation : Pas encore impl\u00e9ment\u00e9e dans cette fonction.\n\tEnvisagez d'utiliser adonis() du package vegan manuellement.",
-                 verbose=verbose, k=k, cpt="off")
     }
+  }
+
+  # Voie robuste sans r\u00e9sultat (groupes trop petits, MCD impossible...) : Pillai, en le disant
+  if (isTRUE(robust) && is.null(test_statistics$RobustWilks)) {
+    k <- .vbse("Robust MANOVA not applicable to these data.\n\t--> Back to Pillai's trace, the most robust classical test.\n\t(Assumptions are violated: interpret with caution.)",
+               "MANOVA robuste inapplicable \u00e0 ces donn\u00e9es.\n\t--> Retour vers la trace de Pillai, le test classique le plus robuste.\n\t(Assomptions viol\u00e9es : interpr\u00e9tez avec prudence.)",
+               verbose=verbose, k=k, cpt="on")
+    fallback_data <- data.frame(unname(x), g_factor = g_factor)
+    fallback_fit <- manova(as.matrix(fallback_data[, seq_len(n_dv)]) ~ g_factor, data = fallback_data)
+    fallback_row <- summary(fallback_fit, test = "Pillai")$stats[1, ]
+    test_statistics$Pillai <- list(statistic = unname(fallback_row["Pillai"]),
+                                   F_value = unname(fallback_row["approx F"]),
+                                   df1 = unname(fallback_row["num Df"]),
+                                   df2 = unname(fallback_row["den Df"]),
+                                   p_value = unname(fallback_row["Pr(>F)"]))
+    k <- .vbse(paste0("Pillai's trace: p-value = ", .format_pval(test_statistics$Pillai$p_value)),
+               paste0("Trace de Pillai : p-value = ", .format_pval(test_statistics$Pillai$p_value)),
+               verbose=verbose, k=k, cpt="off")
   }
 
   #============================================================================
@@ -1092,14 +1189,21 @@
 
   # NOTE PERSO: Extraire p-value globale pour return=FALSE
   # (cf. Cahier des charges priorit\u00e9 2)
-  # Utiliser Wilks' Lambda comme test principal
+  # Test principal : Wilks si les assomptions sont respect\u00e9es, sinon Pillai (le plus
+  # robuste), sinon le test robuste. La m\u00e9thode annonc\u00e9e est toujours celle de la p-value.
+  # R\u00e9f\u00e9rence: Olson, C. L. (1974). Comparative robustness of six tests in multivariate
+  # analysis of variance. JASA, 69(348), 894-908. DOI: 10.1080/01621459.1974.10480224
   global_pvalue <- NA
-  if (!is.null(test_statistics$Wilks)) {
-    global_pvalue <- test_statistics$Wilks$p_value
-  } else if (!is.null(test_statistics$Pillai)) {
+  method_used <- "MANOVA"
+  if (!is.null(test_statistics$RobustWilks)) {
+    global_pvalue <- as.numeric(test_statistics$RobustWilks$p_value)
+    method_used <- "Robust MANOVA (Wilks, MCD)"
+  } else if (!is.null(test_statistics$Pillai) && (violations > 0 || is.null(test_statistics$Wilks))) {
     global_pvalue <- test_statistics$Pillai$p_value
-  } else if (!is.null(test_statistics$RobustWilks)) {
-    global_pvalue <- test_statistics$RobustWilks$p_value
+    method_used <- "MANOVA (Pillai's trace)"
+  } else if (!is.null(test_statistics$Wilks)) {
+    global_pvalue <- test_statistics$Wilks$p_value
+    method_used <- "MANOVA (Wilks' Lambda)"
   }
 
   #============================================================================
@@ -1128,6 +1232,10 @@
     test_statistics = test_statistics,
     k = k,
     robust = robust,
+    method = method_used,
+    effects = effects_table,
+    term_labels = term_labels,
+    g_terms = g_terms,
     global_pvalue = global_pvalue  # P-value globale pour return=FALSE
   )
 

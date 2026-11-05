@@ -118,7 +118,7 @@
   # Extraire info depuis formule si fournie
   has_formula_random <- FALSE
   if (!is.null(formula)) {
-    formula_str <- deparse(formula)
+    formula_str <- deparse1(formula)
     has_formula_random <- grepl("\\|", formula_str)
   }
 
@@ -218,7 +218,7 @@
     k_code <- k_code + 1
     .code_mixed(k_code, "Ajustement mod\u00e8le mixte (effets al\u00e9atoires)", c(
       "library(lmerTest)",
-      paste0("lmer_formula <- ", deparse(lmer_formula)),
+      paste0("lmer_formula <- ", deparse1(lmer_formula)),
       "mixed_model <- lmer(lmer_formula, data = data, REML = TRUE)",
       "summary(mixed_model)",
       "anova(mixed_model)"

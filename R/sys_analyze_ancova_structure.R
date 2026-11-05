@@ -193,18 +193,18 @@
   # Construire formule R\u00c9DUITE (sans interactions facteur\u00d7covariable)
   reduced_terms <- setdiff(term_labels, factor_covariate_interactions)
   # deparse() et non as.character() : log(y) donnerait c("log", "y")
-  response_var <- paste(deparse(formula[[2]]), collapse = "")
+  response_var <- paste(deparse1(formula[[2]]), collapse = "")
   formula_reduced <- as.formula(paste(response_var, "~", paste(reduced_terms, collapse = " + ")))
 
   # Construire formule COMPL\u00c8TE (avec interactions) - c'est la formule originale
   formula_full <- formula
 
-  .dbg(paste0("Reduced formula: ", deparse(formula_reduced)),
-       paste0("Formule r\u00e9duite : ", deparse(formula_reduced)),
+  .dbg(paste0("Reduced formula: ", deparse1(formula_reduced)),
+       paste0("Formule r\u00e9duite : ", deparse1(formula_reduced)),
        debug = debug)
 
-  .dbg(paste0("Full formula: ", deparse(formula_full)),
-       paste0("Formule compl\u00e8te : ", deparse(formula_full)),
+  .dbg(paste0("Full formula: ", deparse1(formula_full)),
+       paste0("Formule compl\u00e8te : ", deparse1(formula_full)),
        debug = debug)
 
   # Ajuster les deux mod\u00e8les

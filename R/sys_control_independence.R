@@ -141,8 +141,8 @@ control_independence <- function(formula, g, alpha = 0.05, debug = FALSE, verbos
   }
 
   # 5) Conserver la partie gauche (r\u00e9ponse) et la partie droite (d\u00e9j\u00e0 existante)
-  lhs <- deparse(formula[[2]])                     # "Note"
-  rhs <- deparse(formula[[3]])                     # e.g. "\u00e9tablissement + Lyc\u00e9e*Sexe + Options + Sport"
+  lhs <- deparse1(formula[[2]])                     # "Note"
+  rhs <- deparse1(formula[[3]])                     # e.g. "\u00e9tablissement + Lyc\u00e9e*Sexe + Options + Sport"
 
   if (debug) {
     cat(.msg("Debug: Original formula RHS:\n","Debug : Partie droite (formule initiale) :\n"), rhs, "\n")

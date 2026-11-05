@@ -138,7 +138,7 @@
       # Plan d\u00e9s\u00e9quilibr\u00e9 \u2192 tester interaction si mod\u00e8le disponible
       if (!is.null(model)) {
         # V\u00e9rifier si formule contient interaction
-        formula_str <- deparse(formula)
+        formula_str <- deparse1(formula)
         has_interaction <- grepl("\\*|:", formula_str)
 
         if (has_interaction) {

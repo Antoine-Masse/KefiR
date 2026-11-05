@@ -90,7 +90,6 @@ pde <- function(x,y,z,xlim=c(),ylim=c(),zlim=c(),dim=45,xlab="",ylab="",
       pas = (1/(length(z)*2-1))
       colorscale <- cbind(seq(0, 1, by=pas),colors_tp)
       if (mode==1) {
-        print("mode 1")
         font <- list(    family = "Courier New, monospace",    size = 12,    color = "#7f7f7f" )
         xlabel <- list(    title = paste(xlab," (x)"),    titlefont = font )
         ylabel <- list(    title = paste(ylab," (y)"),    titlefont = font )

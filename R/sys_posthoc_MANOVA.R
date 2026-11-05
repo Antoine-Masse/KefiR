@@ -106,24 +106,21 @@
 
   # Vérifier que MANOVA était significative
   if (!is.null(manova_result) && !is.null(manova_result$test_statistics)) {
-    # Extraire p-value de Wilks (peut être matrice ou data.frame)
-    wilks_p <- tryCatch({
-      if (is.matrix(manova_result$test_statistics) || is.data.frame(manova_result$test_statistics)) {
-        manova_result$test_statistics["Wilks", "p.value"]
-      } else if (is.list(manova_result$test_statistics) && !is.null(manova_result$test_statistics$Wilks)) {
-        manova_result$test_statistics$Wilks$p.value
-      } else {
-        NA
-      }
-    }, error = function(e) NA)
+    # Test retenu par la MANOVA ; avec plusieurs facteurs, au moins un terme significatif suffit
+    effects <- manova_result$effects
+    manova_p <- if (!is.null(effects)) {
+      min(if (isFALSE(manova_result$check_covariance_homogeneity) ||
+              isFALSE(manova_result$check_multivariate_normality)) effects$p.Pillai else effects$p.Wilks)
+    } else {
+      manova_result$global_pvalue
+    }
 
-    # Vérifier que wilks_p est valide avant comparaison
-    if (!is.na(wilks_p) && is.numeric(wilks_p) && wilks_p >= alpha) {
+    if (isTRUE(manova_p >= alpha)) {
       k <- .vbse(
-        paste0("WARNING: MANOVA was not significant (Wilks p=", round(wilks_p, 4),
-               "). Post-hoc analyses may not be appropriate."),
-        paste0("ATTENTION: La MANOVA n'\u00e9tait pas significative (Wilks p=", round(wilks_p, 4),
-               "). Les post-hocs peuvent ne pas \u00eatre appropri\u00e9s."),
+        paste0("WARNING: MANOVA was not significant (p = ", .format_pval(manova_p),
+               ").\n\tThe post-hocs below are descriptive."),
+        paste0("ATTENTION : la MANOVA n'est pas significative (p = ", .format_pval(manova_p),
+               ").\n\tLes post-hocs ci-dessous sont descriptifs."),
         verbose = verbose, code = code, k = k, cpt = "on"
       )
     }
@@ -186,7 +183,10 @@
         # Coefficients standardisés (structure matrix)
         # Corrélations entre DVs et fonctions discriminantes
         lda_predict <- predict(lda_result)
-        correlations <- cor(x, lda_predict$x)
+        # Matrice de structure INTRA-groupes, la d\u00e9finition usuelle (corr\u00e9lations sur les
+        # donn\u00e9es brutes : gonfl\u00e9es par l'\u00e9cart entre groupes)
+        # R\u00e9f\u00e9rence: Huberty & Olejnik (2006). Applied MANOVA and Discriminant Analysis. Wiley.
+        correlations <- cor(residuals(lm(x ~ g)), residuals(lm(lda_predict$x ~ g)))
 
         # Message d'en-tête compact
         n_functions <- length(lda_result$svd)
@@ -272,6 +272,20 @@
       verbose = verbose, code = code, k = k, cpt = "on"
     )
 
+    # Test de chaque VD coh\u00e9rent avec les assomptions contr\u00f4l\u00e9es par la MANOVA
+    dv_route <- if (isTRUE(manova_result$robust)) {
+      "kruskal"
+    } else if (isFALSE(manova_result$check_covariance_homogeneity)) {
+      "welch"
+    } else {
+      "anova"
+    }
+    route_label <- switch(dv_route, kruskal = "Kruskal-Wallis [kruskal.test()]",
+                          welch = "Welch [oneway.test()]", anova = "ANOVA [aov()]")
+    k <- .vbse(paste0("\tTest used for each variable: ", route_label),
+               paste0("\tTest utilis\u00e9 pour chaque variable : ", route_label),
+               verbose = verbose, code = code, k = k, cpt = "off")
+
     anova_results <- list()
     sig_dvs <- character()
     nonsig_dvs <- character()
@@ -281,20 +295,40 @@
 
       # ANOVA pour cette DV
       dv_data <- x[, i]
-      aov_result <- aov(dv_data ~ g)
-      aov_summary <- summary(aov_result)
-
-      f_stat <- aov_summary[[1]]["g", "F value"]
-      p_value <- aov_summary[[1]]["g", "Pr(>F)"]
-      df1 <- aov_summary[[1]]["g", "Df"]
-      df2 <- aov_summary[[1]]["Residuals", "Df"]
+      if (dv_route == "kruskal") {
+        kw <- kruskal.test(dv_data ~ g)
+        f_stat <- unname(kw$statistic); df1 <- unname(kw$parameter); df2 <- NA; p_value <- kw$p.value
+        stat_label <- paste0("H(", df1, ")")
+      } else if (dv_route == "welch") {
+        welch <- oneway.test(dv_data ~ g, var.equal = FALSE)
+        f_stat <- unname(welch$statistic); df1 <- unname(welch$parameter[1]); df2 <- unname(welch$parameter[2])
+        p_value <- welch$p.value
+        stat_label <- paste0("F(", df1, ",", round(df2, 1), ")")
+      } else {
+        aov_summary <- summary(aov(dv_data ~ g))
+        f_stat <- aov_summary[[1]]["g", "F value"]
+        p_value <- aov_summary[[1]]["g", "Pr(>F)"]
+        df1 <- aov_summary[[1]]["g", "Df"]
+        df2 <- aov_summary[[1]]["Residuals", "Df"]
+        stat_label <- paste0("F(", df1, ",", df2, ")")
+      }
 
       # Test de significativité avec alpha ajusté
       is_sig <- p_value < alpha_adjusted
 
       # Collecter pour synthèse
-      dv_result <- paste0(dv_name, ": F(", df1, ",", df2, ")=", round(f_stat, 2),
+      dv_result <- paste0(dv_name, ": ", stat_label, "=", round(f_stat, 2),
                           ", p=", .format_pval(p_value))
+
+      # Comparaison des groupes pour cette VD, au seuil corrig\u00e9 de Bonferroni
+      dv_pairs <- if (dv_route == "kruskal") {
+        suppressWarnings(pairwise.wilcox.test(dv_data, g, p.adjust.method = "holm", exact = FALSE))
+      } else {
+        pairwise.t.test(dv_data, g, p.adjust.method = "holm", pool.sd = (dv_route == "anova"))
+      }
+      dv_letters <- .letters_from_pairs(dv_pairs$p.value, tapply(dv_data, g, mean), alpha_adjusted)
+      colnames(dv_letters)[2] <- if (dv_route == "kruskal") "Wilcoxon_Holm" else "Student_Holm"
+
       if (is_sig) {
         sig_dvs <- c(sig_dvs, dv_result)
       } else {
@@ -309,25 +343,49 @@
         df2 = df2,
         p_value = p_value,
         significant = is_sig,
-        alpha_adjusted = alpha_adjusted
+        alpha_adjusted = alpha_adjusted,
+        test = dv_route,
+        groups = dv_letters
         # NOTE: model aov disponible en relançant aov() si besoin
       )
     }
 
     result$protected_anovas <- anova_results
 
+    # Plusieurs facteurs : le test de chaque terme pour chaque VD (Type II), compl\u00e9mentaire
+    # de la comparaison des groupes crois\u00e9s ci-dessus
+    if (!is.null(manova_result$term_labels) && !is.null(manova_result$g_terms)) {
+      term_formula <- paste("dv ~", paste(manova_result$term_labels, collapse = " + "))
+      result$effects_by_dv <- lapply(stats::setNames(seq_len(p), colnames(x)), function(i_dv) {
+        dv_data <- data.frame(dv = x[, i_dv], manova_result$g_terms)
+        .effects_from_table(suppressMessages(car::Anova(lm(as.formula(term_formula), data = dv_data), type = "II")))
+      })
+      k <- .vbse("Test of each term for each variable, Type II [car::Anova()]:",
+                 "Test de chaque terme pour chaque variable, Type II [car::Anova()] :",
+                 verbose = verbose, code = code, k = k, cpt = "off")
+      if (verbose) {
+        for (dv_name in names(result$effects_by_dv)) {
+          cat("\t", dv_name, "\n", sep = "")
+          print(result$effects_by_dv[[dv_name]], row.names = FALSE, digits = 4)
+        }
+        cat("\n")
+      }
+    }
+
     # Synthèse des résultats
     n_sig <- length(sig_dvs)
 
-    # Afficher SEULEMENT les DVs significatives (standard post-hoc)
-    if (n_sig > 0) {
-      for (dv_info in sig_dvs) {
-        k <- .vbse(
-          paste0("\t", dv_info, " *SIGNIFICANT*"),
-          paste0("\t", dv_info, " *SIGNIFICATIF*"),
-          verbose = verbose, code = code, k = k, cpt = "off"
-        )
-      }
+    # Afficher chaque VD : une absence d'effet est aussi un r\u00e9sultat
+    for (dv_info in sig_dvs) {
+      k <- .vbse(
+        paste0("\t", dv_info, " *SIGNIFICANT*"),
+        paste0("\t", dv_info, " *SIGNIFICATIF*"),
+        verbose = verbose, code = code, k = k, cpt = "off"
+      )
+    }
+    for (dv_info in nonsig_dvs) {
+      k <- .vbse(paste0("\t", dv_info), paste0("\t", dv_info),
+                 verbose = verbose, code = code, k = k, cpt = "off")
     }
 
     # Message de résumé final (cpt = "off" car c'est une suite de l'étape précédente)
@@ -338,6 +396,41 @@
              "\t(apr\u00e8s correction Bonferroni)"),
       verbose = verbose, code = code, k = k, cpt = "off"
     )
+  }
+
+  # =============================================================================
+  # 2b. COMPARAISONS MULTIVARI\u00c9ES ENTRE GROUPES (Pillai par paire, correction de Holm)
+  # =============================================================================
+  # R\u00e9f\u00e9rence: Tabachnick & Fidell (2019). Using Multivariate Statistics (7th ed.). Chapter 7.
+
+  if (n_groups > 2) {
+    pair_levels <- levels(g)
+    pair_p <- matrix(NA_real_, n_groups, n_groups, dimnames = list(pair_levels, pair_levels))
+    for (i in seq_len(n_groups - 1)) {
+      for (j in (i + 1):n_groups) {
+        keep <- g %in% pair_levels[c(i, j)]
+        pair_x <- x[keep, , drop = FALSE]
+        pair_g <- droplevels(g[keep])
+        pair_p[j, i] <- tryCatch(summary(manova(pair_x ~ pair_g), test = "Pillai")$stats[1, "Pr(>F)"],
+                                 error = function(e) NA_real_)
+      }
+    }
+    lower <- lower.tri(pair_p)
+    pair_p[lower] <- p.adjust(pair_p[lower], method = "holm")
+    pair_p <- pair_p[-1, -n_groups, drop = FALSE]
+    position <- if (exists("lda_predict")) tapply(lda_predict$x[, 1], g, mean) else tapply(x[, 1], g, mean)
+    result$pairwise_multivariate <- pair_p
+    result$groups_multivariate <- .letters_from_pairs(pair_p, position, alpha)
+    colnames(result$groups_multivariate)[2] <- "Pillai_Holm"
+    k <- .vbse(
+      "MULTIVARIATE COMPARISONS BETWEEN GROUPS (Pillai's trace, Holm correction):",
+      "COMPARAISONS MULTIVARI\u00c9ES ENTRE GROUPES (trace de Pillai, correction de Holm) :",
+      verbose = verbose, code = code, k = k, cpt = "on"
+    )
+    if (verbose) {
+      print(result$groups_multivariate, row.names = FALSE)
+      cat("\n")
+    }
   }
 
   # =============================================================================

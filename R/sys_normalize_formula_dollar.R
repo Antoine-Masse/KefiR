@@ -45,6 +45,26 @@
     expr
   }
 
+  # z$b, o\u00f9 z contient la m\u00eame colonne b que data : \u00e9crire b, utilisable dans toute formule
+  # et quel que soit l'environnement d'appel (dans une fonction par exemple)
+  formula_env <- environment(f)
+  replace_dollar <- function(expr) {
+    if (!is.call(expr)) return(expr)
+    if (identical(expr[[1L]], as.name("$")) && is.name(expr[[2L]]) && is.name(expr[[3L]])) {
+      col <- as.character(expr[[3L]])
+      source_name <- as.character(expr[[2L]])
+      if (col %in% names(data) && exists(source_name, envir = formula_env)) {
+        source_obj <- get(source_name, envir = formula_env)
+        if (is.data.frame(source_obj) && identical(source_obj[[col]], data[[col]])) return(expr[[3L]])
+      }
+      return(expr)
+    }
+    for (i in seq_along(expr)[-1L]) expr[[i]] <- replace_dollar(expr[[i]])
+    expr
+  }
+
+  for (side in seq_along(f)[-1L]) f[[side]] <- replace_dollar(f[[side]])
+
   rhs <- length(f)
   f[[rhs]] <- replace_factor(f[[rhs]])
   for (var in unique(to_factor)) data[[var]] <- factor(data[[var]])

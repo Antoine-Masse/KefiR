@@ -15,7 +15,8 @@
   k = 0,
   code = FALSE,
   cpt = "on",
-  assumption_label = NULL
+  assumption_label = NULL,
+  prefix = ""
 )
 }
 \arguments{
@@ -36,6 +37,8 @@
 \item{k}{Integer. Message counter}
 
 \item{code}{Logical. Display equivalent R code}
+
+\item{prefix}{Character. Text placed before the step title.}
 
 \item{assumption_label}{Character. Label for assumption numbering (e.g., "3/3", "2/3", NULL for no label)}
 }

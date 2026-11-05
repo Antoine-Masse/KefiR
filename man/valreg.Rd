@@ -7,7 +7,7 @@
 valreg(
   reg,
   verbose = TRUE,
-  nvar = 5,
+  nvar = NULL,
   boot = TRUE,
   alpha = 0.05,
   conf.level = 0.95,
@@ -29,7 +29,7 @@ valreg(
 
 \item{verbose}{To see the detailed balance sheet}
 
-\item{nvar}{The maximum number of coefficients allowed, intercept included (default 5). Beyond it, the model is not tested and FALSE is returned: a factor with k levels counts for k-1 coefficients, so increase nvar for such models.}
+\item{nvar}{The maximum number of coefficients allowed, intercept included. By default (NULL), the square root of the sample size, with a minimum of 5. Beyond it, the model is not tested and FALSE is returned.}
 
 \item{boot}{For checking the model by bootstrap with bootreg() (FALSE or TRUE)}
 

@@ -6381,7 +6381,31 @@ SUITE, VERSION 0.0.2.1 (notes de 2026_ACORRIGER.docx et defauts restants)
 - DESCRIPTION : multcomp et rrcov passent en Imports (install_github n'installe pas les
   Suggests : lettres ANCOVA degradees et MANOVA robuste indisponible sinon).
 
-RESTE A DECIDER
-- return=FALSE en ANOVA multi-facteurs renvoie la derniere ligne (souvent l'interaction).
-- post-hoc ANCOVA limite au premier facteur.
+VERSION 0.0.2.2 (audit complet)
+MANOVA
+- Plusieurs facteurs : un test par terme, Type II (car::Manova), et non un test unique
+  sur les croisements ; post-hocs qui echouaient corriges ; test de chaque terme par VD.
+- Normalite, outliers et correlations controles dans les groupes (residus), pas au brut.
+- Matrice de structure intra-groupes ; comparaisons entre groupes (Pillai, Holm) ajoutees.
+- Test retenu : Wilks, Pillai si une assomption est violee, ou Wilks robuste. $method dit
+  toujours lequel. Test de chaque VD coherent (ANOVA, Welch ou Kruskal-Wallis).
+- Voie robuste reproductible (graine fixe), repli annonce sur Pillai si elle echoue.
+- NA dans un facteur retires ; formules longues acceptees (deparse1, toutes fonctions).
+M.TEST
+- $global_pvalue = test global reellement conduit, comme return=FALSE : c'etait le minimum
+  des comparaisons par paires ; en multi-facteurs, la regle est le premier facteur (BP-031).
+- $effects et $groups_by_factor ajoutes ; seuil d'outliers extremes aligne sur 5 % annonces.
+- Variable absente nommee ; z$b accepte dans une fonction ; groupe constant sans plantage.
+VALREG
+- Signification jugee par terme, hors constante : ni la constante ni une modalite isolee
+  n'invalident un modele. Bug GVIF : la colonne Df comptait comme un VIF.
+- nvar par defaut : racine de n, minimum 5. Modele sans predicteur refuse sans erreur.
+TESTS ET NETTOYAGE
+- tests/testthat : 123 controles compares a des calculs independants.
+- dev/test/agent_audit_mtest.R : 206 plans ; dev/test/agent_audit_valreg.R.
+- print() de debogage retires ; messages traduits ; documentation completee.
+
+RESTE
+- Post-hoc ANCOVA et MANOVA : interactions non detaillees par simple effet.
+- La voie robuste MANOVA ne teste pas chaque facteur separement (annonce dans le bilan).
 ================================================================================

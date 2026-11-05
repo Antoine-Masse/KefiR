@@ -58,6 +58,7 @@ fichiers <- c(
   "sys_select_ss_type.R",            # NOUVEAU: Sélection intelligente Type I/II/III
   "sys_analyze_ancova_structure.R",  # NOUVEAU: Détection ANCOVA vs pentes hétérogènes (après dépendances)
   "sys_diagnostic_influence.R",      # NOUVEAU: Diagnostics influence (Cook/Leverage/DFBETAS)
+  "sys_effects_table.R",
   "sys_ancova_analysis.R",
   "sys_align_pairs.R",
   "sys_auto_preprocess_g.R",

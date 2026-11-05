@@ -14,7 +14,8 @@
   verbose = FALSE,
   k = 0,
   cpt = "on",
-  code = NULL
+  code = NULL,
+  prefix = ""
 )
 }
 \arguments{
@@ -47,6 +48,8 @@ pour donnees appariees (defaut : \code{FALSE}).}
 
 \item{cpt}{Chaine de caracteres. Mode de comptage des messages
 (defaut : \code{"on"}).}
+
+\item{prefix}{Character. Text placed before the step title.}
 
 \item{code}{Chaine de caracteres. Code de la langue pour les messages
 (\code{NULL} pour detection automatique).}

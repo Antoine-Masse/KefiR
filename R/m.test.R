@@ -288,7 +288,7 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
          debug = debug)
 
     # V\u00e9rifier si la formule contient des r\u00e9f\u00e9rences du type data$var
-    formula_str <- deparse(formula)
+    formula_str <- deparse1(formula)
     if (grepl("\\$", formula_str)) {
       # Extraire le nom du data.frame (avant le $)
       data_name <- gsub("^.*?([a-zA-Z_][a-zA-Z0-9_.]*)\\$.*$", "\\1", formula_str)
@@ -317,6 +317,15 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
     factor_syntax <- .strip_factor_calls(formula, data)
     formula <- factor_syntax$formula
     data <- factor_syntax$data
+
+    # Variable absente : la nommer, plut\u00f4t qu'une erreur R plus loin dans l'analyse
+    missing_vars <- setdiff(all.vars(formula), names(data))
+    missing_vars <- missing_vars[!vapply(missing_vars, exists, logical(1), envir = environment(formula))]
+    if (length(missing_vars) > 0) {
+      .exit(paste0("Variable(s) not found in data: ", paste(missing_vars, collapse = ", "), "."),
+            paste0("Variable(s) introuvable(s) dans les donn\u00e9es : ", paste(missing_vars, collapse = ", "), "."),
+            verbose = verbose, code = code, return = return)
+    }
   }
 
   ################################################################################
@@ -592,7 +601,7 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
     }
 
     # --- 9.1 : D\u00e9tection MANOVA ---
-    lhs <- deparse(formula[[2]])
+    lhs <- deparse1(formula[[2]])
     if (grepl("cbind\\(", lhs)) {
       check_manova <- TRUE
       .dbg("Multivariate response detected (cbind).",
@@ -615,7 +624,7 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
     # DISTINGUER 2 syntaxes avec | :
     #   1) Syntaxe lmer : Y ~ F + (1|Subject) ou Y ~ F + (var|Subject) \u2192 PR\u00c9SERVER
     #   2) Syntaxe simple : Y ~ F | Bloc \u2192 TRANSFORMER en Y ~ F + Error(Bloc)
-    formula_str_9_3 <- deparse(formula)
+    formula_str_9_3 <- deparse1(formula)
     is_lmer_syntax <- grepl("[(][^)]+[|][^)]+[)]", formula_str_9_3)  # (1|id), (var|id)
 
     if (grepl("\\|", formula_str_9_3) && !is_lmer_syntax) {
@@ -628,8 +637,8 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 
         formula <- as.formula(paste(left_side, "+ Error(", right_side, ")"))
 
-        .dbg(paste0("Formula adjusted with 'Error()': ", deparse(formula)),
-             paste0("Formule ajust\u00e9e avec 'Error()' : ", deparse(formula)),
+        .dbg(paste0("Formula adjusted with 'Error()': ", deparse1(formula)),
+             paste0("Formule ajust\u00e9e avec 'Error()' : ", deparse1(formula)),
              debug = debug)
       } else {
         .exit("The formula contains a malformed '|'.",
@@ -663,8 +672,8 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
           formula_clean <- gsub("[(][^)]+[|][^)]+[)]", "", formula_clean)
           formula <- as.formula(formula_clean)
 
-          .dbg(paste0("Formula simplified from '", formula_str_9_3, "' to '", deparse(formula), "'"),
-               paste0("Formule simplifi\u00e9e de '", formula_str_9_3, "' \u00e0 '", deparse(formula), "'"),
+          .dbg(paste0("Formula simplified from '", formula_str_9_3, "' to '", deparse1(formula), "'"),
+               paste0("Formule simplifi\u00e9e de '", formula_str_9_3, "' \u00e0 '", deparse1(formula), "'"),
                debug = debug)
         } else {
           k <- .vbse(
@@ -682,11 +691,11 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
     # DOI : https://doi.org/10.4324/9781315642956
     # Le terme Error() sp\u00e9cifie la variable de groupement (sujet) pour plans appari\u00e9s
 
-    has_error_already <- grepl("Error\\(", deparse(formula))
+    has_error_already <- grepl("Error\\(", deparse1(formula))
 
     if (has_error_already && is.null(id)) {
       # Extraire la variable dans Error()
-      error_match <- regmatches(deparse(formula), regexpr("Error\\(([^/)]+)", deparse(formula)))
+      error_match <- regmatches(deparse1(formula), regexpr("Error\\(([^/)]+)", deparse1(formula)))
       if (length(error_match) > 0) {
         id_from_error <- gsub("Error\\(", "", error_match)
         id_from_error <- trimws(id_from_error)
@@ -988,8 +997,8 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
                                        paste0(". ~ . + Error(", id, ")"))
       }
 
-      .dbg(paste0("Formula for analysis: ", deparse(formula_for_analysis)),
-           paste0("Formule pour l'analyse : ", deparse(formula_for_analysis)),
+      .dbg(paste0("Formula for analysis: ", deparse1(formula_for_analysis)),
+           paste0("Formule pour l'analyse : ", deparse1(formula_for_analysis)),
            debug = debug)
     }
 
@@ -1216,7 +1225,7 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
   ################################################################################
 
   lev_g <- .n_levels_g(g)
-  has_error <- (!is.null(formula) && grepl("Error\\(", deparse(formula)))
+  has_error <- (!is.null(formula) && grepl("Error\\(", deparse1(formula)))
 
   if (isTRUE(paired) && (has_error || (!is.null(id) && lev_g > 2))) {
     check_anova <- TRUE
@@ -1227,10 +1236,10 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
   # APA : Maxwell & Delaney (2004). Error() sp\u00e9cifie strates \u2192 aov() obligatoire
   # DOI : https://doi.org/10.4324/9781315642956
   if (exists("has_error_term_factor") && has_error_term_factor && has_error) {
-    .dbg(paste0("Error(categorical_factor) detected with formula: ", deparse(formula), "\n",
+    .dbg(paste0("Error(categorical_factor) detected with formula: ", deparse1(formula), "\n",
                 "\tForcing routing to RM-ANOVA analysis (aov with Error term).\n",
                 "\tThis is NOT a simple comparison - Error() defines strata structure."),
-         paste0("Error(facteur_cat\u00e9goriel) d\u00e9tect\u00e9 avec formule : ", deparse(formula), "\n",
+         paste0("Error(facteur_cat\u00e9goriel) d\u00e9tect\u00e9 avec formule : ", deparse1(formula), "\n",
                 "\tFor\u00e7age du routage vers analyse RM-ANOVA (aov avec terme Error).\n",
                 "\tCe n'est PAS une simple comparaison - Error() d\u00e9finit la structure en strates."),
          debug = debug)
@@ -1446,7 +1455,10 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
   # SINON (return == TRUE): Faire les post-hocs et retourner bilan complet
 
   # Post-hocs: For MANOVA, use specialized multivariate post-hocs
-  if (is.matrix(x)) {
+  if (isTRUE(check_manova) || is.matrix(x)) {
+    # x peut \u00eatre un data.frame, et g porter plusieurs facteurs : garder le format de l'analyse
+    x <- bilan$x
+    g <- bilan$g
     .dbg("Running MANOVA post-hocs (discriminant analysis + protected ANOVAs).",
          "Ex\u00e9cution des post-hocs MANOVA (analyse discriminante + ANOVAs prot\u00e9g\u00e9es).",
          debug = debug)
@@ -1454,8 +1466,8 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
     # Appeler .posthoc_MANOVA() pour analyses post-hoc multivari\u00e9es appropri\u00e9es
     posthoc_manova <- tryCatch({
       .posthoc_MANOVA(
-        x = x,
-        g = g,
+        x = bilan$x,
+        g = bilan$g,  # Plusieurs facteurs : groupes crois\u00e9s, NA d\u00e9j\u00e0 retir\u00e9s
         manova_result = bilan,
         alpha = alpha,
         method = "both",  # Discriminant + protected ANOVAs
@@ -1562,7 +1574,11 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
                                   bilan$posthoc_manova$discriminant_analysis else NULL,
         protected_anovas = if (!is.null(bilan$posthoc_manova$protected_anovas))
                              bilan$posthoc_manova$protected_anovas else NULL,
-        method = "MANOVA (Wilks' Lambda)"
+        method = bilan$method,
+        effects = bilan$effects,
+        effects_by_dv = bilan$posthoc_manova$effects_by_dv,
+        pairwise_multivariate = bilan$posthoc_manova$pairwise_multivariate,
+        groups_multivariate = bilan$posthoc_manova$groups_multivariate
       )
       class(manova_result) <- "posthoc"
       return(manova_result)
@@ -1658,6 +1674,32 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
           k = k,
           vcov_robust = ancova_vcov
         )
+
+        # Autres facteurs du mod\u00e8le : $groups reste celui du premier facteur
+        model_frame <- model.frame(ancova_model)
+        model_labels <- attr(terms(ancova_model), "term.labels")
+        ancova_factors <- model_labels[vapply(model_labels, function(term) {
+          term %in% names(model_frame) &&
+            (is.factor(model_frame[[term]]) || is.character(model_frame[[term]]))
+        }, logical(1))]
+        if (length(ancova_factors) > 1) {
+          synth$groups_by_factor <- setNames(list(synth$groups), ancova_factors[1])
+          for (i_factor in seq_along(ancova_factors)[-1]) {
+            other_posthoc <- .posthoc_ANCOVA(
+              ancova_model = ancova_model,
+              factor_name = ancova_factors[i_factor],
+              alpha = alpha,
+              method = "tukey",
+              conf.level = conf,
+              verbose = verbose,
+              debug = debug,
+              code = code,
+              k = k + i_factor - 1,
+              vcov_robust = ancova_vcov
+            )
+            synth$groups_by_factor[[ancova_factors[i_factor]]] <- other_posthoc$groups
+          }
+        }
       } else {
         # Fallback si mod\u00e8le non disponible
         k <- .vbse(
@@ -1760,6 +1802,11 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
       # Synchroniser global_pvalue pour le retour
       # .posthoc() d\u00e9finit synth$p.value mais pas synth$global_pvalue
       # IMPORTANT: global_pvalue doit \u00eatre un SCALAIRE, pas une matrice
+      # Priorit\u00e9 au test global r\u00e9ellement conduit (BP-031), comme avec return=FALSE :
+      # le minimum des comparaisons par paires n'est qu'un dernier recours
+      if (!is.null(synth) && length(bilan$global_pvalue) == 1 && !is.na(bilan$global_pvalue)) {
+        synth$global_pvalue <- as.numeric(bilan$global_pvalue)
+      }
       if (!is.null(synth) && is.null(synth$global_pvalue)) {
         if (!is.null(synth$p.value)) {
           # Si p.value est une matrice, extraire le minimum (hors diagonale)
@@ -2016,6 +2063,8 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
       )
 
       # Ajouter \u00e9l\u00e9ments optionnels s'ils existent
+      if (!is.null(bilan$effects)) synth_ordered$effects <- bilan$effects
+      if (!is.null(synth$groups_by_factor)) synth_ordered$groups_by_factor <- synth$groups_by_factor
       if (!is.null(synth$bootstrap)) synth_ordered$bootstrap <- synth$bootstrap
       if (!is.null(synth$details)) synth_ordered$details <- synth$details
       if (!is.null(synth$chosen_test)) synth_ordered$chosen_test <- synth$chosen_test

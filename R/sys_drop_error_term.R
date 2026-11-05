@@ -7,13 +7,13 @@
 
     # NOUVEAU: Détecter et gérer la syntaxe lmer (1|id) ou (var|id)
     # Ces termes doivent être SUPPRIMÉS pour model.frame() car ce n'est pas Error()
-    formula_str <- deparse(f)
+    formula_str <- deparse1(f)
     is_lmer_syntax <- grepl("[(][^)]+[|][^)]+[)]", formula_str)
 
     if (is_lmer_syntax) {
       # Supprimer les termes lmer (1|id) ou (var|id) de la formule
       # Ils ne sont pas compris par model.frame()
-      lhs <- deparse(f[[2L]])
+      lhs <- deparse1(f[[2L]])
 
       # Regex pour supprimer (1 | id) ou (var | id) avec espaces optionnels
       rhs_clean <- gsub("\\s*\\+\\s*[(][^)]+[|][^)]+[)]", "", formula_str)
@@ -35,7 +35,7 @@
     tt <- try(terms(f, specials = "Error"), silent = TRUE)
     if (!inherits(tt, "try-error")) {
       # Supprimer la response et reconstruire
-      lhs <- deparse(f[[2L]])
+      lhs <- deparse1(f[[2L]])
       rhs_terms <- attr(delete.response(tt), "term.labels")
 
       # IMPORTANT: Filtrer les termes Error(...)
@@ -47,7 +47,7 @@
       return(reformulate(rhs_terms, response = lhs))
     }
     # 2) Filet de sécurité : regex qui supprime tout bloc + Error(...)
-    df <- deparse(f)
+    df <- deparse1(f)
     df1 <- paste(df, collapse = "")
     # supprime " + Error(...)" n'importe où dans le RHS
     df1 <- sub("\\s*\\+\\s*Error\\s*\\([^)]*\\)\\s*$", "", df1)

@@ -154,6 +154,9 @@
 
     n <- length(vector)  # Taille du groupe ACTUEL
 
+    # Groupe constant (ex. uniquement des z\u00e9ros) : non normal, shapiro.test() s'arr\u00eaterait
+    if (length(unique(vector[!is.na(vector)])) < 2) return(0)
+
     #================================
     # Scenario de base
     #================================

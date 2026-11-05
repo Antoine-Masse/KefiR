@@ -4,7 +4,7 @@
 
   # Drop Error() pour construire le model.frame proprement
   .drop_error_term <- function(f) {
-    ftxt <- deparse(f)
+    ftxt <- deparse1(f)
     ftxt <- sub("\\+\\s*Error\\(.*\\)\\s*$", "", ftxt)
     as.formula(ftxt)
   }

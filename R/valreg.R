@@ -4,7 +4,7 @@
 #'
 #' @param reg A regression model
 #' @param verbose To see the detailed balance sheet
-#' @param nvar The maximum number of coefficients allowed, intercept included (default 5). Beyond it, the model is not tested and FALSE is returned: a factor with k levels counts for k-1 coefficients, so increase nvar for such models.
+#' @param nvar The maximum number of coefficients allowed, intercept included. By default (NULL), the square root of the sample size, with a minimum of 5. Beyond it, the model is not tested and FALSE is returned.
 #' @param boot For checking the model by bootstrap with bootreg() (FALSE or TRUE)
 #' @param alpha Maximum value accepted for the p-values of the model and its coefficients
 #' @param conf.level Confidence interval accepted to validate the regression model by bootstrap
@@ -74,7 +74,7 @@
 #' reg_mixed <- lmer(Sepal.Length ~ Petal.Length + (1|Species), data = iris)
 #' result <- valreg(reg_mixed, verbose=TRUE, k=5)  # Start counter at 5
 #' print(result$k)  # Updated counter value
-valreg <- function(reg, verbose = TRUE, nvar = 5, boot = TRUE, alpha = 0.05,
+valreg <- function(reg, verbose = TRUE, nvar = NULL, boot = TRUE, alpha = 0.05,
                    conf.level = 0.95, plot = FALSE, data = c(),
                    raintest_alpha = 0.05, dwtest_alpha = 0.03,
                    shapiro_alpha = 0.05, bptest_alpha = 0.05,
@@ -88,7 +88,8 @@ valreg <- function(reg, verbose = TRUE, nvar = 5, boot = TRUE, alpha = 0.05,
   locale <- Sys.getlocale("LC_MESSAGES")
   lang <- ifelse(grepl("fr", locale), "fr", "en")
   if (is.null(nvar)) {
-	nvar <- sqrt(length(resid(reg)))
+	# Limite li\u00e9e \u00e0 la taille de l'\u00e9chantillon, jamais sous 5 coefficients
+	nvar <- max(5, floor(sqrt(length(resid(reg)))))
 
   }
   lrt <- function(model) {
@@ -298,7 +299,12 @@ valreg <- function(reg, verbose = TRUE, nvar = 5, boot = TRUE, alpha = 0.05,
   }
 		.dbg(NULL, "valreg() - analyse du nombre de variables.",debug=debug)
   nvar1 <- length(coef(reg))
-  if (nvar1 > nvar) {
+  if (length(attr(terms(reg), "term.labels")) == 0) {
+    .vbse(ang="No predictor in the model: nothing to validate, FALSE returned.",
+          fr="Aucun pr\u00e9dicteur dans le mod\u00e8le : rien \u00e0 valider, FALSE renvoy\u00e9.",
+          k=counter, cpt="off", verbose=verbose)
+    error <- FALSE
+  } else if (nvar1 > nvar) {
     # Un facteur a k modalites compte pour k-1 coefficients, plus la constante
     .vbse(ang=paste0("More than ", nvar, " coefficients (", nvar1, "): model NOT tested, FALSE returned.\n",
                      "\t(To test it anyway: valreg(reg, nvar = ", nvar1, ").)"),
@@ -388,14 +394,21 @@ valreg <- function(reg, verbose = TRUE, nvar = 5, boot = TRUE, alpha = 0.05,
       }
     }
 
-	# Fonction pour obtenir les p-values des coefficients
+	# P-values des termes du mod\u00e8le, constante exclue : un facteur est jug\u00e9 sur son test global,
+	# car le test de chaque modalit\u00e9 d\u00e9pend du niveau de r\u00e9f\u00e9rence choisi par R.
 	get_pvals <- function(model) {
 		if (inherits(model, "lm")) {
-		  return(summary(model)$coefficients[, "Pr(>|t|)"])
+		  tab <- tryCatch(suppressMessages(car::Anova(model, type = "II")), error = function(e) NULL)
+		  if (!is.null(tab) && "Pr(>F)" %in% colnames(tab)) {
+		    pv <- tab[, "Pr(>F)"]
+		    return(pv[!is.na(pv)])
+		  }
+		  coefs <- summary(model)$coefficients
+		  return(coefs[rownames(coefs) != "(Intercept)", "Pr(>|t|)"])
 		}
 
 		if (inherits(model, "lmerModLmerTest")) {
-		  summ <- suppressMessages(summary(model))
+		  refit <- model
 		} else if (inherits(model, "lmerMod")) {
 		  refit <- tryCatch({
 		    suppressMessages(
@@ -403,26 +416,24 @@ valreg <- function(reg, verbose = TRUE, nvar = 5, boot = TRUE, alpha = 0.05,
 		    )
 		  }, error = function(e) NULL)
 		  if (is.null(refit)) return(NA_real_)
-		  summ <- suppressMessages(summary(refit))
 		} else {
 		  return(NA_real_)
 		}
 
-		coefs <- summ$coefficients
-		pcol <- intersect(c("Pr(>|t|)", "Pr(>|z|)"), colnames(coefs))
-		if (length(pcol) == 0) return(NA_real_)
-		return(coefs[, pcol[1]])
+		tab <- tryCatch(suppressMessages(stats::anova(refit)), error = function(e) NULL)
+		if (is.null(tab) || !"Pr(>F)" %in% colnames(tab)) return(NA_real_)
+		return(tab[, "Pr(>F)"])
 	}
 
     pval_coeff <- get_pvals(reg)
-    if (max(pval_coeff) > alpha) {
-      .vbse(ang=paste0("\tWarning!\n\tBad significance of the coefficients. max(p.value): ", .format_pval(max(pval_coeff))),
-            fr=paste0("\tAttention !\n\tMauvaise signification des coefficients. max(p.value) : ", .format_pval(max(pval_coeff))),
+    if (isTRUE(max(pval_coeff, na.rm = TRUE) > alpha)) {
+      .vbse(ang=paste0("\tWarning!\n\tBad significance of at least one model term. max(p.value): ", .format_pval(max(pval_coeff))),
+            fr=paste0("\tAttention !\n\tMauvaise signification d'au moins un terme du mod\u00e8le. max(p.value) : ", .format_pval(max(pval_coeff))),
             k=counter, cpt="off", verbose=verbose)
       error <- FALSE
     } else {
-      .vbse(ang=paste0("Good significance of the coefficients. max(pval_coeff): ", .format_pval(max(pval_coeff))),
-            fr=paste0("Bonne signification des coefficients. max(pval_coeff) : ", .format_pval(max(pval_coeff))),
+      .vbse(ang=paste0("Good significance of the model terms. max(p.value): ", .format_pval(max(pval_coeff))),
+            fr=paste0("Bonne signification des termes du mod\u00e8le. max(p.value) : ", .format_pval(max(pval_coeff))),
             k=counter, cpt="off", verbose=verbose)
     }
 
@@ -604,6 +615,11 @@ valreg <- function(reg, verbose = TRUE, nvar = 5, boot = TRUE, alpha = 0.05,
 
     if (count_terms_excluding_intercept(reg) >= 2) {
       vif_reg <- suppressMessages(vif(reg))
+      # Avec un facteur, vif() renvoie GVIF, Df et GVIF^(1/(2*Df)) : seule cette derni\u00e8re
+      # colonne, mise au carr\u00e9, se compare au seuil (Df compterait sinon comme un VIF)
+      # R\u00e9f\u00e9rence: Fox, J., & Monette, G. (1992). Generalized collinearity diagnostics.
+      # JASA, 87(417), 178-183. DOI: 10.1080/01621459.1992.10475190
+      if (is.matrix(vif_reg)) vif_reg <- vif_reg[, "GVIF^(1/(2*Df))"]^2
       counter <- .vbse(ang="- Multicollinearity test (VIF).", fr="- Test de multicolin\u00e9arit\u00e9 (VIF).", k=counter, cpt="on", verbose=verbose)
       if (max(vif_reg, na.rm = TRUE) > 5) {
         .vbse(ang=paste0("Warning!\n\tThe variance inflation factor (VIF) indicates collinear variables with car::vif(). max(vif()): ", round(max(vif_reg, na.rm = TRUE), 2),

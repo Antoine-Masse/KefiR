@@ -130,7 +130,7 @@
   # NOTE: as.character(formula[[2]]) returns vector for I(), log(), etc.
   # Example: I(log(A)) -> c("I", "log(A)") -> length = 2
   # Only cbind() indicates multiple DVs, not I() or other transformations
-  formula_lhs <- deparse(formula[[2]])  # deparse gives single string
+  formula_lhs <- deparse1(formula[[2]])  # deparse gives single string
 
   if (grepl("^cbind\\s*\\(", formula_lhs, ignore.case = TRUE)) {
     k <- .vbse(
@@ -270,8 +270,8 @@
        paste0("Type de mod\u00e8le d\u00e9termin\u00e9 : ", model_type),
        debug = debug)
 
-  .dbg(paste0("Formula to use: ", deparse(formula_to_use)),
-       paste0("Formule \u00e0 utiliser : ", deparse(formula_to_use)),
+  .dbg(paste0("Formula to use: ", deparse1(formula_to_use)),
+       paste0("Formule \u00e0 utiliser : ", deparse1(formula_to_use)),
        debug = debug)
 
   # Message r\u00e9sum\u00e9 structure (d\u00e9j\u00e0 affich\u00e9 par .analyze_ancova_structure)
@@ -434,12 +434,12 @@
   # MESSAGE \u00c9TAPE 3 : Ajustement mod\u00e8le ANCOVA
   k <- .vbse(
     paste0("Model fitting: ANCOVA with ", length(factor_vars), " factor(s) [lm()]\n",
-           "\tFormula: ", deparse(formula_to_use), "\n",
+           "\tFormula: ", deparse1(formula_to_use), "\n",
            "\tContrasts: contr.sum (effects coding for unbiased estimates)\n",
            "\t==> Model fitted successfully (n=", nrow(data), ", residuals computed)\n",
            "\t    Type of Sums of Squares selected: Type ", selected_type, " [", method_text_en, "]"),
     paste0("Ajustement du mod\u00e8le ANCOVA \u00e0 ", length(factor_vars), " facteur(s) [lm()]\n",
-           "\tFormule : ", deparse(formula_to_use), "\n",
+           "\tFormule : ", deparse1(formula_to_use), "\n",
            "\tContrastes : contr.sum (codage effets pour estimations non biais\u00e9es)\n",
            "\t==> Mod\u00e8le ajust\u00e9 avec succ\u00e8s (n=", nrow(data), ", r\u00e9sidus calcul\u00e9s)\n",
            "\t    Type de Sommes de Carr\u00e9s s\u00e9lectionn\u00e9 : Type ", selected_type, " [", method_text_fr, "]"),
@@ -475,9 +475,9 @@
     if (!is.null(ss_selection$suggested_formula)) {
       k <- .vbse(
         paste0("(Optional, for a sequential Type I test: ",
-               deparse(ss_selection$suggested_formula), ".)"),
+               deparse1(ss_selection$suggested_formula), ".)"),
         paste0("(Facultatif, pour un test s\u00e9quentiel de Type I : ",
-               deparse(ss_selection$suggested_formula), ".)"),
+               deparse1(ss_selection$suggested_formula), ".)"),
         verbose = verbose, k = k, cpt = "off"
       )
     }
@@ -485,7 +485,7 @@
 
   # CODE: \u00c9tape 3 - Ajustement mod\u00e8le ANCOVA
   if (isTRUE(code)) {
-    formula_str <- deparse(formula_to_use)
+    formula_str <- deparse1(formula_to_use)
     contrast_code <- paste0("contrasts_list <- list(",
       paste(sapply(factor_vars, function(f) paste0(f, " = 'contr.sum'")), collapse = ", "),
       ")")
@@ -1215,7 +1215,7 @@
     # Construire formule avec terme quadratique, sur le mod\u00e8le retenu : omettre une
     # interaction conserv\u00e9e ferait passer des pentes diff\u00e9rentes pour une courbure
     formula_quad_str <- paste(
-      paste(deparse(formula_to_use), collapse = ""),
+      paste(deparse1(formula_to_use), collapse = ""),
       "+",
       paste0("I(", cov, "^2)")
     )
@@ -1237,11 +1237,11 @@
 
         if (p_quad < alpha) {
           linearity_details <- c(linearity_details,
-                                 paste0("'", cov, "': quadratic p = ", .format_pval(p_quad), " (non-linear)"))
+                                 paste0("'", cov, .msg("': quadratic p = ", "' : p du terme quadratique = "), .format_pval(p_quad), .msg(" (non-linear)", " (non lin\u00e9aire)")))
           check_linearity <- FALSE
         } else {
           linearity_details <- c(linearity_details,
-                                 paste0("'", cov, "': quadratic p = ", .format_pval(p_quad), " (linear)"))
+                                 paste0("'", cov, .msg("': quadratic p = ", "' : p du terme quadratique = "), .format_pval(p_quad), .msg(" (linear)", " (lin\u00e9aire)")))
         }
       }
     }
@@ -1281,7 +1281,7 @@
     for (cov in numeric_vars) {
       lin_lines <- c(lin_lines,
         paste0("# Test pour ", cov, ":"),
-        paste0("model_quad_", cov, " <- lm(", paste(deparse(formula_to_use), collapse = ""), " + I(", cov, "^2), data = dt)"),
+        paste0("model_quad_", cov, " <- lm(", paste(deparse1(formula_to_use), collapse = ""), " + I(", cov, "^2), data = dt)"),
         paste0("lin_test_", cov, " <- anova(ancova_model, model_quad_", cov, ")"),
         paste0("# Si p < 0.05 => terme quadratique significatif (relation non-lin\u00e9aire)")
       )
@@ -1351,11 +1351,11 @@
 
           if (p_int < alpha) {
             slopes_details <- c(slopes_details,
-                               paste0(f, " \u00d7 ", cov, ": p = ", .format_pval(p_int), " (heterogeneous)"))
+                               paste0(f, " \u00d7 ", cov, ": p = ", .format_pval(p_int), .msg(" (heterogeneous)", " (h\u00e9t\u00e9rog\u00e8ne)")))
             check_slopes_homogeneity <- FALSE
           } else {
             slopes_details <- c(slopes_details,
-                               paste0(f, " \u00d7 ", cov, ": p = ", .format_pval(p_int), " (homogeneous)"))
+                               paste0(f, " \u00d7 ", cov, ": p = ", .format_pval(p_int), .msg(" (homogeneous)", " (homog\u00e8ne)")))
           }
         }
       }
@@ -1397,7 +1397,7 @@
       for (cov in numeric_vars) {
         slopes_lines <- c(slopes_lines,
           paste0("# Test interaction ", f, " \u00d7 ", cov, ":"),
-          paste0("model_interaction <- lm(", deparse(formula[[2]]), " ~ ", paste(c(factor_vars, numeric_vars), collapse = " + "),
+          paste0("model_interaction <- lm(", deparse1(formula[[2]]), " ~ ", paste(c(factor_vars, numeric_vars), collapse = " + "),
                  " + ", f, ":", cov, ", data = dt)"),
           paste0("slopes_test <- anova(ancova_model, model_interaction)"),
           paste0("# Si p < 0.05 => pentes h\u00e9t\u00e9rog\u00e8nes (violation assomption ANCOVA)")
@@ -1535,6 +1535,7 @@
       })
     }
     global_pvalue <- .ancova_factor_pvalue(anova_result, factor_vars)
+    effects_table <- .effects_from_table(anova_result)
 
     if (verbose) {
       cat("\n")
@@ -1614,6 +1615,7 @@
       robust = FALSE,
       g_cat = g_cat,
       global_pvalue = global_pvalue,
+      effects = effects_table,
       formula_used = formula_to_use,
       k = k
     ))
@@ -1962,6 +1964,7 @@
         robust = FALSE,
         g_cat = g_cat,
         global_pvalue = .ancova_factor_pvalue(fallback_table, factor_vars),
+        effects = .effects_from_table(fallback_table),
         formula_used = formula_to_use,
         k = k
       ))
@@ -1974,6 +1977,7 @@
       robust_results = robust_results,
       g_cat = g_cat,
       global_pvalue = global_pvalue,
+      effects = .effects_from_table(robust_results$test_result),
       formula_used = formula_to_use,
       k = k
     ))

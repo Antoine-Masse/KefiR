@@ -1,4 +1,5 @@
 .format_pval <- function(p, digits = 2, threshold = 1e-6) {
+  if (is.na(p)) return("NA")
   if (p < 0 || p > 1) {
     stop("Invalid p-value: must be between 0 and 1.")
   }

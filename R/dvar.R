@@ -36,7 +36,7 @@ dvar <- function(data, Y, X=c(), alpha=0.05, family="lm", wash=TRUE, NAfreq=1, i
   if (length(ind_Y)==0){stop("Impossible to find Y.")}
   X_i_num <- setdiff(X_i_num,ind_Y)
   X_i_char <- setdiff(X_i_char,ind_Y)
- if (verbose == TRUE){print(paste("Indice of Y: ",ind_Y))}
+ if (verbose == TRUE){cat(paste("Indice of Y: ",ind_Y), "\n")}
   # Type of Y
   if (length(unique(data[,which(colnames(data)%in%Y)])) == 2) {
     Y_type <- "binary"
@@ -70,14 +70,14 @@ dvar <- function(data, Y, X=c(), alpha=0.05, family="lm", wash=TRUE, NAfreq=1, i
     variables <- c(variables, colnames(data)[X_i_num[ind_noNA]])
     type <- c(type,rep("Ynum_vs_num",length(ind_noNA)))
     p.value <- c(p.value,pvals[ind_noNA])
-    #print("If Y presents some categories")
+    #cat("If Y presents some categories\n")
     if (length(unique(data[,ind_Y]))/length(data[,which(colnames(data)%in%Y)]) < 0.1){
-      #			print("m.test")
+      #			cat("m.test\n")
       for (i in X_i_num){
         if (is.numeric(data[,i])==TRUE) {
           #					print(colnames(data)[i])
           temp <- m.test(data[,i],data[,ind_Y],return=FALSE,plot=FALSE,boot=FALSE,verbose=FALSE)
-          #print("temp") ; print(temp)
+          #cat("temp\n") ; print(temp)
           if (length(temp)>1) {
             var_i <- c(var_i, i)
             variables <- c(variables, colnames(data)[i])
@@ -108,7 +108,7 @@ dvar <- function(data, Y, X=c(), alpha=0.05, family="lm", wash=TRUE, NAfreq=1, i
     #synthese <-synthese
     dt[dt$type=="Ynum_vs_num",]
   } else if (family=="logit") {
-    #		print("logit")
+    #		cat("logit\n")
     # AJOUTER LES DONNEES MANQUANTES DANS LES CATEGORIELS
     # A REVOIR +++
     # Remplacer dt par synthese
@@ -129,7 +129,7 @@ dvar <- function(data, Y, X=c(), alpha=0.05, family="lm", wash=TRUE, NAfreq=1, i
         X_i_num <- c(X_i_num,i)
       }
     }
-	if (verbose==TRUE) {print(paste("X_i_num",X_i_num))}
+	if (verbose==TRUE) {cat(paste("X_i_num",X_i_num), "\n")}
     # Compilation of non-numerical var
     X_i_char <- 1:ncol(data)
     X_i_char <- setdiff(X_i_char,X_i_num)
@@ -156,7 +156,7 @@ dvar <- function(data, Y, X=c(), alpha=0.05, family="lm", wash=TRUE, NAfreq=1, i
     var_i <- c()
     p.value <- c()
     weight <- c()
-	if (verbose==TRUE) {print("log")}
+	if (verbose==TRUE) {cat("log\n")}
     X_i_num_log <- X_i_num[apply(data[,X_i_num],2,function(x){any(!is.finite(log(x)))})]
     #print(head(data[,X_i_num]))
 	if (verbose==TRUE) {print(head(data[,X_i_num_log]))}
@@ -164,15 +164,15 @@ dvar <- function(data, Y, X=c(), alpha=0.05, family="lm", wash=TRUE, NAfreq=1, i
     ind_noNA <- which(!is.na(pvals))
     formule0 <- paste("I(log(",colnames(data)[X_i_num_log],"))")
     var_i <- c(var_i, X_i_num_log[ind_noNA])
-    #			print("var_i")
+    #			cat("var_i\n")
     #			print(var_i)
     variables <- c(variables, formule0[ind_noNA])
-    #			print("variables")
+    #			cat("variables\n")
     #			print(variables)
     type <- c(type,rep("Ynum_transfo",length(ind_noNA)))
     p.value <- c(p.value,pvals[ind_noNA])
     weight	<- weight<-c(rep(1,length(ind_noNA)))
-	if (verbose==TRUE) {print("x^2")}
+	if (verbose==TRUE) {cat("x^2\n")}
     pvals <- apply(data[,X_i_num],2,function(x){cor.test.NA((x^2),data[,ind_Y])})
     #		print(pvals)
     ind_noNA <- which(!is.na(pvals))
@@ -185,7 +185,7 @@ dvar <- function(data, Y, X=c(), alpha=0.05, family="lm", wash=TRUE, NAfreq=1, i
     p.value <- c(p.value,pvals[ind_noNA])
     weight	<- weight<-c(weight,c(rep(1,length(ind_noNA))))
     #	cat("1",length(p.value),"2",length(var_i),"3",length(variables),"4",length(weight))
-	if (verbose==TRUE) {print("exp")}
+	if (verbose==TRUE) {cat("exp\n")}
     pvals <- apply(data[,X_i_num],2,function(x){cor.test.NA((exp(x)),data[,ind_Y])})
     #		print(pvals)
     ind_noNA <- which(!is.na(pvals))
@@ -206,14 +206,14 @@ dvar <- function(data, Y, X=c(), alpha=0.05, family="lm", wash=TRUE, NAfreq=1, i
     type <- c()
     var_i <- c()
     p.value <- c()
-	if (verbose==TRUE) {print("Interaction j/i & i/j")}
+	if (verbose==TRUE) {cat("Interaction j/i & i/j\n")}
     for (i in which(dt$type=="Ynum_vs_num"|dt$type=="Ynum_transfo")) {
       for (j in setdiff(which(dt$type=="Ynum_vs_num"|dt$type=="Ynum_transfo"),i)) {
         # INTERACTION i/j
-        #print("Interaction i/j")
+        #cat("Interaction i/j\n")
         #print(dt$variables[j])
         if ((any(within(data, result <- eval(parse(text =dt$variables[j])))$result==0)==FALSE)&(any(is.na(within(data, result <- eval(parse(text =dt$variables[j])))$result))==FALSE)){
-          #print("go")
+          #cat("go\n")
           formule0 <- paste("I(",dt$variables[i],"/",dt$variables[j],")")
           formule1 <- paste(Y,'~',formule0)
           formule2 <- as.formula(formule1)
@@ -231,8 +231,8 @@ dvar <- function(data, Y, X=c(), alpha=0.05, family="lm", wash=TRUE, NAfreq=1, i
         #if (any(eval(parse(text = dt$variables[i])))==FALSE){
         #print(dt$variables[i])
         if ((any(within(data, result <- eval(parse(text =dt$variables[i])))$result==0)==FALSE)&(any(is.na(within(data, result <- eval(parse(text =dt$variables[i])))$result))==FALSE)){
-          #print("go1")
-          #print("Interaction j/i")
+          #cat("go1\n")
+          #cat("Interaction j/i\n")
           # INTERACTION j/i
           formule0 <- paste("I(",dt$variables[j],"/",dt$variables[i],")")
           formule1 <- paste(Y,'~',formule0)
@@ -261,7 +261,7 @@ dvar <- function(data, Y, X=c(), alpha=0.05, family="lm", wash=TRUE, NAfreq=1, i
     weight <- c()
     ##########
     #	cat("1",length(p.value),"2",length(var_i),"3",length(variables),"4",length(weight))
-	if (verbose==TRUE) {print("1/x")}
+	if (verbose==TRUE) {cat("1/x\n")}
     X_i_num_inv <- apply(data[,X_i_num],2,function(x){return(any((x==0)))})
     ind_noNA <- which(!is.na(X_i_num_inv))
     #			print(X_i_num_inv)
@@ -274,17 +274,17 @@ dvar <- function(data, Y, X=c(), alpha=0.05, family="lm", wash=TRUE, NAfreq=1, i
     ind_noNA <- which(!is.na(pvals))
     formule0 <- paste("I(1/",colnames(data)[X_i_num_inv],")")
     var_i <- c(var_i, X_i_num_inv[ind_noNA])
-    #			print("var_i")
+    #			cat("var_i\n")
     #			print(var_i)
     variables <- c(variables, formule0[ind_noNA])
-    #			print("variables")
+    #			cat("variables\n")
     #			print(variables)
     type <- c(type,rep("Ynum_transfo",length(ind_noNA)))
     p.value <- c(p.value,pvals[ind_noNA])
     weight	<- weight<-c(weight,rep(1,length(ind_noNA)))
     #
     #	cat("1",length(p.value),"2",length(var_i),"3",length(variables),"4",length(weight))
-	if (verbose==TRUE) {print("poly")}
+	if (verbose==TRUE) {cat("poly\n")}
     X_i_num_poly <- apply(data[,X_i_num],2,function(x){return(any(is.na(x)))})
     X_i_num_poly <- which(X_i_num_poly==FALSE)
     X_i_num_temp <- X_i_num[X_i_num_poly]
@@ -324,10 +324,10 @@ dvar <- function(data, Y, X=c(), alpha=0.05, family="lm", wash=TRUE, NAfreq=1, i
     dt_inter <- data.frame(var_i,variables,type,p.value,weight)
     dt <- rbind(dt,dt_inter)
   }
-  #print("B")
-  #print("multix")
+  #cat("B\n")
+  #cat("multix\n")
   if (wash==TRUE) {
-    if (verbose == TRUE) {print(paste("Il y a pour le moment ",nrow(dt)," variables."))}
+    if (verbose == TRUE) {cat(paste("Il y a pour le moment ",nrow(dt)," variables."), "\n")}
     ########################
     #	Prenettoyage
     ########################
@@ -356,8 +356,8 @@ dvar <- function(data, Y, X=c(), alpha=0.05, family="lm", wash=TRUE, NAfreq=1, i
     }
     #}
 	if (verbose==TRUE) {
-    print("Apres nettoyage")
-    print(paste("Il reste ",nrow(dt)," variables."))
+    cat("Apres nettoyage\n")
+    cat(paste("Il reste ",nrow(dt)," variables."), "\n")
 	}
     #		print(dt)
   }
@@ -366,7 +366,7 @@ dvar <- function(data, Y, X=c(), alpha=0.05, family="lm", wash=TRUE, NAfreq=1, i
   #	Interactions
   ########################
   if (interaction == TRUE){
-  if (verbose==TRUE) {print("Interaction")}
+  if (verbose==TRUE) {cat("Interaction\n")}
     variables <- c()
     type <- c()
     var_i <- c()
@@ -380,17 +380,17 @@ dvar <- function(data, Y, X=c(), alpha=0.05, family="lm", wash=TRUE, NAfreq=1, i
     #print(dt$variables[X_i_num_for_inter[1:(length(X_i_num_for_inter)-1)]])
     for (i in 1:(length(X_i_num_for_inter)-1)) {
       #			for (i in X_i_num_for_inter[listeri]) {
-      #print("D")
-      #print(paste("i",X_i_num_for_inter[i]))
-      #print("C")
+      #cat("D\n")
+      #cat(paste("i",X_i_num_for_inter[i]), "\n")
+      #cat("C\n")
       for (j in (i+1):length(X_i_num_for_inter)) {
         # INTERACTION
         #	print(1:(length(X_i_num_for_inter)-1))
         #print(i)
         #	print((i+1):length(X_i_num_for_inter))
-        #print("A")
-        #print(paste("i ",X_i_num_for_inter[i]," et j ",X_i_num_for_inter[j]))
-        #print("B")
+        #cat("A\n")
+        #cat(paste("i ",X_i_num_for_inter[i]," et j ",X_i_num_for_inter[j]), "\n")
+        #cat("B\n")
         formule0 <- paste(dt$variables[X_i_num_for_inter[i]],'*',dt$variables[X_i_num_for_inter[j]])
 		formule1 <- paste(Y,'~',formule0)
 		formule2 <- as.formula(formule1)
@@ -418,8 +418,8 @@ dvar <- function(data, Y, X=c(), alpha=0.05, family="lm", wash=TRUE, NAfreq=1, i
   }
   if (wash==TRUE) {
   if (verbose==TRUE) {
-    print("Nettoyage")
-    print(paste("Il y a pour le moment ",nrow(dt)," variables."))
+    cat("Nettoyage\n")
+    cat(paste("Il y a pour le moment ",nrow(dt)," variables."), "\n")
 	}
     #######################
     #	Nettoyage
@@ -427,8 +427,8 @@ dvar <- function(data, Y, X=c(), alpha=0.05, family="lm", wash=TRUE, NAfreq=1, i
     seuil <- 100
     if (nrow(dt) > seuil) {
 	if (verbose==TRUE) {
-      print("Nettoyage")
-      print(nrow(dt))
+      cat("Nettoyage\n")
+      cat(nrow(dt), "\n")
 	  }
       var_alea <- qbinom(0.95,nrow(dt),alpha)
       dt0 <- dt[dt$p.value<alpha,]
@@ -438,10 +438,10 @@ dvar <- function(data, Y, X=c(), alpha=0.05, family="lm", wash=TRUE, NAfreq=1, i
         dt2 <- dt[ind[1:(length(ind)-var_alea)],]
         n1 <- nrow(dt1)-seuil
 		if (verbose==TRUE) {
-        print(paste("reste_",n1))}
+        cat(paste("reste_",n1), "\n")}
         n2 <- nrow(dt2)-seuil
 		if (verbose==TRUE) {
-        print(paste("reste_",n2))}
+        cat(paste("reste_",n2), "\n")}
         n12 <- c(n1 , n2)
         n12[n12>0]->n12
         if (length(n12)>0){n12 <- min(n12)
@@ -465,8 +465,8 @@ dvar <- function(data, Y, X=c(), alpha=0.05, family="lm", wash=TRUE, NAfreq=1, i
     #	}
     #}
 	if (verbose==TRUE) {
-    print("Apres nettoyage")
-    print(paste("Nombre de variables retenues ",nrow(dt)))
+    cat("Apres nettoyage\n")
+    cat(paste("Nombre de variables retenues ",nrow(dt)), "\n")
 	}
   }
   if (length(X)>0) {

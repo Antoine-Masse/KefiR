@@ -317,8 +317,11 @@ pairwise <- function(x, g, type = "mean", alpha = 0.05, control = c(),
 					#print(x[g==unique_g[j]])
 
 					# V\u00e9rifier qu'il y a assez de donn\u00e9es pour ks.test (min 2 obs par groupe)
+					# is.finite : un groupe constant, une fois r\u00e9duit par un \u00e9cart-type nul, donne des NaN
 					x_i <- x[g==unique_g[i]]
 					x_j <- x[g==unique_g[j]]
+					x_i <- x_i[is.finite(x_i)]
+					x_j <- x_j[is.finite(x_j)]
 
 					if (length(x_i) >= 2 && length(x_j) >= 2) {
 						pv <- ks.test(x_i, x_j)$p.value
@@ -452,14 +455,10 @@ pairwise <- function(x, g, type = "mean", alpha = 0.05, control = c(),
 			result <- frdAllPairsNemenyiTest(x~g|id)
 		}
 		g <- reorder_groups(x, g, ind_control,median)
-print("catego de base")
 		groups <- catego(result,control=control,alpha=alpha,debug=debug)
-print("av bootstrap")
-print(groups$p.value)
 		if (boot==TRUE) {
 				groups$bootstrap <- bootstrap(x,g,groups$p.value,NemenyTest,alpha=alpha,control=control,paired=TRUE, debug=debug)
 		}
-print("apr\u00e8s bootstrap")
 		match(init_order,levels(g))-> indices
 		groups$groups <- groups$groups[indices,]
 		if (boot==TRUE) {groups$bootstrap$groups <- groups$bootstrap$groups[indices,]}

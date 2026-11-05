@@ -381,9 +381,9 @@
   # la transformation serait appliqu\u00e9e une seconde fois : log(log(A)).
   if (!is.null(formula) && !is.name(formula[[2]]) && !is.matrix(x)) {
     k <- .vbse(
-      paste0("Transformed response: ", paste(deparse(formula[[2]]), collapse = ""),
+      paste0("Transformed response: ", paste(deparse1(formula[[2]]), collapse = ""),
              " (named ", resp, " in the following steps)."),
-      paste0("R\u00e9ponse transform\u00e9e : ", paste(deparse(formula[[2]]), collapse = ""),
+      paste0("R\u00e9ponse transform\u00e9e : ", paste(deparse1(formula[[2]]), collapse = ""),
              " (nomm\u00e9e ", resp, " dans la suite du bilan)."),
       verbose = verbose, code = code, k = k, cpt = "on"
     )
@@ -445,7 +445,7 @@
   # DEBUG CRITIQUE : V\u00e9rifier la structure de data AVANT .detect_model_type()
   if (debug) {
     cat("\n=== DEBUG AVANT .detect_model_type() ===\n")
-    cat("Formule : ", deparse(formula), "\n")
+    cat("Formule : ", deparse1(formula), "\n")
     cat("Noms de colonnes dans data : ", paste(names(data), collapse = ", "), "\n")
     cat("dim(data) : ", paste(dim(data), collapse = " x "), "\n")
     cat("head(data) :\n")
@@ -488,6 +488,7 @@
       k = ancova_result$k,
       model = ancova_result$model,
       robuste = ancova_result$robust,
+      effects = ancova_result$effects,
       global_pvalue = ancova_result$global_pvalue,
       formula_used = ancova_result$formula_used,
       check_ancova = TRUE,
@@ -548,7 +549,7 @@
   # D\u00e9tecter la pr\u00e9sence du terme Error() dans la formule
   # NOTE: Error() est la syntaxe aov() pour effets al\u00e9atoires/mesures r\u00e9p\u00e9t\u00e9es
   # "|" est la syntaxe lmer() pour effets al\u00e9atoires : (1|Subject), (Time|Subject)
-  formula_str <- deparse(formula)
+  formula_str <- deparse1(formula)
   alea_error <- grepl("Error\\s*\\(", formula_str, perl = TRUE)
   alea_lmer <- grepl("[(][^)]+[|][^)]+[)]", formula_str)  # D\u00e9tecte (1|id), (var|id), (1 | id)
   alea <- alea_error || alea_lmer
@@ -1095,6 +1096,7 @@
             )
             bilan$k <- mixed_result$k
             bilan$global_pvalue <- mixed_result$global_pvalue
+            bilan$effects <- .effects_from_table(mixed_result$anova_table)
           }
 
           return(bilan)
@@ -1512,7 +1514,7 @@
         model <- tryCatch({
           aov(formula, data = data)
         }, error = function(e) {
-          has_err <- grepl("Error\\(", deparse(formula), perl = TRUE)
+          has_err <- grepl("Error\\(", deparse1(formula), perl = TRUE)
           en_msg  <- paste0("Failed to fit model", if (has_err) " with Error term" else "", ": ", e$message)
           fr_msg  <- paste0("\u00e9chec de l'ajustement du mod\u00e8le", if (has_err) " avec terme Error" else "", " : ", e$message)
           warning(.msg(en_msg, fr_msg))
@@ -1718,8 +1720,8 @@
                   verbose = verbose, code = code, k = k, cpt = "on"
                 )
                 k <- .vbse(
-                  paste0("Updated formula: ", deparse(updated_formula)),
-                  paste0("Formule actualis\u00e9e : ", deparse(updated_formula)),
+                  paste0("Updated formula: ", deparse1(updated_formula)),
+                  paste0("Formule actualis\u00e9e : ", deparse1(updated_formula)),
                   verbose = verbose, code = code, k = k, cpt = "off"
                 )
 
@@ -3246,6 +3248,7 @@
           )
           bilan$k <- mixed_result$k
           bilan$global_pvalue <- mixed_result$global_pvalue
+          bilan$effects <- .effects_from_table(mixed_result$anova_table)
         }
 
         return(bilan)
@@ -3907,8 +3910,8 @@
               # L'utilisateur a explicitement sp\u00e9cifi\u00e9 (1|id) ou (var|id)
               lmer_formula <- formula
               k <- .vbse(
-                paste0("Using user-provided lmer formula: ", deparse(lmer_formula)),
-                paste0("Utilisation de la formule lmer fournie par l'utilisateur : ", deparse(lmer_formula)),
+                paste0("Using user-provided lmer formula: ", deparse1(lmer_formula)),
+                paste0("Utilisation de la formule lmer fournie par l'utilisateur : ", deparse1(lmer_formula)),
                 verbose = verbose, code = code, k = k, cpt = "off"
               )
             } else if (paired && !is.null(within)) {
@@ -3951,8 +3954,8 @@
             }
 
             k <- .vbse(
-              paste0("Mixed model formula: ", deparse(lmer_formula)),
-              paste0("Formule du mod\u00e8le mixte : ", deparse(lmer_formula)),
+              paste0("Mixed model formula: ", deparse1(lmer_formula)),
+              paste0("Formule du mod\u00e8le mixte : ", deparse1(lmer_formula)),
               verbose = verbose, code = code, k = k, cpt = "off"
             )
 
@@ -4232,14 +4235,14 @@
           k_code <- k_code + 1
           if (ss_type == "I") {
             .code_multi(k_code, paste0("ANOVA Type ", ss_type, " (Sommes des carr\u00e9s s\u00e9quentielles)"), c(
-              paste0("model <- lm(", deparse(formula), ", data = data)"),
+              paste0("model <- lm(", deparse1(formula), ", data = data)"),
               "anova_result <- anova(model)",
               "print(anova_result)"
             ))
           } else {
             .code_multi(k_code, paste0("ANOVA Type ", ss_type, " (Sommes des carr\u00e9s marginales)"), c(
               "library(car)",
-              paste0("model <- lm(", deparse(formula), ", data = data)"),
+              paste0("model <- lm(", deparse1(formula), ", data = data)"),
               paste0("anova_result <- car::Anova(model, type = '", ss_type, "')"),
               "print(anova_result)"
             ))
@@ -4529,6 +4532,15 @@
     }
   }
 
+  # $effects et p-value globale : table du test r\u00e9ellement conduit, r\u00e8gle unique
+  # (BP-031) : la p-value globale est celle du premier facteur de la formule
+  effects_table <- .multi_effects_table(model, robust_results, formula, data, alpha)
+  if (!is.null(effects_table)) {
+    first_factor_pvalue <- .first_factor_pvalue(effects_table, formula)
+    if (!is.na(first_factor_pvalue)) global_pvalue <- first_factor_pvalue
+  }
+
+  # IMPORTANT : m.test() lit x et g par position (bilan[[1]], bilan[[2]])
   result <- list(
     x = x,
     g_cat = g_cat,
@@ -4548,6 +4560,7 @@
     residual_type = residual_type_used,  # NOUVEAU: type de r\u00e9sidu utilis\u00e9
     robust_results = robust_results,
     global_pvalue = global_pvalue,  # Pour return=FALSE
+    effects = effects_table,
     k = k
   )
 

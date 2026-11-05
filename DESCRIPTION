@@ -1,6 +1,6 @@
 Package: KefiR
 Title: Statistical Analysis with ANOVA, MANOVA, ANCOVA and Mixed Models
-Version: 0.0.2.1
+Version: 0.0.2.2
 Authors@R:
     person(given = "Antoine",
            family = "Massé",

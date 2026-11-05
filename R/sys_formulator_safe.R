@@ -5,7 +5,7 @@
   f <- formula
 
   # Auto-detection syntaxe lmer : si (1|id) ou (var|id) present, forcer mode "lmer"
-  formula_str <- deparse(formula)
+  formula_str <- deparse1(formula)
   if (grepl("[(][^)]+[|][^)]+[)]", formula_str) && mode != "lmer") {
     .dbg(".formulator_safe() - lmer syntax detected, switching to mode='lmer'",
          ".formulator_safe() - Syntaxe lmer d\u00e9tect\u00e9e, passage en mode='lmer'",

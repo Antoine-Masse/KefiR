@@ -86,8 +86,8 @@
 #' @keywords internal
 .formulator <- function(formula, mode = c("aov", "friedman", "aovp", "linear", "simple", "lmer"), debug=FALSE, verbose=TRUE, return=TRUE) {
     mode <- match.arg(mode)
-    .dbg(paste0(".formulator() - Input received for 'formula': ", deparse(formula)),
-		paste0(".formulator() - Entr\u00e9e re\u00e7ue pour 'formula': ",deparse(formula)),
+    .dbg(paste0(".formulator() - Input received for 'formula': ", deparse1(formula)),
+		paste0(".formulator() - Entr\u00e9e re\u00e7ue pour 'formula': ",deparse1(formula)),
 		debug=debug)
     # Capture et pr\u00e9servation de la formule exacte avec ses r\u00e9f\u00e9rences
   #  if (!is.character(formula)) {
@@ -128,8 +128,8 @@ if (!inherits(formula, "formula")) {
     }
 
     # D\u00e9tection effets al\u00e9atoires et structure Error()
-    random_effects <- any(grepl("\\([^~]*\\|[^~]*\\)", deparse(formula)))
-    error_structure <- any(grepl("Error", deparse(formula)))
+    random_effects <- any(grepl("\\([^~]*\\|[^~]*\\)", deparse1(formula)))
+    error_structure <- any(grepl("Error", deparse1(formula)))
     .dbg(paste(".formulator() - Random effects detected: ", random_effects),
          paste(".formulator() - Effets al\u00e9atoires d\u00e9tect\u00e9s:", random_effects),
          debug = debug)
@@ -139,12 +139,12 @@ if (!inherits(formula, "formula")) {
     .dbg(paste(".formulator() - Error structure detected: ", error_structure),
          paste(".formulator() - Structure d'erreur d\u00e9tect\u00e9e:", error_structure),
          debug = debug)
-    .dbg(paste(".formulator() - Formula after conversion: ", deparse(formula)),
-         paste(".formulator() - Formule apr\u00e8s conversion:", deparse(formula)),
+    .dbg(paste(".formulator() - Formula after conversion: ", deparse1(formula)),
+         paste(".formulator() - Formule apr\u00e8s conversion:", deparse1(formula)),
          debug = debug)
 
     # Gestion sp\u00e9cifique pour le symbole '|'
-    if (grepl("\\|", deparse(formula))) {
+    if (grepl("\\|", deparse1(formula))) {
         .dbg("Debug vertical bar: Detection of the structure with '|'",
              "Debug barre verticale : D\u00e9tection de la structure avec '|'",
              debug=debug)
@@ -161,8 +161,8 @@ if (!inherits(formula, "formula")) {
                     lhs <- expr[[2]]  # gauche : (1) ou (factor)
                     rhs <- expr[[3]]  # droite : random_effect
 
-                    lhs_txt <- deparse(lhs)
-                    rhs_txt <- deparse(rhs)
+                    lhs_txt <- deparse1(lhs)
+                    rhs_txt <- deparse1(rhs)
 
                     if (lhs_txt == "1") {
                         return(as.call(list(as.name("Error"), rhs)))
@@ -180,7 +180,7 @@ if (!inherits(formula, "formula")) {
             formula[[3]] <- transform_random_effects(formula[[3]])
 
             clean_formula <- function(f) {
-                fs <- deparse(f)
+                fs <- deparse1(f)
                 fs <- sub("\\((Error\\(.+\\))\\)", "\\1", fs)
                 as.formula(fs)
             }
@@ -188,13 +188,13 @@ if (!inherits(formula, "formula")) {
             formula <- clean_formula(formula)
 
             .dbg(paste(".formulator() - Debug vertical bar: Random effect transformed for aov: ",
-                      deparse(formula)),
+                      deparse1(formula)),
                  paste(".formulator() - Debug barre verticale : Effet al\u00e9atoire transform\u00e9 pour aov:",
-                       deparse(formula)),
+                       deparse1(formula)),
                  debug=debug)
 
         } else {
-            terms <- strsplit(deparse(formula[[3]]), "\\|")[[1]]
+            terms <- strsplit(deparse1(formula[[3]]), "\\|")[[1]]
             .dbg(paste(".formulator() - Debug vertical bar: Extracted terms: ", terms),
                  paste(".formulator() - Debug barre verticale : Termes extraits :", terms),
                  debug=debug)
@@ -204,11 +204,11 @@ if (!inherits(formula, "formula")) {
                  paste(".formulator() - Debug barre verticale : Pr\u00e9dicteurs transform\u00e9s :", predictors),
                  debug=debug)
 
-            formula <- as.formula(paste(deparse(formula[[2]]), "~", predictors))
+            formula <- as.formula(paste(deparse1(formula[[2]]), "~", predictors))
             .dbg(paste(".formulator() - Debug vertical bar: Formula transformed for '|': ",
-                      deparse(formula)),
+                      deparse1(formula)),
                  paste(".formulator() - Debug barre verticale : Formule transform\u00e9e pour '|' :",
-                       deparse(formula)),
+                       deparse1(formula)),
                  debug=debug)
         }
     }
@@ -228,7 +228,7 @@ if (!inherits(formula, "formula")) {
                 args <- sapply(as.list(expr)[-1], deparse)
                 return(paste0("cbind(", paste(args, collapse = ", "), ")"))
             } else if (func_name %in% c("I", "log", "exp", "sqrt", "sin", "cos", "tan")) {
-                return(deparse(expr))
+                return(deparse1(expr))
             } else if (func_name == "$") {
                 # Pr\u00e9servation explicite des r\u00e9f\u00e9rences dataframe
                 return(paste(deparse(expr[[2]]), "$", as.character(expr[[3]]), sep=""))
@@ -237,12 +237,12 @@ if (!inherits(formula, "formula")) {
             return(paste(sapply(as.list(expr), preserve_transformations), collapse = " "))
         }
 
-        return(deparse(expr))
+        return(deparse1(expr))
     }
 
     compile_predictors <- function(expr) {
-        .dbg(paste0("Compiling predictors: ", deparse(expr)),
-             paste0("Compilation des pr\u00e9dicteurs: ", deparse(expr)),
+        .dbg(paste0("Compiling predictors: ", deparse1(expr)),
+             paste0("Compilation des pr\u00e9dicteurs: ", deparse1(expr)),
              debug=debug)
         if (is.call(expr) && as.character(expr[[1]]) %in% c("*", "+", ":")) {
             operator <- as.character(expr[[1]])
@@ -266,8 +266,8 @@ if (!inherits(formula, "formula")) {
     }
 
     # Re-d\u00e9tection apr\u00e8s modifications potentielles
-    error_structure <- any(grepl("Error", deparse(formula)))
-    random_effects  <- any(grepl("\\|", deparse(formula)))
+    error_structure <- any(grepl("Error", deparse1(formula)))
+    random_effects  <- any(grepl("\\|", deparse1(formula)))
     .dbg(paste(".formulator() - Error structure detected: ", error_structure),
          paste(".formulator() - Structure d'erreur d\u00e9tect\u00e9e:", error_structure),
          debug = debug)
@@ -316,7 +316,7 @@ if (!inherits(formula, "formula")) {
             as.formula(paste(response, "~", predictors))
         },
         "linear" = {
-            response <- deparse(formula[[2]])
+            response <- deparse1(formula[[2]])
             all_vars <- setdiff(all.vars(formula), all.vars(formula[[2]]))
             predictors <- paste(all_vars, collapse = " + ")
             as.formula(paste(response, "~", predictors))
@@ -334,8 +334,8 @@ if (!inherits(formula, "formula")) {
         }
     )
 
-    .dbg(paste(".formulator() - Rewritten formula: ", deparse(rewritten_formula)),
-         paste(".formulator() - Formule r\u00e9\u00e9crite: ", deparse(rewritten_formula)),
+    .dbg(paste(".formulator() - Rewritten formula: ", deparse1(rewritten_formula)),
+         paste(".formulator() - Formule r\u00e9\u00e9crite: ", deparse1(rewritten_formula)),
          debug = debug)
 
     .dbg(".formulator() - end .formulator().",

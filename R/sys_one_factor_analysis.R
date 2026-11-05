@@ -808,6 +808,8 @@
 				temp <- pairwise(data_cr,g,type="ks",silent=silent,boot=FALSE)
 				min(unlist(temp$p.value),na.rm=T)
 			}, error = function(e) 1)  # 1 = assume same distribution (conservative)
+			# Formes incomparables (groupe constant) : Wilcoxon annonc\u00e9 moins fiable, jamais l'inverse
+			if (!is.finite(ks_result)) ks_result <- 0
 
 			#========================================================
 			#			NON-NORMAL		2 categories
@@ -1032,7 +1034,7 @@
 					var_ratio <- max(var_groups, na.rm = TRUE) / min(var_groups, na.rm = TRUE)
 
 					# 3. Outliers extr\u00eames (d\u00e9j\u00e0 calcul\u00e9s plus haut)
-					has_extreme_outliers <- exists("max_outliers_extrem") && max_outliers_extrem > 0.02  # > 2%
+					has_extreme_outliers <- exists("max_outliers_extrem") && max_outliers_extrem > 0.05  # > 5%
 
 					# 4. Distance de Cook
 					cook_dist <- cooks.distance(myaov)
