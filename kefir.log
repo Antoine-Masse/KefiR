@@ -6367,8 +6367,21 @@ Archives : dev/save/*.2026-11-05
 Test : dev/test/agent_test_ancova_interaction.R
 bp.log : BP-029 a BP-032.
 
-NON TRAITE (a decider)
-- Voie robuste rlm() : post-hocs sur aov() non robuste ; return=FALSE renvoie NA.
-- m.test(mpg~cyl*am+wt, data=mtcars) : erreur rlm() "x singuliere" en repli.
-- m.test(y~factor(F)*x) : erreur "objet introuvable".
+SUITE, VERSION 0.0.2.1 (notes de 2026_ACORRIGER.docx et defauts restants)
+- sys_multi_factor_analysis.R : log(y) n'est plus applique deux fois en multi-facteurs
+  et en ANCOVA (log(log(y)) auparavant, avec plantage si des valeurs devenaient NaN).
+- sys_manova_analysis.R : tests MVN adaptes a MVN >= 6 (ils echouaient en silence et le
+  bilan concluait "respectee") ; 6 assomptions numerotees ; linearite entre VD ajoutee ;
+  VD sans nom acceptee (erreur "argument manquant" dans manova()).
+- sys_ancova_analysis.R, sys_posthoc_ANCOVA.R, m.test.R : post-hocs sur le modele robuste
+  (rlm ou HC3) et non plus sur aov() ; tests de Wald et p-value globale en voie rlm() ;
+  repli annonce vers le modele classique si aucune methode robuste n'aboutit.
+- sys_normalize_formula_dollar.R, m.test.R : factor(F) et as.factor(F) acceptes en formule.
+- sys_one_factor_analysis.R, m.test.R : Welch affiche F et ddl ; $method = "Welch ANOVA".
+- DESCRIPTION : multcomp et rrcov passent en Imports (install_github n'installe pas les
+  Suggests : lettres ANCOVA degradees et MANOVA robuste indisponible sinon).
+
+RESTE A DECIDER
+- return=FALSE en ANOVA multi-facteurs renvoie la derniere ligne (souvent l'interaction).
+- post-hoc ANCOVA limite au premier facteur.
 ================================================================================

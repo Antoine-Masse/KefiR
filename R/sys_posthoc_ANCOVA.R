@@ -49,6 +49,7 @@
 #' @param debug Logical. If TRUE, display debugging messages (default: FALSE).
 #' @param code Logical. If TRUE, display reproducible R code (default: FALSE).
 #' @param k Integer or NULL. Message counter for .vbse() (internal use).
+#' @param vcov_robust Optional robust covariance matrix (e.g. HC3) used for the comparisons.
 #'
 #' @return
 #' A list of class \code{"posthoc"} containing:
@@ -117,7 +118,8 @@
                             verbose = TRUE,
                             debug = FALSE,
                             code = FALSE,
-                            k = NULL) {
+                            k = NULL,
+                            vcov_robust = NULL) {
 
   # NOTE PERSO: Cette fonction implemente les post-hocs appropries pour ANCOVA
   # selon les recommandations academiques (Maxwell & Delaney, 2018; Huitema, 2011)
@@ -290,8 +292,11 @@
   # BLOC 2: MESSAGES PEDAGOGIQUES
   # ============================================================================
 
+  is_robust_inference <- inherits(ancova_model, "rlm") || !is.null(vcov_robust)
+
   k <- .vbse(
     paste0("POST-HOC COMPARISONS FOR ANCOVA [{emmeans}]\n",
+           if (is_robust_inference) "\tInference based on the ROBUST model selected above.\n",
            "\tANCOVA post-hocs compare ADJUSTED MEANS, not raw means.\n",
            "\tAdjusted means = expected response when covariates are at their mean.\n",
            "\tThis controls for covariate effects and provides fair group comparisons.\n\n",
@@ -301,6 +306,7 @@
            "\tAdjustment method: ", method, "\n",
            "\tSignificance level: \u03b1 = ", alpha),
     paste0("COMPARAISONS POST-HOC POUR ANCOVA [{emmeans}]\n",
+           if (is_robust_inference) "\tInf\u00e9rence fond\u00e9e sur le mod\u00e8le ROBUSTE retenu ci-dessus.\n",
            "\tLes post-hocs ANCOVA comparent les MOYENNES AJUST\u00c9ES, pas les moyennes brutes.\n",
            "\tMoyennes ajust\u00e9es = r\u00e9ponse attendue quand les covariables sont \u00e0 leur moyenne.\n",
            "\tCela contr\u00f4le les effets des covariables et fournit des comparaisons \u00e9quitables.\n\n",
@@ -331,7 +337,11 @@
 
   # Supprimer le message anglais "NOTE: Results may be misleading..."
   emm_result <- tryCatch({
-    suppressMessages(emmeans::emmeans(ancova_model, specs = factor_name))
+    if (is.null(vcov_robust)) {
+      suppressMessages(emmeans::emmeans(ancova_model, specs = factor_name))
+    } else {
+      suppressMessages(emmeans::emmeans(ancova_model, specs = factor_name, vcov. = vcov_robust))
+    }
   }, error = function(e) {
     k <<- .vbse(
       paste0("ERROR computing EMMs: ", e$message),
@@ -357,8 +367,9 @@
     group = as.character(emm_summary[[factor_name]]),
     adjusted_mean = emm_summary$emmean,
     SE = emm_summary$SE,
-    lower.CL = emm_summary$lower.CL,
-    upper.CL = emm_summary$upper.CL
+    # rlm() : inf\u00e9rence asymptotique, emmeans nomme alors asymp.LCL / asymp.UCL et z.ratio
+    lower.CL = if (!is.null(emm_summary$lower.CL)) emm_summary$lower.CL else emm_summary$asymp.LCL,
+    upper.CL = if (!is.null(emm_summary$upper.CL)) emm_summary$upper.CL else emm_summary$asymp.UCL
   )
 
   # Affichage integre avec ajout "Moyennes ajustees:"
@@ -420,7 +431,7 @@
     estimate = pairs_summary$estimate,
     SE = pairs_summary$SE,
     df = pairs_summary$df,
-    t_ratio = pairs_summary$t.ratio,
+    t_ratio = if (!is.null(pairs_summary$t.ratio)) pairs_summary$t.ratio else pairs_summary$z.ratio,
     p_value = pairs_summary$p.value
   )
 
@@ -430,7 +441,8 @@
     print(pairwise_comparisons, row.names = FALSE)
 
     # Conclusion : identifier les differences significatives
-    sig_comparisons <- pairwise_comparisons[pairwise_comparisons$p_value < alpha, ]
+    # which() : une comparaison non estimable (cellule vide, terme alias\u00e9) a un p NA
+    sig_comparisons <- pairwise_comparisons[which(pairwise_comparisons$p_value < alpha), ]
     if (nrow(sig_comparisons) > 0) {
       cat("\n\t=> Diff\u00e9rences significatives d\u00e9tect\u00e9es :\n")
       for (i in 1:nrow(sig_comparisons)) {
@@ -503,7 +515,7 @@
       if (letters_assigned[i] == "a") {
         same_group <- c(i)
         for (j in (i+1):n_groups) {
-          if (j <= n_groups && p_matrix[i, j] > alpha) {
+          if (j <= n_groups && isTRUE(p_matrix[i, j] > alpha)) {
             same_group <- c(same_group, j)
           }
         }

@@ -121,5 +121,57 @@ controle("medpb2 : P et R meme lettre, Q et S a part",
 invisible(capture.output(r <- suppressWarnings(m.test(iris[, 1], iris[, 5], plot = FALSE, iter = 30))))
 controle("colonnes non alterees par data.frame()", !any(grepl("..", colnames(r$groups), fixed = TRUE)))
 
+# ---------------------------------------------------------------------------
+cat("\n6) Voies robustes, syntaxes et MANOVA (notes 2026_ACORRIGER)\n")
+m <- mtcars; m$am <- factor(m$am); m$cyl <- factor(m$cyl)
+# Voie rlm() : post-hoc sur le modele robuste, p globale disponible
+b <- bilan(mpg ~ am + wt, data = m)
+controle("rlm : tests de Wald affiches", any(grepl("tests de Wald robustes", b$sortie)))
+controle("rlm : post-hoc annonce robuste", any(grepl("ROBUSTE", b$sortie)))
+p <- suppressWarnings(m.test(mpg ~ am + wt, data = m, return = FALSE))
+controle("rlm : return=FALSE renvoie une p-value", is.numeric(p) && !is.na(p) && proche(p, b$r$global_pvalue))
+# Voie HC3 (2 facteurs) : post-hoc avec la covariance robuste
+b <- bilan(mpg ~ cyl + am + wt, data = m)
+controle("HC3 : post-hoc annonce robuste", any(grepl("ROBUSTE", b$sortie)))
+# rlm() inapplicable : repli classique annonce, sans plantage
+b <- bilan(mpg ~ cyl * am + wt, data = m)
+controle("rlm impossible : repli annonce", !is.null(b$r) && any(grepl("Retour vers le mod.le classique", b$sortie)))
+controle("3 termes croises : pas de plantage", !is.null(bilan(mpg ~ cyl * am * wt, data = m)$r))
+# factor() dans la formule
+ref <- bilan(mpg ~ am + wt, data = m)$r$global_pvalue
+controle("factor(F) * x equivaut a F * x",
+         proche(bilan(mpg ~ factor(am) + wt, data = mtcars)$r$global_pvalue, ref))
+# Welch : statistique affichee, methode nommee
+b <- bilan(iris[, 1], iris[, 5], boot = FALSE)
+controle("Welch : F et ddl affiches", any(grepl("F = .*ddl = ", b$sortie)))
+controle("Welch : $method", identical(b$r$method, "Welch ANOVA"))
+# MANOVA
+set.seed(1)
+mv <- data.frame(g = rep(c("A", "B"), each = 10), a = rnorm(20)); mv$b <- mv$a + rnorm(20, 0, .6)
+b <- bilan(cbind(a, b) ~ g, data = mv)
+controle("MANOVA : tests MVN reellement executes", any(grepl("p-value Asym", b$sortie)) && any(grepl("Henze-Zirkler p-value", b$sortie)))
+controle("MANOVA : 6 assomptions numerotees", all(sapply(1:6, function(i) any(grepl(paste0("ASSOMPTION ", i, "/6"), b$sortie)))))
+b <- bilan(cbind(a, mv$b) ~ g, data = mv)
+controle("MANOVA : VD sans nom, pas d'erreur manova()", !any(grepl("argument manquant", b$sortie)) && any(grepl("Lambda de Wilks :", b$sortie)))
+set.seed(2)
+vv <- data.frame(g = rep(c("A", "B", "C"), each = 30), a = rexp(90), b = rexp(90)^2); vv$a[1:3] <- 40
+b <- bilan(cbind(a, b) ~ g, data = vv)
+controle("MANOVA : non-normalite detectee, voie robuste", any(grepl("Wilks robuste", b$sortie)))
+
+# ---------------------------------------------------------------------------
+cat("\n7) Reponse transformee : une seule transformation\n")
+set.seed(2)
+tr <- data.frame(F = rep(c("A", "B"), each = 20), x = runif(40, 200, 220))
+tr$y <- exp(1 + 0.3 * (tr$F == "B") + 0.005 * tr$x + rnorm(40, 0, 0.2))
+ref <- type3(log(y) ~ F + x, tr)["F", "Pr(>F)"]
+controle("log(y) ~ F + x = lm(log(y))", proche(suppressWarnings(m.test(log(y) ~ F + x, data = tr, return = FALSE)), ref))
+controle("I(log(y)) ~ F + x = lm(log(y))", proche(suppressWarnings(m.test(I(log(y)) ~ F + x, data = tr, return = FALSE)), ref))
+b <- bilan(log(y) ~ F + x, data = tr)
+controle("transformation annoncee dans le bilan", any(grepl("transform.e : log\\(y\\)", b$sortie)))
+tr$G <- rep(c("u", "v"), 20)
+o <- capture.output(invisible(suppressWarnings(m.test(log(y) ~ F * G, data = tr, plot = FALSE, verbose = TRUE))))
+ref2 <- anova(lm(log(y) ~ F * G, data = tr))["F", "F value"]
+controle("deux facteurs : ANOVA sur log(y), pas log(log(y))", any(grepl(sprintf("%.4f", ref2), o, fixed = TRUE)))
+
 cat("\n", if (echecs == 0) "TOUS LES CONTROLES PASSENT" else paste(echecs, "ECHEC(S)"), "\n", sep = "")
 if (echecs > 0) quit(status = 1)

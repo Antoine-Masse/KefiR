@@ -1,0 +1,69 @@
+Package: KefiR
+Title: Statistical Analysis with ANOVA, MANOVA, ANCOVA and Mixed Models
+Version: 0.0.2.0
+Authors@R:
+    person(given = "Antoine",
+           family = "Massé",
+           role = c("aut", "cre"),
+           email = "antoine.masse@u-bordeaux.fr")
+Description: Comprehensive statistical analysis pipeline for ANOVA, MANOVA,
+    ANCOVA, and mixed models with automatic assumption checking, robust
+    alternatives, post-hoc tests with visual representations, and reproducible
+    code generation. Designed for researchers and students needing rigorous
+    statistical analysis with pedagogical support.
+Depends: R (>= 4.0.0)
+License: GPL-3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+Imports:
+    stats,
+    graphics,
+    grDevices,
+    lme4,
+    lmerTest,
+    car,
+    agricolae,
+    broom,
+    emmeans,
+    lmtest,
+    lmPerm,
+    onewaytests,
+    sandwich,
+    MASS,
+    DescTools,
+    FSA,
+    MHTdiscrete,
+    PMCMRplus,
+    WRS2,
+    e1071,
+    fda.usc,
+    foreach,
+    htmlwidgets,
+    igraph,
+    lawstat,
+    methods,
+    plot3D,
+    plot3Drgl,
+    plotly,
+    plotrix,
+    rgl,
+    rstatix,
+    stringr,
+    tseries,
+    vioplot,
+    withr,
+    MVN,
+    biotools,
+    rcompanion
+Suggests:
+    dae,
+    doParallel,
+    rrcov,
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0),
+    rlang,
+    multcomp
+Config/testthat/edition: 3
+VignetteBuilder: knitr
+RoxygenNote: 7.3.3

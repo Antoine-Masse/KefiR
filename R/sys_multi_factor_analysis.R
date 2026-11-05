@@ -376,6 +376,21 @@
   # Reconstruire data
   resp <- if (!is.null(formula)) all.vars(formula)[1] else "x"
 
+  # R\u00e9ponse transform\u00e9e (log(A), I(log(A))...) : x contient d\u00e9j\u00e0 la valeur transform\u00e9e et
+  # prend la place de la colonne A. La formule doit alors r\u00e9f\u00e9rencer A seul, sinon
+  # la transformation serait appliqu\u00e9e une seconde fois : log(log(A)).
+  if (!is.null(formula) && !is.name(formula[[2]]) && !is.matrix(x)) {
+    k <- .vbse(
+      paste0("Transformed response: ", paste(deparse(formula[[2]]), collapse = ""),
+             " (named ", resp, " in the following steps)."),
+      paste0("R\u00e9ponse transform\u00e9e : ", paste(deparse(formula[[2]]), collapse = ""),
+             " (nomm\u00e9e ", resp, " dans la suite du bilan)."),
+      verbose = verbose, code = code, k = k, cpt = "on"
+    )
+    formula[[2]] <- as.name(resp)
+    updated_formula <- formula
+  }
+
   if (!is.null(id)) {
     temp_df <- data.frame(x = x, id_col = data[[id]])
     names(temp_df) <- c(resp, id)

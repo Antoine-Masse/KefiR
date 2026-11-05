@@ -548,8 +548,8 @@
        "Contr\u00f4le: Ind\u00e9pendance des observations.", debug=debug)
 
   if (paired == FALSE) {
-    k <- .vbse("Assumption check: Independence of observations.\n\tEnsure that observations between groups are independent (no repeated measures, no clustering effects).",
-               "V\u00e9rification d'assomption : Ind\u00e9pendance des observations.\n\tAssurez-vous que les observations entre les groupes sont ind\u00e9pendantes (pas de mesures r\u00e9p\u00e9t\u00e9es, pas d'effets de cluster).",
+    k <- .vbse("ASSUMPTION 1/6: Independence of observations.\n\tEnsure that observations between groups are independent (no repeated measures, no clustering effects).",
+               "ASSOMPTION 1/6 : Ind\u00e9pendance des observations.\n\tAssurez-vous que les observations entre les groupes sont ind\u00e9pendantes (pas de mesures r\u00e9p\u00e9t\u00e9es, pas d'effets de cluster).",
                verbose=verbose, k=k, cpt="on")
   } else {
     k <- .vbse("Repeated measures design detected.\n\tMANOVA will account for within-subject dependencies.",
@@ -567,20 +567,72 @@
   .dbg("Check: Multicollinearity.",
        "Contr\u00f4le: Multicolin\u00e9arit\u00e9.", debug=debug)
 
+  # Noms de VD exploitables dans une formule : cbind(a, data$b) laisse un nom vide,
+  # d'o\u00f9 cbind(a, ) et l'erreur "argument manquant" dans manova()
+  dv_names <- colnames(x)
+  if (is.null(dv_names)) dv_names <- rep("", ncol(x))
+  dv_names[dv_names == ""] <- paste0("Y", seq_along(dv_names))[dv_names == ""]
+  colnames(x) <- make.unique(make.names(dv_names))
+
   cor_matrix <- cor(x, use="complete.obs")
   cor_upper <- cor_matrix[upper.tri(cor_matrix)]
   max_cor <- max(abs(cor_upper))
 
   if (max_cor >= 0.90) {
     check_multicollinearity <- FALSE
-    k <- .vbse(paste0("Warning: High correlation detected between dependent variables (max r = ", round(max_cor, 3), ").\n\tMulticollinearity may be present (r >= 0.90). Consider removing highly correlated variables."),
-               paste0("Attention : Corr\u00e9lation \u00e9lev\u00e9e d\u00e9tect\u00e9e entre variables d\u00e9pendantes (max r = ", round(max_cor, 3), ").\n\tLa multicolin\u00e9arit\u00e9 peut \u00eatre pr\u00e9sente (r >= 0.90). Envisagez de retirer des variables fortement corr\u00e9l\u00e9es."),
+    k <- .vbse(paste0("ASSUMPTION 2/6: Absence of multicollinearity.\n\tWarning: High correlation detected between dependent variables (max r = ", round(max_cor, 3), ").\n\tMulticollinearity may be present (r >= 0.90). Consider removing highly correlated variables."),
+               paste0("ASSOMPTION 2/6 : Absence de multicolin\u00e9arit\u00e9.\n\tAttention : Corr\u00e9lation \u00e9lev\u00e9e d\u00e9tect\u00e9e entre variables d\u00e9pendantes (max r = ", round(max_cor, 3), ").\n\tLa multicolin\u00e9arit\u00e9 peut \u00eatre pr\u00e9sente (r >= 0.90). Envisagez de retirer des variables fortement corr\u00e9l\u00e9es."),
                verbose=verbose, k=k, cpt="on")
   } else {
-    k <- .vbse(paste0("Multicollinearity check: Maximum correlation = ", round(max_cor, 3), " (acceptable, < 0.90)."),
-               paste0("Contr\u00f4le de multicolin\u00e9arit\u00e9 : Corr\u00e9lation maximale = ", round(max_cor, 3), " (acceptable, < 0.90)."),
-               verbose=verbose, k=k, cpt="off")
+    k <- .vbse(paste0("ASSUMPTION 2/6: Absence of multicollinearity.\n\tMaximum correlation = ", round(max_cor, 3), " (acceptable, < 0.90)."),
+               paste0("ASSOMPTION 2/6 : Absence de multicolin\u00e9arit\u00e9.\n\tCorr\u00e9lation maximale = ", round(max_cor, 3), " (acceptable, < 0.90)."),
+               verbose=verbose, k=k, cpt="on")
   }
+
+  #============================================================================
+  #          ASSUMPTION 3: LINEARITY BETWEEN DEPENDENT VARIABLES
+  #============================================================================
+  # Reference: Tabachnick & Fidell (2019), Chapter 7
+  # For each pair of DVs: quadratic term tested within groups, Bonferroni-corrected.
+  # Informative: curvature lowers power but does not by itself route to robust MANOVA.
+  #============================================================================
+
+  dv_pairs <- combn(ncol(x), 2)
+  alpha_linearity <- alpha / (2 * ncol(dv_pairs))
+  nonlinear_pairs <- character(0)
+  for (ip in seq_len(ncol(dv_pairs))) {
+    for (way in 1:2) {
+      dv_y <- x[, dv_pairs[way, ip]]
+      dv_x <- x[, dv_pairs[3 - way, ip]]
+      dv_x <- dv_x - mean(dv_x, na.rm = TRUE)
+      p_quad <- tryCatch(
+        summary(lm(dv_y ~ g_factor + dv_x + I(dv_x^2)))$coefficients["I(dv_x^2)", "Pr(>|t|)"],
+        error = function(e) NA
+      )
+      if (isTRUE(p_quad < alpha_linearity)) {
+        nonlinear_pairs <- c(nonlinear_pairs, paste0(
+          colnames(x)[dv_pairs[way, ip]], " ~ ", colnames(x)[dv_pairs[3 - way, ip]],
+          " (p = ", .format_pval(p_quad), ")"))
+      }
+    }
+  }
+  k <- .vbse(
+    paste0("ASSUMPTION 3/6: Linearity between dependent variables [lm() with quadratic term].\n",
+           if (length(nonlinear_pairs) > 0) {
+             paste0("\tCurvature detected: ", paste(nonlinear_pairs, collapse = ", "), ".\n",
+                    "\t(Check graphically: curvature reduces MANOVA power.)")
+           } else {
+             "\t==> No curvature detected (Bonferroni correction)."
+           }),
+    paste0("ASSOMPTION 3/6 : Lin\u00e9arit\u00e9 entre variables d\u00e9pendantes [lm() avec terme quadratique].\n",
+           if (length(nonlinear_pairs) > 0) {
+             paste0("\tCourbure d\u00e9tect\u00e9e : ", paste(nonlinear_pairs, collapse = ", "), ".\n",
+                    "\t(V\u00e9rifiez graphiquement : une courbure r\u00e9duit la puissance de la MANOVA.)")
+           } else {
+             "\t==> Aucune courbure d\u00e9tect\u00e9e (correction de Bonferroni)."
+           }),
+    verbose = verbose, k = k, cpt = "on"
+  )
 
   #============================================================================
   #          ASSUMPTION 3: MULTIVARIATE OUTLIERS
@@ -613,17 +665,17 @@
     prop_outliers <- n_outliers / n_obs
 
     if (n_outliers > 0) {
-      k <- .vbse(paste0("Multivariate outliers detected: ", n_outliers, " observations (", round(prop_outliers*100, 1), "%).\n\tThese may influence MANOVA results. Consider robust methods."),
-                 paste0("Outliers multivari\u00e9s d\u00e9tect\u00e9s : ", n_outliers, " observations (", round(prop_outliers*100, 1), "%).\n\tCeux-ci peuvent influencer les r\u00e9sultats de MANOVA. Envisagez des m\u00e9thodes robustes."),
+      k <- .vbse(paste0("ASSUMPTION 4/6: Multivariate outliers detected: ", n_outliers, " observations (", round(prop_outliers*100, 1), "%).\n\tThese may influence MANOVA results. Consider robust methods."),
+                 paste0("ASSOMPTION 4/6 : Outliers multivari\u00e9s d\u00e9tect\u00e9s : ", n_outliers, " observations (", round(prop_outliers*100, 1), "%).\n\tCeux-ci peuvent influencer les r\u00e9sultats de MANOVA. Envisagez des m\u00e9thodes robustes."),
                  verbose=verbose, k=k, cpt="on")
 
       if (prop_outliers > 0.05) {
         check_outliers_mv <- FALSE
       }
     } else {
-      k <- .vbse("Multivariate outliers: None detected (Mahalanobis distance, \u03b1 = 0.001).",
-                 "Outliers multivari\u00e9s : Aucun d\u00e9tect\u00e9 (distance de Mahalanobis, \u03b1 = 0.001).",
-                 verbose=verbose, k=k, cpt="off")
+      k <- .vbse("ASSUMPTION 4/6: Multivariate outliers: None detected (Mahalanobis distance, \u03b1 = 0.001).",
+                 "ASSOMPTION 4/6 : Outliers multivari\u00e9s : Aucun d\u00e9tect\u00e9 (distance de Mahalanobis, \u03b1 = 0.001).",
+                 verbose=verbose, k=k, cpt="on")
     }
   }
 
@@ -641,57 +693,74 @@
   .dbg("Check: Multivariate normality.",
        "Contr\u00f4le: Normalit\u00e9 multivari\u00e9e.", debug=debug)
 
-  k <- .vbse("Multivariate normality test [mvn() {MVN}]\n\tMardia's test, Henze-Zirkler test, and Royston's test",
-             "Test normalit\u00e9 multivari\u00e9e [mvn() {MVN}]\n\tTest de Mardia, test de Henze-Zirkler et test de Royston",
+  k <- .vbse("ASSUMPTION 5/6: Multivariate normality [mvn() {MVN}]\n\tMardia's test (skewness, kurtosis) and Henze-Zirkler test",
+             "ASSOMPTION 5/6 : Normalit\u00e9 multivari\u00e9e [mvn() {MVN}]\n\tTest de Mardia (asym\u00e9trie, kurtosis) et test de Henze-Zirkler",
              verbose=verbose, k=k, cpt="on")
 
   # Use MVN package for multivariate normality testing
   if (requireNamespace("MVN", quietly = TRUE)) {
+    # MVN >= 6 : mvn_test et $multivariate_normality$p.value (parfois "<0.001") ;
+    # MVN < 6 : mvnTest et $multivariateNormality$`p value`
+    .mvn_pvalues <- function(test_name) {
+      res <- tryCatch(suppressWarnings(suppressMessages(
+        if ("mvn_test" %in% names(formals(MVN::mvn))) {
+          MVN::mvn(data = x, mvn_test = test_name)$multivariate_normality$p.value
+        } else {
+          MVN::mvn(data = x, mvnTest = test_name, multivariatePlot = "none")$multivariateNormality$`p value`
+        }
+      )), error = function(e) NULL)
+      if (is.null(res)) return(NULL)
+      res <- trimws(as.character(res))
+      is_below <- startsWith(res, "<")
+      res <- suppressWarnings(as.numeric(sub("^<\\s*", "", res)))
+      res[is_below] <- res[is_below] / 2  # sous le seuil annonc\u00e9
+      res
+    }
+
+    # Ne pas afficher la valeur interne quand MVN annonce seulement "<0.001"
+    .mvn_fmt <- function(p) if (isTRUE(p < 0.001)) "< 0.001" else .format_pval(p)
+
     # Mardia's test
-    mvn_mardia <- tryCatch({
-      MVN::mvn(data=x, mvnTest="mardia", multivariatePlot="none")
-    }, error=function(e) {
-      return(NULL)
-    })
+    mvn_mardia <- .mvn_pvalues("mardia")
 
     # Henze-Zirkler test
-    mvn_hz <- tryCatch({
-      MVN::mvn(data=x, mvnTest="hz", multivariatePlot="none")
-    }, error=function(e) {
-      return(NULL)
-    })
+    mvn_hz <- .mvn_pvalues("hz")
 
     # Interpret results
     tests_failed <- 0
 
     if (!is.null(mvn_mardia)) {
-      mardia_result <- mvn_mardia$multivariateNormality
-      mardia_skew_pval <- as.numeric(mardia_result$`p value`[1])
-      mardia_kurt_pval <- as.numeric(mardia_result$`p value`[2])
+      mardia_skew_pval <- mvn_mardia[1]
+      mardia_kurt_pval <- mvn_mardia[2]
 
       if (!is.na(mardia_skew_pval) && mardia_skew_pval < alpha) tests_failed <- tests_failed + 1
       if (!is.na(mardia_kurt_pval) && mardia_kurt_pval < alpha) tests_failed <- tests_failed + 1
 
-      k <- .vbse(paste0("Mardia's test - Skewness p-value: ", .format_pval(mardia_skew_pval),
-                       ", Kurtosis p-value: ", .format_pval(mardia_kurt_pval)),
-                 paste0("Test de Mardia - p-value Asym\u00e9trie : ", .format_pval(mardia_skew_pval),
-                       ", p-value Kurtosis : ", .format_pval(mardia_kurt_pval)),
+      k <- .vbse(paste0("Mardia's test - Skewness p-value: ", .mvn_fmt(mardia_skew_pval),
+                       ", Kurtosis p-value: ", .mvn_fmt(mardia_kurt_pval)),
+                 paste0("Test de Mardia - p-value Asym\u00e9trie : ", .mvn_fmt(mardia_skew_pval),
+                       ", p-value Kurtosis : ", .mvn_fmt(mardia_kurt_pval)),
                  verbose=verbose, k=k, cpt="off")
     }
 
     if (!is.null(mvn_hz)) {
-      hz_result <- mvn_hz$multivariateNormality
-      hz_pval <- as.numeric(hz_result$`p value`)
+      hz_pval <- mvn_hz[1]
 
       if (!is.na(hz_pval) && hz_pval < alpha) tests_failed <- tests_failed + 1
 
-      k <- .vbse(paste0("Henze-Zirkler test p-value: ", .format_pval(hz_pval)),
-                 paste0("Test de Henze-Zirkler p-value : ", .format_pval(hz_pval)),
+      k <- .vbse(paste0("Henze-Zirkler test p-value: ", .mvn_fmt(hz_pval)),
+                 paste0("Test de Henze-Zirkler p-value : ", .mvn_fmt(hz_pval)),
                  verbose=verbose, k=k, cpt="off")
     }
 
     # Decision based on majority of tests
-    if (tests_failed >= 2) {
+    if (is.null(mvn_mardia) && is.null(mvn_hz)) {
+      # Ne jamais conclure "respect\u00e9e" sans test r\u00e9ellement ex\u00e9cut\u00e9
+      check_multivariate_normality <- NA
+      k <- .vbse("Warning: multivariate normality tests failed. Assumption NOT tested.",
+                 "Attention : \u00e9chec des tests de normalit\u00e9 multivari\u00e9e. Assomption NON test\u00e9e.",
+                 verbose=verbose, k=k, cpt="off")
+    } else if (tests_failed >= 2) {
       check_multivariate_normality <- FALSE
       k <- .vbse("Multivariate normality assumption violated (majority of tests significant).\n\tConsider robust MANOVA or data transformation.",
                  "Assomption de normalit\u00e9 multivari\u00e9e viol\u00e9e (majorit\u00e9 des tests significatifs).\n\tEnvisagez une MANOVA robuste ou une transformation des donn\u00e9es.",
@@ -718,8 +787,8 @@
   .dbg("Check: Homogeneity of covariance matrices (Box's M test).",
        "Contr\u00f4le: Homog\u00e9n\u00e9it\u00e9 des matrices de covariance (test M de Box).", debug=debug)
 
-  k <- .vbse("Homogeneity of covariance matrices test: Box's M [boxM() {biotools}]\n\tNote: Sensitive test, significance assessed at \u03b1 = 0.001 (conservative)",
-             "Test d'homog\u00e9n\u00e9it\u00e9 des matrices de covariance avec le test M de Box [package biotools].\n\tNote : Ce test est sensible ; significativit\u00e9 \u00e9valu\u00e9e \u00e0 \u03b1 = 0.001 (conservateur).",
+  k <- .vbse("ASSUMPTION 6/6: Homogeneity of covariance matrices: Box's M [boxM() {biotools}]\n\tNote: Sensitive test, significance assessed at \u03b1 = 0.001 (conservative)",
+             "ASSOMPTION 6/6 : Homog\u00e9n\u00e9it\u00e9 des matrices de covariance, test M de Box [boxM() {biotools}].\n\tNote : Ce test est sensible ; significativit\u00e9 \u00e9valu\u00e9e \u00e0 \u03b1 = 0.001 (conservateur).",
              verbose=verbose, k=k, cpt="on")
 
   # Use biotools package for Box's M test
@@ -951,8 +1020,8 @@
     #                    ROBUST MANOVA (NON-PARAMETRIC)
     #==========================================================================
 
-    k <- .vbse("Executing robust MANOVA (non-parametric approach).",
-               "Ex\u00e9cution de la MANOVA robuste (approche non param\u00e9trique).",
+    k <- .vbse("Executing robust MANOVA (Wilks test with robust estimator).",
+               "Ex\u00e9cution de la MANOVA robuste (test de Wilks avec estimateur robuste).",
                verbose=verbose, k=k, cpt="on")
 
     # Use rrcov package for robust MANOVA with MCD estimator

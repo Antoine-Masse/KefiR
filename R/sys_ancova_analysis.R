@@ -1702,6 +1702,35 @@
           robust_results$method <- "Robust_Regression_RLM"
           robust_results$model <- robust_model
           robust_results$posthoc_applicable <- TRUE
+
+          # rlm() ne fournit aucun test global : tests de Wald par terme du mod\u00e8le,
+          # pour conclure et renseigner la p-value globale (return=FALSE)
+          wald_tests <- tryCatch(suppressMessages(emmeans::joint_tests(robust_model)),
+                                 error = function(e) NULL)
+          if (!is.null(wald_tests)) {
+            wald_tests <- as.data.frame(wald_tests)
+            robust_results$test_result <- wald_tests
+            factor_row <- match(factor_vars[1], wald_tests[["model term"]])
+            if (!is.na(factor_row)) global_pvalue <- wald_tests$p.value[factor_row]
+            if (verbose) {
+              print(wald_tests, row.names = FALSE)
+              cat("\n")
+            }
+            sig_terms <- wald_tests[["model term"]][wald_tests$p.value < alpha]
+            k <- .vbse(
+              if (length(sig_terms) > 0) {
+                paste0("\tSignificant effects detected [robust Wald tests]: ", paste(sig_terms, collapse = ", "))
+              } else {
+                paste0("\tNo significant effects at alpha = ", alpha, " [robust Wald tests]")
+              },
+              if (length(sig_terms) > 0) {
+                paste0("\tEffets significatifs d\u00e9tect\u00e9s [tests de Wald robustes] : ", paste(sig_terms, collapse = ", "))
+              } else {
+                paste0("\tAucun effet significatif \u00e0 alpha = ", alpha, " [tests de Wald robustes]")
+              },
+              verbose = verbose, code = code, k = k, cpt = "off"
+            )
+          }
         }
       }
 
@@ -1765,7 +1794,10 @@
 
                   # Appeler rlm() comme fallback
                   if (requireNamespace("MASS", quietly = TRUE)) {
-                    robust_model <- MASS::rlm(formula_to_use, data = data_fit, method = "MM")
+                    # rlm() peut \u00e9chouer lui aussi : le repli classique est g\u00e9r\u00e9 plus bas
+                    robust_model <- tryCatch(MASS::rlm(formula_to_use, data = data_fit, method = "MM"),
+                                             error = function(e3) NULL)
+                    if (is.null(robust_model)) return(NULL)
                     robust_results$method <<- "Robust_Regression_RLM_Fallback"
                     robust_results$model <<- robust_model
                     robust_results$posthoc_applicable <<- TRUE
@@ -1882,6 +1914,7 @@
             robust_results$method <- "ANCOVA_White_HC3"
             robust_results$test_result <- robust_tests
             robust_results$vcov_robust <- robust_vcov
+            robust_results$lm_model <- model  # Post-hocs : ce mod\u00e8le avec vcov_robust
             robust_results$posthoc_applicable <- TRUE
             global_pvalue <- .ancova_factor_pvalue(robust_tests, factor_vars)
           }
@@ -1899,6 +1932,39 @@
         )
         robust_results$method <- "ANCOVA_Robust_Unavailable"
       }
+    }
+
+    # REPLI : aucune m\u00e9thode robuste n'a abouti (ex. cellule trop petite pour rlm()).
+    # Ne pas interrompre l'analyse : revenir au mod\u00e8le classique, en le disant.
+    if (is.null(robust_results$method) || robust_results$method == "ANCOVA_Robust_Unavailable") {
+      k <- .vbse(
+        paste0("Robust method not applicable to these data (groups too small or aliased terms).\n",
+               "\t--> Back to the classical model.\n",
+               "\t(Assumptions are violated: interpret these results with caution.)"),
+        paste0("M\u00e9thode robuste inapplicable \u00e0 ces donn\u00e9es (groupes trop petits ou termes alias\u00e9s).\n",
+               "\t--> Retour vers le mod\u00e8le classique.\n",
+               "\t(Assomptions viol\u00e9es : interpr\u00e9tez ces r\u00e9sultats avec prudence.)"),
+        verbose = verbose, code = code, k = k, cpt = "on"
+      )
+      fallback_table <- tryCatch(
+        suppressMessages(car::Anova(model, type = selected_type)),
+        error = function(e) tryCatch(suppressMessages(car::Anova(model, type = "II")),
+                                     error = function(e2) anova(model))
+      )
+      if (verbose) {
+        cat("\n")
+        print(fallback_table)
+        cat("\n")
+      }
+      return(list(
+        model = model,
+        assumptions_checked = assumptions_checked,
+        robust = FALSE,
+        g_cat = g_cat,
+        global_pvalue = .ancova_factor_pvalue(fallback_table, factor_vars),
+        formula_used = formula_to_use,
+        k = k
+      ))
     }
 
     return(list(

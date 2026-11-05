@@ -25,3 +25,28 @@
   f2[[3L]] <- replace_dollar(f[[3L]])  # RHS
   f2
 }
+
+# Remplace factor(F) et as.factor(F) par F dans le membre droit d'une formule, et
+# convertit la colonne F de data en facteur. Les appels avec d'autres arguments
+# (ex. factor(F, levels = ...)) ou sur une expression sont laiss\u00e9s tels quels.
+.strip_factor_calls <- function(f, data) {
+  to_factor <- character(0)
+
+  replace_factor <- function(expr) {
+    if (!is.call(expr)) return(expr)
+    is_factor_call <- identical(expr[[1L]], as.name("factor")) ||
+      identical(expr[[1L]], as.name("as.factor"))
+    if (is_factor_call && length(expr) == 2L && is.name(expr[[2L]]) &&
+        as.character(expr[[2L]]) %in% names(data)) {
+      to_factor <<- c(to_factor, as.character(expr[[2L]]))
+      return(expr[[2L]])
+    }
+    for (i in seq_along(expr)[-1L]) expr[[i]] <- replace_factor(expr[[i]])
+    expr
+  }
+
+  rhs <- length(f)
+  f[[rhs]] <- replace_factor(f[[rhs]])
+  for (var in unique(to_factor)) data[[var]] <- factor(data[[var]])
+  list(formula = f, data = data)
+}

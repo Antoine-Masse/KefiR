@@ -13,7 +13,8 @@
   verbose = TRUE,
   debug = FALSE,
   code = FALSE,
-  k = NULL
+  k = NULL,
+  vcov_robust = NULL
 )
 }
 \arguments{
@@ -37,6 +38,8 @@ If NULL (default), uses the first factor in the model.}
 \item{code}{Logical. If TRUE, display reproducible R code (default: FALSE).}
 
 \item{k}{Integer or NULL. Message counter for .vbse() (internal use).}
+
+\item{vcov_robust}{Optional robust covariance matrix (e.g. HC3) used for the comparisons.}
 }
 \value{
 A list of class \code{"posthoc"} containing:

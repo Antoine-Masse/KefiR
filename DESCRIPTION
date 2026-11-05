@@ -1,6 +1,6 @@
 Package: KefiR
 Title: Statistical Analysis with ANOVA, MANOVA, ANCOVA and Mixed Models
-Version: 0.0.2.0
+Version: 0.0.2.1
 Authors@R:
     person(given = "Antoine",
            family = "Massé",
@@ -54,16 +54,16 @@ Imports:
     withr,
     MVN,
     biotools,
-    rcompanion
+    rcompanion,
+    multcomp,
+    rrcov
 Suggests:
     dae,
     doParallel,
-    rrcov,
     knitr,
     rmarkdown,
     testthat (>= 3.0.0),
-    rlang,
-    multcomp
+    rlang
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 RoxygenNote: 7.3.3

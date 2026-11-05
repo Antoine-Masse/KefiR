@@ -1494,7 +1494,11 @@
 			  ##################################
 			  #        NORMAL, >2 categories var.equal=F => FANOVA.HETERO
 			  ##################################
-			pvals <- oneway.test(x~g,var.equal=FALSE)$p.value
+			welch_test <- oneway.test(x~g,var.equal=FALSE)
+			pvals <- welch_test$p.value
+			welch_stats <- paste0("F = ", signif(welch_test$statistic, 4),
+			                      ", ddl = ", signif(welch_test$parameter[1], 3),
+			                      " ; ", signif(welch_test$parameter[2], 4))
 			if (isTRUE(code)) {
 				.code_anova(9, "Test de Welch (variances h\u00e9t\u00e9rog\u00e8nes)", c(
 					"oneway.test(x ~ g, var.equal = FALSE)"
@@ -1507,11 +1511,11 @@
 			} else {pvals2 <- myf$ans[4]}
 			if (isTRUE(verbose)) {
 				ang <- paste0("Welch's heteroscedastic F-test [oneway.test()].\n\t",
-				             "Result: p = ", .format_pval(pvals),
+				             "Result: ", sub("ddl", "df", welch_stats), ", p = ", .format_pval(pvals),
 				             if (pvals <= alpha) " (< alpha)." else " (>= alpha).", "\n\t",
 				             if (pvals <= alpha) "==> Significant differences between groups." else "==> No significant differences between groups.")
 				fr <- paste0("Test F h\u00e9t\u00e9rosc\u00e9dastique de Welch [oneway.test()].\n\t",
-				            "R\u00e9sultat : p = ", .format_pval(pvals),
+				            "R\u00e9sultat : ", welch_stats, ", p = ", .format_pval(pvals),
 				            if (pvals <= alpha) " (< alpha)." else " (>= alpha).", "\n\t",
 				            if (pvals <= alpha) "==> Diff\u00e9rences de moyennes significatives entre groupes." else "==> Aucune diff\u00e9rence de moyennes significative entre groupes.")
 				k <- .vbse(ang, fr, verbose = verbose, code = code, k = k)

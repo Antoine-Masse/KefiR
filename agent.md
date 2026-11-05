@@ -2,6 +2,10 @@
 
 Le package **KefiR** doit être publié sur GitHub (nouvelle mise à jour à venir).
 
+**Dépôt officiel : https://github.com/Antoine-Masse/KefiR**, celui que les étudiants installent :
+`remotes::install_github("Antoine-Masse/KefiR", force = TRUE)`.
+`AntoineM24/KefiR` n'est qu'un ancien nom qui redirige vers ce dépôt. Pousser en HTTPS par le remote `origin`.
+
 ---
 
 ## 1. Principes généraux

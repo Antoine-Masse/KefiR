@@ -311,6 +311,14 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
     }
   }
 
+  # factor(F) ou as.factor(F) dans la formule : convertir la colonne et garder le nom F,
+  # seul connu de la d\u00e9tection des facteurs et des covariables
+  if (inherits(formula, "formula") && is.data.frame(data)) {
+    factor_syntax <- .strip_factor_calls(formula, data)
+    formula <- factor_syntax$formula
+    data <- factor_syntax$data
+  }
+
   ################################################################################
   # BLOC 4 : ANALYSE DE LA VARIABLE R\u00c9PONSE 'x'
   ################################################################################
@@ -1613,9 +1621,16 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
       # Pour ANCOVA, on a besoin du mod\u00e8le aov
       # Extraire ou reconstruire le mod\u00e8le depuis le bilan
       ancova_model <- NULL
+      ancova_vcov <- NULL
 
       if (!is.null(bilan$model)) {
         ancova_model <- bilan$model
+      } else if (inherits(bilan$robust_results$model, "rlm")) {
+        # Voie robuste : les post-hocs portent sur le mod\u00e8le robuste, pas sur un aov()
+        ancova_model <- bilan$robust_results$model
+      } else if (!is.null(bilan$robust_results$vcov_robust)) {
+        ancova_model <- bilan$robust_results$lm_model
+        ancova_vcov <- bilan$robust_results$vcov_robust
       } else if (!is.null(formula) && !is.null(data)) {
         # Reconstruire le mod\u00e8le retenu par .ancova_analysis() (interaction \u00e9ventuellement supprim\u00e9e)
         ancova_model <- tryCatch({
@@ -1640,7 +1655,8 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
           verbose = verbose,
           debug = debug,
           code = code,
-          k = k
+          k = k,
+          vcov_robust = ancova_vcov
         )
       } else {
         # Fallback si mod\u00e8le non disponible
@@ -1946,6 +1962,9 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
             "kruskal" = "Kruskal-Wallis",
             "Parametric ANOVA/t-test"
           )
+        } else if (is.null(bilan$check_ancova) && !is.null(synth$groups) && nrow(synth$groups) > 2 &&
+                   isTRUE(check_normality) && !isTRUE(check_variance_equal) && !isTRUE(paired)) {
+          "Welch ANOVA"
         } else if (is.null(bilan$check_ancova) && !is.null(synth$groups) && nrow(synth$groups) == 2) {
           # 2 groupes sans chosen_test : nommer le test r\u00e9ellement conduit par le bilan
           if (!isTRUE(check_normality)) {
