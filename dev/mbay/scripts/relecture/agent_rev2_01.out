@@ -1,0 +1,9 @@
+ref 0.1027939 temps 2.216635 secs 
+IS 0.1024786 err% 0.03879593 ess 19939.98 
+Gibbs H0 ratio 0.1044668 ess 33659.81 
+k=3 IS -0.7446178  Gibbs -0.7434591 
+mediane |delta| 0.7077059 
+permutation etiquettes -0.5260666 -0.5265009 
+n_i 3 P(H0|F=0) 0.72 
+n_i 15 P(H0|F=0) 0.859 
+n_i 30 P(H0|F=0) 0.909 

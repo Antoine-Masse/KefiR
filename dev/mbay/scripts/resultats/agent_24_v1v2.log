@@ -1,0 +1,200 @@
+        jeu lBF_grille err_quad_pct   lBF_fn err_pct_fn ecart_pct        z
+1 petit_3_3   0.549111  1.29836e-06 0.546186   0.236818 -0.292571 -1.23543
+  lh1_routeB     sec
+1   -8.05191 5.77221
+         jeu lBF_grille err_quad_pct    lBF_fn err_pct_fn ecart_pct        z
+1 deseq_5_30   -0.14426  2.02149e-09 -0.143737   0.089488 0.0523867 0.585404
+  lh1_routeB     sec
+1   -48.5149 2.84506
+             jeu lBF_grille err_quad_pct    lBF_fn err_pct_fn ecart_pct
+1 var_diff_10_10  -0.911196  8.46754e-09 -0.911086   0.166782 0.0110057
+          z lh1_routeB     sec
+1 0.0659889   -53.6515 2.44675
+        jeu lBF_grille err_quad_pct    lBF_fn err_pct_fn ecart_pct        z
+1 effet_nul  -0.663832  6.84643e-09 -0.663367   0.107269 0.0465547 0.433998
+  lh1_routeB     sec
+1   -25.7625 2.51531
+         jeu lBF_grille err_quad_pct  lBF_fn err_pct_fn ecart_pct        z
+1 effet_fort    9.23172  6.75016e-12 9.23006   0.158499 -0.165187 -1.04219
+  lh1_routeB     sec
+1   -31.7096 3.60886
+             jeu lBF_grille err_quad_pct    lBF_fn err_pct_fn ecart_pct       z
+1 deseq_var_3_20  -0.416317  4.58278e-06 -0.411398   0.276702  0.491946 1.77789
+  lh1_routeB     sec
+1   -41.6488 3.92325
+          jeu lBF_grille err_quad_pct   lBF_fn err_pct_fn ecart_pct       z
+1 k3_5_5_40_A  -0.133415  1.19388e-07 -0.13678   0.190829 -0.336489 -1.7633
+  lh1_routeB     sec
+1         NA 23.6671
+          jeu lBF_grille err_quad_pct   lBF_fn err_pct_fn  ecart_pct        z
+1 k3_5_5_40_B   0.761992  3.24007e-10 0.761407  0.0390848 -0.0584538 -1.49556
+  lh1_routeB    sec
+1         NA 23.478
+            jeu lBF_grille err_quad_pct  lBF_fn err_pct_fn ecart_pct       z
+1 k3_4_4_4_fort    2.28417   4.8091e-08 2.28547    0.31844   0.12928 0.40598
+  lh1_routeB     sec
+1         NA 39.5161
+           num       ana
+[1,] -5.221273 -5.221273
+[2,] -1.789346 -1.789346
+[3,] -3.635356 -3.635356
+        jeu n_draws sd_logBF_pct err_pct_moy rapport biais_pct se_biais
+1 petit_3_3    4000        0.485      0.5281  0.9184   0.04567  0.08854
+  part_dans_1err part_dans_2err ess_min
+1         0.7667         0.9333    3585
+          jeu n_draws sd_logBF_pct err_pct_moy rapport biais_pct se_biais
+1 k3_5_5_40_A    4000       0.3671      0.4227  0.8684  0.005853  0.06702
+  part_dans_1err part_dans_2err ess_min
+1            0.8              1    3720
+          jeu n_draws sd_logBF_pct err_pct_moy rapport biais_pct se_biais
+1 k3_5_5_40_A   20000       0.2311       0.189   1.223  -0.02581  0.04219
+  part_dans_1err part_dans_2err ess_min
+1            0.5         0.9333   18636
+             jeu n_draws sd_logBF_pct err_pct_moy rapport biais_pct se_biais
+1 var_diff_10_10    4000       0.2954      0.3691  0.8002   0.07263  0.05393
+  part_dans_1err part_dans_2err ess_min
+1            0.8              1    3784
+V1 fini 2026-11-06 14:08:05 
+Le chargement a nécessité le package : coda
+Le chargement a nécessité le package : Matrix
+************
+Welcome to BayesFactor 0.9.12-4.8. If you have questions, please contact Richard Morey (richarddmorey@gmail.com).
+
+Type BFManual() to open the manual.
+************
+         n F_vise F_obs          zs   integrate         err_int        mpfr
+1 10,10,10     10    10 4.017590625 4.017590625 7.537556833e-11 4.017590625
+      anovaBF    err_anovaBF     ecart_zs_int     ecart_zs_BF    ecart_zs_mpfr
+1 4.017590608 4.28498513e-06 -6.217248938e-15 1.722471765e-08 -2.664535259e-15
+         n F_vise F_obs          zs   integrate         err_int        mpfr
+1 10,10,10   1000  1000 51.70358576 51.70358576 8.901777179e-11 51.70358576
+      anovaBF     err_anovaBF    ecart_zs_int     ecart_zs_BF   ecart_zs_mpfr
+1 51.70358567 2.848273791e-05 7.105427358e-15 9.328397255e-08 7.105427358e-15
+         n F_vise F_obs          zs   integrate         err_int        mpfr
+1 10,10,10  10000 10000 81.46193614 81.46193614 4.162731455e-12 81.46193614
+      anovaBF     err_anovaBF    ecart_zs_int     ecart_zs_BF ecart_zs_mpfr
+1 81.46193613 5.746489131e-05 1.421085472e-14 6.845027656e-09             0
+         n F_vise F_obs       zs integrate         err_int     mpfr     anovaBF
+1 10,10,10  1e+05 1e+05 111.3779  111.3779 4.162881122e-12 111.3779 111.3779006
+      err_anovaBF ecart_zs_int      ecart_zs_BF ecart_zs_mpfr
+1 1.196614109e-05            0 -6.646022399e-07             0
+Error in integrate(marginal.g.oneWay, lower = 0, upper = Inf, F = F, N = N,  : 
+  roundoff error is detected in the extrapolation table
+         n F_vise F_obs          zs   integrate         err_int        mpfr
+1 10,10,10  1e+06 1e+06 141.3097408 141.3097408 4.162487267e-12 141.3097408
+  anovaBF err_anovaBF ecart_zs_int ecart_zs_BF ecart_zs_mpfr
+1      NA          NA            0          NA             0
+         n F_vise F_obs         zs  integrate         err_int       mpfr
+1 10,10,10  1e+08 1e+08 201.176759 201.176759 4.162581579e-12 201.176759
+  anovaBF err_anovaBF     ecart_zs_int ecart_zs_BF    ecart_zs_mpfr
+1      NA          NA -8.526512829e-14          NA -8.526512829e-14
+         n F_vise F_obs          zs   integrate        err_int        mpfr
+1 10,10,10  1e+12 1e+12 320.9111818 320.9111818 4.16245193e-12 320.9111818
+  anovaBF err_anovaBF     ecart_zs_int ecart_zs_BF    ecart_zs_mpfr
+1      NA          NA -4.024514055e-11          NA -4.024514055e-11
+         n F_vise           F_obs          zs   integrate         err_int
+1 10,10,10  1e+16 9.999999935e+15 440.6456067 440.6456067 4.162495907e-12
+         mpfr anovaBF err_anovaBF     ecart_zs_int ecart_zs_BF    ecart_zs_mpfr
+1 440.6456067      NA          NA -7.656865364e-09          NA -7.656865364e-09
+         n F_vise           F_obs         zs   integrate         err_int
+1 10,10,10  1e+20 9.999999358e+19 560.380032 560.3800318 4.162065217e-12
+         mpfr anovaBF err_anovaBF    ecart_zs_int ecart_zs_BF   ecart_zs_mpfr
+1 560.3800318      NA          NA 1.695284482e-07          NA 1.695284482e-07
+         n F_vise           F_obs          zs   integrate         err_int
+1 10,10,10  1e+24 9.999870413e+23 680.1145632 680.1145029 4.162065747e-12
+         mpfr anovaBF err_anovaBF   ecart_zs_int ecart_zs_BF  ecart_zs_mpfr
+1 680.1145029      NA          NA 6.03353277e-05          NA 6.03353277e-05
+         n F_vise          F_obs          zs   integrate         err_int
+1 10,10,10  1e+28 1.00376524e+28 799.8521549 799.8499656 4.161835387e-12
+         mpfr anovaBF err_anovaBF   ecart_zs_int ecart_zs_BF  ecart_zs_mpfr
+1 799.8499656      NA          NA 0.002189325695          NA 0.002189325695
+       n F_vise F_obs          zs   integrate         err_int mpfr     anovaBF
+1 5,5,40     10    10 4.916337753 4.916337753 1.130577591e-11   NA 4.916337698
+      err_anovaBF    ecart_zs_int     ecart_zs_BF ecart_zs_mpfr
+1 9.134791871e-06 1.065814104e-14 5.581871143e-08            NA
+       n F_vise F_obs          zs   integrate         err_int mpfr     anovaBF
+1 5,5,40   1000  1000 81.82824813 81.82824813 4.709429607e-12   NA 81.82824879
+      err_anovaBF ecart_zs_int      ecart_zs_BF ecart_zs_mpfr
+1 1.652590132e-05            0 -6.576667602e-07            NA
+       n F_vise F_obs          zs   integrate         err_int mpfr     anovaBF
+1 5,5,40  10000 10000 134.2759134 134.2759134 4.889794028e-12   NA 134.2759134
+      err_anovaBF    ecart_zs_int     ecart_zs_BF ecart_zs_mpfr
+1 2.976604287e-06 2.842170943e-14 5.023423455e-09            NA
+       n F_vise F_obs          zs   integrate         err_int mpfr     anovaBF
+1 5,5,40  1e+05 1e+05 187.1835984 187.1835984 4.910157365e-12   NA 187.1835983
+      err_anovaBF ecart_zs_int     ecart_zs_BF ecart_zs_mpfr
+1 4.372467243e-06            0 3.888357014e-08            NA
+       n F_vise F_obs          zs   integrate         err_int mpfr     anovaBF
+1 5,5,40  1e+06 1e+06 240.1378723 240.1378723 4.912830064e-12   NA 193.1134789
+  err_anovaBF    ecart_zs_int ecart_zs_BF ecart_zs_mpfr
+1 1.977064678 5.684341886e-14 47.02439334            NA
+       n F_vise F_obs          zs   integrate        err_int mpfr anovaBF
+1 5,5,40  1e+08 1e+08 346.0562163 346.0562163 4.91271642e-12   NA      NA
+  err_anovaBF     ecart_zs_int ecart_zs_BF ecart_zs_mpfr
+1          NA -2.273736754e-13          NA            NA
+       n F_vise F_obs          zs   integrate         err_int mpfr anovaBF
+1 5,5,40  1e+12 1e+12 557.8940391 557.8940391 4.912817939e-12   NA      NA
+  err_anovaBF     ecart_zs_int ecart_zs_BF ecart_zs_mpfr
+1          NA -1.109583536e-10          NA            NA
+       n F_vise           F_obs          zs   integrate         err_int mpfr
+1 5,5,40  1e+16 1.000000014e+16 769.7318677 769.7318677 4.912510543e-12   NA
+  anovaBF err_anovaBF    ecart_zs_int ecart_zs_BF ecart_zs_mpfr
+1      NA          NA 4.434696166e-09          NA            NA
+       n F_vise           F_obs          zs   integrate         err_int mpfr
+1 5,5,40  1e+20 1.000000894e+20 981.5696959 981.5696955 4.912938573e-12   NA
+  anovaBF err_anovaBF    ecart_zs_int ecart_zs_BF ecart_zs_mpfr
+1      NA          NA 4.000555691e-07          NA            NA
+       n F_vise           F_obs          zs   integrate         err_int mpfr
+1 5,5,40  1e+24 1.000122349e+24 1193.407487 1193.407405 4.912912594e-12   NA
+  anovaBF err_anovaBF    ecart_zs_int ecart_zs_BF ecart_zs_mpfr
+1      NA          NA 8.165171494e-05          NA            NA
+       n F_vise           F_obs          zs   integrate         err_int mpfr
+1 5,5,40  1e+28 1.017341558e+28 1405.239125 1405.241603 4.912126884e-12   NA
+  anovaBF err_anovaBF    ecart_zs_int ecart_zs_BF ecart_zs_mpfr
+1      NA          NA -0.002478585192          NA            NA
+      n F_vise F_obs          zs   integrate         err_int        mpfr
+1 20,20     10    10 2.528275623 2.528275623 5.611265788e-11 2.528275623
+      anovaBF     err_anovaBF     ecart_zs_int     ecart_zs_BF    ecart_zs_mpfr
+1 2.528275623 1.736328172e-08 -1.776356839e-15 5.452083229e-12 -1.776356839e-15
+      n F_vise F_obs          zs   integrate         err_int        mpfr
+1 20,20   1000  1000 58.19121985 58.19121985 2.655467953e-11 58.19121985
+      anovaBF     err_anovaBF    ecart_zs_int    ecart_zs_BF   ecart_zs_mpfr
+1 58.19014673 3.399766109e-30 7.105427358e-15 0.001073121996 7.105427358e-15
+      n F_vise F_obs          zs   integrate         err_int        mpfr
+1 20,20  10000 10000 100.1377049 100.1377049 2.938623086e-11 100.1377049
+      anovaBF    err_anovaBF     ecart_zs_int     ecart_zs_BF ecart_zs_mpfr
+1 100.1392511 3.18399496e-49 -1.421085472e-14 -0.001546223429             0
+      n F_vise F_obs          zs   integrate         err_int        mpfr
+1 20,20  1e+05 1e+05 142.6691737 142.6691737 2.969409784e-11 142.6691737
+      anovaBF     err_anovaBF ecart_zs_int     ecart_zs_BF ecart_zs_mpfr
+1 142.6707211 1.233799373e-65            0 -0.001547392908             0
+      n F_vise F_obs          zs   integrate         err_int        mpfr
+1 20,20  1e+06 1e+06 185.2603499 185.2603499 2.972475372e-11 185.2603499
+      anovaBF     err_anovaBF ecart_zs_int     ecart_zs_BF    ecart_zs_mpfr
+1 185.2618974 5.837517385e-85            0 -0.001547490946 -2.842170943e-14
+      n F_vise F_obs          zs   integrate         err_int        mpfr
+1 20,20  1e+08 1e+08 270.4552669 270.4552669 2.972867604e-11 270.4552669
+  anovaBF err_anovaBF    ecart_zs_int ecart_zs_BF   ecart_zs_mpfr
+1      NA          NA 3.410605132e-13          NA 3.410605132e-13
+      n F_vise F_obs          zs   integrate         err_int        mpfr
+1 20,20  1e+12 1e+12 440.8465564 440.8465564 2.972901044e-11 440.8465564
+  anovaBF err_anovaBF     ecart_zs_int ecart_zs_BF    ecart_zs_mpfr
+1      NA          NA -1.023181539e-11          NA -1.028865881e-11
+      n F_vise           F_obs          zs   integrate         err_int
+1 20,20  1e+16 9.999999991e+15 611.2378533 611.2378533 2.972798409e-11
+         mpfr anovaBF err_anovaBF     ecart_zs_int ecart_zs_BF    ecart_zs_mpfr
+1 611.2378533      NA          NA -1.635385161e-09          NA -1.635498847e-09
+      n F_vise           F_obs          zs integrate         err_int      mpfr
+1 20,20  1e+20 9.999999319e+19 781.6291497 781.62915 2.972848752e-11 781.62915
+  anovaBF err_anovaBF     ecart_zs_int ecart_zs_BF    ecart_zs_mpfr
+1      NA          NA -2.168130777e-07          NA -2.168130777e-07
+      n F_vise           F_obs          zs   integrate         err_int
+1 20,20  1e+24 9.999848388e+23 952.0204423 952.0204317 2.972827978e-11
+         mpfr anovaBF err_anovaBF    ecart_zs_int ecart_zs_BF   ecart_zs_mpfr
+1 952.0204317      NA          NA 1.058405462e-05          NA 1.058405462e-05
+      n F_vise           F_obs          zs   integrate        err_int
+1 20,20  1e+28 9.994539808e+27 1122.409653 1122.408762 2.97251976e-11
+         mpfr anovaBF err_anovaBF    ecart_zs_int ecart_zs_BF  ecart_zs_mpfr
+1 1122.408762      NA          NA 0.0008909038947          NA 0.000890903895
+Il y a eu 15 avis (utilisez warnings() pour les visionner)
+V2 fini 2026-11-06 14:08:31 

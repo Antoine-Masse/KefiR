@@ -1,0 +1,17 @@
+--- plans equilibres : un groupe eloigne de d, k groupes de n = 5
+k=4 n=5 d=   10 log_bf    1.300 err% 0.99 ess 2873
+k=4 n=5 d=  100 log_bf    3.551 err% 0.52 ess 3612
+k=4 n=5 d= 1000 log_bf    5.853 err% 0.52 ess 3612
+k=6 n=5 d=   10 log_bf   -3.126 err% 1.95 ess 2517
+k=6 n=5 d=  100 log_bf   -5.696 err% 0.48 ess 3666
+k=6 n=5 d= 1000 log_bf   -7.999 err% 0.47 ess 3672
+k=8 n=5 d=   10 log_bf   -5.760 err% 8.55 ess 137
+k=8 n=5 d=  100 log_bf  -14.566 err% 0.43 ess 3725
+k=8 n=5 d= 1000 log_bf  -21.475 err% 0.43 ess 3725
+--- donnees brutes, reproductible : 4 groupes n=10 N(0,1), 5e groupe n=3 autour de 50
+log_bf -6.921926 err% 2.300218 ess 1878.909  zs 85.61492  Welch p 3.293418e-15 
+--- ESS menteur : n_draws croissant, r = 0.005, 0.05, 0.1, 0.5
+r 0.005 REF 0.574 
+   S=   2000 log_bf  -0.287 ecart -0.862 err%  0.95 ess    1694
+   S=  20000 log_bf  -0.256 ecart -0.830 err%  3.28 ess     887
+   S= 200000 log_bf   1.332 ecart +0.757 err% 79.80 ess       2

@@ -1,5 +1,46 @@
 # Journal de m.bay
 
+## Séance 2 : vendredi 6 novembre 2026
+
+**Durée.** Lancée à 09:12, bloquée jusqu'à 13:40 (attente d'autorisations), budget d'une heure repris à 13:40 sur message de ta session « KefiR officiel », en mode Auto. Fin vers 14:45.
+
+**Objectif.** Sans attendre tes décisions : voie à variances par groupe sans Stan, recoupement de la multiplicité 2³, échec d'`integrate()`, réécriture des §3 et §4.
+
+**Fait.**
+- `R/sys_bay_oneway.R` (`.bay_bf_oneway_zs`, `.bay_bf_oneway_hetero`, non exportés) et `tests/testthat/test-bay-oneway.R`.
+- METHODOLOGIE §3 et §4 réécrits, marqués « en attente de D2 » et D3 ; §7 complété ; 0,707 n'est plus attribué à Rouder 2009.
+- BIBLIOGRAPHIE : 10 références confrontées à leur source, section sur les variances inégales.
+- Scripts `agent_20` à `agent_30`, `relecture/agent_rev2_*`, `methodo_20261106/`.
+
+**Vérifié (comment).**
+- Tests relancés par moi : `test-bay-oneway` 80 assertions, `test-bay-core` 237, `test-m.test` 52, 0 échec. Après ce lancement, seul un commentaire a été ajouté à `sys_bay_oneway.R` ; fichier réanalysé par `parse()`, tests non relancés. `test-manova`, `test-valreg` non lancés (aucun fichier existant modifié).
+- Calcul de hetero : grille écrite à part, 3 jeux à k=2 (`agent_29`) : écart de l'ordre de l'erreur annoncée.
+- 20 % de P>0,95 en gaussien hétéroscédastique : recalculé, N=1500, autre graine (`agent_23`). L'écart 16 % / 25,5 % est du hasard.
+- Hetero sur ce plan : 0/300 à P>0,95 (`agent_29`), 0,7 % sur N=1000 chez l'agent.
+- Multiplicité sous la loi de D2 : `agent_22`, lancé par moi, N=40.
+- Défauts B1, B2 et I6 reproduits (`agent_30`).
+
+**Non vérifié.**
+- **La voie hetero n'est pas validée, et sa loi a priori est rejetée en l'état.**
+- Puissance à N=16-17 par case, calibration à N≈250, sensibilité à N=72, troncature à N=7-8 : agent, faible résolution.
+- Multiplicité : `agent_22` à N=40 seulement ; forme finale des deux lignes non simulée.
+- Plusieurs défauts du relecteur (I1 à I5, I7, I8), non refaits. Corrections non programmées. Le contrôle de lisibilité du bilan n'a pas eu lieu : pas de bilan.
+- Bibliographie : résumés lus par résumeur automatique ; Bertolino 2000 et Cano 2017 à lire ; attribution de 0,707 à confirmer dans le texte de Rouder 2009 ; 61 références sur 71 toujours au niveau métadonnées.
+
+**Résultat principal.** Le calcul à un facteur sans Stan est possible et juste, mais le modèle proposé échoue : un petit groupe éloigné de 50σ donne log BF -6,9 alors que Welch donne p=3e-15, et plus il s'éloigne, plus le BF soutient H0. Il corrige le faux « Oui » du plan (5,5,40) mais crée un faux « Non » : le problème est déplacé, pas résolu. D6 reste ouvert.
+
+**Écarts de méthode.** Ma consigne de simulation à l'agent était ambiguë (« π^ordre ») : d'où la mauvaise loi dans `agent_20`, repérée par l'agent de méthodologie et refaite (`agent_22`). J'ai aussi fait une recherche Gmail sur l'objet « KefiR m.bay » en début de séance, avant la consigne de ne pas le faire : seul le point d'hier en est sorti, aucune réponse de ta part. Pas de nouvelle recherche depuis.
+
+**Décisions prises.** Aucune décision structurante. Lignes « hérédité » d'`agent_20` à ne pas citer.
+
+**Prochaine séance, sans attendre.** Modèle à un g par groupe ou τ par contraste, testé d'abord contre B1 et B2. Corriger I6 et I7 de zs. Refaire puissance et calibration à N suffisant. Lire Bertolino 2000 et Cano 2017.
+
+## QUESTIONS POUR ANTOINE (à jour au 6 novembre)
+
+Les cinq questions du 5 novembre, plus bas, restent ouvertes. Éléments nouveaux :
+- **D2.** Plan 2³ sous H0, N=40, au moins un terme à P>0,5 : hérédité 25 %, uniforme 49 %, apparié 60 %. L'écart vient en partie de l'a priori lui-même. À 3 facteurs, la loi retenue dans D2 place A:B:C à 1/128.
+- **D6.** La voie gaussienne reste indéfendable en hétéroscédasticité (20 %) et la voie de remplacement écrite aujourd'hui est rejetée. Rien à arbitrer tant que je n'ai pas mieux.
+
 ## Séance 1 : jeudi 5 novembre 2026
 
 **Durée.** Lancée vers 16:17 ; environ 70 minutes perdues en attentes d'autorisation. Sur ton accord (« tu peux continuer aujourd'hui »), la séance a dépassé l'heure prévue. Fin vers 18:35.
@@ -42,7 +83,7 @@
 5. `m.test(formula=y~F, data=d)` échoue : « doit être une formule valide ».
 6. `.vbse` et `.exit` : `length(ang)==1` remplace `ang` par `fr`. D'après le code, un message anglais d'une seule chaîne ne s'affiche jamais (lu, non essayé en locale anglaise).
 
-## QUESTIONS POUR ANTOINE
+## QUESTIONS POUR ANTOINE (état du 5 novembre)
 
 1. **Moteur (D1).** BayesFactor en Imports (+5 paquets, 17 Mo, sans compilateur), rstanarm seulement en Suggests pour les cas lourds, brms écarté, MANOVA en code interne : d'accord ?
 2. **Question posée par terme (D2), la plus importante.** « Ce facteur joue-t-il un rôle, seul ou en interaction ? » en première ligne, avec l'effet principal en second : d'accord ? Et quelle loi a priori : uniforme sur les modèles (facteur 0,6, interaction 0,2) ou hérédité forte (facteur 1/2, interaction 1/8) ?

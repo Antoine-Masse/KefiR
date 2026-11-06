@@ -1,0 +1,37 @@
+R version 4.6.1 (2026-06-24 ucrt) ; BayesFactor 0.9.12.4.8 ; graine 20261106 ; N 3000 
+Duree : sd(4,4,1) 98 s ; total deux plans 203 s ; reproductions 29 s
+
+Plan sd=(4,4,1) ; NA : 0 ; erreur mediane 0.000117 max 0.000401 
+ P>0,5   : 0.553 [0.535 ; 0.571] (1660/3000) 
+ P>0,95  : 0.200 [0.186 ; 0.215] (601/3000) 
+ P mediane : 0.57 
+ aov<.05 : 0.472 [0.454 ; 0.490] (1416/3000) 
+ Welch<.05 : 0.057 [0.049 ; 0.066] (171/3000) 
+ Kruskal<.05 : 0.204 [0.190 ; 0.219] (612/3000) 
+
+Plan sd=(1,1,4) ; NA : 0 ; erreur mediane 0.000291 max 0.000403 
+ P>0,5   : 0.000 [0.000 ; 0.001] (0/3000) 
+ P>0,95  : 0.000 [0.000 ; 0.001] (0/3000) 
+ P mediane : 0.206 
+ aov<.05 : 0.000 [0.000 ; 0.001] (0/3000) 
+ Welch<.05 : 0.044 [0.037 ; 0.052] (131/3000) 
+ Kruskal<.05 : 0.001 [0.000 ; 0.002] (2/3000) 
+
+Reproduction r3c (graine 43, N=200) : P>0,5 0.575 ; P>0,95 0.255 ; aov 0.52 ; KW 0.235 ; medP 0.611 
+Reproduction agent_12 (graine 4242, N=300) : P>0,5 0.5233333 ; P>0,95 0.16 ; aov 0.4566667 ; Welch 0.07 ; KW 0.1833333 ; medP 0.539 
+
+Meme jeu, deux codes (200 jeux), |difference| maximale : P 0 ; p aov 0 ; p KW 0 
+
+Deux proportions, agent_12 contre r3c :
+ P>0,95     48/300 contre 51/200 : prop.test p=0.0125 ; Fisher p=0.0115
+ P>0,5      157/300 contre 115/200 : prop.test p=0.2961 ; Fisher p=0.2722
+ aov        137/300 contre 104/200 : prop.test p=0.1946 ; Fisher p=0.1717
+ KW         55/300 contre 47/200 : prop.test p=0.1966 ; Fisher p=0.1747
+
+Chacun contre le grand N (binomial exact, taux de reference = estimation sur A) :
+ P>0,95 : ref 0.2003 ; agent_12 p=0.0835 ; r3c p=0.0630
+ aov    : ref 0.4720 ; agent_12 p=0.6033 ; r3c p=0.1789
+
+Dispersion par lots du grand N, P>0,95 : lots de 300 et de 200
+ lots de 300 (10 lots) : min 0.123, max 0.233, ET 0.034
+ lots de 200 (15 lots) : min 0.140, max 0.260, ET 0.031

@@ -9,8 +9,8 @@ Les clés entre crochets renvoient à BIBLIOGRAPHIE.md, qui indique si le conten
 > **État au 5 novembre 2026 : proposition de départ, contestée.** La relecture adverse (`RELECTURE_ADVERSE_2026-11-05.md`) y trouve 6 défauts bloquants, ouverts, listés dans `DECISIONS.md`. Les positions du §1 ne sont pas validées, en particulier le « π = 1/2 apparié » (§3), le ROPE à plusieurs ddl (§4), la branche gaussienne sans aiguillage (§7), la multiplicité entre termes et le réglage MANOVA (§6). Les parties §3 et §4 seront réécrites après arbitrage d'Antoine.
 
 ## 1. Positions en bref
-1. **P(terme)** = probabilité issue du BF d'inclusion *apparié* (analogue du Type II), avec π = 1/2 **par terme**, annoncée comme telle.
-2. **H0 ponctuelle** en première ligne ; **ROPE** toujours en seconde ligne, sous un autre nom (« effet négligeable »). Ne jamais les fusionner.
+1. **P(terme)** *(en attente de D2)* : ligne 1, marginale d'une loi jointe unique, « le facteur joue un rôle, seul ou en interaction » ; ligne 2, effet principal apparié, conditionnel et jamais lu « non ». L'ancienne position (π = 1/2 par terme, apparié) ne tient pas : voir §3 et le JOURNAL du 5 nov.
+2. **H0 ponctuelle** en première ligne ; **ROPE** en seconde ligne, seulement sur les quantités à 1 ddl *(en attente de D3)*. Ne jamais les fusionner.
 3. **MANOVA** : BF analytique Normal-Inverse-Wishart à a priori g par terme et Jeffreys sur Σ, intégré sur g. Réduit exactement à `anovaBF` à d = 1 (contrôlé).
 4. **Pas de test préliminaire qui choisit la branche.** Le gaussien est toujours calculé ; le robuste s'y ajoute, et un désaccord s'affiche au lieu d'être arbitré en silence.
 5. **Sensibilité** toujours imprimée : grille r × cotes a priori 3 × 3, plus la plage des p.
@@ -46,89 +46,150 @@ Piège d'affichage : « medium » n'a pas la même valeur selon la fonction. `m.
 
 Choix de calcul : voies analytiques ou `BayesFactor` en routine (rapide), Stan + bridge sampling [Carpenter2017, Burkner2017, Gronau2017, Gronau2020] seulement quand le modèle l'exige. Chaque p porte son erreur numérique. Essais `lmBF` : erreur relative de **23 %** sur un rapport à pentes aléatoires sans réplique (une observation par sujet × condition, cas dégénéré, §5.7) ; 0,9 % avec 3 répliques ; 0,9 % puis 0,4 % sur A + B avec 10⁴ puis 5·10⁵ itérations. Il faut donc viser une erreur cible, l'afficher, et refuser le cas sans réplique.
 
-## 3. Définir P(terme a un effet | données)
+## 3. Définir P(terme a un effet | données) *(en attente de D2)*
 
-### Trois définitions
-Soit M+ et M− deux ensembles de modèles, avec et sans T.
+> **En attente de la décision D2 d'Antoine.** Loi jointe non choisie ; forme finale non simulée.
 
-| Définition | Ensembles | Sens | Défaut |
-|---|---|---|---|
-| **Toutes** | Tous les modèles respectant la marginalité | Cohérente, car marginale d'une seule loi sur les modèles. Mais l'effet de A y est mélangé avec des modèles où A intervient dans une interaction | Non, affichée sur demande |
-| **Appariée** (« matched », Baws) | M+ : modèles avec T sans interaction d'ordre supérieur impliquant T. M− : les mêmes sans T [Mathot2017, bayestestRInc] | Interprétable comme « ajouter T apporte-t-il quelque chose, ses termes d'ordre inférieur étant présents ? » | **Oui** |
-| **Modèle plein moins T** (`whichModels = "top"`) | Plein vs plein sans T | Analogue du Type III. Pour un effet principal avec interaction présente, viole la marginalité | Option avertie |
+### Deux lignes, deux questions
 
-Formule de l'appariée :
+La question d'Antoine est « ce facteur joue-t-il un rôle ? », pas « son effet principal moyen est-il non nul ? ». Le bilan donne donc deux lignes par facteur, et le mot « Non » ne s'imprime sur aucun effet principal apparié.
 
-    BF_T = [ Σ_{m∈M+} π(m) p(D|m) / Σ_{m∈M+} π(m) ] / [ Σ_{m∈M−} π(m) p(D|m) / Σ_{m∈M−} π(m) ]
+**Ligne 1 : le facteur joue-t-il un rôle, seul ou en interaction ?** Marginale d'une loi jointe unique π(m) sur les modèles respectant la marginalité :
 
-### Pourquoi l'appariée
-Argument : A + B contre B est exactement la comparaison du Type II pour A. Elle respecte la marginalité [Nelder1977, Peixoto1987, Peixoto1990]. [Langsrud2003] fait un argument parallèle côté fréquentiste, et [Rouder2016] plaide pour la comparaison de modèles nommés.
+    Prob(A joue un rôle | D) = Σ_{m contient A} π(m) p(D|m) / Σ_m π(m) p(D|m)
 
-Limite franche : **les p appariés ne sont pas les marginales d'une même loi jointe**. P(A) et P(A:B) viennent de deux sous-espaces distincts et ne se combinent pas. C'est le prix à payer pour une réponse terme à terme lisible. Si l'utilisateur veut la cohérence, l'option `inclusion = "all"` avec a priori de Chipman la donne (ci-dessous).
+Sous la marginalité, tout modèle contenant une interaction impliquant A contient A : l'événement est bien « seul ou en interaction ». Les probabilités se combinent, et Prob(A:B | D) ≤ Prob(A | D) pour toute loi [relecteur, B1]. Dans le croisement 2×2 pur, cette ligne vaut 1,000 [recalculé, `agent_11`].
+
+**Ligne 2 : l'effet principal apparié, à lire sous condition.**
+
+    BF_A|c = [ Σ_{m∈M+} π(m) p(D|m) / Σ_{m∈M+} π(m) ] / [ Σ_{m∈M−} π(m) p(D|m) / Σ_{m∈M−} π(m) ]
+
+M+ : modèles avec A sans interaction impliquant A ; M− : les mêmes sans A. Parent du Type II, sans lui être identique : 18,7 contre 20,49 pour le Type II exact [relecteur, M3].
+
+Elle s'imprime toujours avec sa condition et la probabilité de cette condition, **sans seuil qui la masque** (un seuil serait l'aiguillage rejeté au §7, voir I4 de la relecture) :
+
+    Effet principal, s'il n'y a pas d'interaction impliquant A (Prob. de cette condition : 0,00) : BF = 0,27
+
+Elle donne « données compatibles avec un effet principal nul sous cette condition » et jamais « A n'a pas d'effet ». Dans le croisement ci-dessus, l'ancien défaut imprimait 0,215 et son complément en « Non » [recalculé, `agent_11`] (0,236 sur un autre tirage, [relecteur]) : c'est ce que cette ligne doit rendre impossible. Le BF affiché ci-dessus est fictif.
+
+Si l'interaction a un poids non négligeable, le bilan donne aussi l'effet de A aux niveaux de B, moyenné sur les modèles, en quantités à 1 ddl (§4).
+
+### Les deux lois candidates
+
+Modèles à 2 facteurs [main ; 0,6 et 0,2 : relecteur, agent]. **Le choix fixe tous les nombres : à annoncer sur chaque ligne.**
+
+| Modèle ou quantité | Uniforme | Hérédité forte, π(A) = π(B) = 1/2, π(A:B \| A, B) = 1/2 |
+|---|---:|---:|
+| Nul | 1/5 | 1/4 |
+| A | 1/5 | 1/4 |
+| B | 1/5 | 1/4 |
+| A + B | 1/5 | 1/8 |
+| A + B + A:B | 1/5 | 1/8 |
+| **P(A) a priori** | **0,6** | **1/2** |
+| **P(A:B) a priori** | **0,2** | **1/8** |
+| P(A \| pas de A:B) | 1/2 | **3/7 ≈ 0,429** |
+| P(A:B \| A, B) | 1/2 | 1/2 |
+
+**Trois points à ne pas perdre.**
+- Le BF apparié avec cotes 1:1 **est** le conditionnel de l'uniforme [relecteur, B2 ; recalculé, D2]. Sous hérédité forte, la cote conditionnelle sur la ligne 2 n'est **pas** 1:1 mais 3:4 [main], et les poids de M+ sont inégaux (2:1), donc le BF_A|c change aussi. **Annoncer « π = 1/2 » sur la ligne 2 n'est donc vrai que sous l'uniforme.**
+- L'uniforme ne part pas de 1/2 et favorise les effets principaux : 0,737 à 3 facteurs, 0,316 et 0,053 pour les interactions [agent, relecteur].
+- L'hérédité forte n'est **pas publiée telle quelle** : l'idée vient de la littérature sur les prédicteurs liés [Chipman1996], le réglage est propre à KefiR.
+
+**À 3 facteurs, l'hérédité forte n'est pas encore définie de façon unique.** À trancher :
+
+| Variante | P(A) | P(A:B) | P(A:B:C) | P(nul) | Statut |
+|---|---:|---:|---:|---:|---|
+| π = 1/2 à chaque ordre (celle de D2) | 1/2 | 1/8 | 1/128 | 1/8 | [main], non programmée |
+| π^k à l'ordre k (`agent_20`) | 1/2 | 1/16 | 1/4096 | 1/8 | [exécuté par l'agent] |
+
+**La seconde donne 1/16 à 2 facteurs, pas le 1/8 annoncé dans D2** : les chiffres d'`agent_20` étiquetés « hérédité » ne portent donc pas sur la loi annoncée. L'uniforme y a pour a priori P(nul) = 1/19 ≈ 0,053.
+
+### Multiplicité entre termes (D13)
+
+Prob > 0,5 **n'est jamais un verdict**, ni dans le texte du bilan, ni dans un test unitaire. Le bilan annonce :
+- le nombre de termes testés ;
+- Prob(modèle nul | D), avec sa valeur a priori ;
+- l'espérance du nombre de termes actifs a posteriori.
+
+Motif, recoupé sur `anovaBF` le 6 novembre (2³ sous H0, 7 termes, au moins un terme à P>0,5) : apparié 0,74 à N=16 (150 jeux), 0,58 et 0,60 à N=40 (226 et 300 jeux) ; uniforme 0,75 à N=16, 0,43 et 0,49 à N=40 ; hérédité de D2, 0,25 à N=40 (300 jeux). P>0,95 : au plus 1,7 % [`agent_20` par un agent, `agent_22` lancé par le coordinateur]. L'hérédité π^k d'`agent_20` n'est pas la loi de D2 : ne pas citer ses 0,34 et 0,24. L'uniforme n'est pas un remède : chaque effet principal part de 0,737. Beta-binomial à partir de 3 facteurs : proposition de D13, **non définie sous marginalité** [relecteur, I12], à valider.
 
 ### Rapport à `$effects` de m.test
 
-`$effects` donne une p-value par terme mais **pas de façon homogène** : Type III pour les modèles mixtes (`sys_effects_table.R`), Type II pour `car::Manova` et en repli pour certaines ANCOVA, un seul test global pour Kruskal et Friedman.
+`$effects` donne une p-value par terme, de façon non homogène : Type III pour les mixtes, Type II pour `car::Manova` et en repli pour certaines ANCOVA, test global pour Kruskal et Friedman.
 
-- `$effects` : P(statistique au moins aussi extrême | H0, modèle). `m.bay` : P(T | D, a priori, espace de modèles). Pas de conversion possible entre les deux [WassersteinLazar2016, BergerSellke1987].
-- `m.bay` conserve les **mêmes noms de termes** pour permettre une lecture côte à côte, et une colonne `analogue` (II, III) : un désaccord entre p-value et probabilité peut venir de l'hypothèse testée, pas seulement du paradigme.
-- Cas où l'écart est attendu : un p ≈ 0,04 fréquentiste peut donner BF ≈ 1. La borne −e·p·ln p [Sellke2001] le montre : à p = 0,05, BF01 ≥ 0,41, donc P(H0|D) ≥ 0,29 avec π = 1/2. Le bilan doit l'expliquer.
+- `$effects` : Prob(statistique au moins aussi extrême | H0, modèle). `m.bay` : Prob(T | D, a priori, espace de modèles). Pas de conversion [WassersteinLazar2016, BergerSellke1987].
+- Mêmes noms de termes, colonne `analogue`, pour la lecture côte à côte. **La ligne 2 est la seule à comparer à une p-value de Type II** ; la ligne 1 répond à une autre question.
+- Un p ≈ 0,04 peut donner un BF ≈ 1 : à p = 0,05, BF01 ≥ 0,41, donc P(H0|D) ≥ 0,29 avec π = 1/2 [Sellke2001, formule de mémoire ; chiffres : relecteur].
 
-### Influence de l'a priori sur les modèles
+Le symbole imprimé est « Prob. », jamais « p » [relecteur, jugement B.1].
 
-Énumération exacte des modèles respectant la marginalité, a priori uniforme sur les modèles (mêmes comptes et inclusions que `anovaBF` à 3 facteurs, contrôlé) :
+### Options
 
-| Facteurs | Modèles | P(effet principal) | P(interaction d'ordre 2) | P(ordre 3) |
-|---|---|---:|---:|---:|
-| 2 | 5 | 0,600 | 0,200 | – |
-| 3 | 19 | 0,737 | 0,316 | 0,053 |
+- `whichModels = "top"` (plein moins T, analogue Type III) : option avertie, viole la marginalité pour un effet principal.
+- Modèle à probabilité médiane [BarbieriBerger2004] : applicable à la ligne 1, pas à la ligne 2.
 
-Donc « uniforme sur les modèles » **n'est pas** un a priori neutre : il favorise les effets principaux et pénalise les interactions sans le dire. Toute annonce « P(H0) = 1/2 » serait fausse avec ce réglage. C'est le point le plus trompeur des réglages courants.
+## 4. H0 ponctuelle, ROPE et autres indicateurs *(en attente de D2 et D3)*
 
-| A priori | Ce qu'il dit | Décision |
-|---|---|---|
-| Uniforme sur les modèles | Inclusions de 0,6 ; 0,2 ; etc. | Rejeté comme défaut |
-| **π = 1/2 par terme, BF apparié** | Chaque terme part de 1:1 | **Défaut**, jusqu'à 3 facteurs |
-| Hérédité forte, inspirée de [Chipman1996] ; le réglage π(A:B | A, B) = 1/2 est propre à KefiR, non sourcé | Cohérent. Avec 2 facteurs : P(A) = P(B) = 1/2, P(A:B) = 1/8 | Sensibilité (`inclusion = "all"`) |
-| Beta-binomial sur le nombre de termes [ScottBerger2010] | Ajustement automatique à la multiplicité | Défaut au-delà de 3 facteurs |
+### Six quantités à ne pas confondre
 
-Justification du seuil : un π fixe n'ajuste pas la multiplicité [ScottBerger2010]. Avec ≤ 7 termes et un plan confirmatoire, la lisibilité l'emporte ; au-delà, l'exploration domine. Seuil de jugement, non démontré. Espace trop grand : exploration à la [Clyde2011, BAS]. Le modèle à probabilité médiane [BarbieriBerger2004] s'applique aux inclusions cohérentes, donc à `inclusion = "all"`, pas au défaut apparié.
+| Quantité | Répond à | Conditionnée à | Dépend de π ? | Ne dit pas |
+|---|---|---|---:|---|
+| **BF10** | Combien les données favorisent H1 contre H0 | Deux modèles, a priori sur les paramètres | Non | Si H1 est probable |
+| **P(H1 \| D)** | Quelle probabilité que l'effet soit non nul | Modèles et π | **Oui** | La taille de l'effet |
+| **P(\|θ\| < w \| D, H1)** | Si l'effet existe, est-il petit ? | H1 et w | Non | Si l'effet existe |
+| **P(ROPE \| D)** = P(H0\|D) + P(H1\|D)·P(\|θ\|<w \| D, H1) | Quelle probabilité que l'effet soit négligeable | H0, H1, π et w | **Oui** | Elle mélange atome et partie continue : à ne pas lire seule |
+| **pd** = max[P(θ>0 \| D, H1), P(θ<0 \| D, H1)] | Quel signe, si l'effet existe | H1 | Non | Ne teste pas H0. Un pd de 0,99 coexiste avec un P(H0\|D) élevé. Lien de Makowski p = 2(1−pd) : ne pas présenter comme une équivalence en dehors de ses conditions |
+| **Taille d'effet et intervalle de crédibilité** | Quelle valeur, à quelle incertitude | H1 sauf mention, a priori | Non | **L'intervalle à 95 % n'est pas un test.** Il exclut 0 sans implication sur P(H0\|D). Sous H1 seul, il ignore l'atome en 0 |
 
-## 4. H0 ponctuelle ou ROPE
+Toute grandeur « sachant H1 » est imprimée comme telle.
 
-**Elles répondent à deux questions** [Makowski2019] :
+### Domaine du ROPE : 1 ddl seulement
 
-- *Existence* : l'effet est-il exactement nul ? Pertinent en plan expérimental, où une nullité vraie (ou quasi) est plausible : randomisation, manipulation peut-être inopérante.
-- *Importance* : l'effet est-il plus grand qu'un seuil négligeable ? Pertinent en observationnel, où aucun effet n'est strictement nul, et à grand n, où de petits écarts font rejeter la nullité ponctuelle [MoreyRouder2011].
+**ROPE seulement sur les quantités à 1 ddl** : deux groupes, paire de moyennes, contraste nommé, pente, effet simple. **Aucun ROPE sur un terme à plusieurs ddl** tant qu'aucune définition valide n'existe.
 
-**Défaut** : le bilan répond à la question posée avec H0 ponctuelle, et ajoute toujours la ligne ROPE. Option `null = "rope"` pour inverser l'ordre. Sans H0 ponctuelle, un « non » ne serait pas accessible avec des a priori continus.
+Motif : f = sqrt(mean(α_j²))/σ est positif par construction et biaisé. Sous vérité nulle à a = 5, n = 100, médiane de f | H1 = 0,105, le double du seuil 0,05 ; f vrai = 0,20 à n = 30 donne « négligeable 0,55 », dont l'essentiel vient de l'a priori [relecteur, B3, non reproduit]. Sur un terme à plusieurs ddl, le bilan renvoie à la liste des paires ou contrastes. Pistes non retenues à ce jour : f débiaisé, H0 par intervalle [MoreyRouder2011]. MANOVA : pas de ROPE.
 
-**Calcul.** Le ROPE moyenné sur H0 et H1 :
+### Largeurs
 
-    P(ROPE | D) = P(H0 | D) + P(H1 | D) · P(|θ| < w | D, H1)
+| Quantité | ROPE par défaut | Masse a priori sachant H1 | Remarque |
+|---|---|---:|---|
+| 2 groupes, δ | \|δ\| < 0,1 | 0,089 [relecteur] | ±0,1 : la moitié d'un petit effet de Cohen [Kruschke2018, texte lu] |
+| Paire dans un facteur à k niveaux | \|α_i − α_j\|/σ < 0,1 | 0,089 pour tout k, à r = 1/2 [main ; variance : relecteur, M2] | Tant qu'il y a un g commun |
+| Pente | **\|β·sd(x)/σ\| < 0,05** | 0,089 à r = √2/4 [main : (2/π)·atan(0,05/0,354)] | **Corrigé.** [Kruschke2018] donne ±0,05 sur variables standardisées (changement de ±0,1·S_y sur ±2·S_x). L'ancienne valeur 0,1 n'en vient pas. Ainsi, un facteur à 2 niveaux codé ±0,5 retrouve \|δ\| < 0,1 [main], ce qui corrige le premier point de I8 |
 
-Le terme de droite vient des tirages a posteriori (`posterior()` ou Stan), sur la **loi entière** (`ci = 1` de [bayestestRrope]), pas sur l'intervalle à 95 % : ce dernier ne donne pas une probabilité.
+Trois réserves :
+- **Échelle.** [Kruschke2018] et `bayestestR` standardisent par S_y ; m.bay par σ résiduel. Avec une covariable forte, les chiffres divergent (δ = 0,027 contre 0,291 pour un même effet brut [relecteur, I8]).
+- **Règle.** Kruschke décide avec l'intervalle à 95 % et le ROPE, sans atome. La probabilité sur la loi entière vient de [bayestestRrope, Makowski2019]. Le mélange avec un atome en 0 est notre construction.
+- **Convention.** 0,1 n'est pas un résultat. Kruschke lui-même prévient que ce seuil dépend de l'application. La largeur est remplaçable par une valeur métier, qui vaut mieux.
 
-**Mesure et largeur.** Pour tout terme, à l'échelle standardisée :
+### Quelle ligne, dans quel ordre
 
-    f_T = sqrt( mean_j(α_j²) ) / σ,   α_j : effets de cellule centrés, σ résiduel
+**Défaut proposé** : H0 ponctuelle en première ligne, puis, pour chaque quantité à 1 ddl, atome et partie continue **séparés** :
 
-| Quantité | ROPE par défaut | Remarque |
-|---|---|---|
-| 2 groupes, δ | \|δ\| < 0,1 | [Kruschke2018] via [bayestestRrope] (±0,1·sd) |
-| Terme à plusieurs ddl | f < 0,05 | Identique à \|δ\| < 0,1 pour 2 groupes égaux, puisque f = \|δ\|/2 |
-| Pente de covariable | \|β·sd(x)/σ\| < 0,1 | Effet d'un écart-type de x |
+    A vs B : effet non nul ?       Prob. = 0,91 ; a priori 0,50   [H0 : δ = 0 ; BF = 10 ; r = 0,707]
+             si non nul, petit ?   Prob.(|δ| < 0,1 | H1) = 0,04 ; a priori 0,089
+             signe, si non nul     Prob.(δ > 0 | H1) = 0,99
+             taille, si non nul    δ = 0,55 [0,12 ; 0,98]
 
-Différences à annoncer : `bayestestR` standardise par sd(y), m.bay par σ résiduel. Avec une covariable forte, les deux divergent. 0,1 est une convention, pas un résultat. **La largeur doit être remplaçable par une valeur métier**, et une valeur métier vaut mieux.
+(chiffres **fictifs**, sauf 0,089 et le fait que BF = 10 donne 0,909 avec π = 1/2)
 
-Masse a priori à afficher : avec r = 0,707, la Cauchy met 2/π·atan(0,1/0,707) ≈ 0,089 dans le ROPE, donc P(ROPE) a priori ≈ 0,545 avec π = 1/2. Sans cela, le lecteur croit que le ROPE part de 0.
+Le mot « négligeable » ne s'imprime que si la probabilité dépasse **nettement** sa valeur a priori ; sinon « peu d'information sur la taille » [relecteur, B3 ; aucune définition de « nettement » n'est validée]. Option `null = "rope"` pour inverser l'ordre. Ce choix peut légitimement dépendre du **plan** déclaré (observationnel à grand n), et non des données [relecteur, jugement B.3].
 
-**Présentation** (chiffres fictifs) :
+### Plafond de la ligne « non »
 
-    A : a-t-il un effet ?          Oui p = 0,91 ; non 0,09   [H0 : effet exactement nul ; BF = 10 ; π = 1/2 ; r = 0,5]
-        effet non négligeable ?    p = 0,62 ; négligeable 0,38 [ROPE : f < 0,05 ; masse a priori 0,55]
+Le plafond de P(H0|D) dépend de n, même à F = 0 : 0,720 à n = 3 par groupe, 0,859 à 15, 0,909 à 30 (3 groupes, r = 0,5) [relecteur, I11]. Le bilan imprime ce plafond ; à petit n, « absence de preuve » est la seule lecture.
 
-La confusion à éviter : p élevée à la première ligne et ROPE élevé à la seconde peuvent coexister. Le bilan le dit : « effet probablement réel, mais peut-être trop petit pour compter ».
+### Affirmations chiffrées à exécuter avant adoption
+
+| Affirmation | État |
+|---|---|
+| 1/2, 1/8, 3/7 à 2 facteurs ; 1/8, 1/128, 1/8 à 3 facteurs | [main] |
+| Ligne 1 et ligne 2 sous hérédité forte (forme finale) | [non exécuté] |
+| Calibration des deux lignes, y compris DAP | [non exécuté]. Le relecteur a le témoin P(A) cohérent sous l'uniforme ; rien sous la forme finale |
+| 0,089 pour une paire à k niveaux et pour la pente | [main] |
+| Pente à 0,05 : cohérence avec le facteur | [main] ; aucune simulation |
+| Masse et calcul de P(\|θ\|<w \| D, H1) à plusieurs facteurs | [non exécuté]. Quel modèle ? La moyenne sur les modèles contenant le terme reste à définir et à contrôler |
+| Biais de f, 0,105, 0,55 | [relecteur], non reproduits |
 
 ## 5. Plans
 
@@ -136,7 +197,7 @@ Pour chaque plan, `P(T|D)` suit le §3 et la ligne ROPE le §4. Seul ce qui chan
 
 ### 5.1 Deux groupes
 
-- **Modèle** : y_i = μ ± δσ/2 + ε. Cauchy(0, 0,707) sur δ [Rouder2009].
+- **Modèle** : y_i = μ ± δσ/2 + ε. Cauchy(0, 0,707) sur δ (échelle « medium » de [BayesFactorManual] ; [Rouder2009] pose la famille JZS, son échelle reste à confirmer dans le texte).
 - **Probabilités** : P(δ ≠ 0 | D) ; P(|δ| ≥ 0,1 | D) ; signe, P(δ > 0 | D, H1).
 - **Limite** : à petit n, le résultat dépend de r. Le défaut ne remplace pas un a priori informé si l'utilisateur en a un [Gronau2020b].
 
@@ -168,7 +229,7 @@ Pour chaque plan, `P(T|D)` suit le §3 et la ligne ROPE le §4. Seul ce qui chan
 
 ### 5.6 Apparié
 
-- **Modèle** : sur les différences d_i : d = δσ_d + ε, Cauchy(0, 0,707) [Rouder2009].
+- **Modèle** : sur les différences d_i : d = δσ_d + ε, Cauchy(0, 0,707) (même remarque qu'au §5.1).
 - **Limite franche** : δ est standardisé par σ_d, pas par l'écart-type intra-groupe. Même r = cible différente selon la corrélation. Le ROPE doit préciser cette échelle, sinon un δ = 0,1 apparié et un δ = 0,1 indépendant ne sont pas comparables.
 
 ### 5.7 Mesures répétées et split-plot
@@ -288,7 +349,13 @@ En cas de discordance, le bilan **ne désigne pas de gagnant** : il dit que la r
 
 **Student-t** [Lange1989, Kruschke2013, Burkner2017]. y ~ t_ν(Xβ, σ), même a priori standardisé sur β/σ, ν > 1 faiblement informé (voir [Kruschke2013] pour la forme, à recopier d'après la source avant implémentation). Pour rester à l'échelle JZS, un **code Stan dédié** est nécessaire : `brms` place par défaut ses a priori sur β et non sur β/σ. Calcul : bridge sampling, avec prudence sur l'erreur [Schad2023].
 
-**Hétéroscédastique** : log σ_j par groupe, a priori hiérarchique faible. δ rapporté à σ_p = sqrt(mean σ_j²) : un choix, d'autres références de σ donneraient d'autres nombres.
+**Hétéroscédastique, sans Stan, à un facteur** (`.bay_bf_oneway_hetero`, `R/sys_bay_oneway.R`, écrit le 6 novembre, **à l'essai, rejeté en l'état : défauts B1 et B2 de `RELECTURE_ADVERSE_2026-11-06.md`**) :
+
+    y_ij ~ N(μ + a_i, σ_i²),  p(μ) ∝ 1,  p(σ_i²) ∝ 1/σ_i² indépendants, partagés par H0 et H1
+    H1 : a | σ, g ~ N(0, g τ² (I - J/k)),  g ~ InvGamma(1/2, r²/2),  τ² = moyenne non pondérée des σ_i²
+    H0 : a = 0.  À k = 2, δ = (a_1 - a_2)/τ ~ Cauchy(0, r√2).
+
+H0 se calcule par une intégrale en μ ; H1 par échantillonnage d'importance, σ_i² ~ SS_i/χ²(n_i - 1), et quadrature en log g. **Réglage propre à KefiR** : aucune source consultée ne combine k ≥ 3, un g à Cauchy, un τ partagé et une mesure plate sur les rapports d'échelle. La mesure plate sur les k-1 rapports n'a pas de justification par invariance (Berger et al. 1998 ne s'applique qu'à (μ, τ)) ; elle rend BF(hétéro contre homo) indéfini, donc pas de moyenne de modèles entre structures de variance sans loi propre. Détail et littérature : `PROJET_METHODO_2026-11-06.md`, tâche A. Chiffres : `VALIDATION.md` §6.
 
 **Rangs** [vanDoorn2020] : pour 2 groupes et apparié, disponible, à utiliser. **Pour k > 2 groupes, je n'ai trouvé aucune méthode publiée vérifiée d'équivalent bayésien de Kruskal-Wallis** (recherche Crossref sans résultat, qui n'exclut pas l'existence d'une méthode).
 

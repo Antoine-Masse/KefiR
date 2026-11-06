@@ -35,7 +35,7 @@ Prix franc : les probabilités de termes ne sont pas les marginales d'une même 
 1. en première ligne, **P(A joue un rôle, seul ou en interaction)**, marginale d'une loi jointe unique et cohérente sur les modèles respectant la marginalité (type `all` de `.bay_inclusion`), avec la loi a priori annoncée ; dans le croisement ci-dessus elle vaut 1,000 ;
 2. en seconde ligne, pour décrire, l'effet principal apparié, explicitement conditionnel et jamais présenté comme « Non, A n'a pas d'effet » ; l'effet de A selon les niveaux de B si l'interaction est crédible.
 
-Loi jointe à arbitrer : uniforme sur les modèles (a priori 0,6 sur chaque facteur et 0,2 sur A:B à 2 facteurs) ou hérédité forte à π réglé pour que chaque facteur parte de 1/2 (A:B part alors de 1/8 ; réglage KefiR, non publié tel quel). Annoncée dans tous les cas. Non simulée à ce stade pour cette forme finale.
+Loi jointe à arbitrer : uniforme sur les modèles (a priori 0,6 sur chaque facteur et 0,2 sur A:B à 2 facteurs) ou hérédité forte, chaque terme entrant à 1/2 si ses parents sont présents (A à 1/2, A:B à 1/8, A:B:C à 1/128 ; réglage KefiR, non publié tel quel). Sous cette dernière, P(A | pas de A:B) vaut 3/7, et non 1/2. Annoncée dans tous les cas. Non simulée à ce stade pour cette forme finale.
 
 ## D3. H0 ponctuelle ou ROPE : PROPOSÉ
 
@@ -55,7 +55,9 @@ Celles de BayesFactor, pour rester comparable à JASP et à la littérature : fa
 
 Contrairement à `m.test()`, pas de bascule automatique vers une méthode selon une p-value de normalité, de variance, etc. Le gaussien est toujours calculé ; les diagnostics deviennent des alertes ; la voie robuste s'y ajoute et un désaccord s'affiche. Conséquence à accepter : `m.bay()` ne reproduit **pas** l'arbre de décision de `m.test()`, et pas de « Kruskal bayésien » pour k>2 (aucune méthode publiée trouvée ; cotes proportionnelles proposées sous leur vrai nom).
 
-**Mis en défaut (bloquant).** La voie gaussienne seule n'est pas défendable en cas d'hétéroscédasticité : H0 vraie, n=(5,5,40), sd=(4,4,1), **P>0,95 dans 16 % des jeux** (IC 95 % 12 à 21 %, N=300, `scripts/agent_12_verif_heterosc.R` ; 25,5 % chez le relecteur sur un autre tirage, écart non élucidé, tailles de simulation à comparer) ; aov 46 % de p<0,05, Welch 7 %. Et la voie de secours prévue ne se calcule pas sans Stan, et rstanarm n'a pas de variances hétérogènes prêtes à l'emploi. **Proposition** : écrire une voie interne sans compilateur pour les variances par groupe (intégration numérique), et refuser de répondre « Oui » sans réserve quand le diagnostic d'hétéroscédasticité est net, tant que cette voie n'existe pas. À ce jour, m.bay ne doit donc pas être publié sur ce cas.
+**Mis en défaut (bloquant).** La voie gaussienne seule n'est pas défendable en cas d'hétéroscédasticité : H0 vraie, n=(5,5,40), sd=(4,4,1), **P>0,95 dans 16 % des jeux** (IC 95 % 12 à 21 %, N=300, `scripts/agent_12_verif_heterosc.R` ; 25,5 % chez le relecteur sur un autre tirage, écart non élucidé, tailles de simulation à comparer) ; aov 46 % de p<0,05, Welch 7 %. Et la voie de secours prévue ne se calcule pas sans Stan, et rstanarm n'a pas de variances hétérogènes prêtes à l'emploi. **Proposition** : voie interne sans compilateur pour les variances par groupe, et refuser de répondre « Oui » sans réserve quand le diagnostic d'hétéroscédasticité est net, tant que cette voie n'est pas validée. À ce jour, m.bay ne doit donc pas être publié sur ce cas.
+
+**État au 6 novembre.** Taux corrigé : 20,0 % à P>0,95 (N=3000), le 16 % ci-dessus était un tirage bas. La voie `.bay_bf_oneway_hetero` existe, à un facteur seulement : 0,7 % à P>0,95 sur ce plan, à calcul vérifié. Ce n'est pas encore une solution : a priori propre à KefiR, τ à choisir, puissance mesurée sur N=16-17 seulement, et surtout **deux défauts bloquants reproduits** : un petit groupe éloigné pousse le BF vers H0 (n=(10,10,10,10,3), écart 50σ : log BF -6,9, Welch p=3e-15) et un groupe dispersé sans rapport fait basculer le BF, sans plancher (`RELECTURE_ADVERSE_2026-11-06.md`, B1, B2 ; `agent_30`). **Cette loi n'est donc pas proposée.** Pistes non programmées : un g par groupe, un τ propre à chaque contraste ; à défaut, refuser ou signaler min(n_i) ≤ k. Multi-facteurs non couverts.
 
 ## D7. MANOVA : PROPOSÉ
 
@@ -65,7 +67,7 @@ Forme analytique Normal-Inverse-Wishart, g par terme, Jeffreys sur Σ. **Réglag
 
 ## D13. Multiplicité entre les termes : PROPOSÉ (ajouté après relecture)
 
-**Bloquant (relecteur, calcul maison non recoupé avec anovaBF).** Plan 2³ sous H0, au moins un « Oui » (P>0,5) sur 7 termes dans 57 à 74 % des jeux selon N. π fixe par terme n'ajuste rien, et le seuil « Beta-binomial au-delà de 3 facteurs » tombe précisément sur le plan d'expériences type de l'industriel. **Proposition** : ne jamais utiliser P>0,5 comme verdict ; annoncer le nombre de termes testés et la probabilité que le modèle soit le nul ; Beta-binomial dès 3 facteurs, à valider.
+**Bloquant, recoupé sur `anovaBF` le 6 novembre.** Plan 2³ sous H0, au moins un « Oui » (P>0,5) sur 7 termes dans 58 à 74 % des jeux selon N ; 25 % sous l'hérédité de D2 (N=40). π fixe par terme n'ajuste rien, et le seuil « Beta-binomial au-delà de 3 facteurs » tombe précisément sur le plan d'expériences type de l'industriel. **Proposition** : ne jamais utiliser P>0,5 comme verdict ; annoncer le nombre de termes testés et la probabilité que le modèle soit le nul ; Beta-binomial dès 3 facteurs, à valider.
 
 ## D8. Plans que m.test ne couvre pas : PROPOSÉ
 

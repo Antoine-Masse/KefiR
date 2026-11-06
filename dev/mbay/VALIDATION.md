@@ -1,6 +1,6 @@
 # Validation de m.bay
 
-**`m.bay()` n'existe pas encore : rien ici ne le valide.** Ce fichier documente ce qui a été exécuté sur les moteurs candidats et le socle. R 4.6.1, BayesFactor 0.9.12-4.8, Windows 11, 5 novembre 2026. Scripts dans `scripts/`, sorties dans `scripts/resultats/`. Détails : `rapport_moteurs.md`, `agent_2x_calibration_rapport.md`, `RELECTURE_ADVERSE_2026-11-05.md`.
+**`m.bay()` n'existe pas encore : rien ici ne le valide.** Sections 1 à 5 : 5 novembre ; section 6 : 6 novembre. Ce fichier documente ce qui a été exécuté sur les moteurs candidats et le socle. R 4.6.1, BayesFactor 0.9.12-4.8, Windows 11, 5 novembre 2026. Scripts dans `scripts/`, sorties dans `scripts/resultats/`. Détails : `rapport_moteurs.md`, `agent_2x_calibration_rapport.md`, `RELECTURE_ADVERSE_2026-11-05.md`.
 
 Légende : **[recalculé]** = refait séparément par le coordinateur ; **[agent]** = exécuté par un agent, sortie présente, non refait.
 
@@ -49,7 +49,7 @@ Trouvé au passage : **`integrate()` échoue pour F très grand** et BayesFactor
 ### Écarts au modèle
 
 - t3 et log-normale, n=30, δ=0 : P>0,95 à 0 % [0 ; 0,5] [agent]. Petits n non testés.
-- Hétéroscédasticité, H0 : n=(5,5,40), sd=(4,4,1), **P>0,95 dans 16 %** [12 ; 21], N=300 ; aov 46 %, Welch 7 %, Kruskal 18 % [recalculé, `agent_12`]. Le relecteur a mesuré 25,5 % sur un autre tirage : écart non élucidé. Autre plan, SD 3 sur n=10 de 10,30,50 : P>0,95 8,0 % [5,4 ; 11,6], aov 26,3 % [agent].
+- Hétéroscédasticité, H0 : n=(5,5,40), sd=(4,4,1), **P>0,95 dans 20,0 %** [18,6 ; 21,5], N=3000 ; aov 47,2 %, Welch 5,7 %, Kruskal 20,4 % [agent, `agent_21`] ; 20,2 % [18,2 ; 22,3], N=1500, autre graine [recalculé, `agent_23`]. Les 16 % (`agent_12`) et 25,5 % (relecteur) sont deux tirages de part et d'autre : mêmes données, même calcul, différence nulle [agent, `agent_21`]. Autre plan, SD 3 sur n=10 de 10,30,50 : P>0,95 8,0 % [5,4 ; 11,6], aov 26,3 % [agent].
 
 ### Sensibilité à r (0,25 ; 0,5 ; 1)
 
@@ -77,4 +77,68 @@ Sans objet pour les voies BayesFactor analytiques. Stan non retenu à ce stade :
 
 ## 5. Non vérifié
 
-Multiplicité 2³ (calcul maison du relecteur, non recoupé avec anovaBF) ; ROPE f et MANOVA en √d (relecteur seul) ; toute voie non gaussienne ; hypothèses de sphéricité ; BAS ; brms avec Rtools.
+ROPE f et MANOVA en √d (relecteur seul) ; toute voie non gaussienne ; hypothèses de sphéricité ; BAS ; brms avec Rtools.
+
+## 6. Séance du 6 novembre
+
+### Multiplicité 2³ sous H0, recoupée sur `anovaBF` (au moins un terme sur 7 au-dessus du seuil)
+
+| Loi, seuil | N=16 (150 jeux, `agent_20`) | N=40 (226 jeux, `agent_20`) | N=40 (300 jeux, `agent_22`) |
+|---|---:|---:|---:|
+| Apparié P>0,5 | 0,740 [0,662 ; 0,808] | 0,580 [0,512 ; 0,645] | 0,603 [0,546 ; 0,659] |
+| Apparié P>0,95 | 0,013 | 0,009 | 0,017 [0,005 ; 0,038] |
+| Uniforme P>0,5 | 0,747 | 0,429 | 0,487 [0,429 ; 0,545] |
+| Hérédité de D2 P>0,5 | non fait | non fait | 0,253 [0,205 ; 0,307] |
+| Hérédité de D2 P>0,95 | non fait | non fait | 0,000 [0 ; 0,012] |
+| aov, au moins un p<0,05 | 0,247 | 0,292 | 0,347 [0,293 ; 0,403] |
+
+Le calcul maison du relecteur est confirmé. `agent_20` code l'hérédité en π^k (P(A:B)=1/16) : **ses lignes « hérédité » ne portent pas sur D2 et ne sont pas reprises**. `agent_22`, lancé par le coordinateur, emploie la loi de D2 : P(A:B)=1/8, P(A:B:C)=1/128. Erreur annoncée par BayesFactor : médiane 1,8 %, maximum 89 à 97 % sur un modèle ; effet sur les taux non mesuré. Forme finale « ligne 1, ligne 2 » : non simulée.
+
+### `integrate()` à F très grand : résolu pour le calcul à un facteur
+
+`.bay_bf_oneway_zs` : écart à `integrate` reparamétré et à une multiprécision inférieur à 3e-14 à F ≤ 1e6, inférieur à 8e-9 jusqu'à 1e16, 2,5e-3 au plus à 1e24-1e28 (cause supposée, l'arrondi de SSE, non testée) [agent, `agent_24_v1v2`]. Contre `anovaBF` : écart sous 1e-5 sur 6 plans × 2 r [tests relancés] ; à F=1e6, n=(5,5,40), BayesFactor rend 193,11 (erreur annoncée 2,0), zs 240,14 [agent]. Multi-facteurs : le problème reste entier.
+
+### Voie à variances par groupe `.bay_bf_oneway_hetero` : **à l'essai, non validée**
+
+Calcul indépendant.
+- Grille déterministe, 9 jeux k=2 et 3 : aucun écart au-delà de 2 error_pct, 5 sur 9 au-delà de 1 [agent, `agent_24_v1v2`].
+- Grille écrite par le coordinateur, k=2, 3 jeux : -0,7968/-0,7972 ; 0,1864/0,1864 ; -0,2840/-0,2838 [recalculé, `agent_29`].
+- error_pct couvre correctement : rapport écart-type/error_pct 0,80 à 1,22 sur 30 graines [agent].
+
+Simulation H0, n=(5,5,40), mêmes jeux que `agent_21`, N=1000 [agent, `agent_25_v3abc`] :
+
+| | P>0,5 | P>0,95 | P médiane |
+|---|---:|---:|---:|
+| sd 4,4,1, hetero | 0,163 [0,141 ; 0,187] | **0,007 [0,003 ; 0,014]** | 0,290 |
+| sd 4,4,1, gaussien | 0,544 | 0,207 [0,182 ; 0,233] | 0,552 |
+| sd 1,1,4, hetero | 0,075 | 0,000 [0 ; 0,004] | 0,181 |
+| sd 1,1,4, gaussien | 0,000 | 0,000 | 0,207 |
+
+Recoupé : P>0,95 0/300 [0 ; 1,2 %], P>0,5 0,147, graine différente [recalculé, `agent_29`]. Le défaut de 20 % à P>0,95 disparaît sur **ce plan seulement**. P>0,5 reste à 16 %.
+
+Mesures de faible résolution, à refaire avant toute conclusion [agent] :
+- Homoscédastique, H0, N=60 par case : hetero et zs voisins, corrélation des log BF 0,84 à 1,00.
+- Puissance, **N=16-17 par case** : aucune perte mesurable en homoscédastique. Avec variances inégales et grand n sur le groupe de petit écart-type, hetero nettement sous zs et Welch (k=3, d=1, n=30 : 0,25 contre 0,94 et 0,94 à P>0,95 ou p<0,05). Ce point est à examiner.
+- Calibration sous a priori tronqué, N≈250 par case : un seul |z|>2 sur 18 classes ; (0,8 ; 1] : 0,958 annoncé contre 0,902 observé, n=(10,10), plage [1/20 ; 20]. Effet de la troncature : N=7-8, indicatif seulement.
+- Sensibilité à r (0,25 ; 1), N=72 : P change de côté dans 3 à 7 % des jeux.
+- Cas dégénérés, 10 graines : aucune erreur ; k=20 3 à 5,5 s par appel ; sd=1e-12 5,3 s.
+
+Sur le modèle (méthodologie, `methodo_20261106/`, un seul jeu, Python) : un troisième groupe sans rapport (sd × 100) fait passer le BF de 46,4 à 2,9 avec τ arithmétique ; géométrique 43 à 58, harmonique jusqu'à 72. Beta(1,5 ; 1,5) au lieu du plat sur le rapport change le BF d'un facteur 1,02 à 1,23 ; Beta(5,5) peut faire changer de côté de 1. **La définition de τ est donc ouverte.**
+
+### Défauts du modèle, relecture adverse du 6 novembre
+
+Le calcul est juste, **le modèle ne l'est pas** (`RELECTURE_ADVERSE_2026-11-06.md`). Reproduit [recalculé, `agent_30`] :
+
+| Cas | log BF |
+|---|---:|
+| n=(10,10,10,10,3), dernier groupe à 50σ : hetero, zs, Welch p | -6,92 ; +85,6 ; 3,3e-15 |
+| Même plan, écart 5, 50, 500, 5000 | -1,50 ; -6,92 ; -12,25 ; -16,88 |
+| 2 groupes seuls (d=1,3 ; n=10) | +1,64 |
+| Les mêmes plus un 3e groupe de sd S = 1, 10, 100, 1e4, 1e6 | +2,63 ; +1,12 ; -1,19 ; -5,81 ; -10,42 |
+| `zs` sur `c(.3,.3,.3,.1+.2,.1+.2,.1+.2)`, données constantes à l'arrondi près | Inf (à corriger) |
+
+Par le relecteur seul, non refait : écart de 3σ sur ce plan, BF<1/3 dans 67 % des 150 jeux, Welch 83 % de détection ; n=(2,2,40), P(BF>19)=6 % (9/150) ; ESS et error_pct trompeurs à r=0,005 ; grille en g tronquée à k≥200.
+
+### Tests
+
+`test-bay-oneway.R` : 24 tests, 80 assertions, 0 échec ; `test-bay-core.R` : 237, 0 échec ; `test-m.test.R` : 52, 0 échec [recalculé, `agent_26_lance_tests_bay`]. Sources ASCII contrôlées [recalculé].

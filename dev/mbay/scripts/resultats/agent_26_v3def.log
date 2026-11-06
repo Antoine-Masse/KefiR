@@ -1,0 +1,48 @@
+            cas log_bf_moy sd_logBF_pct err_pct_moy ess_min n_draws_max
+1 n2_par_groupe    -0.2407       0.8255      0.7874    3186        4000
+  n_alertes sec_appel      zs message
+1         0    0.4416 -0.2204        
+    cas log_bf_moy sd_logBF_pct err_pct_moy ess_min n_draws_max n_alertes
+1 n2_k4    -0.5112        1.073       1.454    2101        4000         0
+  sec_appel    zs message
+1     0.616 0.353        
+       cas log_bf_moy sd_logBF_pct err_pct_moy ess_min n_draws_max n_alertes
+1 n_2_2_50     0.4837        0.927      0.7985    3145        4000         0
+  sec_appel      zs message
+1    0.5514 -0.3572        
+         cas log_bf_moy sd_logBF_pct err_pct_moy ess_min n_draws_max n_alertes
+1 var_enorme     -9.656        0.577      0.7391    3264        4000         0
+  sec_appel     zs message
+1    0.3799 -1.528        
+          cas log_bf_moy sd_logBF_pct err_pct_moy ess_min n_draws_max n_alertes
+1 var_enorme2    -0.8751       0.2463      0.3614    3793        4000         0
+  sec_appel      zs message
+1    0.3189 -0.8791        
+        cas log_bf_moy sd_logBF_pct err_pct_moy ess_min n_draws_max n_alertes
+1 quasi_cst    -0.7817        0.234      0.3426    3813        4000         0
+  sec_appel      zs message
+1    0.4892 -0.7346        
+          cas log_bf_moy sd_logBF_pct err_pct_moy ess_min n_draws_max n_alertes
+1 quasi_cst_2    -0.9164       0.3543      0.3762    3778        4000         0
+  sec_appel      zs message
+1     5.339 -0.9158        
+           cas log_bf_moy sd_logBF_pct err_pct_moy ess_min n_draws_max
+1 aberrante_45     -2.278       0.4104      0.3899    3763        4000
+  n_alertes sec_appel      zs message
+1         0    0.6102 -0.8905        
+     cas log_bf_moy sd_logBF_pct err_pct_moy ess_min n_draws_max n_alertes
+1 k20_n5    -0.9776        3.169       2.458    1015       16000         0
+  sec_appel     zs message
+1     3.009 -2.743        
+      cas log_bf_moy sd_logBF_pct err_pct_moy ess_min n_draws_max n_alertes
+1 k20_n30     -5.028       0.7175      0.6212    3440        4000         0
+  sec_appel     zs message
+1     2.269 -5.727        
+      cas log_bf_moy sd_logBF_pct err_pct_moy ess_min n_draws_max n_alertes
+1 k20_het     -6.245        2.088       1.657    1014       16000         0
+  sec_appel     zs message
+1     5.511 -1.893        
+d 100 2026-11-06 14:12:43 
+d 200 2026-11-06 14:13:38 
+e 50 2026-11-06 14:15:14 
+FIN A 2026-11-06 14:15:40 

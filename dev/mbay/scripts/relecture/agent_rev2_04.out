@@ -1,0 +1,51 @@
+=== A. Groupe sans rapport : pair 1-2 a t ~ 3.5 (n=20, d=1.1 sigma), groupe 3 etale d'un facteur S
+S=       1  arith log_bf    1.977 (BF 7.22) err% 0.06 ess  3995 n   4000 | geom    1.982 ess  3994
+S=      10  arith log_bf    1.682 (BF 5.38) err% 0.46 ess  3687 n   4000 | geom    2.678 ess  3906
+S=     100  arith log_bf   -0.505 (BF 0.603) err% 0.52 ess  3612 n   4000 | geom    2.421 ess  3826
+S=    1000  arith log_bf   -2.807 (BF 0.0604) err% 0.52 ess  3611 n   4000 | geom    1.760 ess  3803
+S=   10000  arith log_bf   -5.109 (BF 0.00604) err% 0.52 ess  3611 n   4000 | geom    1.014 ess  3798
+S=   1e+06  arith log_bf   -9.714 (BF 6.04e-05) err% 0.52 ess  3611 n   4000 | geom   -0.516 ess  3797
+Reference k=2, groupes 1 et 2 seuls : log_bf 2.983
+=== B. Eloigner un petit groupe : BF en fonction de d, a SS fixes (n_small, k)
+n=(30,30,2) 
+              d=3    d=10   d=100 d=1000 d=10000
+arith       -1.51   -2.41   -4.46  -6.68   -8.81
+geom        -1.30   -1.81   -2.85  -4.57   -5.10
+zs           2.66   35.16  160.66 294.12  427.67
+ess_arith 2797.69 1298.22 3484.26 581.95   70.47
+n=(30,30,5) 
+              d=3    d=10   d=100  d=1000 d=10000
+arith        0.57    2.63    7.19   11.79   16.40
+geom         0.58    2.57    7.13   11.73   16.34
+zs          10.45   58.63  195.09  335.51  475.96
+ess_arith 3317.07 3428.58 3738.61 3740.19 3740.21
+n=(20x4,3) 
+              d=3    d=10  d=100  d=1000 d=10000
+arith       -3.44   -5.99 -11.79  -16.91  -21.52
+geom        -2.94   -3.82  -4.08  -17.12  -21.73
+zs           2.71   47.85 215.43  392.62  569.92
+ess_arith 1631.65 3442.13 171.24 1562.13 1652.76
+n=(20x4,5) 
+              d=3    d=10   d=100  d=1000 d=10000
+arith       -2.55   -3.44   -3.65   -3.65   -3.65
+geom        -2.30   -3.08   -3.71   -3.71   -3.71
+zs           8.16   65.09  240.45  422.29  604.19
+ess_arith 1478.07 2001.41 3825.55 3836.05 3836.14
+=== C. Paire n=2 quasi egale, autre groupe n=50 : BF selon eps
+d=0.5 eps=     1 log_bf   0.105 err% 0.53 ess  3593
+d=0.5 eps=   0.1 log_bf   1.403 err% 0.22 ess  3922
+d=0.5 eps=  0.01 log_bf   2.910 err% 0.08 ess  3989
+d=0.5 eps= 0.001 log_bf   3.448 err% 0.02 ess  3999
+d=0.5 eps= 1e-05 log_bf   3.530 err% 0.02 ess  3999
+d=0.5 eps= 1e-08 log_bf   3.531 err% 0.02 ess  3999
+d=1.5 eps=     1 log_bf   0.517 err% 0.56 ess  3556
+d=1.5 eps=   0.1 log_bf   2.284 err% 0.34 ess  3826
+d=1.5 eps=  0.01 log_bf   4.513 err% 0.17 ess  3954
+d=1.5 eps= 0.001 log_bf   6.807 err% 0.14 ess  3970
+d=1.5 eps= 1e-05 log_bf  11.411 err% 0.13 ess  3971
+d=1.5 eps= 1e-08 log_bf  18.318 err% 0.13 ess  3971
+=== D. Consistance, resumes exacts
+n=     100 H0   -3.469 (pente th -(k-1)/2 log n =  -4.605) | d=5/sqrt n  -1.124 | d=.3     -2.62 | n=(10,N) H0  -1.143
+n=    1000 H0   -5.677 (pente th -(k-1)/2 log n =  -6.908) | d=5/sqrt n  -3.151 | d=.3      3.38 | n=(10,N) H0  -1.178
+n=   10000 H0   -7.969 (pente th -(k-1)/2 log n =  -9.210) | d=5/sqrt n  -5.421 | d=.3     83.21 | n=(10,N) H0  -1.181
+n=  100000 H0  -10.271 (pente th -(k-1)/2 log n = -11.513) | d=5/sqrt n  -7.720 | d=.3    902.21 | n=(10,N) H0  -1.182

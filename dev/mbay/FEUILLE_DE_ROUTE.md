@@ -8,7 +8,7 @@ Détail de l'existant : `PERIMETRE.md`. Choix : `DECISIONS.md`. Publication uniq
 |---|---|---|---|
 | 0 | Périmètre, comparaison des moteurs, méthodologie, bibliographie | Fait le 5 nov. 2026 (voir réserves du JOURNAL) | |
 | 1 | Socle interne : probabilités, inclusion, sensibilité, ligne d'effets | Fait le 5 nov. 2026, testé ; manque le ROPE à plusieurs ddl | |
-| 2 | Décisions D1, D2, D6, D9 ; 6 défauts bloquants de la relecture à résoudre | **Attend Antoine** | |
+| 2 | Décisions D1, D2, D6, D9 ; défauts bloquants de la relecture à résoudre (multiplicité recoupée, `integrate` résolu à un facteur) | **Attend Antoine** | |
 | 3 | Entrées : normalisation (D9) et refus explicites | À faire | D9 |
 | 4 | `m.bay()` 2 groupes et k groupes, validé contre JZS | À faire | D1 |
 | 5 | Multi-facteurs, inclusion, `$effects` | À faire | D1, D2 |
@@ -19,6 +19,7 @@ Détail de l'existant : `PERIMETRE.md`. Choix : `DECISIONS.md`. Publication uniq
 | 10 | Post-hoc | À faire | D11 |
 | 11 | Bilan lisible, relecture par un étudiant ou industriel type | À faire | 4 à 10 |
 | 12 | Voies Stan : pentes aléatoires, robuste, discret | À faire | D1, D6 |
+| 3 bis | Variances inégales à un facteur, sans Stan | Calcul vérifié le 6 nov., **loi a priori rejetée** (B1, B2) ; à refaire | D6 |
 | 13 | Table de simulation publique, vignette, documentation roxygen | À faire | tout |
 
 ## Couverture des plans de m.test()
