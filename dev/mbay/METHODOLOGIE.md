@@ -76,6 +76,8 @@ Si l'interaction a un poids non négligeable, le bilan donne aussi l'effet de A 
 
 ### Les deux lois candidates
 
+**Arbitré par Antoine le 6 novembre : hérédité forte par défaut, l'uniforme reste en sensibilité** (`DECISIONS.md`, D2). Le libellé de la question par terme reste ouvert.
+
 Modèles à 2 facteurs [main ; 0,6 et 0,2 : relecteur, agent]. **Le choix fixe tous les nombres : à annoncer sur chaque ligne.**
 
 | Modèle ou quantité | Uniforme | Hérédité forte, π(A) = π(B) = 1/2, π(A:B \| A, B) = 1/2 |

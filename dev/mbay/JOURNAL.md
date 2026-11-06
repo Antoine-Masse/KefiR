@@ -33,6 +33,8 @@
 
 **Décisions prises.** Aucune décision structurante. Lignes « hérédité » d'`agent_20` à ne pas citer.
 
+**Arbitrage reçu le soir même.** D2, loi a priori des hypothèses : facteur 1/2, interaction 1/8, tranché par Antoine (« Oui, retiens-les ») sans connaître la simulation. Elle ne contredit pas ce choix : 25 % contre 49 % de jeux avec un faux terme à P>0,5 sous H0. Coût mesuré (`agent_31`, partiel) : interaction réelle plus souvent manquée à petit effectif, P>0,5 dans 37,5 % contre 51 % à n=10 par case, f=0,5. Voir `DECISIONS.md`. Le libellé de la question par terme, D1 et D9 restent ouverts.
+
 **Prochaine séance, sans attendre.** Étudier l'orientation d'Antoine sur D6 (`DECISIONS.md`) : comparer et moyenner les lois d'échantillonnage, avec une loi propre sur les rapports d'échelle ; lire Maier 2025 et Dablander 2024 ; dire franchement si k>2 n'est pas calibré ou trop lent. Modèle à un g par groupe ou τ par contraste, testé d'abord contre B1 et B2. Corriger I6 et I7 de zs. Refaire puissance et calibration à N suffisant. Lire Bertolino 2000 et Cano 2017.
 
 ## QUESTIONS POUR ANTOINE (à jour au 6 novembre)

@@ -37,6 +37,26 @@ Prix franc : les probabilités de termes ne sont pas les marginales d'une même 
 
 Loi jointe à arbitrer : uniforme sur les modèles (a priori 0,6 sur chaque facteur et 0,2 sur A:B à 2 facteurs) ou hérédité forte, chaque terme entrant à 1/2 si ses parents sont présents (A à 1/2, A:B à 1/8, A:B:C à 1/128 ; réglage KefiR, non publié tel quel). Sous cette dernière, P(A | pas de A:B) vaut 3/7, et non 1/2. Annoncée dans tous les cas. Non simulée à ce stade pour cette forme finale.
 
+### D2, loi a priori des hypothèses : ARBITRÉE par Antoine le 6 novembre 2026
+
+**Par défaut : facteur 1/2, interaction 1/8 (hérédité forte), plutôt que l'uniforme sur les modèles.** Ses mots, transmis par sa session « KefiR officiel » : « Oui, retiens-les ». Il a tranché sur recommandation de cette session, sans connaître la simulation. Annoncée dans chaque bilan, avec sensibilité. Réglage propre à KefiR, inspiré de [Chipman1996]. **Restent ouverts : le libellé de la question par terme (« seul ou en interaction ») et le reste de D2.**
+
+Définition à 3 facteurs retenue par cohérence (chaque terme entre à 1/2 si tous ses parents sont présents) : A:B à 1/8, A:B:C à 1/128. Ce prolongement est une lecture, pas ses mots : il n'a parlé que de facteur et d'interaction.
+
+**La simulation ne contredit pas ce choix, mais il a un coût.**
+- Plan 2×2×2 sous H0, N=40, 300 jeux (`agent_22`) : au moins un terme à P>0,5 dans 25 % [21 ; 31] des jeux, contre 49 % sous l'uniforme ; P>0,95 jamais, [0 ; 1,2 %]. Une partie de ce gain vient de l'a priori lui-même : ce n'est pas une preuve de justesse.
+- Coût, interaction pure réelle, 2×2, N=200 par case (`agent_31`) :
+
+| Cas | P(A:B)>0,5, hérédité | P(A:B)>0,5, uniforme | P(A:B)>0,95, hérédité | P(A:B)>0,95, uniforme | aov p<0,05 |
+|---|---:|---:|---:|---:|---:|
+| n=10 par case, f=0,25 | 0,045 | 0,115 | 0,000 | 0,010 | 0,340 |
+| n=10 par case, f=0,50 | 0,375 | 0,510 | 0,125 | 0,185 | 0,855 |
+| n=25 par case, f=0,25 | 0,180 | 0,225 | 0,025 | 0,025 | 0,715 |
+| n=25 par case, f=0,50 | 0,930 | 0,955 | 0,720 | 0,790 | 1,000 |
+| n=25 par case, f=0 | 0,000 | 0,005 | 0,000 | 0,000 | 0,045 |
+
+Une interaction réelle à petit effectif est donc plus souvent manquée qu'avec l'uniforme : écart net à n=10, faible à n=25 et f=0,50. Le gros de l'écart avec aov existe sous les deux lois, à seuils non équivalents. Limites : lancement interrompu à 500 s, n=50 à f>0 non exécuté ; 3 facteurs à effet réel non simulés, alors que A:B:C part de 1/128 ; forme finale du bilan non simulée. Les probabilités des deux lois sont calculées sur les mêmes BF.
+
 ## D3. H0 ponctuelle ou ROPE : PROPOSÉ
 
 H0 ponctuelle en première ligne, ROPE toujours affiché en seconde, avec sa masse a priori. Largeur par défaut |δ|<0,1 (f<0,05), convention remplaçable par une valeur métier.
