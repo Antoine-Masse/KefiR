@@ -33,7 +33,7 @@
 
 **Décisions prises.** Aucune décision structurante. Lignes « hérédité » d'`agent_20` à ne pas citer.
 
-**Prochaine séance, sans attendre.** Modèle à un g par groupe ou τ par contraste, testé d'abord contre B1 et B2. Corriger I6 et I7 de zs. Refaire puissance et calibration à N suffisant. Lire Bertolino 2000 et Cano 2017.
+**Prochaine séance, sans attendre.** Étudier l'orientation d'Antoine sur D6 (`DECISIONS.md`) : comparer et moyenner les lois d'échantillonnage, avec une loi propre sur les rapports d'échelle ; lire Maier 2025 et Dablander 2024 ; dire franchement si k>2 n'est pas calibré ou trop lent. Modèle à un g par groupe ou τ par contraste, testé d'abord contre B1 et B2. Corriger I6 et I7 de zs. Refaire puissance et calibration à N suffisant. Lire Bertolino 2000 et Cano 2017.
 
 ## QUESTIONS POUR ANTOINE (à jour au 6 novembre)
 

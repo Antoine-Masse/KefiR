@@ -19,7 +19,7 @@ Détail de l'existant : `PERIMETRE.md`. Choix : `DECISIONS.md`. Publication uniq
 | 10 | Post-hoc | À faire | D11 |
 | 11 | Bilan lisible, relecture par un étudiant ou industriel type | À faire | 4 à 10 |
 | 12 | Voies Stan : pentes aléatoires, robuste, discret | À faire | D1, D6 |
-| 3 bis | Variances inégales à un facteur, sans Stan | Calcul vérifié le 6 nov., **loi a priori rejetée** (B1, B2) ; à refaire | D6 |
+| 3 bis | Variances inégales à un facteur, sans Stan | Calcul vérifié le 6 nov., **loi a priori rejetée** (B1, B2) ; à refaire avec loi propre sur les rapports d'échelle et moyenne sur les lois d'échantillonnage (orientation du 6 nov., non étudiée) | D6 |
 | 13 | Table de simulation publique, vignette, documentation roxygen | À faire | tout |
 
 ## Couverture des plans de m.test()
