@@ -127,7 +127,7 @@ test_that("B2 relecture : un groupe constant n'est ni un plantage ni un tirage a
 	b <- m.bay(y, g, verbose = FALSE, draws = 500L, sensitivity = FALSE, seed = 2L)
 	expect_identical(a$prob_effect, b$prob_effect)
 	expect_equal(a$laws$law, "normal_eq")
-	expect_true(any(grepl("repeated values", a$notes$en)))
+	expect_true(any(grepl("Repeated values", a$notes$en)))
 	expect_equal(a$effects$log_bf, .bay_bf_oneway_zs(y, g, 0.5))
 	expect_silent(z <- m.bay(c(rep(0, 50), rnorm(10, 1)), rep(1:3, each = 20), verbose = FALSE,
 		draws = 300L, sensitivity = FALSE))
@@ -182,7 +182,7 @@ test_that("I1 et I2 relecture : loi imposee hors de la plage, cotes exactes", {
 	expect_false(identical(r$sensitivity$verdict, "changes"))
 	r2 <- m.bay(y, rep(1:2, each = 30), verbose = FALSE, draws = 500L, prior_h1 = 0.2)
 	expect_equal(r2$sensitivity$odds, colnames(r2$sensitivity$grid))
-	expect_match(paste(capture.output(print(r2)), collapse = " "), "1:16")
+	expect_match(paste(capture.output(print(r2)), collapse = " "), "1:8")
 })
 
 test_that("echelles extremes de y : invariance, sans erreur brute", {
@@ -248,4 +248,12 @@ test_that("sensibilite : la forme 'tous les groupes' est montree a part", {
 	r <- m.bay(d$y, d$g, verbose = FALSE, draws = 400L)
 	expect_true(r$sensitivity$all_groups > 0 && r$sensitivity$all_groups < 1)
 	expect_match(paste(capture.output(print(r)), collapse = " "), "forme")
+})
+
+test_that("formes differentes, moyennes egales : le bilan pr\u00e9vient", {
+	set.seed(43)
+	s <- 0.8
+	y <- c((rlnorm(400, 0, s) - exp(s^2 / 2)) / sqrt((exp(s^2) - 1) * exp(s^2)), rnorm(400))
+	r <- m.bay(y, rep(1:2, each = 400), verbose = FALSE, draws = 500L, sensitivity = FALSE)
+	expect_true(any(grepl("heavy", r$notes$en)))
 })

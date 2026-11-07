@@ -132,6 +132,16 @@
                              paired = FALSE, id = NULL, wt = NULL, within = NULL,
                              between = NULL, maxcat = 50, env = parent.frame()) {
 	if (!is.null(within) && is.null(wt)) wt <- within
+	if (!(identical(paired, TRUE) || identical(paired, FALSE))) {
+		.exit("paired must be TRUE or FALSE.", "paired doit valoir TRUE ou FALSE.")
+	}
+	if (!is.numeric(maxcat) || length(maxcat) != 1L || is.na(maxcat)) {
+		.exit("maxcat must be one number.", "maxcat doit \u00eatre un seul nombre.")
+	}
+	if (!is.null(between) && !is.null(data) && !all(between %in% names(data))) {
+		.exit(paste0("between not found in data: ", paste(setdiff(between, names(data)), collapse = ", "), "."),
+			paste0("between introuvable dans les donn\u00e9es : ", paste(setdiff(between, names(data)), collapse = ", "), "."))
+	}
 	# id: a simple name, an index with data, or a vector.
 	if (!is.null(id) && length(id) == 1L && (is.na(id) || (is.numeric(id) && is.null(data)))) {
 		.exit("id is not valid.", "id n'est pas valide.")
@@ -248,6 +258,10 @@
 			pred_names <- g
 		} else if (is.data.frame(g)) {
 			pred_names <- names(g)
+			if (nrow(g) != NROW(resp)) {
+				.exit("x and g do not have the same number of rows.",
+					"x et g n\u0027ont pas le m\u00eame nombre de lignes.")
+			}
 			data <- if (is.null(data)) g else cbind(data, g[setdiff(names(g), names(data))])
 		} else if (!is.null(g)) {
 			if (is.list(g) || is.matrix(g) || !is.atomic(g)) {

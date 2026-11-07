@@ -121,6 +121,13 @@
 			"  Sensibilit\u00e9 aux a priori non calcul\u00e9e (sensitivity = FALSE).")
 	}
 
+	if (!is.null(sens)) {
+		tip <- .bay_bf_txt(log(sens$odds_to_reverse), ".")
+		tip_fr <- .bay_bf_txt(log(sens$odds_to_reverse), ",")
+		say(paste0("  To level the two hypotheses, one would have to believe in the other one in advance at ", tip, " to 1."),
+			paste0("  Pour mettre les deux hypoth\u00e8ses \u00e0 \u00e9galit\u00e9, il faudrait croire d'avance \u00e0 l'autre \u00e0 ", tip_fr, " contre 1."))
+	}
+
 	# Per term.
 	say("Answers per term:", "R\u00e9ponses par terme :")
 	e <- obj$effects
@@ -141,9 +148,9 @@
 	say("Observed means (description of the sample, not a test):",
 		"Moyennes observ\u00e9es (description de l'\u00e9chantillon, pas un test) :")
 	say(paste0("  ", paste0(d$group, " = ", vapply(d$mean, fmt, character(1), dc = "."), " (n = ", d$n, ")", collapse = "; "),
-			". Largest gap: ", fmt(obj$largest_gap, "."), " within-group standard deviations."),
+			". Largest gap: ", fmt(obj$largest_gap, "."), " times the within-group standard deviation."),
 		paste0("  ", paste0(d$group, " = ", vapply(d$mean, fmt, character(1), dc = ","), " (n = ", d$n, ")", collapse = " ; "),
-			". Plus grand \u00e9cart : ", fmt(obj$largest_gap, ","), " \u00e9cart-type intra-groupe."))
+			". Plus grand \u00e9cart : ", fmt(obj$largest_gap, ","), " fois l'\u00e9cart-type intra-groupe."))
 
 	# Noise.
 	if (!is.null(obj$laws)) {
@@ -151,8 +158,13 @@
 		laws <- obj$laws[order(-obj$laws$posterior), , drop = FALSE]
 		txt_en <- paste0(lb$en[laws$law], " ", vapply(laws$posterior, .bay_pct, character(1), dec = "."))
 		txt_fr <- paste0(lb$fr[laws$law], " ", vapply(laws$posterior, .bay_pct, character(1), dec = ","))
-		say("Shape of the noise, compared and not chosen (posterior probabilities):",
-			"Forme du bruit, compar\u00e9e et non choisie (probabilit\u00e9s a posteriori) :")
+		if (nrow(laws) > 1L) {
+			say("Shape of the noise, compared and not chosen (posterior probabilities):",
+				"Forme du bruit, compar\u00e9e et non choisie (probabilit\u00e9s a posteriori) :")
+		} else {
+			say("Shape of the noise: one law only, not compared:",
+				"Forme du bruit : une seule loi retenue, non compar\u00e9e :")
+		}
 		say(paste0("  ", paste(txt_en, collapse = "; "), "."),
 			paste0("  ", paste(txt_fr, collapse = " ; "), "."))
 		if (!is.null(sens) && nrow(obj$laws) > 1L) {
@@ -188,11 +200,13 @@
 	}
 	if (!is.null(sens)) {
 		say(paste0("  Varied in the sensitivity: r from ", format(min(sens$r), trim = TRUE), " to ",
-				format(max(sens$r), trim = TRUE), ", odds H1:H0 ", paste(sens$odds[c(1L, length(sens$odds))], collapse = " to "), ", Dirichlet ",
-				format(min(sens$u), trim = TRUE), " to ", format(max(sens$u), trim = TRUE), "."),
+				format(max(sens$r), trim = TRUE), ", odds H1:H0 ", paste(sens$odds[c(1L, length(sens$odds))], collapse = " to "),
+				if (any(obj$laws$law %in% c("normal_het", "t_het"))) paste0(", Dirichlet ",
+					format(min(sens$u), trim = TRUE), " to ", format(max(sens$u), trim = TRUE)), "."),
 			paste0("  Vari\u00e9s dans la sensibilit\u00e9 : r de ", num(min(sens$r)), " \u00e0 ",
-				num(max(sens$r)), ", cotes H1:H0 ", paste(sens$odds[c(1L, length(sens$odds))], collapse = " \u00e0 "), ", Dirichlet ",
-				num(min(sens$u)), " \u00e0 ", num(max(sens$u)), "."))
+				num(max(sens$r)), ", cotes H1:H0 ", paste(sens$odds[c(1L, length(sens$odds))], collapse = " \u00e0 "),
+				if (any(obj$laws$law %in% c("normal_het", "t_het"))) paste0(", Dirichlet ",
+					num(min(sens$u)), " \u00e0 ", num(max(sens$u))), "."))
 	}
 
 	if (!is.null(sens) && isTRUE(nrow(obj$descriptive_stats) > 2L)) {

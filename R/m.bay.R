@@ -106,7 +106,7 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 		.exit(paste0("draws must be one number between 100 and ", .bay_law_max_draws(), "."),
 			paste0("draws doit \u00eatre un seul nombre entre 100 et ", .bay_law_max_draws(), "."))
 	}
-	if (!is.numeric(seed) || length(seed) != 1L || !isTRUE(abs(seed) <= .Machine$integer.max)) {
+	if (!is.numeric(seed) || length(seed) != 1L || !isTRUE(abs(seed) < .Machine$integer.max - 10)) {
 		.exit("seed must be one integer.", "seed doit \u00eatre un seul nombre entier.")
 	}
 	laws <- unique(laws)
@@ -130,9 +130,15 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 			paste0("Argument(s) sans effet ici, ignor\u00e9(s) : ", nm, "."))
 	}
 
-	input <- .bay_parse_input(x = x, g = g, data = data, formula = formula, paired = paired,
+	# Whatever the input, no raw R error: what was not understood is said as such.
+	input <- tryCatch(.bay_parse_input(x = x, g = g, data = data, formula = formula, paired = paired,
 		id = id, wt = wt, within = within, between = between, maxcat = maxcat,
-		env = parent.frame())
+		env = parent.frame()), error = function(e) {
+		msg <- conditionMessage(e)
+		if (is.null(conditionCall(e))) stop(msg, call. = FALSE)
+		.exit(paste0("Input not understood: ", msg, "."),
+			paste0("Entr\u00e9es non comprises : ", msg, "."))
+	})
 	if (input$n_removed > 0L) {
 		note(paste0(input$n_removed, " observation(s) with missing values removed."),
 			paste0(input$n_removed, " observation(s) avec valeurs manquantes retir\u00e9e(s)."))
@@ -148,6 +154,9 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 			paste0("m.bay() ne traite pas encore ", plan_fr, " : ce plan n'est pas valid\u00e9 (utiliser m.test())."))
 	}
 	y <- input$response
+	if (any(is.infinite(y))) {
+		.exit("y contains infinite values.", "y contient des valeurs infinies.")
+	}
 	y_values <- length(unique(y))
 	if (isTRUE(diff(range(y)) <= 8 * .Machine$double.eps * max(abs(y)))) {
 		.exit("y is constant: the probabilities are undetermined.",
@@ -174,14 +183,17 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 				". Leur variance est mal connue."))
 	}
 
-	laws_kept <- .bay_laws_allowed(st, laws)
+	laws_kept <- .bay_laws_allowed(st, laws, u)
 	if (length(laws_kept) == 0L) {
-		.exit("Mostly repeated values: none of the requested laws applies. Allow normal_eq in laws.",
-			"Surtout des valeurs r\u00e9p\u00e9t\u00e9es : aucune des lois demand\u00e9es ne s'applique. Autoriser normal_eq dans laws.")
+		.exit("Repeated values: none of the requested laws applies. Allow normal_eq in laws.",
+			"Valeurs r\u00e9p\u00e9t\u00e9es : aucune des lois demand\u00e9es ne s'applique. Autoriser normal_eq dans laws.")
 	}
 	if (length(laws_kept) < length(laws)) {
-		note("Mostly repeated values: laws with unequal variances or heavy tails do not apply to such data and were left out. A law for discrete data is not validated yet.",
-			"Surtout des valeurs r\u00e9p\u00e9t\u00e9es : les lois \u00e0 variances in\u00e9gales ou \u00e0 queues lourdes ne s'appliquent pas et ont \u00e9t\u00e9 \u00e9cart\u00e9es. Une loi pour donn\u00e9es discr\u00e8tes n'est pas encore valid\u00e9e.")
+		left <- setdiff(laws, laws_kept)
+		note(paste0("Repeated values: for these data the integral of some laws diverges, they were left out: ",
+				paste(.bay_law_labels()$en[left], collapse = "; "), ". A law for discrete data is not validated yet."),
+			paste0("Valeurs r\u00e9p\u00e9t\u00e9es : pour ces donn\u00e9es l'int\u00e9grale de certaines lois diverge, elles ont \u00e9t\u00e9 \u00e9cart\u00e9es : ",
+				paste(.bay_law_labels()$fr[left], collapse = " ; "), ". Une loi pour donn\u00e9es discr\u00e8tes n'est pas encore valid\u00e9e."))
 	}
 	laws <- laws_kept
 	draws <- as.integer(draws)
@@ -190,8 +202,10 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	tab <- .bay_laws_table(st, rs, u, draws, seed, laws = laws)
 	ans <- .bay_laws_average(tab, rscale, prior_h1 = prior_h1)
 	if (length(ans$laws_dropped)) {
-		note(paste0("Law(s) left out, the computation failed: ", paste(ans$laws_dropped, collapse = ", "), "."),
-			paste0("Loi(s) \u00e9cart\u00e9e(s), le calcul a \u00e9chou\u00e9 : ", paste(ans$laws_dropped, collapse = ", "), "."))
+		note(paste0("Law(s) left out because the computation is not reliable here, so the comparison is incomplete and the answer may change: ",
+				paste(.bay_law_labels()$en[ans$laws_dropped], collapse = "; "), ". Try a larger draws."),
+			paste0("Loi(s) \u00e9cart\u00e9e(s) car le calcul n'est pas fiable ici : la comparaison est incompl\u00e8te et la r\u00e9ponse peut changer : ",
+				paste(.bay_law_labels()$fr[ans$laws_dropped], collapse = " ; "), ". Essayer un draws plus grand."))
 	}
 	low <- ans$models$ess[!is.na(ans$models$ess)] < 200
 	if (any(low) || isTRUE(ans$error_pct > 5)) {
@@ -199,6 +213,22 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 				format(signif(ans$error_pct, 2), trim = TRUE), " %."),
 			paste0("Pr\u00e9cision num\u00e9rique faible : erreur sur le facteur de Bayes d'environ ",
 				gsub(".", ",", format(signif(ans$error_pct, 2), trim = TRUE), fixed = TRUE), " %."))
+	}
+
+	# Under heavy tails the groups are compared through their centres, which are not the
+	# means of a skewed group: equal means, different shapes can read as an effect
+	# (agent_43: one lognormal group, n = 400, P > 0.95 in 67 % of the data sets).
+	p_t <- sum(ans$p_law[intersect(names(ans$p_law), c("t_eq", "t_het"))])
+	normal_kept <- intersect(names(ans$p_law), c("normal_eq", "normal_het"))
+	if (isTRUE(p_t > 1/2) && length(normal_kept)) {
+		best_normal <- normal_kept[which.max(ans$p_law[normal_kept])]
+		if (isTRUE(sign(ans$log_bf_law[best_normal]) != sign(ans$log_bf))) {
+			note("The answer rests on heavy tails, which compare the centres of the groups, and the law with a normal noise says the opposite: the groups may differ in shape without differing in mean. Look at the means and at the distributions.",
+				"La r\u00e9ponse repose sur les queues lourdes, qui comparent les centres des groupes, et la loi \u00e0 bruit normal dit le contraire : les groupes peuvent diff\u00e9rer par leur forme sans diff\u00e9rer en moyenne. Regarder les moyennes et les distributions.")
+		} else {
+			note("The noise looks heavy-tailed: the effect bears on the centres of the groups, not exactly on their means.",
+				"Le bruit semble \u00e0 queues lourdes : l'effet porte sur le centre des groupes, pas exactement sur leur moyenne.")
+		}
 	}
 
 	effects <- .bay_effects_row(term = shown, log_bf = ans$log_bf, prior_h1 = prior_h1,
@@ -219,12 +249,17 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	if (isTRUE(sensitivity)) {
 		lb <- vapply(rs, function(r) .bay_laws_average(tab, r)$log_bf, numeric(1))
 		names(lb) <- format(rs, trim = TRUE)
-		odds_grid <- c(1/4, 1, 4) * prior_h1 / (1 - prior_h1)
+		# Odds 1:2 to 2:1 around the prior: with 1:4 to 4:1, the leading hypothesis changed
+		# in 98 % of the data sets without effect, up to n = 100 per group, and the verdict
+		# no longer told anything (agent_41 C, first run; DECISIONS, D4).
+		odds_grid <- c(1/2, 1, 2) * prior_h1 / (1 - prior_h1)
 		grid <- .bay_sensitivity(lb, prior_odds = odds_grid)
 		# Dirichlet: u/3 and 3u, at the central r and odds. Then the noise imposed.
 		us <- c(u / 3, 3 * u)
 		lb_u <- vapply(us, function(uu) {
-			tu <- .bay_laws_table(st, rscale, uu, draws, seed, laws = laws)
+			laws_u <- .bay_laws_allowed(st, laws, uu)
+			if (length(laws_u) == 0L) return(NA_real_)
+			tu <- .bay_laws_table(st, rscale, uu, draws, seed, laws = laws_u)
 			.bay_laws_average(tu, rscale)$log_bf
 		}, numeric(1))
 		names(lb_u) <- format(us, trim = TRUE)
@@ -232,8 +267,10 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 		odds0 <- prior_h1 / (1 - prior_h1)
 		# A law imposed against the data is not a plausible prior: it is shown apart and
 		# stays out of the range (RELECTURE 2026-11-07, I1).
-		all_p <- c(as.vector(grid$grid),
-			.bay_post_prob(log_bf = lb_u, prior_odds = odds0))
+		all_p <- c(as.vector(grid$grid), if (any(laws %in% c("normal_het", "t_het"))) {
+			.bay_post_prob(log_bf = lb_u, prior_odds = odds0)
+		})
+		all_p <- all_p[!is.na(all_p)]
 		if (!lead_is_h1) all_p <- 1 - all_p
 		range_lead <- range(all_p)
 		sens <- list(grid = grid$grid, by_u = .bay_post_prob(log_bf = lb_u, prior_odds = odds0),
@@ -241,6 +278,8 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 			all_groups = .bay_post_prob(log_bf = .bay_laws_average(tab, rscale, h1_form = "zs")$log_bf,
 				prior_odds = odds0),
 			r = rs, u = sort(c(us, u)), odds = colnames(grid$grid), range_lead = range_lead,
+			# Prior odds that would make the two hypotheses level, against the lead.
+			odds_to_reverse = exp(abs(ans$log_bf)),
 			verdict = .bay_sensitivity_verdict(max(ans$p_h1, ans$p_h0), range_lead))
 	}
 

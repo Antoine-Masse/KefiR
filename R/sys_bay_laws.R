@@ -18,7 +18,7 @@
 # With all c_i = 1 and the normal law, the first form is exactly the Zellner-Siow prior
 # of Rouder et al. (2012), hence .bay_bf_oneway_zs, and each piece of the second is that
 # same Bayes factor on the factor "s against the rest". At k = 2 the mixture is not used:
-# both forms coincide when the variances are equal.
+# both forms coincide when the variances are equal, and only then.
 #
 # Why the second form: with a common g, one far group costs d^(-k) under the first form,
 # against d^(-n_s - 2u) for "no effect, that group is just more dispersed". For
@@ -47,6 +47,8 @@
 #   Rouder, J. N., Morey, R. D., Speckman, P. L., & Province, J. M. (2012).
 #     Default Bayes factors for ANOVA designs. Journal of Mathematical Psychology,
 #     56(5), 356-374. https://doi.org/10.1016/j.jmp.2012.08.001
+#   Gopalan, R., & Berry, D. A. (1998). Bayesian multiple comparisons using Dirichlet
+#     process priors. JASA, 93, 1130-1139. https://doi.org/10.1080/01621459.1998.10473774
 
 
 # ---------------------------------------------------------------------------
@@ -83,6 +85,7 @@
 	y_std <- (y1 - mean(y1)) / unit
 	by_group <- split(y_std, g)
 	list(k = length(n), n = n, N = N, levels = levels(g), y = by_group,
+		y_tie = split(y, g),
 		y_raw = y, g_raw = g,
 		m = vapply(by_group, mean, numeric(1), USE.NAMES = FALSE),
 		ss = vapply(by_group, function(v) sum((v - mean(v))^2), numeric(1), USE.NAMES = FALSE),
@@ -365,16 +368,13 @@
 	k <- st$k
 	pr <- .bay_law_proposal(st, u)
 	ldir <- function(th) lgamma(k * u) - k * lgamma(u) + (u - 1) * rowSums(log(th))
-	S0 <- max(300L, draws %/% 4L)
+	S0 <- max(300L, draws %/% 4L, 100L * k)
 	th0 <- .bay_law_draw_def(pr, S0)
 	lw0 <- target(th0)[, ic] + ldir(th0) - .bay_law_lq_def(pr, th0)
 	fit <- .bay_mvt_fit(.bay_alr(th0), lw0)
 	mix <- c(0.3, 0.5, 0.2)
-	lw <- NULL
-	extra <- draws
-	grown <- 0L
-	repeat {
-		ns <- as.numeric(stats::rmultinom(1L, extra, mix))
+	batch <- function(S) {
+		ns <- as.numeric(stats::rmultinom(1L, S, mix))
 		z_new <- rbind(if (ns[2L] > 0L) .bay_mvt_draw(ns[2L], fit, 5, 1),
 			if (ns[3L] > 0L) .bay_mvt_draw(ns[3L], fit, 3, 2))
 		th <- rbind(if (ns[1L] > 0L) .bay_law_draw_def(pr, ns[1L]),
@@ -384,7 +384,20 @@
 		lq <- .bay_row_lse(cbind(log(mix[1L]) + .bay_law_lq_def(pr, th),
 			log(mix[2L]) + .bay_mvt_ld(z, fit, 5, 1) - ljac,
 			log(mix[3L]) + .bay_mvt_ld(z, fit, 3, 2) - ljac))
-		lw <- rbind(lw, target(th) + ldir(th) - lq)
+		list(z = z, lw = target(th) + ldir(th) - lq)
+	}
+	# Up to three more pilots while the fit is poor: at many groups with very different
+	# variances, one pilot left the ESS under 30 and the law out, depending on the seed.
+	for (round in 1:3) {
+		b <- batch(S0)
+		if (anyNA(b$lw[, ic]) || isTRUE(.bay_law_is(b$lw[, ic])$ess >= S0 / 4)) break
+		fit <- .bay_mvt_fit(b$z, b$lw[, ic])
+	}
+	lw <- NULL
+	extra <- draws
+	grown <- 0L
+	repeat {
+		lw <- rbind(lw, batch(extra)$lw)
 		ess <- .bay_law_is(lw[, ic])$ess
 		if (isTRUE(ess >= min(500, draws / 4)) || grown >= max_grow || nrow(lw) >= .bay_law_max_draws()) break
 		extra <- min(3L * nrow(lw), .bay_law_max_draws() - nrow(lw))
@@ -394,7 +407,7 @@
 }
 
 # The four-model table of the normal law. rs: values of r; H1 gives one value per r.
-.bay_law_normal <- function(st, rs, u, draws, seed, max_grow = 2L) {
+.bay_law_normal <- function(st, rs, u, draws, seed, max_grow = 2L, want_het = TRUE) {
 	k <- st$k
 	const <- .bay_law_const(st)
 	one <- matrix(1, 1L, k)
@@ -411,6 +424,10 @@
 			sp <- if (is.null(sp)) x else .bay_lse2(sp, x)
 		}
 		h1_eq <- .bay_lse2(h1_eq_zs, sp - log(k)) + log(0.5)
+	}
+	if (!want_het) {
+		return(list(eq_h0 = list(log_ml = h0_eq, rel_se = 0, ess = NA_real_),
+			eq_h1 = list(log_ml = h1_eq, log_ml_zs = h1_eq_zs, rel_se = rep(0, length(rs)), ess = NA_real_)))
 	}
 	ic <- ceiling(length(rs) / 2)
 	het <- .bay_with_seed(seed, list(
@@ -507,8 +524,8 @@
 .bay_t_prior_theta <- function(parts, r, k) {
 	if (!is.null(parts$s)) {
 		# One group: a_s / sigma_s ~ Cauchy(0, r sqrt(2)), mu flat.
-		scale <- r * sqrt(2) * exp(0.5 * (parts$lc[, parts$s] - parts$lt))
-		return(stats::dcauchy(parts$th_loc[, 2L], 0, scale, log = TRUE))
+		ls <- log(r * sqrt(2)) + 0.5 * (parts$lc[, parts$s] - parts$lt)
+		return(-log(pi) - ls - log1p((parts$th_loc[, 2L] * exp(-ls))^2))
 	}
 	ld <- parts$lc - parts$lt
 	w <- exp(-ld)
@@ -632,19 +649,22 @@
 }
 
 
-# H1 of a t law: the mixture of the two forms. Above 8 groups, only the 5 groups furthest
-# from the weighted median are computed in the second form, for the time it takes. The
-# others count for nothing there, which can only lower the Bayes factor, slightly.
+# H1 of a t law: the mixture of the two forms. Above 20 groups, only the 5 groups furthest
+# from the weighted median of the medians are computed in the second form, for the time
+# it takes; the others count for nothing there, which lowers the Bayes factor by an
+# amount that is not bounded (a group missed by the ranking loses its evidence). Up to
+# 20 groups nothing is cut: a cut at k > 8 lost 9.6 on the log BF (RELECTURE 2026-11-07).
 .bay_t_h1_mix <- function(st, het, u, rs, draws) {
 	zs <- .bay_t_ml(st, TRUE, het, u, rs, draws)
 	zs$log_ml_zs <- zs$log_ml
 	k <- st$k
 	if (k == 2L) return(zs)
 	groups <- seq_len(k)
-	if (k > 8L) {
-		ord <- order(st$m)
-		mb <- st$m[ord][which(cumsum(st$n[ord]) / st$N >= 0.5)[1L]]
-		groups <- order(-abs(st$m - mb) * sqrt(st$n))[1:5]
+	if (k > 20L) {
+		med <- vapply(st$y, stats::median, numeric(1), USE.NAMES = FALSE)
+		ord <- order(med)
+		mb <- med[ord][which(cumsum(st$n[ord]) / st$N >= 0.5)[1L]]
+		groups <- order(-abs(med - mb) * sqrt(st$n))[1:5]
 	}
 	sp <- lapply(groups, function(s) .bay_t_ml(st, TRUE, het, u, rs, draws, s = s))
 	lm <- rbind(zs$log_ml + log(0.5), do.call(rbind, lapply(sp, `[[`, "log_ml")) + log(0.5 / k))
@@ -663,19 +683,21 @@
 
 .bay_law_names <- function() c("normal_eq", "normal_het", "t_eq", "t_het")
 
-# Exact ties in a continuous model. A group with no variation, or mostly one repeated
-# value, gives an infinite marginal likelihood under a variance per group as soon as
-# (k - 1) u <= (n_i - 1) / 2, and a t likelihood is unbounded when ties reach about
-# 2/3 of the data: the integral diverges, it is not a numerical accident (RELECTURE
-# 2026-11-07, B2). These laws do not apply there. Returns the laws that do.
-.bay_laws_allowed <- function(st, laws) {
-	top_share <- function(v) max(table(v)) / length(v)
-	big <- st$n >= 2
-	by_group <- vapply(st$y[big], top_share, numeric(1))
-	if (any(by_group > 1/2)) return(intersect(laws, "normal_eq"))
-	if (top_share(unlist(st$y, use.names = FALSE)) > 1/2) {
-		return(intersect(laws, c("normal_eq", "normal_het")))
-	}
+# Exact ties in a continuous model: some integrals diverge, it is not a numerical accident
+# (RELECTURE 2026-11-07, B2). Derived by hand, near a group whose scale goes to 0, with T_i
+# the largest number of ties in group i. With a margin, because the sampling worsens
+# before the divergence:
+#   normal, variance per group: SS_i = 0 and (k - 1) u <= (n_i - 1) / 2 + 1/2;
+#   t, variance per group: T_i >= 0.9 (2 n_i + 2 u (k - 1)) / 3;
+#   t, common variance: ties at one common value, or sum of the T_i, >= 0.6 N (theory 2/3).
+# Returns the laws that apply; ties in themselves are not a reason to leave a law out.
+.bay_laws_allowed <- function(st, laws, u) {
+	k <- st$k
+	ties <- vapply(st$y_tie, function(v) max(table(v)), numeric(1), USE.NAMES = FALSE)
+	flat <- ties == st$n & st$n >= 2
+	if (any(flat & (k - 1) * u <= (st$n - 1) / 2 + 1 / 2)) laws <- setdiff(laws, "normal_het")
+	if (any(ties >= 2 & ties >= 0.9 * (2 * st$n + 2 * u * (k - 1)) / 3)) laws <- setdiff(laws, "t_het")
+	if (max(sum(ties), max(table(unlist(st$y_tie, use.names = FALSE)))) >= 0.6 * st$N) laws <- setdiff(laws, "t_eq")
 	laws
 }
 
@@ -690,7 +712,7 @@
 			stringsAsFactors = FALSE)
 	}
 	if (any(c("normal_eq", "normal_het") %in% laws)) {
-		nm <- .bay_law_normal(st, rs, u, draws, seed)
+		nm <- .bay_law_normal(st, rs, u, draws, seed, want_het = "normal_het" %in% laws)
 		if ("normal_eq" %in% laws) {
 			add("normal_eq", "H0", nm$eq_h0)
 			add("normal_eq", "H1", nm$eq_h1)

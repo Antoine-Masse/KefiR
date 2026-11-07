@@ -11,9 +11,10 @@
 #     Psychology, 56(5), 356-374. https://doi.org/10.1016/j.jmp.2012.08.001
 #   Liang, F., Paulo, R., Molina, G., Clyde, M. A., & Berger, J. O. (2008).
 #     Mixtures of g priors for Bayesian variable selection. JASA, 103(481),
-#     410-423. (a verifier: form of the g-prior integrand)
+#     410-423. https://doi.org/10.1198/016214507000001337
 #   Trefethen, L. N., & Weideman, J. A. C. (2014). The exponentially convergent
-#     trapezoidal rule. SIAM Review, 56(3), 385-458. (a verifier: h choice)
+#     trapezoidal rule. SIAM Review, 56(3), 385-458.
+#     https://doi.org/10.1137/130932132
 
 
 # ---------------------------------------------------------------------------
