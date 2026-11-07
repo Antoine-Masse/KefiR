@@ -69,6 +69,7 @@ une_analyse <- function(y, g, draws = 1500L, seed = 1L) {
 		mix$log_ml[w] <- .bay_log_sum_exp(lm) - log(3)
 	}
 	res$p_mix <- .bay_laws_average(mix, 0.5)$p_h1
+	res$p_zs <- .bay_laws_average(tab, 0.5, h1_form = "zs")$p_h1
 	res
 }
 
@@ -82,10 +83,18 @@ if (partie %in% c("A", "A2")) {
 		vth <- x / sum(x)
 		cc <- if (het) 1 / (k * vth) else rep(1, k)
 		sig <- sqrt(cc)
-		a <- if (h1) {
-			g <- 1 / rgamma(1, 0.5, rate = 0.5^2 / 2)
-			rnorm(k, 0, sqrt(g) * sig)
-		} else rep(0, k)
+		# Les deux formes de H1, a poids egaux (k >= 3) ; a k = 2, la premiere seule.
+		a <- rep(0, k)
+		if (h1) {
+			if (k == 2L || runif(1) < 0.5) {
+				g <- 1 / rgamma(1, 0.5, rate = 0.5^2 / 2)
+				a <- rnorm(k, 0, sqrt(g) * sig)
+			} else {
+				s <- sample.int(k, 1L)
+				g <- 1 / rgamma(1, 0.5, rate = (0.5 * sqrt(2))^2 / 2)
+				a[s] <- rnorm(1, 0, sqrt(g) * sig[s])
+			}
+		}
 		if (law %in% c("t_eq", "t_het")) {
 			nu <- 2 + rexp(1)
 			y <- unlist(lapply(seq_len(k), function(j) a[j] + sig[j] * sqrt((nu - 2) / nu) * rt(n, nu)))
@@ -141,7 +150,7 @@ if (partie == "B") {
 		g <- factor(rep(seq_len(k), times = sc$n))
 		res <- une_analyse(y, g)
 		gauss <- .bay_bf_oneway_zs(y, g, 0.5)
-		c(p = res$p_h1, pmix = res$p_mix, pg = plogis(gauss), aov = anova(lm(y ~ g))[1L, 5L],
+		c(p = res$p_h1, pmix = res$p_mix, pzs = res$p_zs, pg = plogis(gauss), aov = anova(lm(y ~ g))[1L, 5L],
 			welch = oneway.test(y ~ g)$p.value, kw = kruskal.test(y ~ g)$p.value)
 	}
 	clusterExport(cl, c("gen", "une_analyse", "bruit"))
@@ -164,16 +173,17 @@ if (partie == "B") {
 	add("k=5 n=30 d=.8", rep(30, 5), c(0, 0, 0, 0, .8), rep(1, 5), "normal")
 	add("k=8 n=20 H0", rep(20, 8), rep(0, 8), rep(1, 8), "normal")
 	sortie <- c("P>0,95 et p<0,05 ne sont pas des seuils equivalents : comparer aussi p<0,005.",
-		"mix = hyper-a priori uniforme sur r = 1/4, 1/2, 1 ; gaussien = variance commune seule.",
-		"scenario | P>.5 P>.95 P<.05 mediane | mix P>.5 P>.95 P<.05 | gaussien P>.5 P>.95 | aov p<.05 p<.005 | Welch p<.05 p<.005 | KW p<.05")
+		"mix = hyper-a priori uniforme sur r = 1/4, 1/2, 1 ; 1re forme = H1 sans la forme 'un seul groupe' ; gaussien = variance commune seule.",
+		"scenario | P>.5 P>.95 P<.05 mediane | mix P>.5 P>.95 P<.05 | 1re forme P>.5 P>.95 | gaussien P>.5 P>.95 | aov p<.05 p<.005 | Welch p<.05 p<.005 | KW p<.05 p<.005")
 	for (s in sc) {
 		r <- par_tranches(sprintf("B_%03d", s$id), N, gen, sc = s)
-		sortie <- c(sortie, sprintf("%-45s | %.3f %.3f %.3f %.3f | %.3f %.3f %.3f | %.3f %.3f | %.3f %.3f | %.3f %.3f | %.3f", s$lab,
+		sortie <- c(sortie, sprintf("%-45s | %.3f %.3f %.3f %.3f | %.3f %.3f %.3f | %.3f %.3f | %.3f %.3f | %.3f %.3f | %.3f %.3f | %.3f", s$lab,
 			mean(r[, "p"] > .5), mean(r[, "p"] > .95), mean(r[, "p"] < .05), median(r[, "p"]),
 			mean(r[, "pmix"] > .5), mean(r[, "pmix"] > .95), mean(r[, "pmix"] < .05),
+			mean(r[, "pzs"] > .5), mean(r[, "pzs"] > .95),
 			mean(r[, "pg"] > .5), mean(r[, "pg"] > .95),
 			mean(r[, "aov"] < .05), mean(r[, "aov"] < .005), mean(r[, "welch"] < .05), mean(r[, "welch"] < .005),
-			mean(r[, "kw"] < .05)))
+			mean(r[, "kw"] < .05), mean(r[, "kw"] < .005)))
 		ecrit(sortie)
 	}
 }
@@ -203,7 +213,7 @@ if (partie == "C") {
 
 if (partie == "D") {
 	sortie <- "B1 : petit groupe eloigne, plus il s'eloigne, plus H1 doit gagner"
-	for (pl in list(c(10, 10, 10, 10, 3), c(30, 30, 2), c(20, 20, 20, 20, 3), c(rep(10, 7), 3), c(rep(5, 7), 2))) {
+	for (pl in list(c(10, 10, 10, 10, 3), c(30, 30, 2), c(20, 20, 20, 20, 3), c(rep(10, 7), 3), c(rep(5, 7), 2), c(rep(10, 19), 3))) {
 		for (d in c(5, 50, 500, 5000)) {
 			set.seed(7)
 			k <- length(pl)

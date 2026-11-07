@@ -135,6 +135,16 @@
 				.bay_bf_txt(e$log_bf[i], ","), ")."))
 	}
 
+	# Size, descriptive.
+	d <- obj$descriptive_stats
+	fmt <- function(x, dc) gsub(".", dc, format(signif(x, 4), trim = TRUE), fixed = TRUE)
+	say("Observed means (description of the sample, not a test):",
+		"Moyennes observ\u00e9es (description de l'\u00e9chantillon, pas un test) :")
+	say(paste0("  ", paste0(d$group, " = ", vapply(d$mean, fmt, character(1), dc = "."), " (n = ", d$n, ")", collapse = "; "),
+			". Largest gap: ", fmt(obj$largest_gap, "."), " within-group standard deviations."),
+		paste0("  ", paste0(d$group, " = ", vapply(d$mean, fmt, character(1), dc = ","), " (n = ", d$n, ")", collapse = " ; "),
+			". Plus grand \u00e9cart : ", fmt(obj$largest_gap, ","), " \u00e9cart-type intra-groupe."))
+
 	# Noise.
 	if (!is.null(obj$laws)) {
 		lb <- .bay_law_labels()
@@ -145,6 +155,13 @@
 			"Forme du bruit, compar\u00e9e et non choisie (probabilit\u00e9s a posteriori) :")
 		say(paste0("  ", paste(txt_en, collapse = "; "), "."),
 			paste0("  ", paste(txt_fr, collapse = " ; "), "."))
+		if (!is.null(sens) && nrow(obj$laws) > 1L) {
+			bl <- sens$by_law[laws$law]
+			say(paste0("  If one shape were imposed, the probability of an effect would be: ",
+					paste0(lb$en[laws$law], " ", vapply(bl, .bay_pct, character(1), dec = "."), collapse = "; "), "."),
+				paste0("  Si l'on imposait une seule forme, la probabilit\u00e9 d'un effet serait : ",
+					paste0(lb$fr[laws$law], " ", vapply(bl, .bay_pct, character(1), dec = ","), collapse = " ; "), "."))
+		}
 	}
 
 	# Priors.
@@ -154,21 +171,35 @@
 			"scale r = ", format(signif(p$rscale, 3), trim = TRUE), " on the standardised difference."),
 		paste0("  Effet : ", .bay_pct(p$prior_h1, ","), " avant de voir les donn\u00e9es. Taille d'un effet : ",
 			"\u00e9chelle r = ", num(p$rscale), " sur l'\u00e9cart standardis\u00e9."))
+	if (isTRUE(nrow(obj$descriptive_stats) > 2L)) {
+		say("  Forms of an effect, at even odds: all groups may differ; or one group alone stands apart (scale r x sqrt(2)).",
+			"  Formes d'un effet, \u00e0 poids \u00e9gaux : tous les groupes peuvent diff\u00e9rer ; ou un seul groupe s'\u00e9carte (\u00e9chelle r x racine de 2).")
+	}
 	if (!is.null(obj$laws)) {
-		say(paste0("  Noise: each of the ", nrow(obj$laws), " shapes starts equal; ratio of precisions Dirichlet(",
-				format(p$u, trim = TRUE), "); heavy tails nu - 2 ~ Exp(1)."),
-			paste0("  Bruit : chacune des ", nrow(obj$laws), " formes part \u00e0 \u00e9galit\u00e9 ; rapports de pr\u00e9cision Dirichlet(",
-				num(p$u), ") ; queues lourdes nu - 2 ~ Exp(1)."))
+		kept <- obj$laws$law
+		extra_en <- c(if (any(kept %in% c("normal_het", "t_het"))) paste0("proportions of precision Dirichlet(", format(p$u, trim = TRUE), ")"),
+			if (any(kept %in% c("t_eq", "t_het"))) "heavy tails nu - 2 ~ Exp(1)")
+		extra_fr <- c(if (any(kept %in% c("normal_het", "t_het"))) paste0("proportions de pr\u00e9cision Dirichlet(", num(p$u), ")"),
+			if (any(kept %in% c("t_eq", "t_het"))) "queues lourdes nu - 2 ~ Exp(1)")
+		head_en <- if (length(kept) > 1L) paste0("each of the ", length(kept), " shapes starts equal") else "one shape only"
+		head_fr <- if (length(kept) > 1L) paste0("chacune des ", length(kept), " formes part \u00e0 \u00e9galit\u00e9") else "une seule forme"
+		say(paste0("  Noise: ", paste(c(head_en, extra_en), collapse = "; "), "."),
+			paste0("  Bruit : ", paste(c(head_fr, extra_fr), collapse = " ; "), "."))
 	}
 	if (!is.null(sens)) {
 		say(paste0("  Varied in the sensitivity: r from ", format(min(sens$r), trim = TRUE), " to ",
-				format(max(sens$r), trim = TRUE), ", odds 1:4 to 4:1, Dirichlet ",
-				format(min(sens$u), trim = TRUE), " to ", format(max(sens$u), trim = TRUE),
-				", noise fixed to normal or not."),
+				format(max(sens$r), trim = TRUE), ", odds H1:H0 ", paste(sens$odds[c(1L, length(sens$odds))], collapse = " to "), ", Dirichlet ",
+				format(min(sens$u), trim = TRUE), " to ", format(max(sens$u), trim = TRUE), "."),
 			paste0("  Vari\u00e9s dans la sensibilit\u00e9 : r de ", num(min(sens$r)), " \u00e0 ",
-				num(max(sens$r)), ", cotes 1:4 \u00e0 4:1, Dirichlet ",
-				num(min(sens$u)), " \u00e0 ", num(max(sens$u)),
-				", bruit impos\u00e9 normal ou non."))
+				num(max(sens$r)), ", cotes H1:H0 ", paste(sens$odds[c(1L, length(sens$odds))], collapse = " \u00e0 "), ", Dirichlet ",
+				num(min(sens$u)), " \u00e0 ", num(max(sens$u)), "."))
+	}
+
+	if (!is.null(sens) && isTRUE(nrow(obj$descriptive_stats) > 2L)) {
+		say(paste0("  With the first form of an effect alone, the probability of an effect would be ",
+				.bay_pct(sens$all_groups, "."), "."),
+			paste0("  Avec la premi\u00e8re forme d'effet seule, la probabilit\u00e9 d'un effet serait ",
+				.bay_pct(sens$all_groups, ","), "."))
 	}
 
 	# How to read it.

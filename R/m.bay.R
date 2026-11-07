@@ -98,6 +98,17 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 		.exit("u must be one finite, strictly positive number.",
 			"u doit \u00eatre un seul nombre fini et strictement positif.")
 	}
+	if (!isTRUE(rscale >= 1e-3 && rscale <= 1e3) || !isTRUE(u >= 1e-2 && u <= 1e4)) {
+		.exit("rscale must lie between 0.001 and 1000, and u between 0.01 and 10000.",
+			"rscale doit \u00eatre entre 0,001 et 1000, et u entre 0,01 et 10000.")
+	}
+	if (!is.numeric(draws) || length(draws) != 1L || !isTRUE(draws >= 100 && draws <= .bay_law_max_draws())) {
+		.exit(paste0("draws must be one number between 100 and ", .bay_law_max_draws(), "."),
+			paste0("draws doit \u00eatre un seul nombre entre 100 et ", .bay_law_max_draws(), "."))
+	}
+	if (!is.numeric(seed) || length(seed) != 1L || !isTRUE(abs(seed) <= .Machine$integer.max)) {
+		.exit("seed must be one integer.", "seed doit \u00eatre un seul nombre entier.")
+	}
 	laws <- unique(laws)
 	if (!length(laws) || !all(laws %in% .bay_law_names())) {
 		.exit("laws must be among normal_eq, normal_het, t_eq, t_het.",
@@ -131,13 +142,17 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	if (!identical(input$plan, "oneway")) {
 		plan_en <- c(factorial = "several factors", ancova = "covariates", paired = "paired data",
 			repeated = "repeated measures", mixed = "mixed models", manova = "MANOVA")[input$plan]
-		plan_fr <- c(factorial = "plusieurs facteurs", ancova = "covariables", paired = "donn\u00e9es appari\u00e9es",
-			repeated = "mesures r\u00e9p\u00e9t\u00e9es", mixed = "mod\u00e8les mixtes", manova = "MANOVA")[input$plan]
+		plan_fr <- c(factorial = "plusieurs facteurs", ancova = "les covariables", paired = "les donn\u00e9es appari\u00e9es",
+			repeated = "les mesures r\u00e9p\u00e9t\u00e9es", mixed = "les mod\u00e8les mixtes", manova = "la MANOVA")[input$plan]
 		.exit(paste0("m.bay() does not handle ", plan_en, " yet: this plan is not validated (use m.test())."),
 			paste0("m.bay() ne traite pas encore ", plan_fr, " : ce plan n'est pas valid\u00e9 (utiliser m.test())."))
 	}
 	y <- input$response
 	y_values <- length(unique(y))
+	if (isTRUE(diff(range(y)) <= 8 * .Machine$double.eps * max(abs(y)))) {
+		.exit("y is constant: the probabilities are undetermined.",
+			"y est constant : les probabilit\u00e9s sont ind\u00e9termin\u00e9es.")
+	}
 	if (y_values == 2L) {
 		.exit("Binary response: its own law is not validated yet, the normal and t laws do not apply.",
 			"R\u00e9ponse binaire : sa loi propre n'est pas encore valid\u00e9e, les lois normale et t ne s'appliquent pas.")
@@ -158,14 +173,17 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 			paste0("Tr\u00e8s petit(s) groupe(s) (n < 3), conserv\u00e9(s) : ", paste(small, collapse = ", "),
 				". Leur variance est mal connue."))
 	}
-	# Known limit (VALIDATION, B1): with a common g, the cost of a far group grows as
-	# d^k, and a larger variance as d^(n_s + 2u). Beyond this, a far small group can be
-	# read as a larger variance rather than as an effect.
-	if (min(st$n) + 2 * u < st$k) {
-		note("Many groups and a very small one: if that group stands far apart, the global answer is cautious, as that distance can also be read as a larger variance.",
-			"Beaucoup de groupes et un tr\u00e8s petit : si ce groupe est \u00e0 l'\u00e9cart, la r\u00e9ponse globale est prudente, car cet \u00e9cart peut aussi se lire comme une plus grande variance.")
-	}
 
+	laws_kept <- .bay_laws_allowed(st, laws)
+	if (length(laws_kept) == 0L) {
+		.exit("Mostly repeated values: none of the requested laws applies. Allow normal_eq in laws.",
+			"Surtout des valeurs r\u00e9p\u00e9t\u00e9es : aucune des lois demand\u00e9es ne s'applique. Autoriser normal_eq dans laws.")
+	}
+	if (length(laws_kept) < length(laws)) {
+		note("Mostly repeated values: laws with unequal variances or heavy tails do not apply to such data and were left out. A law for discrete data is not validated yet.",
+			"Surtout des valeurs r\u00e9p\u00e9t\u00e9es : les lois \u00e0 variances in\u00e9gales ou \u00e0 queues lourdes ne s'appliquent pas et ont \u00e9t\u00e9 \u00e9cart\u00e9es. Une loi pour donn\u00e9es discr\u00e8tes n'est pas encore valid\u00e9e.")
+	}
+	laws <- laws_kept
 	draws <- as.integer(draws)
 	seed <- as.integer(seed)
 	rs <- if (isTRUE(sensitivity)) c(rscale / 2, rscale, rscale * 2) else rscale
@@ -180,7 +198,7 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 		note(paste0("Numerical precision is low: error on the Bayes factor about ",
 				format(signif(ans$error_pct, 2), trim = TRUE), " %."),
 			paste0("Pr\u00e9cision num\u00e9rique faible : erreur sur le facteur de Bayes d'environ ",
-				format(signif(ans$error_pct, 2), trim = TRUE), " %."))
+				gsub(".", ",", format(signif(ans$error_pct, 2), trim = TRUE), fixed = TRUE), " %."))
 	}
 
 	effects <- .bay_effects_row(term = shown, log_bf = ans$log_bf, prior_h1 = prior_h1,
@@ -212,14 +230,17 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 		names(lb_u) <- format(us, trim = TRUE)
 		lb_laws <- ans$log_bf_law
 		odds0 <- prior_h1 / (1 - prior_h1)
+		# A law imposed against the data is not a plausible prior: it is shown apart and
+		# stays out of the range (RELECTURE 2026-11-07, I1).
 		all_p <- c(as.vector(grid$grid),
-			.bay_post_prob(log_bf = lb_u, prior_odds = odds0),
-			.bay_post_prob(log_bf = lb_laws, prior_odds = odds0))
+			.bay_post_prob(log_bf = lb_u, prior_odds = odds0))
 		if (!lead_is_h1) all_p <- 1 - all_p
 		range_lead <- range(all_p)
 		sens <- list(grid = grid$grid, by_u = .bay_post_prob(log_bf = lb_u, prior_odds = odds0),
 			by_law = .bay_post_prob(log_bf = lb_laws, prior_odds = odds0),
-			r = rs, u = sort(c(us, u)), range_lead = range_lead,
+			all_groups = .bay_post_prob(log_bf = .bay_laws_average(tab, rscale, h1_form = "zs")$log_bf,
+				prior_odds = odds0),
+			r = rs, u = sort(c(us, u)), odds = colnames(grid$grid), range_lead = range_lead,
 			verdict = .bay_sensitivity_verdict(max(ans$p_h1, ans$p_h0), range_lead))
 	}
 
@@ -236,6 +257,7 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 		priors = list(prior_h1 = prior_h1, rscale = rscale, u = u, law_prior = "equal",
 			nu = "nu - 2 ~ Exp(1)"),
 		descriptive_stats = desc, prob_effect = ans$p_h1,
+		largest_gap = (max(desc$mean) - min(desc$mean)) / (st$unit * max(abs(st$y_raw))),
 		method = "Averaged over sampling laws", plan = input$plan,
 		label = if (identical(term, ".g")) paste0(input$response_name, " ~ g") else input$label,
 		n = st$N, notes = notes, call = call_expr)

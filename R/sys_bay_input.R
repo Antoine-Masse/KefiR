@@ -37,6 +37,11 @@
 	list(rhs)
 }
 
+.bay_refuse_id <- function(id) {
+	.exit(paste0("Subject id must be one variable, not: ", id, "."),
+		paste0("L'identifiant du sujet doit \u00eatre une seule variable, pas : ", id, "."))
+}
+
 # Reads what the random or stratum parts of a formula say. Returns the formula
 # without them, with id, within and the random slopes.
 .bay_split_formula <- function(f) {
@@ -60,6 +65,7 @@
 			inner <- p[[2L]]
 			if (is.call(inner) && identical(inner[[1L]], as.name("/"))) {
 				id <- deparse1(inner[[2L]])
+				if (!is.name(inner[[2L]])) .bay_refuse_id(id)
 				within <- union(within, all.vars(inner[[3L]]))
 			} else {
 				vars <- all.vars(inner)
@@ -69,6 +75,7 @@
 		} else if (is_bar) {
 			bar <- p[[2L]]
 			id <- deparse1(bar[[3L]])
+			if (!is.name(bar[[3L]])) .bay_refuse_id(id)
 			lhs_vars <- all.vars(bar[[2L]])
 			slopes <- union(slopes, lhs_vars)
 		} else {
@@ -125,6 +132,10 @@
                              paired = FALSE, id = NULL, wt = NULL, within = NULL,
                              between = NULL, maxcat = 50, env = parent.frame()) {
 	if (!is.null(within) && is.null(wt)) wt <- within
+	# id: a simple name, an index with data, or a vector.
+	if (!is.null(id) && length(id) == 1L && (is.na(id) || (is.numeric(id) && is.null(data)))) {
+		.exit("id is not valid.", "id n'est pas valide.")
+	}
 	# x as a formula; a data.frame in second position is data.
 	if (is.null(formula) && inherits(x, "formula")) {
 		formula <- x
@@ -189,6 +200,25 @@
 		resp_label <- deparse1(parts$lhs)
 		fx <- stats::terms(parts$fixed, data = data)
 		terms_fixed <- attr(fx, "term.labels")
+		# A term must be a variable: I(x > 2) or ifelse(...) would otherwise be analysed
+		# through its raw variables under a label that says something else.
+		bad_terms <- terms_fixed[!vapply(strsplit(terms_fixed, ":", fixed = TRUE), function(v) {
+			all(vapply(v, function(s) identical(make.names(s), s) || grepl("^`.*`$", s), logical(1)))
+		}, logical(1))]
+		if (length(bad_terms)) {
+			.exit(paste0("Terms must be variables. Create a column for: ", paste(bad_terms, collapse = ", "), "."),
+				paste0("Les termes doivent \u00eatre des variables. Cr\u00e9er une colonne pour : ",
+					paste(bad_terms, collapse = ", "), "."))
+		}
+		# A variable found outside data joins data, or is refused.
+		for (v in setdiff(all.vars(parts$fixed[[3L]]), names(data))) {
+			val <- get(v, envir = environment(formula))
+			if (!is.atomic(val) || length(val) != nrow(data)) {
+				.exit(paste0("Variable not found in data, or of the wrong length: ", v, "."),
+					paste0("Variable absente des donn\u00e9es, ou de mauvaise longueur : ", v, "."))
+			}
+			data[[v]] <- val
+		}
 		pred_names <- setdiff(all.vars(parts$fixed[[3L]]), character(0))
 		if (is.numeric(pred_names) || length(pred_names) == 0L) pred_names <- character(0)
 	} else {
@@ -220,6 +250,17 @@
 			pred_names <- names(g)
 			data <- if (is.null(data)) g else cbind(data, g[setdiff(names(g), names(data))])
 		} else if (!is.null(g)) {
+			if (is.list(g) || is.matrix(g) || !is.atomic(g)) {
+				.exit("g must be a vector, a factor or a data.frame.",
+					"g doit \u00eatre un vecteur, un facteur ou un data.frame.")
+			}
+			if (length(g) != NROW(resp)) {
+				.exit("x and g do not have the same length.",
+					"x et g n'ont pas la m\u00eame longueur.")
+			}
+			if (is.numeric(g) && any(is.infinite(g))) {
+				.exit("g contains infinite values.", "g contient des valeurs infinies.")
+			}
 			pred_names <- ".g"
 			if (is.null(data)) data <- data.frame(row.names = seq_along(as.matrix(resp)[, 1L]))
 			data[[".g"]] <- g
@@ -248,12 +289,13 @@
 		data[[".id"]] <- id_vec
 		id <- ".id"
 	}
-	if (is.null(id) && isTRUE(paired)) {
-		# paired = TRUE without id: the order of the rows pairs the observations.
-		f_name <- setdiff(pred_names, wt)
+	if (is.null(id) && (isTRUE(paired) || length(wt) > 0L)) {
+		# paired = TRUE, or a within factor, without id: as in m.test, the order of the
+		# rows pairs the observations.
+		f_name <- if (length(wt)) wt else pred_names
 		if (length(f_name) != 1L) {
-			.exit("paired = TRUE without id needs exactly one factor.",
-				"paired = TRUE sans id demande exactement un facteur.")
+			.exit("paired = TRUE or wt without id needs exactly one factor.",
+				"paired = TRUE ou wt sans id demande exactement un facteur.")
 		}
 		fac <- as.character(data[[f_name]])
 		data[[".id"]] <- stats::ave(seq_along(fac), fac, FUN = seq_along)

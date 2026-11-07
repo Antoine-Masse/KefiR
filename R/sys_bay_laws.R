@@ -9,11 +9,23 @@
 #   y_ij ~ law(theta_i, sigma_i^2), sigma_i^2 = c_i / taubar, c_i = 1 / (k vartheta_i)
 #   p(mu, taubar) prop 1 / taubar         shared by all the models
 #   vartheta ~ Dirichlet(u, ..., u)       variances per group; c_i = 1 otherwise
-#   H1: theta_i = mu + a_i, a_i | g ~ N(0, g sigma_i^2), g ~ InvGamma(1/2, r^2/2)
+#   H1, an even mixture of two forms:
+#     all groups: theta_i = mu + a_i, a_i | g ~ N(0, g sigma_i^2), g ~ InvGamma(1/2, r^2/2)
+#     one group, s uniform: theta_s = mu + a_s, a_s | g ~ N(0, g sigma_s^2),
+#                g ~ InvGamma(1/2, (r sqrt(2))^2 / 2), the others at mu
 #   H0: theta_i = mu
 #   t: scale s_i with s_i^2 nu / (nu - 2) = sigma_i^2, p(nu) = exp(-(nu - 2)), nu > 2
-# With all c_i = 1 and the normal law, this is exactly the Zellner-Siow prior of
-# Rouder et al. (2012), hence .bay_bf_oneway_zs.
+# With all c_i = 1 and the normal law, the first form is exactly the Zellner-Siow prior
+# of Rouder et al. (2012), hence .bay_bf_oneway_zs, and each piece of the second is that
+# same Bayes factor on the factor "s against the rest". At k = 2 the mixture is not used:
+# both forms coincide when the variances are equal.
+#
+# Why the second form: with a common g, one far group costs d^(-k) under the first form,
+# against d^(-n_s - 2u) for "no effect, that group is just more dispersed". For
+# n_s + 2u <= k the evidence then never grows with d, and H0 can lead with 83 % at
+# k = 20, Welch p = 1e-111 (dev/mbay/RELECTURE_ADVERSE_2026-11-07.md, B1). The second form
+# costs d^(-2) whatever k. Specific to KefiR; the idea of comparing partitions of the
+# means is that of Gopalan & Berry (1998).
 #
 # Why a_i | g is scaled by its own sigma_i, and not by a common scale: this is
 # defect B2 of RELECTURE_ADVERSE_2026-11-06.md. An unrelated dispersed group must
@@ -61,12 +73,14 @@
 		.exit("No variation within any group: the normal and t laws do not apply.",
 			"Aucune variation dans aucun groupe : les lois normale et t ne s'appliquent pas.")
 	}
-	by_group <- split(y, g)
+	# Scaled first: squares of y * 1e200 or y * 1e-200 would overflow or vanish.
+	y1 <- y / max(abs(y))
+	by_group <- split(y1, g)
 	n <- as.numeric(lengths(by_group))
 	N <- sum(n)
 	unit <- sqrt(sum(vapply(by_group, function(v) sum((v - mean(v))^2), numeric(1))) /
 		(N - length(n)))
-	y_std <- (y - mean(y)) / unit
+	y_std <- (y1 - mean(y1)) / unit
 	by_group <- split(y_std, g)
 	list(k = length(n), n = n, N = N, levels = levels(g), y = by_group,
 		y_raw = y, g_raw = g,
@@ -107,18 +121,26 @@
 }
 
 # The same on a vector of g: one column per g. No loop on g, matrix products only.
-.bay_law_kernel_grid <- function(st, cc, gs) {
+.bay_law_kernel_grid <- function(st, cc, gs, s = NULL) {
 	n <- st$n
 	k <- st$k
 	S <- nrow(cc)
 	lc <- log(cc)
 	w0 <- 1 / cc
-	M <- matrix(rep(st$m, each = S), S, k)
-	a <- 1 / outer(1 / n, gs, "+")
+	# Means relative to the group of largest weight on each row: S2 - Wm^2 / W then
+	# stays a difference of comparable numbers, even at extreme c.
+	M <- matrix(rep(st$m, each = S), S, k) - st$m[max.col(w0, ties.method = "first")]
+	if (is.null(s)) {
+		a <- 1 / outer(1 / n, gs, "+")
+	} else {
+		# Only group s has an effect: v_i = c_i / n_i elsewhere.
+		a <- matrix(n, k, length(gs))
+		a[s, ] <- 1 / (1 / n[s] + gs)
+	}
 	W <- w0 %*% a
 	Wm <- (w0 * M) %*% a
 	S2 <- (w0 * M^2) %*% a
-	Q <- drop(w0 %*% st$ss) + S2 - Wm^2 / W
+	Q <- drop(w0 %*% st$ss) + pmax(S2 - Wm^2 / W, 0)
 	base <- -0.5 * drop(lc %*% (n - 1)) - 0.5 * rowSums(lc)
 	sweep(-0.5 * log(W) - (st$N - 1) / 2 * log(Q), 2L, 0.5 * colSums(log(a)), "+") + base
 }
@@ -126,20 +148,21 @@
 # Integral over g for each row of cc and each r, trapezoids in t = log g. Same
 # argument as for .bay_bf_oneway_zs: analytic integrand, doubly exponential decay
 # on the left, rate k/2 on the right. Left bound r^2 / (100 k): the prior peak is
-# near r^2 / k (RELECTURE_ADVERSE_2026-11-06.md, I3). Right bound: as c_i >= 1/k,
-# sum (m_i - mbar)^2 / c_i <= k^2 range(m)^2.
-.bay_law_gint <- function(st, cc, rs, h = min(0.25, 0.5 / sqrt(st$k))) {
+# near r^2 / k (RELECTURE_ADVERSE_2026-11-06.md, I3). Right bound: the peak is near
+# g n_i ~ N * (between part) / (within part), at most over the rows of cc.
+.bay_law_gint <- function(st, cc, rs, h = min(0.25, 0.5 / sqrt(st$k)), s = NULL) {
 	k <- st$k
 	span <- diff(range(st$m))
 	t_lo <- log(min(rs)^2 / (100 * k))
-	t_hi <- max(log(max(rs)^2), log(k^2 * span^2 + 1e-8)) + 30
+	ratio <- k^2 * span^2 * max(rowSums(1 / cc)) / min(drop((1 / cc) %*% st$ss) + 1e-300)
+	t_hi <- max(log(max(rs)^2), log(k^2 * span^2 + 1e-8), log(st$N * ratio + 1e-8)) + 30
 	S <- nrow(cc)
 	# Pilot on a coarse grid and a few rows: keeps the part of the range where the
 	# integrand is within exp(-40) of its peak on those rows, plus a margin.
 	if (S > 50L) {
 		pilot <- cc[round(seq(1, S, length.out = 50L)), , drop = FALSE]
 		t_coarse <- seq(t_lo, t_hi, by = 1)
-		Lp <- .bay_law_kernel_grid(st, pilot, exp(t_coarse))
+		Lp <- .bay_law_kernel_grid(st, pilot, exp(t_coarse), s)
 		seen <- logical(length(t_coarse))
 		for (r in range(rs)) {
 			lp <- -0.5 * t_coarse - r^2 / (2 * exp(t_coarse))
@@ -150,7 +173,7 @@
 		t_hi <- min(t_hi, max(t_coarse[seen]) + 3)
 	}
 	t_grid <- seq(t_lo, t_hi, by = h)
-	L <- .bay_law_kernel_grid(st, cc, exp(t_grid))
+	L <- .bay_law_kernel_grid(st, cc, exp(t_grid), s)
 	res <- matrix(NA_real_, S, length(rs))
 	for (i in seq_along(rs)) {
 		r <- rs[i]
@@ -162,6 +185,25 @@
 	res
 }
 
+
+# log(exp(a) + exp(b)) by element.
+.bay_lse2 <- function(a, b) {
+	top <- pmax(a, b)
+	top + log(exp(a - top) + exp(b - top))
+}
+
+# The even mixture of the two forms of H1, for each row of cc and each r. Returns the
+# mixture in the first length(rs) columns, the "all groups" form alone in the others.
+.bay_law_gint_mix <- function(st, cc, rs) {
+	zs <- .bay_law_gint(st, cc, rs)
+	if (st$k == 2L) return(cbind(zs, zs))
+	sp <- NULL
+	for (s in seq_len(st$k)) {
+		x <- .bay_law_gint(st, cc, rs * sqrt(2), s = s)
+		sp <- if (is.null(sp)) x else .bay_lse2(sp, x)
+	}
+	cbind(.bay_lse2(zs, sp - log(st$k)) + log(0.5), zs)
+}
 
 # ---------------------------------------------------------------------------
 # Normal laws: importance sampling on the proportions of precision
@@ -227,12 +269,24 @@
 
 # log mean of exp(lw), ESS and relative standard error.
 .bay_law_is <- function(lw) {
+	if (any(!is.finite(lw) & !(lw == -Inf), na.rm = TRUE) || anyNA(lw)) {
+		return(list(log_mean = NA_real_, ess = NA_real_, rel_se = NA_real_))
+	}
 	top <- max(lw)
+	if (!is.finite(top)) return(list(log_mean = NA_real_, ess = NA_real_, rel_se = NA_real_))
 	w <- exp(lw - top)
 	mw <- mean(w)
 	list(log_mean = top + log(mw), ess = sum(w)^2 / sum(w^2),
 		rel_se = stats::sd(w) / (mw * sqrt(length(w))))
 }
+
+# Absolute ceiling on the importance draws per model, whatever the growth.
+.bay_law_max_draws <- function() 40000L
+
+# An estimate on too few effective draws is not an estimate: its stated error saturates
+# (rel_se tends to 1 when one weight dominates). Such a model counts as failed, and its
+# law is dropped with a message, instead of taking all the weight by chance.
+.bay_law_min_ess <- function() 30
 
 # Multivariate t components. A fit is a centre and a square root of the covariance.
 .bay_mvt_make <- function(centre, cov_vals, cov_vecs) {
@@ -332,8 +386,8 @@
 			log(mix[3L]) + .bay_mvt_ld(z, fit, 3, 2) - ljac))
 		lw <- rbind(lw, target(th) + ldir(th) - lq)
 		ess <- .bay_law_is(lw[, ic])$ess
-		if (ess >= min(500, draws / 4) || grown >= max_grow) break
-		extra <- 3L * nrow(lw)
+		if (isTRUE(ess >= min(500, draws / 4)) || grown >= max_grow || nrow(lw) >= .bay_law_max_draws()) break
+		extra <- min(3L * nrow(lw), .bay_law_max_draws() - nrow(lw))
 		grown <- grown + 1L
 	}
 	lapply(seq_len(ncol(lw)), function(i) .bay_law_is(lw[, i]))
@@ -345,25 +399,45 @@
 	const <- .bay_law_const(st)
 	one <- matrix(1, 1L, k)
 	h0_eq <- const + .bay_law_kernel(st, one, 0)
-	h1_eq <- vapply(rs, function(r) {
+	h1_eq_zs <- vapply(rs, function(r) {
 		h0_eq + .bay_bf_oneway_zs(st$y_raw, st$g_raw, r)
 	}, numeric(1))
+	h1_eq <- h1_eq_zs
+	if (k > 2L) {
+		# Same grid as for the other laws, on the row c = 1.
+		sp <- NULL
+		for (s in seq_len(k)) {
+			x <- const + drop(.bay_law_gint(st, one, rs * sqrt(2), s = s))
+			sp <- if (is.null(sp)) x else .bay_lse2(sp, x)
+		}
+		h1_eq <- .bay_lse2(h1_eq_zs, sp - log(k)) + log(0.5)
+	}
 	ic <- ceiling(length(rs) / 2)
 	het <- .bay_with_seed(seed, list(
 		h0 = .bay_law_het_is(st, u, draws, function(th) {
 			matrix(.bay_law_kernel(st, 1 / (k * th), 0), ncol = 1L)
 		}, 1L, max_grow),
 		h1 = .bay_law_het_is(st, u, draws, function(th) {
-			.bay_law_gint(st, 1 / (k * th), rs)
+			.bay_law_gint_mix(st, 1 / (k * th), rs)
 		}, ic, max_grow)
 	))
 	s0 <- het$h0[[1L]]
 	s1 <- het$h1
+	floor_ess <- function(x) {
+		if (!isTRUE(x$ess >= .bay_law_min_ess())) x$log_mean <- NA_real_
+		x
+	}
+	s0 <- floor_ess(s0)
+	s1 <- lapply(s1, floor_ess)
+	nr <- length(rs)
+	s1_zs <- s1[nr + seq_len(nr)]
+	s1 <- s1[seq_len(nr)]
 	list(
 		eq_h0 = list(log_ml = h0_eq, rel_se = 0, ess = NA_real_),
-		eq_h1 = list(log_ml = h1_eq, rel_se = rep(0, length(rs)), ess = NA_real_),
+		eq_h1 = list(log_ml = h1_eq, log_ml_zs = h1_eq_zs, rel_se = rep(0, length(rs)), ess = NA_real_),
 		het_h0 = list(log_ml = const + s0$log_mean, rel_se = s0$rel_se, ess = s0$ess),
 		het_h1 = list(log_ml = const + vapply(s1, `[[`, numeric(1), "log_mean"),
+			log_ml_zs = const + vapply(s1_zs, `[[`, numeric(1), "log_mean"),
 			rel_se = vapply(s1, `[[`, numeric(1), "rel_se"),
 			ess = min(vapply(s1, `[[`, numeric(1), "ess")))
 	)
@@ -378,10 +452,10 @@
 # ratios of vartheta if the variances differ, log(nu - 2). Returns the log posterior
 # kernel without the prior on theta, and the quantities that prior needs, so that
 # the same draws serve every r.
-.bay_t_parts <- function(X, st, h1, het, u) {
+.bay_t_parts <- function(X, st, h1, het, u, s = NULL) {
 	k <- st$k
 	S <- nrow(X)
-	p <- if (h1) k else 1L
+	p <- if (!h1) 1L else if (!is.null(s)) 2L else k
 	th_loc <- X[, seq_len(p), drop = FALSE]
 	lt <- X[, p + 1L]
 	if (het) {
@@ -402,7 +476,13 @@
 	for (i in seq_len(k)) {
 		# log of the squared scale: s^2 = sigma^2 (nu - 2) / nu
 		ls2 <- lc[, i] - lt + lv - log(nu)
-		loc <- if (h1) th_loc[, i] else th_loc[, 1L]
+		loc <- if (!h1) {
+			th_loc[, 1L]
+		} else if (!is.null(s)) {
+			if (i == s) th_loc[, 1L] + th_loc[, 2L] else th_loc[, 1L]
+		} else {
+			th_loc[, i]
+		}
 		yi <- st$y[[i]]
 		acc <- numeric(S)
 		# Chunks: S x n_i doubles at most 5e6 at a time.
@@ -417,7 +497,7 @@
 		}
 		ll <- ll + st$n[i] * (norm_t - 0.5 * ls2) - (nu + 1) / 2 * acc
 	}
-	list(base = ll + lp_dir + lp_nu, th_loc = th_loc, lc = lc, lt = lt)
+	list(base = ll + lp_dir + lp_nu, th_loc = th_loc, lc = lc, lt = lt, s = s)
 }
 
 # Prior of theta under H1 given sigma, with g and mu integrated out. With
@@ -425,6 +505,11 @@
 #   log p = log(r / sqrt(2 pi)) + lgamma(k/2) - (k/2) log((Q0 + r^2)/2)
 #           - (k-1)/2 log(2 pi) - 1/2 sum log d_i - 1/2 log(sum 1/d_i)
 .bay_t_prior_theta <- function(parts, r, k) {
+	if (!is.null(parts$s)) {
+		# One group: a_s / sigma_s ~ Cauchy(0, r sqrt(2)), mu flat.
+		scale <- r * sqrt(2) * exp(0.5 * (parts$lc[, parts$s] - parts$lt))
+		return(stats::dcauchy(parts$th_loc[, 2L], 0, scale, log = TRUE))
+	}
 	ld <- parts$lc - parts$lt
 	w <- exp(-ld)
 	W <- rowSums(w)
@@ -434,13 +519,13 @@
 		(k - 1) / 2 * log(2 * pi) - 0.5 * rowSums(ld) - 0.5 * log(W)
 }
 
-.bay_t_logpost <- function(x, st, h1, het, u, r) {
+.bay_t_logpost <- function(x, st, h1, het, u, r, s = NULL) {
 	X <- matrix(x, nrow = 1L)
-	parts <- .bay_t_parts(X, st, h1, het, u)
+	parts <- .bay_t_parts(X, st, h1, het, u, s)
 	parts$base + if (h1) .bay_t_prior_theta(parts, r, st$k) else 0
 }
 
-.bay_t_start <- function(st, h1, het, robust) {
+.bay_t_start <- function(st, h1, het, robust, s = NULL) {
 	k <- st$k
 	locs <- if (robust) {
 		vapply(st$y, stats::median, numeric(1), USE.NAMES = FALSE)
@@ -455,7 +540,14 @@
 	pooled <- stats::median(spread, na.rm = TRUE)
 	if (!is.finite(pooled)) pooled <- 1
 	spread[is.na(spread)] <- pooled
-	th <- if (h1) locs else stats::median(unlist(st$y, use.names = FALSE))
+	th <- if (!h1) {
+		stats::median(unlist(st$y, use.names = FALSE))
+	} else if (!is.null(s)) {
+		mu0 <- stats::median(unlist(st$y[-s], use.names = FALSE))
+		c(mu0, locs[s] - mu0)
+	} else {
+		locs
+	}
 	if (het) {
 		prec <- 1 / spread
 		lt <- log(mean(prec))
@@ -472,16 +564,16 @@
 # ridge), a t fitted on the weighted pilot, up to three rounds. The t at the mode stays
 # in the mixture. Only draws from the final mixture enter the estimate. Any failure of
 # the mode search is returned as NA: the caller drops that law and says so.
-.bay_t_ml <- function(st, h1, het, u, rs, draws, max_grow = 2L) {
+.bay_t_ml <- function(st, h1, het, u, rs, draws, max_grow = 2L, s = NULL) {
 	r0 <- rs[ceiling(length(rs) / 2)]
 	ic <- ceiling(length(rs) / 2)
 	fn <- function(x) {
-		val <- -.bay_t_logpost(x, st, h1, het, u, r0)
+		val <- -.bay_t_logpost(x, st, h1, het, u, r0, s)
 		if (is.finite(val)) val else 1e10
 	}
 	best <- NULL
 	for (robust in c(TRUE, FALSE)) {
-		fit <- tryCatch(stats::optim(.bay_t_start(st, h1, het, robust), fn, method = "BFGS",
+		fit <- tryCatch(stats::optim(.bay_t_start(st, h1, het, robust, s), fn, method = "BFGS",
 			control = list(maxit = 300L, reltol = 1e-9)), error = function(e) NULL)
 		if (!is.null(fit) && (is.null(best) || fit$value < best$value)) best <- fit
 	}
@@ -496,7 +588,7 @@
 	comps <- list(list(fit = fit_mode, df = 5, f = 1, weight = 0.7),
 		list(fit = fit_mode, df = 3, f = 2, weight = 0.3))
 	log_weights <- function(X) {
-		parts <- .bay_t_parts(X, st, h1, het, u)
+		parts <- .bay_t_parts(X, st, h1, het, u, s)
 		pr <- if (h1) {
 			vapply(rs, function(r) .bay_t_prior_theta(parts, r, st$k), numeric(nrow(X)))
 		} else {
@@ -509,7 +601,8 @@
 	X0 <- .bay_mix_draw(S0, comps)
 	lw0 <- log_weights(X0)
 	for (round in 1:3) {
-		if (.bay_law_is(lw0[, ic])$ess >= S0 / 4) break
+		if (isTRUE(.bay_law_is(lw0[, ic])$ess >= S0 / 4)) break
+		if (anyNA(lw0[, ic])) break
 		fit_new <- .bay_mvt_fit(X0, lw0[, ic])
 		comps <- list(list(fit = fit_new, df = 5, f = 1, weight = 0.5),
 			list(fit = fit_new, df = 3, f = 2, weight = 0.2),
@@ -517,21 +610,50 @@
 		X0 <- .bay_mix_draw(S0, comps)
 		lw0 <- log_weights(X0)
 	}
-	# The last pilot comes from the final mixture: its draws count.
-	lw <- lw0
-	extra <- max(0L, draws - S0)
+	# The pilot chose the mixture: only fresh draws enter the estimate.
+	lw <- NULL
+	extra <- draws
 	grown <- 0L
 	repeat {
-		if (extra > 0L) lw <- rbind(lw, log_weights(.bay_mix_draw(extra, comps)))
+		lw <- rbind(lw, log_weights(.bay_mix_draw(extra, comps)))
 		ess <- .bay_law_is(lw[, ic])$ess
-		if (ess >= min(500, draws / 4) || grown >= max_grow) break
-		extra <- 3L * nrow(lw)
+		if (isTRUE(ess >= min(500, draws / 4)) || grown >= max_grow || nrow(lw) >= .bay_law_max_draws()) break
+		extra <- min(3L * nrow(lw), .bay_law_max_draws() - nrow(lw))
 		grown <- grown + 1L
 	}
-	sm <- lapply(seq_along(rs), function(i) .bay_law_is(lw[, i]))
+	sm <- lapply(seq_along(rs), function(i) {
+		x <- .bay_law_is(lw[, i])
+		if (!isTRUE(x$ess >= .bay_law_min_ess())) x$log_mean <- NA_real_
+		x
+	})
 	list(log_ml = vapply(sm, `[[`, numeric(1), "log_mean"),
 		rel_se = vapply(sm, `[[`, numeric(1), "rel_se"),
 		ess = min(vapply(sm, `[[`, numeric(1), "ess")))
+}
+
+
+# H1 of a t law: the mixture of the two forms. Above 8 groups, only the 5 groups furthest
+# from the weighted median are computed in the second form, for the time it takes. The
+# others count for nothing there, which can only lower the Bayes factor, slightly.
+.bay_t_h1_mix <- function(st, het, u, rs, draws) {
+	zs <- .bay_t_ml(st, TRUE, het, u, rs, draws)
+	zs$log_ml_zs <- zs$log_ml
+	k <- st$k
+	if (k == 2L) return(zs)
+	groups <- seq_len(k)
+	if (k > 8L) {
+		ord <- order(st$m)
+		mb <- st$m[ord][which(cumsum(st$n[ord]) / st$N >= 0.5)[1L]]
+		groups <- order(-abs(st$m - mb) * sqrt(st$n))[1:5]
+	}
+	sp <- lapply(groups, function(s) .bay_t_ml(st, TRUE, het, u, rs, draws, s = s))
+	lm <- rbind(zs$log_ml + log(0.5), do.call(rbind, lapply(sp, `[[`, "log_ml")) + log(0.5 / k))
+	rel <- rbind(zs$rel_se, do.call(rbind, lapply(sp, `[[`, "rel_se")))
+	total <- apply(lm, 2L, .bay_log_sum_exp)
+	wts <- exp(sweep(lm, 2L, total, "-"))
+	list(log_ml = total, log_ml_zs = zs$log_ml_zs,
+		rel_se = sqrt(colSums((wts * rel)^2)),
+		ess = min(zs$ess, vapply(sp, `[[`, numeric(1), "ess")))
 }
 
 
@@ -541,12 +663,30 @@
 
 .bay_law_names <- function() c("normal_eq", "normal_het", "t_eq", "t_het")
 
+# Exact ties in a continuous model. A group with no variation, or mostly one repeated
+# value, gives an infinite marginal likelihood under a variance per group as soon as
+# (k - 1) u <= (n_i - 1) / 2, and a t likelihood is unbounded when ties reach about
+# 2/3 of the data: the integral diverges, it is not a numerical accident (RELECTURE
+# 2026-11-07, B2). These laws do not apply there. Returns the laws that do.
+.bay_laws_allowed <- function(st, laws) {
+	top_share <- function(v) max(table(v)) / length(v)
+	big <- st$n >= 2
+	by_group <- vapply(st$y[big], top_share, numeric(1))
+	if (any(by_group > 1/2)) return(intersect(laws, "normal_eq"))
+	if (top_share(unlist(st$y, use.names = FALSE)) > 1/2) {
+		return(intersect(laws, c("normal_eq", "normal_het")))
+	}
+	laws
+}
+
 # Long table: one row per model and per r.
 .bay_laws_table <- function(st, rs, u, draws, seed, laws = .bay_law_names()) {
 	out <- list()
 	add <- function(law, hyp, item) {
 		out[[length(out) + 1L]] <<- data.frame(law = law, hypothesis = hyp, r = rs,
-			log_ml = item$log_ml, rel_se = item$rel_se, ess = item$ess,
+			log_ml = item$log_ml,
+			log_ml_zs = if (is.null(item$log_ml_zs)) item$log_ml else item$log_ml_zs,
+			rel_se = item$rel_se, ess = item$ess,
 			stringsAsFactors = FALSE)
 	}
 	if (any(c("normal_eq", "normal_het") %in% laws)) {
@@ -565,11 +705,11 @@
 			lst <- list()
 			if ("t_eq" %in% laws) {
 				lst$t_eq_h0 <- .bay_t_ml(st, FALSE, FALSE, u, rs, draws)
-				lst$t_eq_h1 <- .bay_t_ml(st, TRUE, FALSE, u, rs, draws)
+				lst$t_eq_h1 <- .bay_t_h1_mix(st, FALSE, u, rs, draws)
 			}
 			if ("t_het" %in% laws) {
 				lst$t_het_h0 <- .bay_t_ml(st, FALSE, TRUE, u, rs, draws)
-				lst$t_het_h1 <- .bay_t_ml(st, TRUE, TRUE, u, rs, draws)
+				lst$t_het_h1 <- .bay_t_h1_mix(st, TRUE, u, rs, draws)
 			}
 			lst
 		})
@@ -588,8 +728,9 @@
 # Answer at one r from the table: P(H1 | D), inclusion BF across laws, P(law | D).
 # prior_law: named weights on the laws. A model whose marginal likelihood failed
 # (NA) is dropped with its whole law, so that the comparison stays balanced.
-.bay_laws_average <- function(tab, r, prior_h1 = 1/2, prior_law = NULL) {
+.bay_laws_average <- function(tab, r, prior_h1 = 1/2, prior_law = NULL, h1_form = c("mix", "zs")) {
 	tab <- tab[tab$r == r, , drop = FALSE]
+	if (match.arg(h1_form) == "zs") tab$log_ml <- tab$log_ml_zs
 	laws <- unique(tab$law)
 	bad <- unique(tab$law[is.na(tab$log_ml)])
 	laws_ok <- setdiff(laws, bad)
