@@ -1,5 +1,58 @@
 # Journal de m.bay
 
+## Séance 3 : 6 et 7 novembre 2026, sous-session auditée par « KefiR officiel »
+
+**Cadre.** Consigne de la session « KefiR officiel », en remplacement de la routine d'une heure. Démarrée à la fin de l'ancienne routine (`f2b8d9d`, worktree propre, vérifié). Interruption dans la nuit du 6 au 7 (PC endormi, cause non confirmée) : simulations arrêtées et reprises ; elles sont désormais reprenables, 3 ou 4 cœurs, chargement léger.
+
+**Objectif.** Jalon 1 : `m.bay()` à un facteur, 2 et k groupes, de bout en bout.
+
+**Fait.**
+- `R/m.bay.R` (exporté), `R/sys_bay_input.R`, `R/sys_bay_laws.R`, `R/sys_bay_bilan.R` ; `.bay_bf_oneway_hetero` retirée ; `man/m.bay.Rd` ; `tests/testthat/test-m.bay.R`, `test-bay-laws.R`.
+- Huit modèles comparés et moyennés, D6 faisable à k > 2. Deux formes d'effet à k ≥ 3, à la suite de la relecture.
+- Plans autres qu'un facteur : refus explicite, classement déjà fait.
+- Deux relectures adverses (`RELECTURE_ADVERSE_2026-11-07.md`). Scripts `agent_40` à `agent_44`, `agent_load_bay.R`. METHODOLOGIE §7, DECISIONS D1, D4, D5, D6, D9, VALIDATION §7.
+
+**Vérifié (comment).**
+- Tests relancés par moi sur le code final (`f8fe497`, code inchangé depuis) : `test-bay-core` 237, `test-bay-oneway` 27, `test-m.bay` 57, `test-bay-laws` 77, `test-m.test` 52, `test-valreg` 12, `test-manova` 59 : **0 échec, 0 erreur**. `m.test()` n'est pas touché (`git diff 3675fc7 HEAD -- R/m.test.R` vide).
+- Calcul indépendant : `agent_40` (8 modèles à k=2 contre quadrature, ≤ 0,02), `agent_42` (seconde forme, t, k=3, ≤ 0,022).
+- Calibration : `agent_41 A`, 6 plans, N=600, moyenne annoncée à 0,014 au plus de la fréquence, dans l'erreur de simulation. Cellule à z=3,64 du premier lancement : non reproduite, `agent_41 A2`.
+- Effets fixes : `agent_41 B`, 66 scénarios, N=300 ; à variances inégales, (5,5,40) sd (4,4,1) sous H0 : 1,3 % de P>0,95 contre 19 % en gaussien seul.
+- B1, B2 : `agent_41 D`. Sensibilité : `agent_41 C`, N=100. Formes différentes : `agent_43`. Variances étagées : `agent_44`.
+
+**Lancements, à ne pas confondre.** `agent_41 B` scénarios 1 à 8, C, D : code final, copie `f8fe497`. `agent_41 B` scénarios 9 à 66 et A : `c349c30`, avant le pilote itératif et les règles d'ex-aequo finales ; ces changements ne touchent pas ces données, et les scénarios 1 à 8 ont redonné les mêmes chiffres à ±0,01. `agent_41 A2` : `a315c6d`, k=2, modèle identique. `agent_40` : avant le centrage de `.bay_law_kernel_grid`, sans effet hors c extrêmes (écart ≤ 2e-13 selon le relecteur). `agent_42`, `agent_43` : `c349c30` puis copie de travail. **Non relancés sur le code final.**
+
+**Non vérifié.**
+- Pas de calcul indépendant pour t à variance par groupe à k ≥ 3, ni pour la seconde forme à variance par groupe : calibration seule.
+- Relecture par un tiers : pas sur le verdict 1:2–2:1, l'avis sur les queues lourdes, le pilote itératif, les règles d'ex-aequo finales (dérivées à la main).
+- k=20 : lois hétérogènes souvent écartées, une graine seulement.
+- Lisibilité du bilan : relue par moi seul, pas par un lecteur étudiant ou industriel.
+- `devtools::check()` non lancé. `m.bay()` sans post-hoc, taille d'effet ni intervalle de crédibilité : jalon suivant.
+- Bibliographie : Maier 2025 par résumeur automatique, définition de α selon δ non lue.
+
+**Résultat principal.** Comparer les lois marche à k > 2, sans Stan : calibré, et les faux « Oui » du plan hétéroscédastique tombent de 19 % à 1,3 %. La relecture a trouvé un défaut plus grave que prévu : un petit groupe éloigné parmi 20 mettait H0 en tête. D'où la seconde forme d'effet, qui fait perdre l'identité avec `anovaBF` à k ≥ 3. **Défaut qui reste, annoncé dans le bilan** : à moyennes égales et formes différentes, la loi t compare des centres (P>0,95 dans 67 % à n=400).
+
+**Décisions prises seul, réversibles.** Dirichlet(1,5) ; échelle par groupe ; deux formes à parts égales ; r fixe, l'hyper-a priori ne changeant rien à ±0,03 ; cotes 1:2–2:1 dans le verdict (jugement) ; seuils du qualificatif 0,75/0,95/0,993 ; ESS < 30 écarte une loi ; D1 : calcul interne à un facteur, BayesFactor seulement en test ; D9 option B.
+
+**Écarts de méthode.** L'arrêt forcé de mes propres processus R de simulation a été refusé par le mode automatique ; je n'ai pas contourné, ils ont fini seuls. Machine saturée en mémoire au premier lancement (chaque processus chargeait tout KefiR) : d'où `agent_load_bay.R`. Un prototype a eu un bug de graine (`set.seed` dans une boucle, tous les jeux identiques) : chiffres jetés, jamais inscrits. Écrire avec l'outil Write transforme `\uXXXX` en accents : sources réécrites en ASCII, testé.
+
+**Défauts de `m.test()` trouvés**, non corrigés, déjà signalés séance 1 : voir plus bas ; rien de nouveau cette séance.
+
+**Reproduire**, depuis le worktree. Voir VALIDATION §7 pour les sorties attendues.
+```bash
+Rscript -e '.libPaths(c("C:/Users/masse/Desktop/KefiR/mbay-lib",.libPaths())); devtools::test(filter="bay")'
+Rscript dev/mbay/scripts/agent_40_lois_calcul_independant.R
+Rscript dev/mbay/scripts/agent_42_forme_un_groupe_t.R
+Rscript dev/mbay/scripts/agent_41_lois_simulation.R A 600 3
+Rscript dev/mbay/scripts/agent_41_lois_simulation.R B 300 3
+Rscript dev/mbay/scripts/agent_41_lois_simulation.R C 100 3
+Rscript dev/mbay/scripts/agent_41_lois_simulation.R D 1 1
+Rscript dev/mbay/scripts/agent_43_formes_differentes.R 200 2
+Rscript dev/mbay/scripts/agent_44_variances_extremes.R 100 3
+```
+Les tranches déjà calculées sont dans `dev/mbay/scripts/resultats/agent_41_cas/` (non commité) : les effacer pour tout recalculer. Comptez plusieurs heures.
+
+**Prochain jalon, sans attendre.** Post-hoc et taille d'effet à un facteur, ou plusieurs facteurs, selon l'audit. Essai de moteur interne à plusieurs g concluant dans le scratchpad, à reprendre.
+
 ## Séance 2 : vendredi 6 novembre 2026
 
 **Durée.** Lancée à 09:12, bloquée jusqu'à 13:40 (attente d'autorisations), budget d'une heure repris à 13:40 sur message de ta session « KefiR officiel », en mode Auto. Fin vers 14:45.

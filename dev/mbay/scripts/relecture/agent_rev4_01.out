@@ -1,0 +1,42 @@
+--- A. forme s, c=1, contre ZS a 2 groupes s contre reste (meme r)
+s=1 grille -0.77899378  ZS2 -0.77899378 ecart -1.33e-15
+s=2 grille 1.06295788  ZS2 1.06295788 ecart 4.44e-16
+s=3 grille 0.17765312  ZS2 0.17765312 ecart -4.44e-16
+--- A2. forme tous, c=1, contre ZS
+grille 0.40146552 ZS 0.40146552 ecart -5.77e-15
+--- B. k=2 : forme s == forme tous a variances egales (annonce en-tete)
+s=1 forme s -14.98749827, tous -14.98749827
+s=2 forme s -14.98749827, tous -14.98749827
+    k=2 hetero c=(.5,2) : s1 s2 tous (les formes different, le melange n'est pas utilise)
+[1] -16.75986 -16.98886 -16.89274
+--- C. noyau contre formule matricielle independante (c, g fixes)
+g=0.01 s=NULL kernel -38.88386904 brute -38.88386904 ecart 0.0e+00
+g=0.01 s=1 kernel -38.92195565 brute -38.92195565 ecart 0.0e+00
+g=0.01 s=2 kernel -38.86417243 brute -38.86417243 ecart 0.0e+00
+g=0.01 s=3 kernel -38.91846785 brute -38.91846785 ecart 0.0e+00
+g=0.3 s=NULL kernel -39.14671242 brute -39.14671242 ecart 0.0e+00
+g=0.3 s=1 kernel -39.16998683 brute -39.16998683 ecart 0.0e+00
+g=0.3 s=2 kernel -38.60278679 brute -38.60278679 ecart 7.1e-15
+g=0.3 s=3 kernel -39.20903521 brute -39.20903521 ecart 7.1e-15
+g=5 s=NULL kernel -41.25339000 brute -41.25339000 ecart 0.0e+00
+g=5 s=1 kernel -40.16703696 brute -40.16703696 ecart -1.4e-14
+g=5 s=2 kernel -39.41785242 brute -39.41785242 ecart -1.4e-14
+g=5 s=3 kernel -40.32083293 brute -40.32083293 ecart 0.0e+00
+    H0 : -38.91077 -38.91077 0 
+--- D. loi de a_s : dcauchy(r sqrt2 sigma) contre integrale N(0,g sigma^2) x IG(1/2,(r sqrt2)^2/2)
+a=0.1 integ 0.34222550 cauchy 0.34222550
+a=1 integ 0.15859142 cauchy 0.15859231
+a=5 integ 0.01132145 cauchy 0.01132145
+--- E. noyau t forme s, nu tres grand, contre dnorm (c=1 puis hetero) ; a_s dans le mu
+t base-lp_nu -35.19916 normale -35.19916
+t het -37.85770 normale+dir -37.85770
+--- F. IS t_eq contre grille brute (H0 ; forme s=2) sur les memes donnees, 3 graines
+grille H0 -37.1462  forme s=2 -36.2273
+ graine 1 IS H0 -37.1486 (ess 1486) s=2 -36.2148 (ess 1472)
+ graine 2 IS H0 -37.1783 (ess 1737) s=2 -36.2187 (ess 1581)
+ graine 3 IS H0 -37.1475 (ess 1654) s=2 -36.2373 (ess 1577)
+--- G. melange t : log 0,5/k ; recalcul a la main
+mix -36.9598 ; main -36.9598
+--- H. .bay_law_normal egal a la main, et continuite k=2 contre k=3 (groupe vide ajoute presque nul)
+eq_h1 -35.952192 main -35.952192
+eq_h1 via gint_mix (ligne c=1)  -35.95219 

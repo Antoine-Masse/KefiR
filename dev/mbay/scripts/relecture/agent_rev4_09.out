@@ -1,0 +1,37 @@
+--- A. saut au seuil : 10 puis 11 ex-aequo (n=20) a la meme valeur ; 11 force a 4 lois (SS>0, integrale finie)
+val=0 m=9 SS_a=8.991 m.bay P=0.5669 logBF=0.27 [normal_eq,normal_het,t_eq,t_het] | 4 lois forcees P=0.5669 logBF=0.27 err=0.7% lois 0.305/0.640/0.014/0.041 ess NA/NA/3211/3150/1766/1623/1303/1264
+val=0 m=10 SS_a=6.855 m.bay P=0.5886 logBF=0.36 [normal_eq,normal_het,t_eq,t_het] | 4 lois forcees P=0.5886 logBF=0.36 err=1.0% lois 0.096/0.831/0.006/0.068 ess NA/NA/3187/3108/1657/1675/594/904
+val=0 m=11 SS_a=6.392 m.bay P=0.6828 logBF=0.77 [normal_eq] | 4 lois forcees P=0.5537 logBF=0.22 err=1.0% lois 0.059/0.810/0.004/0.126 ess NA/NA/3190/3105/1583/1623/2014/851
+val=0 m=12 SS_a=4.981 m.bay P=0.6873 logBF=0.79 [normal_eq] | 4 lois forcees P=0.5102 logBF=0.04 err=1.0% lois 0.011/0.719/0.001/0.269 ess NA/NA/3182/3087/1495/1503/2141/1114
+val=1 m=9 SS_a=14.961 m.bay P=0.7517 logBF=1.11 [normal_eq,normal_het,t_eq,t_het] | 4 lois forcees P=0.7517 logBF=1.11 err=0.3% lois 0.771/0.216/0.010/0.002 ess NA/NA/3191/3136/2365/1667/1526/778
+val=1 m=10 SS_a=14.617 m.bay P=0.7445 logBF=1.07 [normal_eq,normal_het,t_eq,t_het] | 4 lois forcees P=0.7445 logBF=1.07 err=0.3% lois 0.760/0.228/0.010/0.003 ess NA/NA/3190/3134/2356/1629/1526/754
+val=1 m=11 SS_a=13.757 m.bay P=0.8417 logBF=1.67 [normal_eq] | 4 lois forcees P=0.8148 logBF=1.48 err=0.3% lois 0.728/0.255/0.013/0.004 ess NA/NA/3199/3147/2277/1162/1369/773
+val=1 m=12 SS_a=11.470 m.bay P=0.9193 logBF=2.43 [normal_eq] | 4 lois forcees P=0.8918 logBF=2.11 err=0.5% lois 0.600/0.375/0.016/0.009 ess NA/NA/3190/3141/2164/776/1220/621
+val=3 m=9 SS_a=34.191 m.bay P=0.9380 logBF=2.72 [normal_eq,normal_het,t_eq,t_het] | 4 lois forcees P=0.9380 logBF=2.72 err=1.0% lois 0.116/0.875/0.001/0.008 ess NA/NA/3209/3105/1270/1736/820/1236
+val=3 m=10 SS_a=34.866 m.bay P=0.9506 logBF=2.96 [normal_eq,normal_het,t_eq,t_het] | 4 lois forcees P=0.9506 logBF=2.96 err=1.1% lois 0.085/0.907/0.001/0.007 ess NA/NA/3213/3098/1805/1597/1406/1373
+val=3 m=11 SS_a=34.270 m.bay P=0.9969 logBF=5.78 [normal_eq] | 4 lois forcees P=0.9819 logBF=3.99 err=1.1% lois 0.111/0.879/0.002/0.008 ess NA/NA/3215/3083/1906/763/1640/1073
+val=3 m=12 SS_a=32.700 m.bay P=0.9997 logBF=8.09 [normal_eq] | 4 lois forcees P=0.9964 logBF=5.62 err=1.0% lois 0.205/0.782/0.005/0.009 ess NA/NA/3172/3057/2004/1437/2198/1280
+--- B. seuil global : 50 puis 51 % de l'echantillon (aucun groupe > 50 %)
+[1] "normal_eq"  "normal_het" "t_eq"       "t_het"     
+30/60                                      OK P=0.3448 logBF=-0.64 err=1.30% lois=normal_eq:0.109 normal_het:0.051 t_eq:0.532 t_het:0.309 notes=0 (2.7s)
+    par groupe tout a 50 % a valeurs distinctes, 30/60 mais aucun commun
+3x50% distincts                            OK P=1.0000 logBF=15.17 err=2.01% lois=normal_eq:0.000 normal_het:0.002 t_eq:0.000 t_het:0.998 notes=0 (3.3s)
+--- C. grille brute t_eq en sinh autour des valeurs repetees contre IS
+## 3 groupes 50 % a 0 
+  mode de la grille : 0.079 -0.75 -1  part de la plus forte cellule 0.0025 
+ H0 grille -87.346 ; IS -87.345/-87.345/-87.33 ; ess 1979/1846/1699
+  taille grille 14168115 
+  mode de la grille : 0.132 -0.221 -1 -1  part de la plus forte cellule 0.0075 
+ s=1 grille -88.848 ; IS -88.884/-88.866/-88.874 ; ess 1889/1529/1861
+## 3 groupes 45 % a 0 
+  mode de la grille : -0.108 -0.5 0  part de la plus forte cellule 0.0033 
+ H0 grille -89.403 ; IS -89.404/-89.424/-89.391 ; ess 730/906/2474
+  taille grille 14168115 
+  mode de la grille : 0.148 -0.221 -0.5 0  part de la plus forte cellule 0.0085 
+ s=1 grille -90.939 ; IS -91.001/-90.953/-90.982 ; ess 1708/1707/1615
+## bimodal 45+45 
+  mode de la grille : -0.022 -0.25 1.5  part de la plus forte cellule 0.0361 
+ H0 grille -92.535 ; IS -92.535/-92.554/-92.535 ; ess 2746/2744/2742
+  taille grille 41600790 
+  mode de la grille : -0.022 0.134 -0.5 1  part de la plus forte cellule 0.0098 
+ s=1 grille -93.858 ; IS -93.841/-93.857/-93.835 ; ess 2495/2516/2566

@@ -1,0 +1,42 @@
+# Groupe a variance nulle : marginale het divergente si (k-1)u <= (n_i-1)/2.
+source("C:/Users/masse/Desktop/KefiR/KefiR-mbay/dev/mbay/scripts/relecture/agent_rev3_lib.R")
+try1 <- function(lab, ...) {
+  a <- tryCatch(ans_of(...), error=function(e) {cat(lab,"ERREUR:",conditionMessage(e),"\n");NULL})
+  if (!is.null(a)) show(lab,a)
+  invisible(a)
+}
+y <- c(3,3,3,3,3,  1,2,3,4,5)
+g <- rep(1:2,each=5)
+cat("(a0) par loi, y=(3x5 | 1..5)\n")
+for (L in .bay_law_names()) try1(L,y,g,draws=2000L,laws=L)
+cat("(a1) normal_het seul : log_ml selon le nombre de tirages\n")
+for (S in c(1000L,4000L)) for (sd in 1:2) {
+  tb <- tab_of(y,g,draws=S,seed=sd,laws="normal_het")
+  cat(sprintf("S=%d seed=%d H0 %.3f (rel_se %.3f ess %.0f) H1 %.3f (rel_se %.3f ess %.0f) logBF %.3f\n",S,sd,tb$log_ml[1],tb$rel_se[1],tb$ess[1],tb$log_ml[2],tb$rel_se[2],tb$ess[2],tb$log_ml[2]-tb$log_ml[1]))
+  flush.console()
+}
+tb <- tab_of(y,g,draws=4000L,laws=c("normal_eq"));print(tb)
+cat("\n(b) quasi-egalites : 3+eps (toutes lois)\n")
+for (e in c(1,.1,1e-2,1e-4,1e-8)) {
+  yy <- y; yy[1:5] <- 3+e*c(-2,-1,0,1,2)
+  try1(sprintf("eps=%g",e),yy,g,draws=2000L)
+  flush.console()
+}
+cat("\n(c) n=10 chacun, effet reel ou non, groupe a variance nulle\n")
+y2 <- c(rep(5,10), 1,2,2,3,3,3,3,4,4,3)
+for (L in list(.bay_law_names(),c("normal_eq","normal_het"))) try1("g1 tout a 5, g2 autour de 3",y2,rep(1:2,each=10),draws=2000L,laws=L)
+y3 <- c(rep(3,10), 1,2,2,3,3,3,3,4,4,5)
+for (L in list(.bay_law_names(),c("normal_eq","normal_het"))) try1("g1 tout a 3, g2 autour de 3",y3,rep(1:2,each=10),draws=2000L,laws=L)
+cat("\n(d) Likert, N=60, 3 groupes : un groupe tout a 4\n")
+set.seed(3); y4 <- c(rep(4,20), sample(1:5,20,TRUE,prob=c(.05,.2,.25,.35,.15)), sample(1:5,20,TRUE,prob=c(.05,.2,.25,.35,.15)))
+g4 <- rep(1:3,each=20); print(tapply(y4,g4,function(v)c(m=mean(v),s=sd(v))))
+for (sd in 1:3) try1(sprintf("seed=%d",sd),y4,g4,draws=2000L,seed=sd)
+for (sd in 1:3) try1(sprintf("normales, seed=%d",sd),y4,g4,draws=2000L,seed=sd,laws=c("normal_eq","normal_het"))
+cat("\n(e) zero-inflation : plus de 2/3 d'ex-aequo (t : vraisemblance non bornee)\n")
+set.seed(4); y5 <- c(rep(0,25),rnorm(5,3,1), rep(0,25),rnorm(5,3,1)); g5 <- rep(1:2,each=30)
+for (sd in 1:2) a <- try1(sprintf("seed=%d",sd),y5,g5,draws=2000L,seed=sd)
+if (!is.null(a)) print(a$models[,c("law","hypothesis","log_ml","posterior","rel_se","ess")],digits=4)
+for (L in .bay_law_names()) try1(L,y5,g5,draws=2000L,laws=L)
+cat("\n(f) arrondi : y entier, N=40, sans effet, sans groupe constant\n")
+set.seed(5); y6 <- round(rnorm(40,5,1)); g6 <- rep(1:2,each=20)
+try1("arrondi 1",y6,g6,draws=2000L)

@@ -9,8 +9,8 @@ Détail de l'existant : `PERIMETRE.md`. Choix : `DECISIONS.md`. Publication uniq
 | 0 | Périmètre, comparaison des moteurs, méthodologie, bibliographie | Fait le 5 nov. 2026 (voir réserves du JOURNAL) | |
 | 1 | Socle interne : probabilités, inclusion, sensibilité, ligne d'effets | Fait le 5 nov. 2026, testé ; manque le ROPE à plusieurs ddl | |
 | 2 | Décisions D1, D2, D6, D9 ; défauts bloquants de la relecture à résoudre (multiplicité recoupée, `integrate` résolu à un facteur) | En cours : D2 (loi a priori) et D6 (orientation) arbitrées par Antoine ; D1, D9 et le reste tranchés ici et documentés dans `DECISIONS.md` | |
-| 3 | Entrées : normalisation (D9) et refus explicites | À faire | D9 |
-| 4 | `m.bay()` 2 groupes et k groupes, validé contre JZS | À faire | D1 |
+| 3 | Entrées : normalisation (D9, option B) et refus explicites | Fait le 7 nov. pour un facteur, classement des autres plans fait, refus explicite tant qu'ils ne sont pas validés | |
+| 4 | `m.bay()` 2 groupes et k groupes, validé contre JZS | **Fait le 7 nov.**, à auditer : `VALIDATION.md` §7 | |
 | 5 | Multi-facteurs, inclusion, `$effects` | À faire | D1, D2 |
 | 6 | ANCOVA, pentes hétérogènes | À faire | D1 |
 | 7 | Apparié, mesures répétées, split-plot | À faire | D1 |
@@ -19,7 +19,7 @@ Détail de l'existant : `PERIMETRE.md`. Choix : `DECISIONS.md`. Publication uniq
 | 10 | Post-hoc | À faire | D11 |
 | 11 | Bilan lisible, relecture par un étudiant ou industriel type | À faire | 4 à 10 |
 | 12 | Voies Stan : pentes aléatoires, robuste, discret | À faire | D1, D6 |
-| 3 bis | Variances inégales à un facteur, sans Stan | Calcul vérifié le 6 nov., **loi a priori rejetée** (B1, B2) ; à refaire avec loi propre sur les rapports d'échelle et moyenne sur les lois d'échantillonnage (orientation du 6 nov., non étudiée) | D6 |
+| 3 bis | Variances inégales et queues lourdes à un facteur, sans Stan | **Fait le 7 nov.**, à auditer : lois comparées et moyennées, `R/sys_bay_laws.R` | D6 |
 | 13 | Table de simulation publique, vignette, documentation roxygen | À faire | tout |
 
 ## Couverture des plans de m.test()

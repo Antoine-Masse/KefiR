@@ -1,0 +1,6 @@
+test-m.bay.R : tests 11 echecs 0 erreurs 0 temps 30 s
+[1] test   failed
+<0 lignes> (ou 'row.names' de longueur nulle)
+test-bay-laws.R : tests 9 echecs 0 erreurs 0 temps 43 s
+[1] test   failed
+<0 lignes> (ou 'row.names' de longueur nulle)

@@ -1,6 +1,6 @@
 # Décisions structurantes de m.bay
 
-État : **PROPOSÉ** = attend l'avis d'Antoine (rien de difficile à défaire n'a été engagé) ; **ACQUIS** = imposé par sa consigne ou sans alternative sérieuse. Chiffres : `VALIDATION.md`. Modèles et formules : `METHODOLOGIE.md`.
+État : **ARBITRÉ** = tranché par Antoine ; **DÉCIDÉ** = tranché ici par la session de développement, sur consigne d'autonomie d'Antoine du 6 novembre, réversible si des résultats le contredisent ; **PROPOSÉ** = en attente d'un jalon à venir, réversible sur cette branche ; **ACQUIS** = imposé par sa consigne ou sans alternative sérieuse. Chiffres : `VALIDATION.md`. Modèles et formules : `METHODOLOGIE.md`.
 
 ## D1. Moteur de calcul : PROPOSÉ
 
@@ -65,15 +65,19 @@ H0 ponctuelle en première ligne, ROPE toujours affiché en seconde, avec sa mas
 
 **Mis en défaut (bloquant, relecteur, non reproduit par moi).** Pour un terme à 3 niveaux ou plus, f est positif par construction et son postérieur est biaisé vers le haut : vérité nulle, a=5, n=100, médiane de f à 0,105, soit deux fois le seuil ; la ligne ROPE recopie alors presque la ligne H0. **Proposition** : ROPE seulement sur des quantités à 1 ddl (paires, contrastes, pentes), pas de ROPE sur un terme à plusieurs ddl tant qu'une définition valide n'est pas trouvée. La masse a priori de 0,545 ne vaut que pour a=2.
 
-## D4. Probabilité a priori des hypothèses et sensibilité : ACQUIS sur le principe, PROPOSÉ sur les valeurs
+## D4. Probabilité a priori des hypothèses et sensibilité : DÉCIDÉ, valeurs revues le 7 novembre
 
-P(H0)=P(H1)=1/2 par défaut, annoncée sur la même ligne que le résultat. Grille r × cotes a priori (r/2, r, 2r ; 1:4, 1:1, 4:1) toujours imprimée. Si la plage traverse 1/2, le bilan dit « les données ne tranchent pas ».
+P(H0)=P(H1)=1/2 par défaut, annoncée dans le bilan. Grille r × cotes a priori (r/2, r, 2r ; 1:2, 1:1, 2:1) et Dirichlet u/3, 3u. Si la plage traverse 1/2, le bilan dit « les données ne tranchent pas » ; il donne aussi les cotes qu'il faudrait pour mettre les deux hypothèses à égalité, c'est-à-dire le facteur de Bayes.
 
-## D5. Échelles a priori : PROPOSÉ
+**Changement.** La grille d'origine 1:4 à 4:1 a été abandonnée : l'hypothèse en tête y changeait dans 98 % des jeux sans effet, jusqu'à n=100 par groupe (`agent_41` C, premier lancement). Le verdict ne disait plus rien. **La nouvelle grille est un jugement, pas un résultat** : à 1:2, un BF de 2 suffit à trancher. Chiffres en `VALIDATION.md` §7.
+
+## D5. Échelles a priori : DÉCIDÉ pour un facteur, r = 1/2 fixe
 
 Celles de BayesFactor, pour rester comparable à JASP et à la littérature : facteur fixe r=1/2 ; deux groupes r=√2/2 sur δ (même a priori) ; covariable r=√2/4 ; effet aléatoire r=1.
 
-## D6. Pas d'aiguillage par test préliminaire : ARBITRÉE (orientation), voie à un facteur livrée
+**Hyper-a priori, testé le 7 novembre.** Loi uniforme sur r/2, r, 2r, fixée d'avance : P>0,5 et P>0,95 inchangés à ±0,033 sur 66 scénarios, P<0,05 jusqu'à 0,12 d'écart (`agent_41` B). Elle ne change donc presque rien : on garde le réglage le plus simple, avec r/2 et 2r dans la sensibilité. L'estimer sur les données (Bayes empirique) reviendrait à maximiser le BF : exclu, D6. Sur π : à un terme, un hyper-a priori se réduit à sa moyenne, donc sans objet. À plusieurs termes, il fait la correction de multiplicité, [ScottBerger2010] : à trancher au jalon suivant. **L'utilisateur n'a rien à régler.**
+
+## D6. Pas d'aiguillage par test préliminaire : ARBITRÉE (orientation) ; voie à un facteur DÉCIDÉE
 
 Contrairement à `m.test()`, pas de bascule automatique vers une méthode selon une p-value de normalité, de variance, etc. Le gaussien est toujours calculé ; les diagnostics deviennent des alertes ; la voie robuste s'y ajoute et un désaccord s'affiche. Conséquence à accepter : `m.bay()` ne reproduit **pas** l'arbre de décision de `m.test()`, et pas de « Kruskal bayésien » pour k>2 (aucune méthode publiée trouvée ; cotes proportionnelles proposées sous leur vrai nom).
 
@@ -83,7 +87,11 @@ Contrairement à `m.test()`, pas de bascule automatique vers une méthode selon 
 
 **ARBITRÉE par Antoine, 6 novembre 2026 : orientation retenue.** Lois d'échantillonnage comparées selon les données, réponses moyennées sur leurs probabilités a posteriori ; a priori d'effet et d'hypothèse fixés d'avance, annoncés, avec sensibilité. Mots transmis par la session « KefiR officiel ».
 
-**Faisabilité à k > 2 : établie pour un facteur (7 novembre).** Voie `R/sys_bay_laws.R`, huit modèles sans compilateur. Loi propre sur les rapports d'échelle : Dirichlet(1,5) sur les proportions de précision, d'après [Dablander2024] (forme) et [Maier2025] (valeur à k = 2). Détails dans METHODOLOGIE §7 et chiffres dans VALIDATION §7. **Réglage propre à KefiR à k ≥ 3** : aucune source consultée ne combine ces éléments pour tester des moyennes. Ce que cette voie ne règle pas : un très petit groupe parmi beaucoup (n_s + 2u < k), voir METHODOLOGIE §7 ; plusieurs facteurs, à établir au jalon suivant.
+**Faisabilité à k > 2 : établie pour un facteur (7 novembre).** Voie `R/sys_bay_laws.R`, huit modèles sans compilateur. Loi propre sur les rapports d'échelle : Dirichlet(1,5) sur les proportions de précision, d'après [Dablander2024] (forme) et [Maier2025] (valeur à k = 2). Détails dans METHODOLOGIE §7 et chiffres dans VALIDATION §7. **Réglage propre à KefiR à k ≥ 3** : aucune source consultée ne combine ces éléments pour tester des moyennes.
+
+**Effet à deux formes, DÉCIDÉ le 7 novembre (k ≥ 3).** H1 mêle à parts égales « tous les groupes peuvent différer » (Zellner-Siow) et « un seul groupe s'écarte » (échelle r√2). Raison : avec la première seule, un petit groupe éloigné parmi 20 laissait H0 en tête à 83 %, Welch p=1e-111 (`RELECTURE_ADVERSE_2026-11-07.md`, B1). **Alternatives écartées** : un g par groupe, qui multiplie les dimensions et casse la lecture « toutes les différences » ; refuser ou seulement avertir, qui laisse une réponse fausse. **Prix** : à k ≥ 3, le BF global n'est plus celui d'`anovaBF`, même en gaussien ; le bilan donne la valeur « première forme seule ». Le poids 1/2 est un réglage, pas un résultat. Sur les 66 scénarios de `agent_41` B, P>0,5 et P>0,95 bougent de 0,07 au plus, le plus à k=5 quand un seul groupe s'écarte (P>0,95 : 0,537 contre 0,467).
+
+**Limites à connaître.** Formes différentes à moyennes égales : la loi t compare des centres, donc un groupe asymétrique peut lire comme un effet (P>0,95 dans 67 % des jeux à n=400, `agent_43`) ; le bilan avertit, le calcul n'est pas changé. Valeurs répétées : les lois dont l'intégrale diverge sont écartées avec un avis (règles en tête de `.bay_laws_allowed`, dérivées à la main). Variances étagées sur 4 ordres de grandeur : voir VALIDATION §7.
 
 Lecture initiale de cette orientation, pour mémoire :
 

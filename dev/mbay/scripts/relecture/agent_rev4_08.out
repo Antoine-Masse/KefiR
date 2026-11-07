@@ -1,0 +1,19 @@
+k=3 ordinaire s=NULL pilote-sans: max 0.00e+00, pondere 0.00e+00 | h/4: max 7.11e-15, pondere 5.22e-16
+k=3 ordinaire s=1 pilote-sans: max 7.11e-15, pondere 1.41e-16 | h/4: max 7.11e-15, pondere 6.95e-16
+k=3 ordinaire s=2 pilote-sans: max 3.55e-15, pondere 1.59e-16 | h/4: max 7.11e-15, pondere 6.58e-16
+k=3 ordinaire s=3 pilote-sans: max 7.11e-15, pondere 1.26e-16 | h/4: max 7.11e-15, pondere 7.25e-16
+k=5 d=1000 s=NULL pilote-sans: max 0.00e+00, pondere 0.00e+00 | h/4: max 2.84e-14, pondere 4.19e-15
+k=5 d=1000 s=1 pilote-sans: max 0.00e+00, pondere 0.00e+00 | h/4: max 1.14e-13, pondere 3.79e-15
+k=5 d=1000 s=2 pilote-sans: max 0.00e+00, pondere 0.00e+00 | h/4: max 1.14e-13, pondere 4.20e-15
+k=5 d=1000 s=3 pilote-sans: max 0.00e+00, pondere 0.00e+00 | h/4: max 1.14e-13, pondere 3.64e-15
+k=5 d=1000 s=4 pilote-sans: max 0.00e+00, pondere 0.00e+00 | h/4: max 1.14e-13, pondere 4.44e-15
+k=5 d=1000 s=5 pilote-sans: max 0.00e+00, pondere 0.00e+00 | h/4: max 4.65e-10, pondere 1.49e-11
+k=3 N=805, petit groupe loin s=NULL pilote-sans: max 0.00e+00, pondere 0.00e+00 | h/4: max 4.55e-13, pondere 1.65e-13
+k=3 N=805, petit groupe loin s=1 pilote-sans: max 0.00e+00, pondere 0.00e+00 | h/4: max 9.09e-13, pondere 1.25e-13
+k=3 N=805, petit groupe loin s=2 pilote-sans: max 0.00e+00, pondere 0.00e+00 | h/4: max 9.09e-13, pondere 1.34e-13
+k=3 N=805, petit groupe loin s=3 pilote-sans: max 4.55e-13, pondere 3.50e-15 | h/4: max 1.36e-12, pondere 1.42e-13
+k=4 N=1200 sd 0,01..10 s=NULL pilote-sans: max 0.00e+00, pondere 0.00e+00 | h/4: max 9.09e-13, pondere 1.91e-13
+k=4 N=1200 sd 0,01..10 s=1 pilote-sans: max 0.00e+00, pondere 0.00e+00 | h/4: max 9.09e-13, pondere 8.75e-14
+k=4 N=1200 sd 0,01..10 s=2 pilote-sans: max 0.00e+00, pondere 0.00e+00 | h/4: max 9.09e-13, pondere 8.73e-14
+k=4 N=1200 sd 0,01..10 s=3 pilote-sans: max 0.00e+00, pondere 0.00e+00 | h/4: max 9.09e-13, pondere 8.17e-14
+k=4 N=1200 sd 0,01..10 s=4 pilote-sans: max 0.00e+00, pondere 0.00e+00 | h/4: max 9.09e-13, pondere 7.93e-14

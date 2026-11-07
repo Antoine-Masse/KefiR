@@ -1,0 +1,21 @@
+R version 4.6.1 (2026-06-24 ucrt) ; partie C ; N = 100 par case ; 3 coeurs ; reprise possible ; derniere ecriture 2026-11-07 17:57:08
+
+Part des jeux : hypothese en tete qui change, seuil franchi, stable ; P change de cote selon r (a cotes 1:1), selon u
+n=10 k=2 d=0.0 : change 0.930, seuil 0.070, stable 0.000 ; cote selon r 0.060 ; selon u 0.000
+n=10 k=2 d=0.5 : change 0.870, seuil 0.130, stable 0.000 ; cote selon r 0.180 ; selon u 0.030
+n=10 k=2 d=0.8 : change 0.650, seuil 0.290, stable 0.060 ; cote selon r 0.120 ; selon u 0.010
+n=10 k=3 d=0.0 : change 0.750, seuil 0.250, stable 0.000 ; cote selon r 0.100 ; selon u 0.010
+n=10 k=3 d=0.5 : change 0.810, seuil 0.170, stable 0.020 ; cote selon r 0.110 ; selon u 0.010
+n=10 k=3 d=0.8 : change 0.660, seuil 0.320, stable 0.020 ; cote selon r 0.150 ; selon u 0.010
+n=30 k=2 d=0.0 : change 0.460, seuil 0.540, stable 0.000 ; cote selon r 0.040 ; selon u 0.000
+n=30 k=2 d=0.5 : change 0.570, seuil 0.380, stable 0.050 ; cote selon r 0.180 ; selon u 0.000
+n=30 k=2 d=0.8 : change 0.330, seuil 0.500, stable 0.170 ; cote selon r 0.090 ; selon u 0.000
+n=30 k=3 d=0.0 : change 0.360, seuil 0.640, stable 0.000 ; cote selon r 0.090 ; selon u 0.010
+n=30 k=3 d=0.5 : change 0.620, seuil 0.360, stable 0.020 ; cote selon r 0.270 ; selon u 0.010
+n=30 k=3 d=0.8 : change 0.220, seuil 0.530, stable 0.250 ; cote selon r 0.110 ; selon u 0.010
+n=100 k=2 d=0.0 : change 0.210, seuil 0.790, stable 0.000 ; cote selon r 0.070 ; selon u 0.000
+n=100 k=2 d=0.5 : change 0.170, seuil 0.570, stable 0.260 ; cote selon r 0.030 ; selon u 0.010
+n=100 k=2 d=0.8 : change 0.010, seuil 0.110, stable 0.880 ; cote selon r 0.010 ; selon u 0.000
+n=100 k=3 d=0.0 : change 0.120, seuil 0.880, stable 0.000 ; cote selon r 0.040 ; selon u 0.000
+n=100 k=3 d=0.5 : change 0.200, seuil 0.450, stable 0.350 ; cote selon r 0.120 ; selon u 0.000
+n=100 k=3 d=0.8 : change 0.000, seuil 0.010, stable 0.990 ; cote selon r 0.000 ; selon u 0.000

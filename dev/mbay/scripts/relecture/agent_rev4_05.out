@@ -1,0 +1,102 @@
+k=8 H0 sd 0,01..100 graine=1 draws=4000 (94s)
+  P=1.0000 err=2.5% lois=normal_eq:0.000 t_eq:1.000
+  ecartees r=.25/.5/1 : [normal_het+t_het] [normal_het+t_het] [normal_het+t_het] ; forme 1 seule ecarte [normal_het+t_het] P=0.9908
+  ess: normal_eq/H0:NA normal_eq/H1:NA normal_het/H0:12 normal_het/H1:2 t_eq/H0:2397 t_eq/H1:886 t_het/H0:984 t_het/H1:9
+  logBF/loi 24.51/14.31
+k=8 H0 sd 0,01..100 graine=2 draws=4000 (87s)
+  P=0.9980 err=4.5% lois=normal_eq:0.000 t_eq:0.000 t_het:1.000
+  ecartees r=.25/.5/1 : [normal_het] [normal_het] [normal_het] ; forme 1 seule ecarte [normal_het] P=0.9990
+  ess: normal_eq/H0:NA normal_eq/H1:NA normal_het/H0:4 normal_het/H1:15 t_eq/H0:2416 t_eq/H1:1067 t_het/H0:1147 t_het/H1:528
+  logBF/loi 24.51/14.29/6.21
+k=8 H0 sd 0,01..100 graine=3 draws=4000 (93s)
+  P=0.9982 err=4.3% lois=normal_eq:0.000 t_eq:0.000 t_het:1.000
+  ecartees r=.25/.5/1 : [normal_het] [normal_het] [normal_het] ; forme 1 seule ecarte [normal_het] P=0.9991
+  ess: normal_eq/H0:NA normal_eq/H1:NA normal_het/H0:6 normal_het/H1:13 t_eq/H0:2457 t_eq/H1:596 t_het/H0:866 t_het/H1:429
+  logBF/loi 24.51/14.29/6.30
+k=8 H0 sd 0,01..100 draws max graine=1 draws=40000 (128s)
+  P=0.9977 err=3.3% lois=normal_eq:0.000 normal_het:0.002 t_eq:0.000 t_het:0.998
+  ecartees r=.25/.5/1 : [] [] [] ; forme 1 seule ecarte [] P=0.9988
+  ess: normal_eq/H0:NA normal_eq/H1:NA normal_het/H0:30 normal_het/H1:204 t_eq/H0:24264 t_eq/H1:3795 t_het/H0:12792 t_het/H1:2183
+  logBF/loi 24.51/1.51/14.31/6.23
+k=8 d=1000 graine=1 draws=4000 (25s)
+  P=1.0000 err=3.7% lois=normal_eq:0.547 normal_het:0.103 t_eq:0.297 t_het:0.054
+  ecartees r=.25/.5/1 : [] [] [] ; forme 1 seule ecarte [] P=1.0000
+  ess: normal_eq/H0:NA normal_eq/H1:NA normal_het/H0:577 normal_het/H1:2106 t_eq/H0:2474 t_eq/H1:532 t_het/H0:1113 t_het/H1:612
+  logBF/loi 356.72/57.26/147.15/58.99
+k=8 d=1000 graine=2 draws=4000 (23s)
+  P=1.0000 err=3.6% lois=normal_eq:0.540 normal_het:0.103 t_eq:0.308 t_het:0.048
+  ecartees r=.25/.5/1 : [] [] [] ; forme 1 seule ecarte [normal_het] P=1.0000
+  ess: normal_eq/H0:NA normal_eq/H1:NA normal_het/H0:626 normal_het/H1:2036 t_eq/H0:2490 t_eq/H1:350 t_het/H0:1718 t_het/H1:361
+  logBF/loi 356.72/57.26/147.18/58.79
+k=5 n=4 d=50 graine=1 draws=4000 (9s)
+  P=1.0000 err=1.8% lois=normal_eq:0.564 normal_het:0.140 t_eq:0.217 t_het:0.078
+  ecartees r=.25/.5/1 : [] [] [] ; forme 1 seule ecarte [] P=0.9999
+  ess: normal_eq/H0:NA normal_eq/H1:NA normal_het/H0:1631 normal_het/H1:2499 t_eq/H0:2431 t_eq/H1:840 t_het/H0:983 t_het/H1:324
+  logBF/loi 51.19/15.51/35.21/16.62
+k=5 n=4 d=50 graine=2 draws=4000 (9s)
+  P=1.0000 err=1.7% lois=normal_eq:0.559 normal_het:0.143 t_eq:0.218 t_het:0.080
+  ecartees r=.25/.5/1 : [] [] [] ; forme 1 seule ecarte [] P=0.9999
+  ess: normal_eq/H0:NA normal_eq/H1:NA normal_het/H0:1694 normal_het/H1:2571 t_eq/H0:2474 t_eq/H1:916 t_het/H0:1247 t_het/H1:614
+  logBF/loi 51.19/15.56/35.20/16.71
+singletons graine=1 draws=4000 (8s)
+  P=0.3224 err=1.6% lois=normal_eq:0.076 normal_het:0.207 t_eq:0.356 t_het:0.361
+  ecartees r=.25/.5/1 : [] [] [] ; forme 1 seule ecarte [] P=0.2532
+  ess: normal_eq/H0:NA normal_eq/H1:NA normal_het/H0:1201 normal_het/H1:1835 t_eq/H0:2003 t_eq/H1:806 t_het/H0:797 t_het/H1:348
+  logBF/loi -0.63/-0.54/-0.91/-0.73
+singletons graine=2 draws=4000 (9s)
+  P=0.3228 err=1.4% lois=normal_eq:0.074 normal_het:0.206 t_eq:0.353 t_het:0.368
+  ecartees r=.25/.5/1 : [] [] [] ; forme 1 seule ecarte [] P=0.2587
+  ess: normal_eq/H0:NA normal_eq/H1:NA normal_het/H0:1705 normal_het/H1:1278 t_eq/H0:2013 t_eq/H1:670 t_het/H0:1060 t_het/H1:205
+  logBF/loi -0.63/-0.46/-0.91/-0.76
+singletons graine=3 draws=4000 (9s)
+  P=0.3253 err=1.4% lois=normal_eq:0.076 normal_het:0.202 t_eq:0.360 t_het:0.363
+  ecartees r=.25/.5/1 : [] [] [] ; forme 1 seule ecarte [] P=0.2593
+  ess: normal_eq/H0:NA normal_eq/H1:NA normal_het/H0:1012 normal_het/H1:1431 t_eq/H0:2099 t_eq/H1:698 t_het/H0:1223 t_het/H1:599
+  logBF/loi -0.63/-0.48/-0.93/-0.70
+u=0,01 graine=1 draws=4000 (3s)
+  P=0.2217 err=0.3% lois=normal_eq:0.890 normal_het:0.001 t_eq:0.109 t_het:0.000
+  ecartees r=.25/.5/1 : [] [] [] ; forme 1 seule ecarte [] P=0.1745
+  ess: normal_eq/H0:NA normal_eq/H1:NA normal_het/H0:3164 normal_het/H1:3168 t_eq/H0:1505 t_eq/H1:676 t_het/H0:1085 t_het/H1:634
+  logBF/loi -1.24/-1.22/-1.41/-1.52
+u=0,01 graine=2 draws=4000 (4s)
+  P=0.2207 err=0.2% lois=normal_eq:0.889 normal_het:0.001 t_eq:0.111 t_het:0.000
+  ecartees r=.25/.5/1 : [] [] [] ; forme 1 seule ecarte [] P=0.1736
+  ess: normal_eq/H0:NA normal_eq/H1:NA normal_het/H0:3174 normal_het/H1:3195 t_eq/H0:1580 t_eq/H1:1145 t_het/H0:1814 t_het/H1:786
+  logBF/loi -1.24/-1.22/-1.47/-1.52
+--- 6. une seule piece t faible : ESS par forme, k=8, queues tres lourdes
+het=FALSE tous: -38.63 ess 684
+  s=1 -36.78 ess 1002
+  s=2 -36.38 ess 979
+  s=3 -34.93 ess 1002
+  s=4 -36.33 ess 1124
+  s=5 -36.88 ess 1086
+  s=6 -36.27 ess 1117
+  s=7 -36.82 ess 1089
+  s=8 -36.60 ess 1061
+het=TRUE tous: -36.69 ess 843
+  s=1 -35.06 ess 968
+  s=2 -34.96 ess 1938
+  s=3 -33.33 ess 1248
+  s=4 -35.04 ess 593
+  s=5 -35.16 ess 596
+  s=6 -34.48 ess 656
+  s=7 -35.10 ess 1744
+  s=8 -34.80 ess 717
+--- 7. rscale petit, 4 lois : ecart annonce ou non ?
+Loi(s) écartée(s), le calcul a échoué : t_het. | Précision numérique faible : erreur sur le facteur de Bayes  
+rscale=0.001                               OK P=0.4904 logBF=-0.04 err=1.14% lois=normal_eq:0.440 normal_het:0.301 t_eq:0.258 notes=2 (9.2s)
+Précision numérique faible : erreur sur le facteur de Bayes  
+rscale=0.01                                OK P=0.4995 logBF=-0.00 err=1.01% lois=normal_eq:0.347 normal_het:0.236 t_eq:0.216 t_het:0.201 notes=1 (3.8s)
+ 
+rscale=0.05                                OK P=0.5044 logBF=0.02 err=0.88% lois=normal_eq:0.354 normal_het:0.239 t_eq:0.214 t_het:0.192 notes=0 (2.9s)
+ 
+rscale=0.1                                 OK P=0.5033 logBF=0.01 err=0.81% lois=normal_eq:0.361 normal_het:0.241 t_eq:0.211 t_het:0.187 notes=0 (2.6s)
+ 
+rscale=0.25                                OK P=0.4917 logBF=-0.03 err=0.62% lois=normal_eq:0.375 normal_het:0.243 t_eq:0.203 t_het:0.179 notes=0 (2.6s)
+ 
+rscale=0.5                                 OK P=0.4497 logBF=-0.20 err=0.74% lois=normal_eq:0.387 normal_het:0.247 t_eq:0.194 t_het:0.171 notes=0 (2.8s)
+k=20 H0 sd 0,03..30 graine=1 draws=4000 (394s)
+  P=0.1431 err=1.8% lois=normal_eq:0.000 t_eq:1.000
+  ecartees r=.25/.5/1 : [normal_het+t_het] [normal_het+t_het] [normal_het+t_het] ; forme 1 seule ecarte [normal_het+t_het] P=0.0000
+  ess: normal_eq/H0:NA normal_eq/H1:NA normal_het/H0:1 normal_het/H1:2 t_eq/H0:2443 t_eq/H1:30 t_het/H0:1117 t_het/H1:2
+  logBF/loi 2.01/-1.79

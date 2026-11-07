@@ -1,0 +1,142 @@
+##### k=3 defaut
+Bilan de m.bay : x ~ g (N = 30)
+Hypothèses, de la plus probable à la moins probable :
+  1. g agit sur x           : 97,0 % (soutien fort)
+  2. Aucun effet de g sur x : 3,0 %
+  L'hypothèse en tête ne change pas selon les a priori, mais le soutien si : 84,7 % à 99,3 % (soutien modéré à soutien très fort).
+Réponses par terme :
+  g a-t-il un effet ? Oui 97,0 %, non 3,0 % (a priori 50,0 % ; facteur de Bayes 32,7).
+Moyennes observées (description de l'échantillon, pas un test) :
+  a = 4,647 (n = 10) ; b = 8,161 (n = 10) ; c = 4,472 (n = 10). Plus grand écart : 1,734 écart-type intra-groupe.
+Forme du bruit, comparée et non choisie (probabilités a posteriori) :
+  normale, variances égales 55,4 % ; normale, variances inégales 20,7 % ; queues lourdes, variances égales 15,2 % ; queues lourdes, variances inégales 8,7 %.
+  Si l'on imposait une seule forme, la probabilité d'un effet serait : normale, variances égales 98,1 % ; normale, variances inégales 94,0 % ; queues lourdes, variances égales 97,8 % ; queues lourdes, variances inégales 96,2 %.
+A priori, fixés d'avance :
+  Effet : 50,0 % avant de voir les données. Taille d'un effet : échelle r = 0,5 sur l'écart standardisé.
+  Formes d'un effet, à poids égaux : tous les groupes peuvent différer ; ou un seul groupe s'écarte (échelle r x racine de 2).
+  Bruit : chacune des 4 formes part à égalité ; proportions de précision Dirichlet(1,5) ; queues lourdes nu - 2 ~ Exp(1).
+  Variés dans la sensibilité : r de 0,25 à 1, cotes H1:H0 1:4 à 4:1, Dirichlet 0,5 à 4,5.
+  Avec la première forme d'effet seule, la probabilité d'un effet serait 96,7 %.
+Comment lire :
+  Une probabilité est ici celle d'une hypothèse, sachant les données et les a priori ci-dessus.
+  Le facteur de Bayes dit de combien les données déplacent les cotes. Il ne dépend pas des cotes a priori.
+  Ni l'un ni l'autre n'est une p-value : une p-value est la probabilité de données au moins aussi extrêmes s'il n'y avait pas d'effet.
+  Soutien : faible sous 75 %, modéré sous 95 %, fort sous 99,3 %, puis très fort.
+ecart a la main 1.734226  objet  1.734226 
+##### k=2
+Bilan de m.bay : x ~ g (N = 20)
+Hypothèses, de la plus probable à la moins probable :
+  1. g agit sur x           : 91,1 % (soutien modéré)
+  2. Aucun effet de g sur x : 8,9 %
+  L'hypothèse en tête ne change pas selon les a priori, mais le soutien si : 65,6 % à 97,7 % (soutien faible à soutien fort).
+Réponses par terme :
+  g a-t-il un effet ? Oui 91,1 %, non 8,9 % (a priori 50,0 % ; facteur de Bayes 10,2).
+Moyennes observées (description de l'échantillon, pas un test) :
+  a = 4,647 (n = 10) ; b = 8,161 (n = 10). Plus grand écart : 1,522 écart-type intra-groupe.
+Forme du bruit, comparée et non choisie (probabilités a posteriori) :
+  normale, variances égales 50,5 % ; normale, variances inégales 25,1 % ; queues lourdes, variances égales 15,3 % ; queues lourdes, variances inégales 9,1 %.
+  Si l'on imposait une seule forme, la probabilité d'un effet serait : normale, variances égales 92,4 % ; normale, variances inégales 90,0 % ; queues lourdes, variances égales 90,0 % ; queues lourdes, variances inégales 88,5 %.
+A priori, fixés d'avance :
+  Effet : 50,0 % avant de voir les données. Taille d'un effet : échelle r = 0,5 sur l'écart standardisé.
+  Bruit : chacune des 4 formes part à égalité ; proportions de précision Dirichlet(1,5) ; queues lourdes nu - 2 ~ Exp(1).
+  Variés dans la sensibilité : r de 0,25 à 1, cotes H1:H0 1:4 à 4:1, Dirichlet 0,5 à 4,5.
+Comment lire :
+  Une probabilité est ici celle d'une hypothèse, sachant les données et les a priori ci-dessus.
+  Le facteur de Bayes dit de combien les données déplacent les cotes. Il ne dépend pas des cotes a priori.
+  Ni l'un ni l'autre n'est une p-value : une p-value est la probabilité de données au moins aussi extrêmes s'il n'y avait pas d'effet.
+  Soutien : faible sous 75 %, modéré sous 95 %, fort sous 99,3 %, puis très fort.
+##### ex-aequo : une seule loi
+Bilan de m.bay : x ~ g (N = 30)
+Hypothèses, de la plus probable à la moins probable :
+  1. g agit sur x           : 99,7 % (soutien très fort)
+  2. Aucun effet de g sur x : 0,3 %
+  L'hypothèse en tête ne change pas selon les a priori, mais le soutien si : 98,1 % à > 99,9 % (soutien fort à soutien très fort).
+Réponses par terme :
+  g a-t-il un effet ? Oui 99,7 %, non 0,3 % (a priori 50,0 % ; facteur de Bayes 359).
+Moyennes observées (description de l'échantillon, pas un test) :
+  a = 4,239 (n = 10) ; b = 8,161 (n = 10) ; c = 4,472 (n = 10). Plus grand écart : 2,085 écart-type intra-groupe.
+Forme du bruit, comparée et non choisie (probabilités a posteriori) :
+  normale, variances égales > 99,9 %.
+A priori, fixés d'avance :
+  Effet : 50,0 % avant de voir les données. Taille d'un effet : échelle r = 0,5 sur l'écart standardisé.
+  Formes d'un effet, à poids égaux : tous les groupes peuvent différer ; ou un seul groupe s'écarte (échelle r x racine de 2).
+  Bruit : une seule forme.
+  Variés dans la sensibilité : r de 0,25 à 1, cotes H1:H0 1:4 à 4:1, Dirichlet 0,5 à 4,5.
+  Avec la première forme d'effet seule, la probabilité d'un effet serait 99,7 %.
+Comment lire :
+  Une probabilité est ici celle d'une hypothèse, sachant les données et les a priori ci-dessus.
+  Le facteur de Bayes dit de combien les données déplacent les cotes. Il ne dépend pas des cotes a priori.
+  Ni l'un ni l'autre n'est une p-value : une p-value est la probabilité de données au moins aussi extrêmes s'il n'y avait pas d'effet.
+  Soutien : faible sous 75 %, modéré sous 95 %, fort sous 99,3 %, puis très fort.
+Avertissements :
+  Surtout des valeurs répétées : les lois à variances inégales ou à queues lourdes ne s'appliquent pas et ont été écartées. Une loi pour données discrètes n'est pas encore validée.
+##### by_u, grid
+      0.5       4.5 
+0.9972224 0.9972224 
+      odds
+r            1:4       1:1       4:1
+  0.25 0.9810664 0.9951984 0.9987953
+  0.50 0.9889815 0.9972224 0.9993042
+  1.00 0.9918684 0.9979546 0.9994879
+##### normales seulement
+       g
+        a b c
+  FALSE 5 5 5
+  TRUE  5 5 5
+Bilan de m.bay : x ~ g (N = 30)
+Hypothèses, de la plus probable à la moins probable :
+  1. Aucun effet de g sur x : 72,4 % (soutien faible)
+  2. g agit sur x           : 27,6 %
+  Les données ne tranchent pas : selon les a priori, cette probabilité va de 30,8 % à 94,8 % et l'hypothèse en tête change.
+Réponses par terme :
+  g a-t-il un effet ? Oui 27,6 %, non 72,4 % (a priori 50,0 % ; facteur de Bayes 0,381).
+Moyennes observées (description de l'échantillon, pas un test) :
+  a = 4,243 (n = 10) ; b = 6,627 (n = 10) ; c = 5,274 (n = 10). Plus grand écart : 1,485 écart-type intra-groupe.
+Forme du bruit, comparée et non choisie (probabilités a posteriori) :
+  queues lourdes, variances inégales 53,2 % ; queues lourdes, variances égales 41,4 % ; normale, variances égales 3,1 % ; normale, variances inégales 2,3 %.
+  Si l'on imposait une seule forme, la probabilité d'un effet serait : queues lourdes, variances inégales 25,1 % ; queues lourdes, variances égales 24,2 % ; normale, variances égales 82,7 % ; normale, variances inégales 71,4 %.
+A priori, fixés d'avance :
+  Effet : 50,0 % avant de voir les données. Taille d'un effet : échelle r = 0,5 sur l'écart standardisé.
+  Formes d'un effet, à poids égaux : tous les groupes peuvent différer ; ou un seul groupe s'écarte (échelle r x racine de 2).
+  Bruit : chacune des 4 formes part à égalité ; proportions de précision Dirichlet(1,5) ; queues lourdes nu - 2 ~ Exp(1).
+  Variés dans la sensibilité : r de 0,25 à 1, cotes H1:H0 1:4 à 4:1, Dirichlet 0,5 à 4,5.
+  Avec la première forme d'effet seule, la probabilité d'un effet serait 24,7 %.
+Comment lire :
+  Une probabilité est ici celle d'une hypothèse, sachant les données et les a priori ci-dessus.
+  Le facteur de Bayes dit de combien les données déplacent les cotes. Il ne dépend pas des cotes a priori.
+  Ni l'un ni l'autre n'est une p-value : une p-value est la probabilité de données au moins aussi extrêmes s'il n'y avait pas d'effet.
+  Soutien : faible sous 75 %, modéré sous 95 %, fort sous 99,3 %, puis très fort.
+##### prior_h1=.8
+Bilan de m.bay : x ~ g (N = 30)
+Hypothèses, de la plus probable à la moins probable :
+  1. g agit sur x           : 99,2 % (soutien fort)
+  2. Aucun effet de g sur x : 0,8 %
+  L'hypothèse en tête ne change pas selon les a priori, mais le soutien si : 95,7 % à 99,8 % (soutien fort à soutien très fort).
+Réponses par terme :
+  g a-t-il un effet ? Oui 99,2 %, non 0,8 % (a priori 80,0 % ; facteur de Bayes 32,7).
+Moyennes observées (description de l'échantillon, pas un test) :
+  a = 4,647 (n = 10) ; b = 8,161 (n = 10) ; c = 4,472 (n = 10). Plus grand écart : 1,734 écart-type intra-groupe.
+Forme du bruit, comparée et non choisie (probabilités a posteriori) :
+  normale, variances égales 55,8 % ; normale, variances inégales 20,3 % ; queues lourdes, variances égales 15,3 % ; queues lourdes, variances inégales 8,7 %.
+  Si l'on imposait une seule forme, la probabilité d'un effet serait : normale, variances égales 99,5 % ; normale, variances inégales 98,4 % ; queues lourdes, variances égales 99,4 % ; queues lourdes, variances inégales 99,0 %.
+A priori, fixés d'avance :
+  Effet : 80,0 % avant de voir les données. Taille d'un effet : échelle r = 0,5 sur l'écart standardisé.
+  Formes d'un effet, à poids égaux : tous les groupes peuvent différer ; ou un seul groupe s'écarte (échelle r x racine de 2).
+  Bruit : chacune des 4 formes part à égalité ; proportions de précision Dirichlet(1,5) ; queues lourdes nu - 2 ~ Exp(1).
+  Variés dans la sensibilité : r de 0,25 à 1, cotes H1:H0 1:1 à 16:1, Dirichlet 0,5 à 4,5.
+  Avec la première forme d'effet seule, la probabilité d'un effet serait 99,1 %.
+Comment lire :
+  Une probabilité est ici celle d'une hypothèse, sachant les données et les a priori ci-dessus.
+  Le facteur de Bayes dit de combien les données déplacent les cotes. Il ne dépend pas des cotes a priori.
+  Ni l'un ni l'autre n'est une p-value : une p-value est la probabilité de données au moins aussi extrêmes s'il n'y avait pas d'effet.
+  Soutien : faible sous 75 %, modéré sous 95 %, fort sous 99,3 %, puis très fort.
+##### y*1e6+1e9
+gap 1.734226  P 0.9702702  vs  0.970312 
+##### invariances (graine 1)
+-y 0.9701359 3.48078  err  0.5792117 
+labels 0.9703109 3.486835  err  0.5439469 
+##### 2 groupes eloignes, k=20 (B1 etendu)
+2 eloignes d= 10                           OK P=1.0000 logBF=10.93 err=3.22% lois=normal_eq:0.000 t_eq:1.000 notes=1 (190.5s)
+1 eloigne d= 10                            OK P=0.9999 logBF=9.40 err=2.11% lois=normal_eq:0.915 t_eq:0.079 t_het:0.006 notes=2 (186.4s)
+2 eloignes d= 1000                         OK P=1.0000 logBF=44.01 err=2.66% lois=normal_eq:0.000 t_eq:1.000 notes=1 (203.2s)
+1 eloigne d= 1000                          OK P=1.0000 logBF=49.30 err=1.73% lois=normal_eq:0.921 t_eq:0.079 notes=1 (209.2s)

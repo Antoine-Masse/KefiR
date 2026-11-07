@@ -1,0 +1,31 @@
+Welch p 5.617647e-08  zs 49.71464 
+Bilan de m.bay : x ~ g (N = 193)
+Hypothèses, de la plus probable à la moins probable :
+  1. Aucun effet de g sur x : 83,4 % (soutien modéré)
+  2. g agit sur x           : 16,6 %
+  Sensibilité aux a priori non calculée (sensitivity = FALSE).
+Réponses par terme :
+  g a-t-il un effet ? Oui 16,6 %, non 83,4 % (a priori 50,0 % ; facteur de Bayes 0,199).
+Forme du bruit, comparée et non choisie (probabilités a posteriori) :
+  normale, variances inégales 99,3 % ; queues lourdes, variances inégales 0,7 % ; queues lourdes, variances égales < 0,1 % ; normale, variances égales < 0,1 %.
+A priori, fixés d'avance :
+  Effet : 50,0 % avant de voir les données. Taille d'un effet : échelle r = 0,5 sur l'écart standardisé.
+  Bruit : chacune des 4 formes part à égalité ; rapports de précision Dirichlet(1,5) ; queues lourdes nu - 2 ~ Exp(1).
+Comment lire :
+  Une probabilité est ici celle d'une hypothèse, sachant les données et les a priori ci-dessus.
+  Le facteur de Bayes dit de combien les données déplacent les cotes. Il ne dépend pas des cotes a priori.
+  Ni l'un ni l'autre n'est une p-value : une p-value est la probabilité de données au moins aussi extrêmes s'il n'y avait pas d'effet.
+  Soutien : faible sous 75 %, modéré sous 95 %, fort sous 99,3 %, puis très fort.
+Avertissements :
+  Beaucoup de groupes et un très petit : si ce groupe est à l'écart, la réponse globale est prudente, car cet écart peut aussi se lire comme une plus grande variance.
+  Précision numérique faible : erreur sur le facteur de Bayes d'environ 9.4 %.
+67.53567 s
+         law hypothesis log_ml posterior  rel_se    ess
+1  normal_eq         H0 -364.8 3.527e-31 0.00000     NA
+2  normal_eq         H1 -315.1 1.375e-09 0.00000     NA
+3 normal_het         H0 -294.9 8.278e-01 0.04857 402.57
+4 normal_het         H1 -296.5 1.651e-01 0.08105 141.52
+5       t_eq         H0 -304.9 3.652e-05 0.04798 232.67
+6       t_eq         H1 -317.0 2.069e-10 0.07774 152.88
+7      t_het         H0 -299.8 6.025e-03 0.04384 413.06
+8      t_het         H1 -301.5 1.083e-03 0.24471  16.67

@@ -1,0 +1,120 @@
+
+## groupe a 45% ex-aequo : retenues=normal_eq,normal_het,t_eq,t_het
+   ess=NA/3139/1056/871  logBF/loi=0.72/0.33/0.64/0.34  notes=
+ graine 1                                  OK P=0.6112 logBF=0.45 err=0.73% lois=normal_eq:0.306 normal_het:0.625 t_eq:0.015 t_het:0.054 notes=0 (4.3s)
+   ess=NA/3146/805/993  logBF/loi=0.72/0.32/0.57/0.32  notes=
+ graine 2                                  OK P=0.6083 logBF=0.44 err=0.73% lois=normal_eq:0.307 normal_het:0.622 t_eq:0.016 t_het:0.055 notes=0 (3.4s)
+   ess=NA/3187/1688/919  logBF/loi=0.72/0.32/0.58/0.38  notes=
+ graine 3                                  OK P=0.6097 logBF=0.45 err=0.73% lois=normal_eq:0.306 normal_het:0.626 t_eq:0.015 t_het:0.052 notes=0 (3.2s)
+   ess=NA/3186/983/916  logBF/loi=0.72/0.34/0.59/0.36  notes=
+ graine 4                                  OK P=0.6117 logBF=0.45 err=0.71% lois=normal_eq:0.304 normal_het:0.627 t_eq:0.015 t_het:0.054 notes=0 (3.1s)
+
+## groupe a 49% ex-aequo : retenues=normal_eq,normal_het,t_eq,t_het
+   ess=NA/3139/1056/871  logBF/loi=0.72/0.33/0.64/0.34  notes=
+ graine 1                                  OK P=0.6112 logBF=0.45 err=0.73% lois=normal_eq:0.306 normal_het:0.625 t_eq:0.015 t_het:0.054 notes=0 (3.0s)
+   ess=NA/3146/805/993  logBF/loi=0.72/0.32/0.57/0.32  notes=
+ graine 2                                  OK P=0.6083 logBF=0.44 err=0.73% lois=normal_eq:0.307 normal_het:0.622 t_eq:0.016 t_het:0.055 notes=0 (2.9s)
+   ess=NA/3187/1688/919  logBF/loi=0.72/0.32/0.58/0.38  notes=
+ graine 3                                  OK P=0.6097 logBF=0.45 err=0.73% lois=normal_eq:0.306 normal_het:0.626 t_eq:0.015 t_het:0.052 notes=0 (2.9s)
+   ess=NA/3186/983/916  logBF/loi=0.72/0.34/0.59/0.36  notes=
+ graine 4                                  OK P=0.6117 logBF=0.45 err=0.71% lois=normal_eq:0.304 normal_het:0.627 t_eq:0.015 t_het:0.054 notes=0 (3.0s)
+
+## groupe a 50% ex-aequo : retenues=normal_eq,normal_het,t_eq,t_het
+   ess=NA/3085/1579/619  logBF/loi=1.03/0.71/0.92/0.48  notes=
+ graine 1                                  OK P=0.6702 logBF=0.71 err=1.08% lois=normal_eq:0.076 normal_het:0.824 t_eq:0.005 t_het:0.095 notes=0 (3.3s)
+   ess=NA/3103/751/1195  logBF/loi=1.03/0.69/0.84/0.63  notes=
+ graine 2                                  OK P=0.6705 logBF=0.71 err=1.00% lois=normal_eq:0.077 normal_het:0.823 t_eq:0.006 t_het:0.094 notes=0 (3.0s)
+   ess=NA/3136/1243/724  logBF/loi=1.03/0.7/0.89/0.62  notes=
+ graine 3                                  OK P=0.6714 logBF=0.71 err=1.02% lois=normal_eq:0.076 normal_het:0.825 t_eq:0.006 t_het:0.093 notes=0 (2.7s)
+   ess=NA/3134/599/541  logBF/loi=1.03/0.71/0.89/0.51  notes=
+ graine 4                                  OK P=0.6713 logBF=0.71 err=0.96% lois=normal_eq:0.076 normal_het:0.827 t_eq:0.006 t_het:0.092 notes=0 (3.3s)
+
+## 3 groupes 45% meme valeur : retenues=normal_eq,normal_het,t_eq,t_het
+   ess=NA/3172/769/1034  logBF/loi=1.17/0.83/-0.63/-0.85  notes=
+ graine 1                                  OK P=0.5896 logBF=0.36 err=1.31% lois=normal_eq:0.493 normal_het:0.122 t_eq:0.271 t_het:0.114 notes=0 (3.2s)
+   ess=NA/3186/1295/910  logBF/loi=1.17/0.82/-0.65/-0.81  notes=
+ graine 2                                  OK P=0.5877 logBF=0.35 err=0.76% lois=normal_eq:0.491 normal_het:0.121 t_eq:0.276 t_het:0.111 notes=0 (3.3s)
+   ess=NA/3229/1104/1046  logBF/loi=1.17/0.82/-0.65/-0.82  notes=
+ graine 3                                  OK P=0.5874 logBF=0.35 err=1.00% lois=normal_eq:0.489 normal_het:0.123 t_eq:0.276 t_het:0.112 notes=0 (3.3s)
+   ess=NA/3224/569/845  logBF/loi=1.17/0.84/-0.64/-0.81  notes=
+ graine 4                                  OK P=0.5909 logBF=0.37 err=1.19% lois=normal_eq:0.493 normal_het:0.124 t_eq:0.270 t_het:0.112 notes=0 (3.1s)
+
+## 3 groupes 50% meme valeur : retenues=normal_eq,normal_het,t_eq,t_het
+   ess=NA/3109/1367/1125  logBF/loi=1.99/1.75/-1.09/-1.2  notes=
+ graine 1                                  OK P=0.3448 logBF=-0.64 err=1.30% lois=normal_eq:0.109 normal_het:0.051 t_eq:0.532 t_het:0.309 notes=0 (3.6s)
+   ess=NA/3142/1479/833  logBF/loi=1.99/1.74/-1.09/-1.2  notes=
+ graine 2                                  OK P=0.3425 logBF=-0.65 err=1.65% lois=normal_eq:0.107 normal_het:0.049 t_eq:0.532 t_het:0.311 notes=0 (4.1s)
+   ess=NA/3180/1398/853  logBF/loi=1.99/1.74/-1.1/-1.17  notes=
+ graine 3                                  OK P=0.3461 logBF=-0.64 err=1.34% lois=normal_eq:0.110 normal_het:0.051 t_eq:0.536 t_het:0.303 notes=0 (2.9s)
+   ess=NA/3173/1395/647  logBF/loi=1.99/1.76/-1.12/-1.17  notes=
+ graine 4                                  OK P=0.3428 logBF=-0.65 err=1.41% lois=normal_eq:0.108 normal_het:0.051 t_eq:0.536 t_het:0.305 notes=0 (3.3s)
+
+## 3 groupes 45% valeurs distinctes : retenues=normal_eq,normal_het,t_eq,t_het
+   ess=NA/3095/1450/611  logBF/loi=5.77/5/8.85/7.7  notes=
+ graine 1                                  OK P=0.9987 logBF=6.64 err=0.94% lois=normal_eq:0.259 normal_het:0.053 t_eq:0.514 t_het:0.174 notes=0 (3.6s)
+   ess=NA/3134/781/729  logBF/loi=5.77/4.98/8.82/7.73  notes=
+ graine 2                                  OK P=0.9987 logBF=6.65 err=1.06% lois=normal_eq:0.254 normal_het:0.051 t_eq:0.523 t_het:0.171 notes=0 (2.5s)
+   ess=NA/3166/526/1312  logBF/loi=5.77/4.98/8.85/7.73  notes=
+ graine 3                                  OK P=0.9987 logBF=6.64 err=1.02% lois=normal_eq:0.257 normal_het:0.053 t_eq:0.520 t_het:0.171 notes=0 (2.8s)
+   ess=NA/3154/1178/812  logBF/loi=5.77/5.01/8.86/7.66  notes=
+ graine 4                                  OK P=0.9987 logBF=6.64 err=0.67% lois=normal_eq:0.257 normal_het:0.053 t_eq:0.528 t_het:0.162 notes=0 (3.0s)
+
+## bimodal 45+45% dans chaque groupe : retenues=normal_eq,normal_het,t_eq,t_het
+   ess=NA/3198/2260/2016  logBF/loi=-1.57/-1.57/-1.59/-1.63  notes=
+ graine 1                                  OK P=0.1726 logBF=-1.57 err=0.11% lois=normal_eq:0.896 normal_het:0.103 t_eq:0.001 t_het:0.000 notes=0 (2.6s)
+   ess=NA/3209/2348/1728  logBF/loi=-1.57/-1.58/-1.61/-1.63  notes=
+ graine 2                                  OK P=0.1725 logBF=-1.57 err=0.11% lois=normal_eq:0.896 normal_het:0.103 t_eq:0.001 t_het:0.000 notes=0 (2.7s)
+   ess=NA/3225/2287/1472  logBF/loi=-1.57/-1.58/-1.63/-1.61  notes=
+ graine 3                                  OK P=0.1726 logBF=-1.57 err=0.11% lois=normal_eq:0.895 normal_het:0.104 t_eq:0.001 t_het:0.000 notes=0 (2.8s)
+   ess=NA/3241/2332/1669  logBF/loi=-1.57/-1.56/-1.62/-1.64  notes=
+ graine 4                                  OK P=0.1729 logBF=-1.57 err=0.11% lois=normal_eq:0.895 normal_het:0.104 t_eq:0.001 t_het:0.000 notes=0 (2.7s)
+
+## groupe a 45% loin (val=5) : retenues=normal_eq,normal_het,t_eq,t_het
+   ess=NA/3022/1173/555  logBF/loi=5.72/3.56/0.33/2.39  notes=
+ graine 1                                  OK P=0.9718 logBF=3.54 err=1.18% lois=normal_eq:0.000 normal_het:0.991 t_eq:0.000 t_het:0.009 notes=0 (3.0s)
+   ess=NA/3122/955/863  logBF/loi=5.72/3.56/0.29/2.39  notes=
+ graine 2                                  OK P=0.9718 logBF=3.54 err=1.13% lois=normal_eq:0.000 normal_het:0.991 t_eq:0.000 t_het:0.009 notes=0 (3.1s)
+   ess=NA/3091/1074/1118  logBF/loi=5.72/3.56/0.29/2.39  notes=
+ graine 3                                  OK P=0.9718 logBF=3.54 err=1.14% lois=normal_eq:0.000 normal_het:0.991 t_eq:0.000 t_het:0.009 notes=0 (2.9s)
+   ess=NA/3135/1093/1001  logBF/loi=5.72/3.58/0.27/2.34  notes=
+ graine 4                                  OK P=0.9723 logBF=3.56 err=1.10% lois=normal_eq:0.000 normal_het:0.992 t_eq:0.000 t_het:0.008 notes=0 (3.0s)
+
+## groupe a quasi constant (1e-8) : retenues=normal_eq,normal_het,t_eq,t_het
+   ess=NA/815/1614  logBF/loi=36.31/46.04/41.46  notes=Loi(s) écartée(s), le calcul a écho
+ graine 1                                  OK P=1.0000 logBF=46.04 err=3.29% lois=normal_eq:0.000 normal_het:1.000 t_eq:0.000 notes=1 (8.0s)
+   ess=NA/933/909  logBF/loi=36.31/45.96/41.41  notes=Loi(s) écartée(s), le calcul a écho
+ graine 2                                  OK P=1.0000 logBF=45.96 err=3.06% lois=normal_eq:0.000 normal_het:1.000 t_eq:0.000 notes=1 (6.8s)
+   ess=NA/603/851  logBF/loi=36.31/45.93/41.45  notes=Loi(s) écartée(s), le calcul a écho
+ graine 3                                  OK P=1.0000 logBF=45.93 err=3.92% lois=normal_eq:0.000 normal_het:1.000 t_eq:0.000 notes=1 (7.1s)
+   ess=NA/852/1625  logBF/loi=36.31/45.97/41.44  notes=Loi(s) écartée(s), le calcul a écho
+ graine 4                                  OK P=1.0000 logBF=45.97 err=3.21% lois=normal_eq:0.000 normal_het:1.000 t_eq:0.000 notes=1 (8.1s)
+
+## groupe a 80% quasi ex-aequo (1e-9) : retenues=normal_eq,normal_het,t_eq,t_het
+   ess=NA/2709/1267  logBF/loi=17.23/11.64/23.42  notes=Loi(s) écartée(s), le calcul a écho
+ graine 1                                  OK P=1.0000 logBF=14.06 err=1.46% lois=normal_eq:0.174 normal_het:0.088 t_eq:0.737 notes=1 (5.7s)
+   ess=NA/2748/1844  logBF/loi=17.23/11.62/23.4  notes=Loi(s) écartée(s), le calcul a écho
+ graine 2                                  OK P=1.0000 logBF=14.04 err=1.52% lois=normal_eq:0.176 normal_het:0.088 t_eq:0.735 notes=1 (5.8s)
+   ess=NA/2746/805  logBF/loi=17.23/11.64/23.37  notes=Loi(s) écartée(s), le calcul a écho
+ graine 3                                  OK P=1.0000 logBF=14.03 err=2.25% lois=normal_eq:0.179 normal_het:0.091 t_eq:0.731 notes=1 (6.0s)
+   ess=NA/2789/1239  logBF/loi=17.23/11.65/23.33  notes=Loi(s) écartée(s), le calcul a écho
+ graine 4                                  OK P=1.0000 logBF=14.00 err=1.79% lois=normal_eq:0.183 normal_het:0.094 t_eq:0.722 notes=1 (5.9s)
+
+## 2/3 echantillon quasi ex-aequo : retenues=normal_eq,normal_het,t_eq,t_het
+   ess=NA/2403  logBF/loi=54.47/22.02  notes=Loi(s) écartée(s), le calcul a écho
+ graine 1                                  OK P=1.0000 logBF=22.02 err=1.62% lois=normal_eq:0.000 normal_het:1.000 notes=1 (6.8s)
+   ess=NA/2435  logBF/loi=54.47/21.99  notes=Loi(s) écartée(s), le calcul a écho
+ graine 2                                  OK P=1.0000 logBF=21.99 err=1.59% lois=normal_eq:0.000 normal_het:1.000 notes=1 (6.3s)
+   ess=NA/2393  logBF/loi=54.47/22.02  notes=Loi(s) écartée(s), le calcul a écho
+ graine 3                                  OK P=1.0000 logBF=22.02 err=1.60% lois=normal_eq:0.000 normal_het:1.000 notes=1 (6.6s)
+   ess=NA/2535  logBF/loi=54.47/22.03  notes=Loi(s) écartée(s), le calcul a écho
+ graine 4                                  OK P=1.0000 logBF=22.03 err=1.53% lois=normal_eq:0.000 normal_het:1.000 notes=1 (7.0s)
+
+## groupe a 55% (seuil franchi) : retenues=normal_eq
+   ess=NA  logBF/loi=5.78  notes=Surtout des valeurs répétées : les 
+ graine 1                                  OK P=0.9969 logBF=5.78 err=0.00% lois=normal_eq:1.000 notes=1 (1.6s)
+   ess=NA  logBF/loi=5.78  notes=Surtout des valeurs répétées : les 
+ graine 2                                  OK P=0.9969 logBF=5.78 err=0.00% lois=normal_eq:1.000 notes=1 (1.5s)
+   ess=NA  logBF/loi=5.78  notes=Surtout des valeurs répétées : les 
+ graine 3                                  OK P=0.9969 logBF=5.78 err=0.00% lois=normal_eq:1.000 notes=1 (1.2s)
+   ess=NA  logBF/loi=5.78  notes=Surtout des valeurs répétées : les 
+ graine 4                                  OK P=0.9969 logBF=5.78 err=0.00% lois=normal_eq:1.000 notes=1 (1.3s)

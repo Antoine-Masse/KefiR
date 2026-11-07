@@ -1,0 +1,16 @@
+(b') eps=1e-8
+normal_eq [15s]                    logBF    -0.71 P(H1) 0.3299 err   0.00% | lois: normal_eq=1.000 | logBF/loi: -0.7
+normal_het [71s]                   logBF    -0.68 P(H1) 0.3366 err   2.41% | lois: normal_het=1.000 | logBF/loi: -0.7
+t_eq [8s]                          logBF    -0.89 P(H1) 0.2914 err   3.71% | lois: t_eq=1.000 | logBF/loi: -0.9
+t_het [10s]                        logBF    -0.18 P(H1) 0.4555 err 109.24% | lois: t_het=1.000 | logBF/loi: -0.2
+
+(c) n=10, groupe a variance nulle
+g1=5 g2~3 toutes [88s]             logBF    29.15 P(H1) 1.0000 err 141.40% | lois: normal_eq=0.000 normal_het=1.000 t_eq=0.000 t_het=0.000 | logBF/loi: 9.8 29.2 38.6 15.2
+g1=5 g2~3 normales [29s]           logBF  -271.91 P(H1) 0.0000 err 141.42% | lois: normal_eq=0.000 normal_het=1.000 | logBF/loi: 9.8 -271.9
+g1=5 g2~3 normales [52s]           logBF  -124.49 P(H1) 0.0000 err 141.42% | lois: normal_eq=0.000 normal_het=1.000 | logBF/loi: 9.8 -124.5
+g1=5 g2~3 normales [86s]           logBF   125.90 P(H1) 1.0000 err 141.42% | lois: normal_eq=0.000 normal_het=1.000 | logBF/loi: 9.8 125.9
+g1=3 g2~3 normales [40s]           logBF  -191.26 P(H1) 0.0000 err 141.42% | lois: normal_eq=0.000 normal_het=1.000 | logBF/loi: -0.9 -191.3
+g1=3 g2~3 normales [85s]           logBF  -119.23 P(H1) 0.0000 err 141.41% | lois: normal_eq=0.000 normal_het=1.000 | logBF/loi: -0.9 -119.2
+g1=3 g2~3 normales [47s]           logBF   128.50 P(H1) 1.0000 err 141.42% | lois: normal_eq=0.000 normal_het=1.000 | logBF/loi: -0.9 128.5
+
+(c2) Tie n_i=2, 3 : divergence a u/3=0.5 seulement ; m.bay par defaut

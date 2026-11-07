@@ -1,0 +1,20 @@
+g1 constant a 5 
+  grille : lignes NaN 1 / 3000 ; c = 5.00e-01 4.58e+18  ; NaN en g =  0.00206 21.44279 
+  ancien noyau au meme point : NaN 0 ; plage 151.29 167.28 
+  W 19.59614 Wm 33.17361 S2 56.15842 S2-Wm^2/W -7.105427e-15  SS/c 3.92816e-18 
+  ERREUR valeur manquante là où TRUE / FALSE est requis 
+Message d'avis :
+Dans log(Q) : Production de NaN
+g1 constant a 3 
+  hypothesis log_ml rel_se   ess
+1         H0  98.95 0.9997 1.001
+2         H1 132.91 0.9997 1.001
+d/s=1e8 
+  grille : lignes NaN 2 / 3000 ; c = 1.14e+31 3.33e-01 8.80e+35  ; NaN en g = 0.00176 0.00176 
+  ancien noyau au meme point : NaN 0 ; plage -190.81 -160.10 
+  W 29.47992 Wm 0.2553036 S2 0.002210994 S2-Wm^2/W -1.301043e-18  SS/c 8.1e-19 
+  ERREUR valeur manquante là où TRUE / FALSE est requis 
+Message d'avis :
+Dans log(Q) : Production de NaN
+t_het, y=3x5|1..5 
+  ERREUR valeur manquante là où TRUE / FALSE est requis 

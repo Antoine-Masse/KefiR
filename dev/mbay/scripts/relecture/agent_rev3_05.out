@@ -1,0 +1,25 @@
+=== A. Reference contre IS, normal_het (S=4000, 3 graines) : ecart et erreur annoncee
+(2,30) d=1e4               ref H0 -89.797 H1 -65.092 logBF 24.704
+   seed 1  H0 ecart -0.014 (annonce 0.011, z=-1.2, ess 2649) H1 ecart +0.006 (annonce 0.009, z=+0.6, ess 2948)
+   seed 2  H0 ecart +0.013 (annonce 0.011, z=+1.2, ess 2682) H1 ecart -0.001 (annonce 0.009, z=-0.1, ess 3005)
+   seed 3  H0 ecart +0.001 (annonce 0.012, z=+0.1, ess 2573) H1 ecart +0.019 (annonce 0.009, z=+2.1, ess 2981)
+(1,30) d=100               ref H0 -60.121 H1 -53.738 logBF 6.383
+   seed 1  H0 ecart +0.008 (annonce 0.011, z=+0.8, ess 2751) H1 ecart +0.010 (annonce 0.006, z=+1.7, ess 3495)
+   seed 2  H0 ecart +0.012 (annonce 0.011, z=+1.1, ess 2666) H1 ecart +0.001 (annonce 0.006, z=+0.2, ess 3460)
+   seed 3  H0 ecart +0.006 (annonce 0.012, z=+0.5, ess 2567) H1 ecart -0.001 (annonce 0.007, z=-0.2, ess 3383)
+(2,2) d=1e6                ref H0 -43.736 H1 -31.081 logBF 12.655
+   seed 1  H0 ecart +0.008 (annonce 0.006, z=+1.2, ess 3432) H1 ecart +0.003 (annonce 0.007, z=+0.5, ess 3353)
+   seed 2  H0 ecart +0.003 (annonce 0.007, z=+0.5, ess 3369) H1 ecart -0.007 (annonce 0.007, z=-1.0, ess 3351)
+   seed 3  H0 ecart +0.003 (annonce 0.006, z=+0.4, ess 3423) H1 ecart +0.005 (annonce 0.007, z=+0.7, ess 3401)
+(5,5) sd 1e-3,1 d=.5       ref H0 -6.200 H1 -6.293 logBF -0.093
+   seed 1  H0 ecart +0.006 (annonce 0.010, z=+0.6, ess 2793) H1 ecart +0.001 (annonce 0.011, z=+0.1, ess 2764)
+   seed 2  H0 ecart -0.028 (annonce 0.015, z=-1.9, ess 2156) H1 ecart +0.006 (annonce 0.011, z=+0.5, ess 2750)
+   seed 3  H0 ecart +0.006 (annonce 0.010, z=+0.6, ess 2857) H1 ecart +0.012 (annonce 0.012, z=+1.0, ess 2569)
+(4,4) sd 1e-6,1 d=.5       ref H0 -6.629 H1 -6.759 logBF -0.129
+   seed 1  H0 ecart -0.030 (annonce 0.016, z=-1.9, ess 1931) H1 ecart -0.010 (annonce 0.017, z=-0.6, ess 1800)
+   seed 2  H0 ecart -0.023 (annonce 0.015, z=-1.5, ess 2065) H1 ecart +0.004 (annonce 0.017, z=+0.3, ess 1842)
+   seed 3  H0 ecart +0.015 (annonce 0.017, z=+0.9, ess 1904) H1 ecart -0.020 (annonce 0.016, z=-1.3, ess 1997)
+(30,30) sd 1,1 d=.5        ref H0 -89.097 H1 -88.930 logBF 0.167
+   seed 1  H0 ecart +0.011 (annonce 0.006, z=+1.9, ess 3529) H1 ecart +0.007 (annonce 0.006, z=+1.1, ess 3496)
+   seed 2  H0 ecart -0.014 (annonce 0.006, z=-2.1, ess 3451) H1 ecart +0.007 (annonce 0.006, z=+1.2, ess 3525)
+   seed 3  H0 ecart -0.000 (annonce 0.006, z=-0.1, ess 3515) H1 ecart +0.005 (annonce 0.006, z=+0.7, ess 3462)

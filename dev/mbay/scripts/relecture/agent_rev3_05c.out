@@ -1,0 +1,11 @@
+
+=== B. Troncature droite : deux groupes a sd infime, un troisieme disperse (normal_het H1)
+d/s=100 : code logBF 39.303 (H1 74.964 err 0.021) ; grille large logBF 39.303 (H1 74.964) ; diff H1 0.000
+d/s=10000 : code logBF 85.543 (H1 134.831 err 0.021) ; grille large logBF 85.543 (H1 134.831) ; diff H1 0.000
+d/s=1e+06 : code logBF 128.047 (H1 194.686 err 0.021) ; grille large logBF 128.060 (H1 194.699) ; diff H1 0.013
+Erreur dans if (ess >= min(500, draws/4) || grown >= max_grow) break : 
+  valeur manquante là où TRUE / FALSE est requis
+Appels : tab_of ... .bay_law_normal -> .bay_with_seed -> <Anonymous> -> .bay_law_het_is
+De plus : Message d'avis :
+Dans log(Q) : Production de NaN
+Exécution arrêtée

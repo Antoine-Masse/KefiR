@@ -1,0 +1,24 @@
+--- zero-inflation, m.bay complet
+sans effet seed 1 : ERREUR valeur manquante là où TRUE / FALSE est requis 
+  arret apres 8s
+sans effet seed 2 [7s] P=0.0000 err=137.97% lois=normal_eq=0.000 normal_het=0.000 t_eq=0.000 t_het=1.000 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 140 %.
+sans effet seed 3 [7s] P=0.0000 err=141.42% lois=normal_eq=0.000 normal_het=0.000 t_eq=1.000 t_het=0.000 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 140 %.
+effet sur les non nuls seed 1 : ERREUR valeur manquante là où TRUE / FALSE est requis 
+  arret apres 9s
+effet sur les non nuls seed 2 [9s] P=0.0000 err=139.69% lois=normal_eq=0.000 normal_het=0.000 t_eq=0.000 t_het=1.000 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 140 %.
+--- Likert m.bay complet, un groupe constant
+seed 1 [18s] P=1.0000 err=140.44% lois=normal_eq=0.000 t_eq=0.000 t_het=1.000 notes=La réponse semble discrète : les lois normale et t ne sont ici qu'une approximation. / Loi(s) écartée(s), le calcul a échoué : normal_het. / Précision numérique faible : erreur sur le facteur de Bayes d'environ 140 %.
+seed 2 [12s] P=1.0000 err=140.88% lois=normal_eq=0.000 normal_het=0.000 t_eq=0.000 t_het=1.000 notes=La réponse semble discrète : les lois normale et t ne sont ici qu'une approximation. / Précision numérique faible : erreur sur le facteur de Bayes d'environ 140 %.
+seed 3 [10s] P=1.0000 err=122.92% lois=normal_eq=0.000 t_eq=0.000 t_het=1.000 notes=La réponse semble discrète : les lois normale et t ne sont ici qu'une approximation. / Loi(s) écartée(s), le calcul a échoué : normal_het. / Précision numérique faible : erreur sur le facteur de Bayes d'environ 120 %.
+seed 4 : ERREUR valeur manquante là où TRUE / FALSE est requis 
+  arret apres 7s
+Messages d'avis :
+1: Dans log(Q) : Production de NaN
+2: Dans log(Q) : Production de NaN
+--- temps
+k=20 n=10 sd varies, normales [1s] P=1.0000 err=113.88% lois=normal_eq=0.000 normal_het=1.000 notes=Beaucoup de groupes et un très petit : si ce groupe est à l'écart, la réponse globale est prudente, car cet écart peut aussi se lire comme une plus grande variance. / Précision numérique faible : erreur sur le facteur de Bayes d'environ 110 %.
+idem, toutes [29s] P=1.0000 err=62.35% lois=normal_eq=0.000 normal_het=0.028 t_eq=0.000 t_het=0.972 notes=Beaucoup de groupes et un très petit : si ce groupe est à l'écart, la réponse globale est prudente, car cet écart peut aussi se lire comme une plus grande variance. / Précision numérique faible : erreur sur le facteur de Bayes d'environ 62 %.
+N=4e4 toutes draws=500 [18s] P=1.0000 err=0.03% lois=normal_eq=0.989 normal_het=0.011 t_eq=0.000 t_het=0.000 notes=
+N=2e5 normales draws=4000 [1s] P=0.0054 err=0.01% lois=normal_eq=0.984 normal_het=0.016 notes=
+N=2e5 toutes draws=500 [90s] P=0.0054 err=0.04% lois=normal_eq=0.984 normal_het=0.016 t_eq=0.000 t_het=0.000 notes=
+k=30 n=6 toutes draws=500 [109s] P=0.0565 err=0.03% lois=normal_eq=1.000 normal_het=0.000 t_eq=0.000 t_het=0.000 notes=Beaucoup de groupes et un très petit : si ce groupe est à l'écart, la réponse globale est prudente, car cet écart peut aussi se lire comme une plus grande variance. / Précision numérique faible : erreur sur le facteur de Bayes d'environ 0.026 %.

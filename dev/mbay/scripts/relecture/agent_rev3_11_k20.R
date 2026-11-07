@@ -1,0 +1,5 @@
+source("C:/Users/masse/Desktop/KefiR/KefiR-mbay/dev/mbay/scripts/relecture/agent_rev3_lib.R")
+des <- c(rep(10,19),3); g <- rep(seq_len(20),des); set.seed(7); y <- c(rnorm(190), rnorm(3,10,1))
+cat("Welch p",oneway.test(y~factor(g))$p.value," zs",.bay_bf_oneway_zs(y,g),"\n")
+t0 <- Sys.time(); r <- m.bay(y,g,draws=500L,sensitivity=FALSE); cat(difftime(Sys.time(),t0,units="secs"),"s\n")
+print(r$models[,c("law","hypothesis","log_ml","posterior","rel_se","ess")],digits=4)

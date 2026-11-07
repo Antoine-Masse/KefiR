@@ -365,10 +365,11 @@ Remplace `.bay_bf_oneway_hetero`, retirée du code (défauts B1 et B2 ; ses chif
 |---|---|---|
 | (μ, τ̄), partagés par tous les modèles | p ∝ 1/τ̄, μ plat | Mesure invariante à droite, emboîtement : [Dablander2024, §2.2, lu sur le PDF arXiv]. C'est ce qui rend le BF entre structures de variance défini |
 | Proportions de précision ϑ, variance par groupe | Dirichlet(u, …, u), u = 1,5 ; c_i = 1 sinon | Forme : [Dablander2024]. Valeur : Beta(1,5 ; 1,5) de [Maier2025] à k = 2 (90 % de l'a priori sur un rapport d'écarts-types entre 1/3 et 3, d'après le résumé de leur texte). [Dablander2024] propose u = 1/2 comme défaut et montre que u ≤ 1/2 est nécessaire à la cohérence d'information. Ici u n'est pas testé mais sert de nuisance : u = 1,5 pénalise plus l'explication « un groupe éloigné n'est qu'une grande variance » (voir ci-dessous), et la sensibilité couvre 0,5 et 4,5 |
-| Effet, H1 | a_i \| g ~ N(0, g σ_i²), g ~ InvGamma(1/2, r²/2), r = 1/2 | Zellner-Siow [Rouder2012] quand les c_i valent 1. **À k ≥ 3 avec variances inégales, réglage propre à KefiR.** L'échelle par groupe vient de B2 |
+| Effet, H1, première forme : tous les groupes | a_i \| g ~ N(0, g σ_i²), g ~ InvGamma(1/2, r²/2), r = 1/2 | Zellner-Siow [Rouder2012] quand les c_i valent 1. **À k ≥ 3 avec variances inégales, réglage propre à KefiR.** L'échelle par groupe vient de B2 |
+| Effet, H1, seconde forme : un seul groupe s, uniforme | a_s \| g ~ N(0, g σ_s²), g ~ InvGamma(1/2, (r√2)²/2), les autres à μ | Poids 1/2 pour chaque forme. **Réglage propre à KefiR**, à k ≥ 3 seulement. À c_i = 1, chaque terme est le BF de `anovaBF` sur « s contre le reste » (testé à 1e-4). L'idée de comparer des partitions de moyennes vient de [GopalanBerry1998], texte non lu ici |
 | Queues lourdes | y ~ t_ν de variance σ_i², ν − 2 ~ Exp(1) | [Maier2025] (densité exp(−(ν−2)), lue dans le résumé de leur texte) |
 
-À c_i = 1 et loi normale, c'est exactement `anovaBF` et `.bay_bf_oneway_zs`, testé à 1e-5 et 1e-4.
+À c_i = 1 et loi normale, la première forme est exactement `anovaBF` et `.bay_bf_oneway_zs`, testé à 1e-5 et 1e-4. **À k ≥ 3, le BF global de `m.bay` n'est donc plus celui d'`anovaBF`, même en gaussien** : `$models` et la ligne « première forme seule » du bilan donnent la comparaison. À k = 2, il n'y a qu'une forme, et l'identité avec `ttestBF` tient (testé).
 
 **Calcul, sans compilateur et sans paquet supplémentaire.**
 - Normale : conditionnellement à (c, g), tout s'intègre (μ, a, τ̄) ; il reste g par trapèzes en log g et ϑ par échantillonnage d'importance adaptatif. La proposition mêle une part défensive (a priori, variance propre, variance propre plus distance à la médiane pondérée des moyennes, version aplatie) à une t ajustée sur un pilote.
@@ -379,10 +380,14 @@ Remplace `.bay_bf_oneway_hetero`, retirée du code (défauts B1 et B2 ; ses chif
 
 **Ce que le choix règle, et ce qu'il ne règle pas.**
 - B2 (groupe dispersé sans rapport) : plancher, la réponse reste du côté de H1 quand S croît. L'échelle moyenne des précisions et le a_i par groupe y contribuent ensemble.
-- B1 (petit groupe éloigné de d) : sous H0 hétéroscédastique, m ∝ d^−(n_s + 2u) ; sous H1 à g commun, m ∝ d^−k. Donc BF ∝ d^(n_s + 2u − k). Le signe a changé par rapport à la voie rejetée pour n_s + 2u > k. **Il reste un point faible**, annoncé dans le bilan, si n_s + 2u < k : un très petit groupe parmi beaucoup peut se lire comme une grande variance. Le remède proprement dit (un a priori par groupe) perdrait l'identité avec `anovaBF`. Ce n'est pas absurde sur le fond : avec 3 valeurs, distinguer « décalé » de « très dispersé » repose sur un t à 2 ddl.
+- B1 (petit groupe éloigné de d) : sous H0 hétéroscédastique, m ∝ d^−(n_s + 2u) ; sous la première forme, à g commun, m ∝ d^−k, ce qui donnait BF ∝ d^(n_s + 2u − k) et laissait H0 en tête à k = 20 (`RELECTURE_ADVERSE_2026-11-07.md`, B1). La seconde forme coûte d^−2 quel que soit k : BF ∝ d^(n_s + 2u − 2) [main ; pentes contrôlées, `agent_41` D]. Ce choix sert aussi la question d'Antoine : « un groupe se distingue » est une hypothèse courante, que la première forme pénalise à k grand.
 - Le mélange ne remplace pas la vérification : il ne connaît que ces quatre lois. Forte asymétrie : non couverte (voir `VALIDATION.md`).
 
 **Sans aiguillage.** Aucun test préalable : les lois sont comparées par leurs probabilités a posteriori. `r` et les cotes a priori restent fixés d'avance : les régler sur les données ne pourrait que gonfler le résultat.
+
+**Hyper-a priori, pour que la fonction fixe seule ses a priori.** `rscale` et `prior_h1` ont des valeurs par défaut : l'utilisateur n'a rien à régler.
+- Sur π : un hyper-a priori ne change rien à un seul terme. P(H1 | D) ne dépend de π que par sa moyenne, donc une Beta(a, a) redonne π = 1/2. Il n'a d'effet qu'à plusieurs termes, où il apprend la proportion de termes actifs : c'est la correction de multiplicité de [ScottBerger2010], à traiter au jalon « plusieurs facteurs ».
+- Sur r : une loi sur r n'est qu'un a priori plus large sur l'effet, légitime s'il est fixé d'avance. Mesuré avec une loi uniforme sur r/2, r, 2r (`agent_41` B, colonne « mix »). L'estimer sur les données (Bayes empirique) reviendrait à maximiser le BF, ce que D6 exclut. Décision et chiffres : `DECISIONS.md`, D5.
 
 **Rangs** [vanDoorn2020] : pour 2 groupes et apparié, disponible, à utiliser. **Pour k > 2 groupes, je n'ai trouvé aucune méthode publiée vérifiée d'équivalent bayésien de Kruskal-Wallis** (recherche Crossref sans résultat, qui n'exclut pas l'existence d'une méthode).
 

@@ -1,0 +1,15 @@
+(1) kernel+const normal, c et g fixes, par integration brute sur a_i, mu, log tau
+c=(1,1,1) g=0 : formule -21.56229  brut -21.56348
+c=(0.5,2,1.5) g=0 : formule -20.92955  brut -20.92769
+c=(0.5,2,1.5) g=0.3 : formule -21.21834  brut -21.21843
+c=(1,1,1) g=1.2 : formule -22.32155  brut -22.32155
+c=(3,0.4,0.9) g=0.05 : formule -26.09327  brut -26.09321
+(2) a priori de theta sachant sigma, k=3 : formule contre integration numerique sur g et mu
+formule -3.306418  numerique -3.306418
+(3) .bay_t_parts contre dt brut, k=3 het H0
+code -26.139568 brut -26.139568
+(4) .bay_law_ldgd : integrale sur le simplexe k=3
+1 
+(5) Densite mvt : integrale d=2 et covariance
+cov tirages*(df-2)/df: 1.865 0.422 0.422 0.63 ; attendu: 1.869 0.423 0.423 0.631 
+integrale ld: 0.9999991 

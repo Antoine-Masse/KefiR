@@ -121,7 +121,7 @@ if (partie %in% c("A", "A2")) {
 		rr <- r[ok, , drop = FALSE]
 		sortie <- c(sortie, sprintf("k=%d n=%d : %d jeux, %d echecs ; moyenne P(H1) %.3f (attendu %.3f +- %.3f) ; moyenne P(lois) %s ; frequence lois %s",
 			k, n, nrow(rr), sum(!ok), mean(rr[, "p"]), mean(rr[, "h1"]), 2 * sd(rr[, "p"]) / sqrt(nrow(rr)),
-			paste(round(colMeans(rr[, 4:7]), 3), collapse = " "),
+			paste0(paste(round(colMeans(rr[, 4:7], na.rm = TRUE), 3), collapse = " "), " (loi ecartee : ", sum(is.na(rr[, 4:7])), " fois)"),
 			paste(round(tabulate(rr[, "law"], 4) / nrow(rr), 3), collapse = " ")))
 		bins <- cut(rr[, "p"], c(0, .2, .4, .6, .8, .95, 1), include.lowest = TRUE)
 		for (b in levels(bins)) {

@@ -1,6 +1,6 @@
 # Validation de m.bay
 
-**`m.bay()` n'existe pas encore : rien ici ne le valide.** Sections 1 à 5 : 5 novembre ; section 6 : 6 novembre. Ce fichier documente ce qui a été exécuté sur les moteurs candidats et le socle. R 4.6.1, BayesFactor 0.9.12-4.8, Windows 11, 5 novembre 2026. Scripts dans `scripts/`, sorties dans `scripts/resultats/`. Détails : `rapport_moteurs.md`, `agent_2x_calibration_rapport.md`, `RELECTURE_ADVERSE_2026-11-05.md`.
+**Le §7 valide `m.bay()` à un facteur. Les §1 à 6 documentent les moteurs candidats et les essais antérieurs (5 et 6 novembre) ; ils ne valident pas `m.bay()`.** R 4.6.1, BayesFactor 0.9.12-4.8, Windows 11. Scripts dans `scripts/`, sorties dans `scripts/resultats/`. Détails : `rapport_moteurs.md`, `agent_2x_calibration_rapport.md`, `RELECTURE_ADVERSE_2026-11-05.md`.
 
 Légende : **[recalculé]** = refait séparément par le coordinateur ; **[agent]** = exécuté par un agent, sortie présente, non refait.
 
@@ -142,3 +142,207 @@ Par le relecteur seul, non refait : écart de 3σ sur ce plan, BF<1/3 dans 67 % 
 ### Tests
 
 `test-bay-oneway.R` : 24 tests, 80 assertions, 0 échec ; `test-bay-core.R` : 237, 0 échec ; `test-m.test.R` : 52, 0 échec [recalculé, `agent_26_lance_tests_bay`]. Sources ASCII contrôlées [recalculé].
+
+## 7. `m.bay()` à un facteur, 2 et k groupes, lois comparées (7 novembre)
+
+Remplace le §6 pour cette voie. Tout se reproduit par les commandes du JOURNAL, qui dit aussi sur quelle version de code a tourné chaque lancement. Sorties : `scripts/resultats/agent_40.txt`, `agent_41_A.txt`, `agent_41_A2.txt`, `agent_41_B.txt`, `agent_41_C.txt`, `agent_41_D.txt`, `agent_42.txt`, `agent_43.txt`, `agent_44.txt`, tranches dans `agent_41_cas/`.
+
+### Calcul indépendant
+
+| Comparaison | Écart | Script |
+|---|---|---|
+| Les 8 modèles à k=2, 3 jeux, contre une quadrature écrite à part (`dnorm`, `dt`, `dcauchy`) | ≤ 0,02 sur log m(D), tous dans ±3 erreurs annoncées, normale exacte à 1e-4 | `agent_40` |
+| Seconde forme sous loi t à variance commune, k=3, 2 jeux × 3 groupes, quadrature 4D | ≤ 0,022, ±2,4 erreurs annoncées | `agent_42` |
+| Seconde forme, normale : `anovaBF` sur « s contre le reste » | < 1e-4 (test) | `test-bay-laws.R` |
+| Première forme, normale : `.bay_bf_oneway_zs`, `anovaBF` ; k=2 : `ttestBF` | < 1e-4 (tests) | `test-bay-laws.R` |
+| Noyau et constantes à k=3 contre intégration brute | ≤ 2e-3 (relecteur, sur le code d'avant le mélange) | `relecture/agent_rev3_03` |
+
+**Non comparé** : t à variance par groupe à k ≥ 3, et la seconde forme à variance par groupe (normale ou t) : trop de dimensions pour une quadrature. Ces parties reposent sur la calibration ci-dessous.
+
+### Calibration sous l'a priori
+
+Générateur : l'a priori lui-même, loi comprise, deux formes d'effet comprises, N=600 par cas (`agent_41 A`). Test de calcul, pas de vérité du modèle : il est bon par construction si le calcul est juste, c'est ce qu'il contrôle.
+
+| Plan | Moyenne de P(H1) | Fréquence de H1 | Moyennes de P(lois), attendu 0,25 environ | Lois écartées |
+|---|---:|---:|---|---:|
+| k=2, n=10 | 0.485 | 0.480 | 0.248 0.253 0.254 0.245 | 2 |
+| k=2, n=30 | 0.489 | 0.493 | 0.253 0.240 0.250 0.258 | 3 |
+| k=3, n=10 | 0.514 | 0.510 | 0.237 0.246 0.257 0.264 | 9 |
+| k=3, n=30 | 0.519 | 0.515 | 0.247 0.229 0.251 0.274 | 2 |
+| k=5, n=10 | 0.513 | 0.507 | 0.260 0.253 0.247 0.245 | 8 |
+| k=5, n=30 | 0.481 | 0.495 | 0.226 0.256 0.271 0.248 | 4 |
+
+Tranches de probabilité annoncée : voir `agent_41_A.txt`. Une seule |z| > 2,1 sur 36 tranches à N=600, à P > 0,95 (0,998 annoncé, 0,990 observé, k=3, n=30) et une à (0,8 ; 0,95] (k=2, n=10, z=−2,05). La tranche suspecte du premier lancement (k=2, n=30, (0,8 ; 0,95], 0,869 annoncé, 0,971 observé, z=3,64 avec la variance observée) ne se reproduit pas : autre graine, N=2000, 0,884 annoncé, 0,823 observé, z=−1,73, sens inverse (`agent_41_A2.txt`).
+
+**Lois écartées (`ESS` < 30).** Au plus 1,5 % des jeux (9 sur 600 à k=3, n=10). À k=2 et k=3, tous ces jeux ont P=1 : effet énorme, sans conséquence sur la réponse. À k=5, P descend à 0,14 parmi eux : **la réponse peut alors en dépendre**, ce que le bilan annonce (« la comparaison est incomplète »). Le poids des lois restantes peut en être faussé.
+
+### Effets fixes, N=300 par cas (`agent_41 B`)
+
+Colonnes : `m.bay` ; gaussien seul (variance commune, `anovaBF`) ; tests classiques. **P > 0,95 et p < 0,05 ne sont pas des seuils équivalents** : P > 0,95 correspond plutôt à p ≈ 0,002 à ces effectifs (§2).
+
+| Scénario | m.bay P>0,5 | m.bay P>0,95 | Gaussien P>0,95 | aov p<0,005 | Welch p<0,05 | Welch p<0,005 |
+|---|---:|---:|---:|---:|---:|---:|
+| hetero (5,5,40) sd(4,4,1) H0 | 0.267 | 0.013 | 0.190 | 0.260 | 0.037 | 0.003 |
+| hetero (5,5,40) sd(1,1,4) H0 | 0.057 | 0.003 | 0.000 | 0.000 | 0.043 | 0.013 |
+| hetero (10,30,50) sd(3,1,1) H0 | 0.110 | 0.020 | 0.107 | 0.167 | 0.053 | 0.020 |
+| hetero (2,2,40) sd(4,4,1) H0 | 0.537 | 0.030 | 0.433 | 0.507 | 0.090 | 0.017 |
+| (2x6) sd 1 H0 | 0.223 | 0.000 | 0.003 | 0.003 | 0.113 | 0.020 |
+| hetero (5,5,40) sd(4,4,1) effet 4 groupe 1 | 0.823 | 0.153 | 0.780 | 0.830 | 0.300 | 0.053 |
+| hetero (5,5,40) sd(4,4,1) effet 8 groupe 1 | 1.000 | 0.580 | 0.993 | 1.000 | 0.860 | 0.337 |
+| hetero (30,30,30) sd(1,1,3) d=.8 entre 1 et 2 | 0.833 | 0.337 | 0.063 | 0.107 | 0.807 | 0.467 |
+| normal k=2 n=10 d=0.0 | 0.097 | 0.000 | 0.003 | 0.003 | 0.033 | 0.003 |
+| normal k=2 n=10 d=0.5 | 0.280 | 0.023 | 0.027 | 0.050 | 0.190 | 0.047 |
+| normal k=2 n=10 d=0.8 | 0.533 | 0.033 | 0.037 | 0.087 | 0.373 | 0.083 |
+| normal k=3 n=10 d=0.0 | 0.120 | 0.010 | 0.010 | 0.017 | 0.070 | 0.023 |
+| normal k=3 n=10 d=0.5 | 0.303 | 0.017 | 0.023 | 0.033 | 0.167 | 0.043 |
+| normal k=3 n=10 d=0.8 | 0.540 | 0.087 | 0.093 | 0.137 | 0.363 | 0.117 |
+| normal k=2 n=30 d=0.0 | 0.047 | 0.000 | 0.000 | 0.003 | 0.027 | 0.003 |
+| normal k=2 n=30 d=0.5 | 0.567 | 0.093 | 0.093 | 0.190 | 0.513 | 0.187 |
+| normal k=2 n=30 d=0.8 | 0.897 | 0.377 | 0.377 | 0.520 | 0.850 | 0.517 |
+| normal k=3 n=30 d=0.0 | 0.063 | 0.000 | 0.000 | 0.007 | 0.057 | 0.003 |
+| normal k=3 n=30 d=0.5 | 0.523 | 0.100 | 0.107 | 0.183 | 0.483 | 0.160 |
+| normal k=3 n=30 d=0.8 | 0.900 | 0.513 | 0.530 | 0.660 | 0.883 | 0.640 |
+| normal k=2 n=100 d=0.0 | 0.050 | 0.003 | 0.003 | 0.013 | 0.050 | 0.013 |
+| normal k=2 n=100 d=0.5 | 0.970 | 0.640 | 0.640 | 0.797 | 0.970 | 0.797 |
+| normal k=2 n=100 d=0.8 | 1.000 | 0.993 | 0.993 | 0.997 | 1.000 | 0.997 |
+| normal k=3 n=100 d=0.0 | 0.033 | 0.000 | 0.000 | 0.003 | 0.047 | 0.003 |
+| normal k=3 n=100 d=0.5 | 0.960 | 0.717 | 0.720 | 0.867 | 0.963 | 0.853 |
+| normal k=3 n=100 d=0.8 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
+| t3 k=2 n=10 d=0.0 | 0.087 | 0.000 | 0.000 | 0.013 | 0.050 | 0.007 |
+| t3 k=2 n=10 d=0.5 | 0.457 | 0.043 | 0.027 | 0.060 | 0.307 | 0.060 |
+| t3 k=2 n=10 d=0.8 | 0.737 | 0.177 | 0.120 | 0.200 | 0.503 | 0.190 |
+| t3 k=3 n=10 d=0.0 | 0.087 | 0.000 | 0.000 | 0.003 | 0.040 | 0.000 |
+| t3 k=3 n=10 d=0.5 | 0.363 | 0.020 | 0.010 | 0.027 | 0.217 | 0.037 |
+| t3 k=3 n=10 d=0.8 | 0.703 | 0.207 | 0.150 | 0.190 | 0.510 | 0.233 |
+| t3 k=2 n=30 d=0.0 | 0.047 | 0.003 | 0.000 | 0.003 | 0.060 | 0.003 |
+| t3 k=2 n=30 d=0.5 | 0.730 | 0.247 | 0.157 | 0.247 | 0.567 | 0.243 |
+| t3 k=2 n=30 d=0.8 | 0.997 | 0.860 | 0.610 | 0.723 | 0.893 | 0.720 |
+| t3 k=3 n=30 d=0.0 | 0.030 | 0.003 | 0.000 | 0.000 | 0.030 | 0.000 |
+| t3 k=3 n=30 d=0.5 | 0.713 | 0.300 | 0.153 | 0.243 | 0.527 | 0.257 |
+| t3 k=3 n=30 d=0.8 | 0.990 | 0.870 | 0.583 | 0.667 | 0.880 | 0.693 |
+| t3 k=2 n=100 d=0.0 | 0.030 | 0.000 | 0.000 | 0.000 | 0.040 | 0.000 |
+| t3 k=2 n=100 d=0.5 | 0.993 | 0.947 | 0.677 | 0.800 | 0.937 | 0.800 |
+| t3 k=2 n=100 d=0.8 | 1.000 | 1.000 | 0.987 | 0.990 | 0.997 | 0.990 |
+| t3 k=3 n=100 d=0.0 | 0.007 | 0.003 | 0.000 | 0.000 | 0.033 | 0.003 |
+| t3 k=3 n=100 d=0.5 | 1.000 | 0.983 | 0.720 | 0.827 | 0.950 | 0.843 |
+| t3 k=3 n=100 d=0.8 | 1.000 | 1.000 | 0.980 | 0.987 | 0.997 | 0.987 |
+| lognormal k=2 n=10 d=0.0 | 0.093 | 0.003 | 0.000 | 0.003 | 0.037 | 0.003 |
+| lognormal k=2 n=10 d=0.5 | 0.450 | 0.060 | 0.023 | 0.043 | 0.240 | 0.040 |
+| lognormal k=2 n=10 d=0.8 | 0.777 | 0.267 | 0.157 | 0.240 | 0.520 | 0.213 |
+| lognormal k=3 n=10 d=0.0 | 0.100 | 0.000 | 0.000 | 0.007 | 0.037 | 0.000 |
+| lognormal k=3 n=10 d=0.5 | 0.497 | 0.073 | 0.037 | 0.077 | 0.287 | 0.060 |
+| lognormal k=3 n=10 d=0.8 | 0.853 | 0.350 | 0.147 | 0.243 | 0.573 | 0.260 |
+| lognormal k=2 n=30 d=0.0 | 0.050 | 0.000 | 0.000 | 0.000 | 0.050 | 0.000 |
+| lognormal k=2 n=30 d=0.5 | 0.857 | 0.437 | 0.183 | 0.283 | 0.587 | 0.280 |
+| lognormal k=2 n=30 d=0.8 | 0.993 | 0.910 | 0.567 | 0.667 | 0.870 | 0.667 |
+| lognormal k=3 n=30 d=0.0 | 0.050 | 0.000 | 0.003 | 0.013 | 0.063 | 0.003 |
+| lognormal k=3 n=30 d=0.5 | 0.893 | 0.470 | 0.137 | 0.210 | 0.617 | 0.253 |
+| lognormal k=3 n=30 d=0.8 | 1.000 | 0.963 | 0.587 | 0.707 | 0.950 | 0.793 |
+| lognormal k=2 n=100 d=0.0 | 0.030 | 0.007 | 0.003 | 0.007 | 0.047 | 0.007 |
+| lognormal k=2 n=100 d=0.5 | 1.000 | 0.980 | 0.643 | 0.773 | 0.933 | 0.773 |
+| lognormal k=2 n=100 d=0.8 | 1.000 | 1.000 | 0.950 | 0.973 | 0.993 | 0.970 |
+| lognormal k=3 n=100 d=0.0 | 0.013 | 0.000 | 0.000 | 0.010 | 0.080 | 0.007 |
+| lognormal k=3 n=100 d=0.5 | 1.000 | 0.997 | 0.743 | 0.857 | 0.990 | 0.910 |
+| lognormal k=3 n=100 d=0.8 | 1.000 | 1.000 | 0.990 | 1.000 | 1.000 | 1.000 |
+| k=5 n=10 H0 | 0.103 | 0.000 | 0.000 | 0.003 | 0.067 | 0.007 |
+| k=5 n=30 H0 | 0.043 | 0.000 | 0.000 | 0.003 | 0.037 | 0.003 |
+| k=5 n=30 d=.8 | 0.900 | 0.537 | 0.480 | 0.593 | 0.883 | 0.583 |
+| k=8 n=20 H0 | 0.050 | 0.000 | 0.000 | 0.007 | 0.047 | 0.003 |
+
+IC binomial à 95 % sur N=300 : 0,05 → [0,03 ; 0,08] ; 0,01 → [0,002 ; 0,03].
+
+**Lecture.**
+- **Variances inégales, le critère décisif.** (5,5,40), sd (4,4,1), H0 : 1,3 % de P>0,95 contre 19 % en gaussien seul, 26 % pour aov à p<0,005, 0,3 % pour Welch à p<0,005. La voie reste plus exposée à (2,2,40) : 3 % à P>0,95, 54 % à P>0,5, avec l'avis « n < 3 ».
+- **Puissance contre Welch à variances inégales.** (5,5,40), effet 4 ou 8 : au-dessus de Welch à seuil comparable. (30,30,30), sd (1,1,3), d=0,8 : 34 % à P>0,95, 6 % en gaussien, 47 % pour Welch à p<0,005 : **ici en dessous de Welch**.
+- **Normale à variances égales, d=0,5 ou 0,8.** Le coût de la moyenne sur les lois est négligeable devant le gaussien seul.
+- **t3 et lognormale.** Nette hausse de puissance sur le gaussien : n=30, k=2, d=0,8 : t3 86 % contre 61 %, lognormale 91 % contre 57 %. Faux positifs ≤ 1 % à P>0,95 à H0, sur tout le tableau hors (2,2,40), (10,30,50) et (2×6).
+- **Non testé, à connaître.** Sous une loi t, le paramètre comparé est un centre, qui n'est pas la moyenne d'une loi asymétrique. Des groupes de formes différentes à moyennes égales (centres différents) n'ont pas été simulés : la réponse pourrait y annoncer un effet que les moyennes n'ont pas.
+
+### Groupes de formes différentes, moyennes et variances égales (`agent_43`, N=200 par plan)
+
+Groupe 1 lognormal, les autres normaux.
+
+| Plan | m.bay P>0,5 | m.bay P>0,95 | Gaussien P>0,95 | Welch p<0,05 | Kruskal p<0,05 |
+|---|---:|---:|---:|---:|---:|
+| n=30, k=2 | 0,180 | 0,020 | 0,000 | 0,055 | 0,075 |
+| n=100, k=2 | 0,455 | 0,095 | 0,000 | 0,035 | 0,140 |
+| n=400, k=2 | 0,955 | **0,670** | 0,000 | 0,040 | 0,440 |
+| n=30, k=3 | 0,160 | 0,005 | 0,000 | 0,050 | 0,100 |
+| n=100, k=3 | 0,355 | 0,085 | 0,000 | 0,035 | 0,150 |
+
+**Faux « Oui » si l'on s'intéresse aux moyennes**, vrai si l'on s'intéresse à une différence de centre : Kruskal réagit aussi. Le calcul n'est pas changé. Le bilan avertit désormais quand les queues lourdes dominent, et plus fort si la loi normale dit le contraire. Limite d'une méthode, à connaître, pas réglée.
+
+### Variances étagées, sans effet (`agent_44`, N=100 par plan, 1500 tirages)
+
+```
+Sous H0, plans a ecarts-types etages : P>.5 P>.95 mediane | Welch p<.05 p<.005 | P(lois) moyennes | lois ecartees | err mediane
+k=8 n=6 sd 1e-2 a 1e2 : 0.240 0.020 0.342 | 0.080 0.010 | 0 0.518 0 0.816 | 60 | 4.2
+k=8 n=6 sd 1e-1 a 1e1 : 0.220 0.020 0.303 | 0.080 0.010 | 0 0.373 0 0.66 | 10 | 3.6
+k=3 n=6 sd 1e-2 a 1e2 : 0.300 0.000 0.380 | 0.050 0.000 | 0 0.611 0 0.695 | 58 | 3.5
+k=3 n=20 sd 1e-2 a 1e2 : 0.140 0.000 0.287 | 0.090 0.000 | 0 0.773 0 0.277 | 28 | 2.4
+k=8 n=20 sd 1e-2 a 1e2 : 0.130 0.000 0.229 | 0.090 0.000 | 0 0.842 0 0.233 | 44 | 4.6
+```
+
+Colonnes de P(lois) : moyennes sur les jeux où la loi reste ; le relevé des lois écartées compte toutes les lois. **À ces variances et à 1500 tirages, t_het est écartée dans 5 à 44 % des jeux selon le plan, t_eq dans 5 à 19 %** : la comparaison y est incomplète et l'avis le dit. Sous H0, P>0,95 reste à 2 % au plus, voisin de Welch à p<0,005. Le jeu du relecteur (P=0,998) est dans cette queue : un cas défavorable, à cette résolution.
+
+### Hyper-a priori sur r
+
+Loi uniforme sur r/2, r, 2r, fixée d'avance : P>0,5 et P>0,95 inchangés à ±0,033 au plus sur les 66 scénarios ; P<0,05 peut bouger plus, jusqu'à 0,12 (lognormale, n=100, k=3, H0 : 0,483 contre 0,360). Colonnes « mix » de `agent_41_B.txt`. **Décision, D5 : r reste fixé à 1/2, la sensibilité montre r/2 et 2r.** Sur π : voir METHODOLOGIE §7. L'utilisateur n'a rien à régler dans les deux cas.
+
+### Sensibilité aux a priori (`agent_41 C`, N=100 par cas)
+
+| n | k | d | Tête change | Seuil franchi | Stable | P change de côté selon r | selon u |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 10 | 2 | 0.0 | 0.930 | 0.070 | 0.000 | 0.060 | 0.000 |
+| 10 | 2 | 0.5 | 0.870 | 0.130 | 0.000 | 0.180 | 0.030 |
+| 10 | 2 | 0.8 | 0.650 | 0.290 | 0.060 | 0.120 | 0.010 |
+| 10 | 3 | 0.0 | 0.750 | 0.250 | 0.000 | 0.100 | 0.010 |
+| 10 | 3 | 0.5 | 0.810 | 0.170 | 0.020 | 0.110 | 0.010 |
+| 10 | 3 | 0.8 | 0.660 | 0.320 | 0.020 | 0.150 | 0.010 |
+| 30 | 2 | 0.0 | 0.460 | 0.540 | 0.000 | 0.040 | 0.000 |
+| 30 | 2 | 0.5 | 0.570 | 0.380 | 0.050 | 0.180 | 0.000 |
+| 30 | 2 | 0.8 | 0.330 | 0.500 | 0.170 | 0.090 | 0.000 |
+| 30 | 3 | 0.0 | 0.360 | 0.640 | 0.000 | 0.090 | 0.010 |
+| 30 | 3 | 0.5 | 0.620 | 0.360 | 0.020 | 0.270 | 0.010 |
+| 30 | 3 | 0.8 | 0.220 | 0.530 | 0.250 | 0.110 | 0.010 |
+| 100 | 2 | 0.0 | 0.210 | 0.790 | 0.000 | 0.070 | 0.000 |
+| 100 | 2 | 0.5 | 0.170 | 0.570 | 0.260 | 0.030 | 0.010 |
+| 100 | 2 | 0.8 | 0.010 | 0.110 | 0.880 | 0.010 | 0.000 |
+| 100 | 3 | 0.0 | 0.120 | 0.880 | 0.000 | 0.040 | 0.000 |
+| 100 | 3 | 0.5 | 0.200 | 0.450 | 0.350 | 0.120 | 0.000 |
+| 100 | 3 | 0.8 | 0.000 | 0.010 | 0.990 | 0.000 | 0.000 |
+
+Avec la grille d'origine, cotes 1:4 à 4:1, l'hypothèse en tête changeait dans 98 % des jeux sans effet jusqu'à n=100 (premier lancement, chiffres remplacés). D'où la grille 1:2 à 2:1 et la ligne « il faudrait croire d'avance à l'autre à X contre 1 ». Sans effet, le verdict dit encore « ne tranchent pas » dans 93 % à n=10, 46 % à n=30, 21 % à n=100 : c'est vrai, H0 ne s'établit que lentement. Le choix de cette grille est un jugement, pas un résultat.
+
+### Défauts de relecture (`agent_41 D`)
+
+```
+B1 : petit groupe eloigne, plus il s'eloigne, plus H1 doit gagner
+n=(10,10,10,10,3) d=    5 : log BF     3.29, P(H1) 0.9642, P(variances inegales) 0.308, err 1.1%, zs 10.2, Welch p 0.00016
+n=(10,10,10,10,3) d=   50 : log BF    12.24, P(H1) 1.0000, P(variances inegales) 0.255, err 1.1%, zs 85.6, Welch p 3.3e-15
+n=(10,10,10,10,3) d=  500 : log BF    21.46, P(H1) 1.0000, P(variances inegales) 0.256, err 1.0%, zs 170.8, Welch p 1.8e-26
+n=(10,10,10,10,3) d= 5000 : log BF    30.67, P(H1) 1.0000, P(variances inegales) 0.253, err 1.1%, zs 256.0, Welch p 1e-37
+n=(30,30,2) d=    5 : log BF     2.38, P(H1) 0.9154, P(variances inegales) 0.622, err 1.0%, zs 12.1, Welch p 2.1e-30
+n=(30,30,2) d=   50 : log BF     8.69, P(H1) 0.9998, P(variances inegales) 0.560, err 1.0%, zs 122.5, Welch p 1.2e-66
+n=(30,30,2) d=  500 : log BF    15.56, P(H1) 1.0000, P(variances inegales) 0.559, err 1.0%, zs 255.8, Welch p 5.6e-103
+n=(30,30,2) d= 5000 : log BF    22.47, P(H1) 1.0000, P(variances inegales) 0.561, err 1.1%, zs 389.3, Welch p 2.6e-139
+n=(20,20,20,20,3) d=    5 : log BF     4.44, P(H1) 0.9883, P(variances inegales) 0.253, err 1.0%, zs 15.4, Welch p 4.5e-21
+n=(20,20,20,20,3) d=   50 : log BF    13.51, P(H1) 1.0000, P(variances inegales) 0.245, err 1.1%, zs 163.7, Welch p 3.1e-48
+n=(20,20,20,20,3) d=  500 : log BF    22.72, P(H1) 1.0000, P(variances inegales) 0.244, err 1.1%, zs 340.7, Welch p 1.6e-75
+n=(20,20,20,20,3) d= 5000 : log BF    31.93, P(H1) 1.0000, P(variances inegales) 0.245, err 1.1%, zs 518.0, Welch p 8.8e-103
+n=(10,10,10,10,10,10,10,3) d=    5 : log BF     3.50, P(H1) 0.9708, P(variances inegales) 0.225, err 1.4%, zs 10.5, Welch p 1.9e-06
+n=(10,10,10,10,10,10,10,3) d=   50 : log BF    12.99, P(H1) 1.0000, P(variances inegales) 0.171, err 1.5%, zs 138.8, Welch p 3.4e-26
+n=(10,10,10,10,10,10,10,3) d=  500 : log BF    22.26, P(H1) 1.0000, P(variances inegales) 0.170, err 1.4%, zs 286.6, Welch p 2.5e-46
+n=(10,10,10,10,10,10,10,3) d= 5000 : log BF    31.47, P(H1) 1.0000, P(variances inegales) 0.169, err 1.5%, zs 434.0, Welch p 2.4e-66
+n=(5,5,5,5,5,5,5,2) d=    5 : log BF     1.33, P(H1) 0.7913, P(variances inegales) 0.563, err 1.5%, zs 4.5, Welch p 0.013
+n=(5,5,5,5,5,5,5,2) d=   50 : log BF     7.78, P(H1) 0.9996, P(variances inegales) NA, err 1.5%, zs 58.0, Welch p 8.2e-11
+n=(5,5,5,5,5,5,5,2) d=  500 : log BF    14.70, P(H1) 1.0000, P(variances inegales) NA, err 1.5%, zs 122.4, Welch p 3.8e-20
+n=(5,5,5,5,5,5,5,2) d= 5000 : log BF    21.46, P(H1) 1.0000, P(variances inegales) 0.334, err 1.3%, zs 186.8, Welch p 1.7e-29
+n=(10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,3) d=    5 : log BF     6.58, P(H1) 0.9986, P(variances inegales) NA, err 2.0%, zs 5.5, Welch p 0.0043
+```
+
+Pentes conformes au calcul à la main : d^(n_s + 2u − 2) une fois la seconde forme en jeu. Avant correction, k=20, n_s=3, d=10 donnait P(H1) = 0,17 (RELECTURE, B1). B2 : plancher à log BF ≈ 2,4, contre 3,18 pour les deux groupes seuls.
+
+### Tests
+
+Sur le code final : `test-bay-core` 237, `test-bay-oneway` 27, `test-m.bay` 57, `test-bay-laws` 77, `test-m.test` 52, `test-valreg` 12, `test-manova` 59 assertions, 0 échec, 0 erreur. Versions de code par lancement : JOURNAL.
