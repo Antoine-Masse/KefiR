@@ -351,13 +351,38 @@ En cas de discordance, le bilan **ne désigne pas de gagnant** : il dit que la r
 
 **Student-t** [Lange1989, Kruschke2013, Burkner2017]. y ~ t_ν(Xβ, σ), même a priori standardisé sur β/σ, ν > 1 faiblement informé (voir [Kruschke2013] pour la forme, à recopier d'après la source avant implémentation). Pour rester à l'échelle JZS, un **code Stan dédié** est nécessaire : `brms` place par défaut ses a priori sur β et non sur β/σ. Calcul : bridge sampling, avec prudence sur l'erreur [Schad2023].
 
-**Hétéroscédastique, sans Stan, à un facteur** (`.bay_bf_oneway_hetero`, `R/sys_bay_oneway.R`, écrit le 6 novembre, **à l'essai, rejeté en l'état : défauts B1 et B2 de `RELECTURE_ADVERSE_2026-11-06.md`**) :
+**Hétéroscédastique, sans Stan, à un facteur : premier essai, retiré.** `.bay_bf_oneway_hetero` (mesure plate sur les rapports d'échelle, τ² commun) a été retirée du code : défauts B1 et B2 de `RELECTURE_ADVERSE_2026-11-06.md`. Modèle et chiffres dans `PROJET_METHODO_2026-11-06.md` et `VALIDATION.md` §6.
 
-    y_ij ~ N(μ + a_i, σ_i²),  p(μ) ∝ 1,  p(σ_i²) ∝ 1/σ_i² indépendants, partagés par H0 et H1
-    H1 : a | σ, g ~ N(0, g τ² (I - J/k)),  g ~ InvGamma(1/2, r²/2),  τ² = moyenne non pondérée des σ_i²
-    H0 : a = 0.  À k = 2, δ = (a_1 - a_2)/τ ~ Cauchy(0, r√2).
+### Lois d'échantillonnage comparées, voie livrée pour 2 et k groupes (`R/sys_bay_laws.R`, 6-7 novembre)
 
-H0 se calcule par une intégrale en μ ; H1 par échantillonnage d'importance, σ_i² ~ SS_i/χ²(n_i - 1), et quadrature en log g. **Réglage propre à KefiR** : aucune source consultée ne combine k ≥ 3, un g à Cauchy, un τ partagé et une mesure plate sur les rapports d'échelle. La mesure plate sur les k-1 rapports n'a pas de justification par invariance (Berger et al. 1998 ne s'applique qu'à (μ, τ)) ; elle rend BF(hétéro contre homo) indéfini, donc pas de moyenne de modèles entre structures de variance sans loi propre. Détail et littérature : `PROJET_METHODO_2026-11-06.md`, tâche A. Chiffres : `VALIDATION.md` §6.
+Remplace `.bay_bf_oneway_hetero`, retirée du code (défauts B1 et B2 ; ses chiffres restent au §6 de `VALIDATION.md` à titre d'histoire). Huit modèles, à poids a priori égaux [Maier2025, à 2 groupes] :
+
+    {normale, t} × {variance commune, variance par groupe} × {pas d'effet, effet}
+
+**Modèle.** σ_i² = c_i / τ̄, avec c_i = 1/(k ϑ_i).
+
+| Élément | Choix | Source |
+|---|---|---|
+| (μ, τ̄), partagés par tous les modèles | p ∝ 1/τ̄, μ plat | Mesure invariante à droite, emboîtement : [Dablander2024, §2.2, lu sur le PDF arXiv]. C'est ce qui rend le BF entre structures de variance défini |
+| Proportions de précision ϑ, variance par groupe | Dirichlet(u, …, u), u = 1,5 ; c_i = 1 sinon | Forme : [Dablander2024]. Valeur : Beta(1,5 ; 1,5) de [Maier2025] à k = 2 (90 % de l'a priori sur un rapport d'écarts-types entre 1/3 et 3, d'après le résumé de leur texte). [Dablander2024] propose u = 1/2 comme défaut et montre que u ≤ 1/2 est nécessaire à la cohérence d'information. Ici u n'est pas testé mais sert de nuisance : u = 1,5 pénalise plus l'explication « un groupe éloigné n'est qu'une grande variance » (voir ci-dessous), et la sensibilité couvre 0,5 et 4,5 |
+| Effet, H1 | a_i \| g ~ N(0, g σ_i²), g ~ InvGamma(1/2, r²/2), r = 1/2 | Zellner-Siow [Rouder2012] quand les c_i valent 1. **À k ≥ 3 avec variances inégales, réglage propre à KefiR.** L'échelle par groupe vient de B2 |
+| Queues lourdes | y ~ t_ν de variance σ_i², ν − 2 ~ Exp(1) | [Maier2025] (densité exp(−(ν−2)), lue dans le résumé de leur texte) |
+
+À c_i = 1 et loi normale, c'est exactement `anovaBF` et `.bay_bf_oneway_zs`, testé à 1e-5 et 1e-4.
+
+**Calcul, sans compilateur et sans paquet supplémentaire.**
+- Normale : conditionnellement à (c, g), tout s'intègre (μ, a, τ̄) ; il reste g par trapèzes en log g et ϑ par échantillonnage d'importance adaptatif. La proposition mêle une part défensive (a priori, variance propre, variance propre plus distance à la médiane pondérée des moyennes, version aplatie) à une t ajustée sur un pilote.
+- t : la loi de θ sachant σ s'intègre en g et μ (forme fermée en tête de `.bay_t_prior_theta`), et la densité est directe. Mode, puis t multivariée à la mode, puis t ajustée sur pilote si l'ESS est faible.
+- Les deux annoncent ESS et erreur relative. Le premier essai, sans pilote, avait un ESS de 2 à 5 pour un petit groupe très éloigné, avec des estimations fausses de plusieurs unités de log ; c'est corrigé, voir `VALIDATION.md`.
+
+**Probabilité annoncée.** P(H1 | D) = Σ_ℓ π_ℓ π_1 m(D | ℓ, H1) / Σ_{ℓ,H} π_ℓ π_H m(D | ℓ, H). Le BF annoncé est le rapport des deux moyennes, tous modèles confondus : il n'est pas un BF d'une seule loi, et chaque loi garde le sien dans `$laws$log_bf`.
+
+**Ce que le choix règle, et ce qu'il ne règle pas.**
+- B2 (groupe dispersé sans rapport) : plancher, la réponse reste du côté de H1 quand S croît. L'échelle moyenne des précisions et le a_i par groupe y contribuent ensemble.
+- B1 (petit groupe éloigné de d) : sous H0 hétéroscédastique, m ∝ d^−(n_s + 2u) ; sous H1 à g commun, m ∝ d^−k. Donc BF ∝ d^(n_s + 2u − k). Le signe a changé par rapport à la voie rejetée pour n_s + 2u > k. **Il reste un point faible**, annoncé dans le bilan, si n_s + 2u < k : un très petit groupe parmi beaucoup peut se lire comme une grande variance. Le remède proprement dit (un a priori par groupe) perdrait l'identité avec `anovaBF`. Ce n'est pas absurde sur le fond : avec 3 valeurs, distinguer « décalé » de « très dispersé » repose sur un t à 2 ddl.
+- Le mélange ne remplace pas la vérification : il ne connaît que ces quatre lois. Forte asymétrie : non couverte (voir `VALIDATION.md`).
+
+**Sans aiguillage.** Aucun test préalable : les lois sont comparées par leurs probabilités a posteriori. `r` et les cotes a priori restent fixés d'avance : les régler sur les données ne pourrait que gonfler le résultat.
 
 **Rangs** [vanDoorn2020] : pour 2 groupes et apparié, disponible, à utiliser. **Pour k > 2 groupes, je n'ai trouvé aucune méthode publiée vérifiée d'équivalent bayésien de Kruskal-Wallis** (recherche Crossref sans résultat, qui n'exclut pas l'existence d'une méthode).
 

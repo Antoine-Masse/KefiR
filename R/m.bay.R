@@ -1,0 +1,252 @@
+#' Bayesian counterpart of m.test: probability of each hypothesis given the data
+#'
+#' @description
+#' `m.bay()` takes the same inputs as [m.test()] and answers the opposite question:
+#' not "how surprising are these data if there is no effect?", but "how probable is
+#' each hypothesis given these data?". Its main result is a bilan: the hypotheses,
+#' ranked from the most to the least probable, with their posterior probability and
+#' a plain qualifier, then the answer for each term ("does the temperature have an
+#' effect? yes with this probability, no with that one").
+#'
+#' A probability of a hypothesis depends on priors. The bilan always states them and
+#' always shows how far the answer moves when they change. If the priors can change
+#' the leading hypothesis, it says that the data do not settle the question.
+#'
+#' `m.bay()` does not choose a method by preliminary tests as [m.test()] does. It
+#' compares the plausible shapes of the noise (normal or heavy tails, equal or
+#' unequal variances) and averages its answers over their posterior probabilities.
+#'
+#' @section Plans covered:
+#' Available now: one factor, 2 groups or k groups. The other plans of [m.test()]
+#' (several factors, covariates, paired, repeated measures, mixed, MANOVA, discrete
+#' data) stop with an explicit message until they are validated.
+#'
+#' @param x Response: numeric vector, column name or index if `data` is given, or a
+#'   formula.
+#' @param g Grouping: factor or vector, column name or index if `data` is given, or
+#'   a data.frame of factors.
+#' @param data Data.frame.
+#' @param formula Formula, for example `y ~ F`. Same forms as [m.test()].
+#' @param paired,id,wt,within,between Structure of the plan, as in [m.test()].
+#' @param alpha,boot,boot_type,iter,conf,silent Accepted for compatibility with
+#'   [m.test()]; they have no role here and are ignored, with a message if given.
+#' @param control Reference level. Not used yet.
+#' @param verbose If `TRUE`, prints the bilan.
+#' @param plot Not used yet.
+#' @param return If `TRUE`, the full object (invisibly when the bilan was printed);
+#'   if `FALSE`, one number: the posterior probability that at least one effect
+#'   exists. This is not a p-value.
+#' @param maxcat Maximum number of levels of a factor.
+#' @param code,debug Accepted for compatibility with [m.test()]. Not used yet.
+#' @param prior_h1 Prior probability of an effect. Default 1/2.
+#' @param rscale Prior scale r of a fixed effect (0.5 is the "medium" of the
+#'   BayesFactor package; on a difference between 2 groups it gives a Cauchy of
+#'   scale 0.707).
+#' @param u Parameter of the Dirichlet prior on the proportions of precision between
+#'   groups, in the laws with unequal variances. Default 1.5.
+#' @param laws Sampling laws compared, among `"normal_eq"`, `"normal_het"`, `"t_eq"`
+#'   and `"t_het"`.
+#' @param sensitivity If `TRUE` (default), computes the sensitivity to the priors.
+#'   The bilan says so when it is switched off.
+#' @param draws Importance draws per model. Default 4000.
+#' @param seed Seed of this call. The global random state is left untouched.
+#'
+#' @return With `return = TRUE`, a list of class `mbay`:
+#'   \describe{
+#'     \item{hypotheses}{Ranked hypotheses: `label_en`, `label_fr`, `posterior`,
+#'       `prior`.}
+#'     \item{effects}{One row per term: `term`, `bf10`, `log_bf`, `p_h1`, `p_h0`,
+#'       `prior_h1`, `rscale`, `error_pct`, `analogue`. No column is a p-value.}
+#'     \item{laws}{Posterior probability of each sampling law, with the log Bayes
+#'       factor within that law.}
+#'     \item{models}{The eight models with their marginal likelihoods.}
+#'     \item{sensitivity}{Grid over r and odds, range over the priors, verdict.}
+#'     \item{priors}{The priors used.}
+#'     \item{descriptive_stats}{n, mean and SD per group.}
+#'     \item{prob_effect}{Posterior probability that at least one effect exists.}
+#'     \item{method, plan, label, n, notes, call}{Description of the analysis.}
+#'   }
+#'
+#' @seealso [m.test()]
+#'
+#' @examples
+#' set.seed(1)
+#' d <- data.frame(y = c(rnorm(15, 10, 2), rnorm(15, 12, 2), rnorm(15, 10.5, 2)),
+#'                 variety = rep(c("a", "b", "c"), each = 15))
+#' r <- m.bay(y ~ variety, data = d, draws = 1000, sensitivity = FALSE)
+#' r$effects[, c("term", "p_h1", "p_h0", "log_bf")]
+#'
+#' @export
+m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
+                  paired = FALSE, id = NULL, wt = NULL, within = NULL, between = NULL,
+                  alpha = NULL, control = NULL, verbose = TRUE, plot = FALSE,
+                  return = TRUE, boot = NULL, boot_type = NULL, iter = NULL, conf = NULL,
+                  maxcat = 50, silent = NULL, code = FALSE, debug = FALSE,
+                  prior_h1 = 1/2, rscale = 1/2, u = 1.5,
+                  laws = c("normal_eq", "normal_het", "t_eq", "t_het"),
+                  sensitivity = TRUE, draws = 4000L, seed = 1L) {
+	call_expr <- match.call()
+	if (isFALSE(return) && !("verbose" %in% names(call_expr))) verbose <- FALSE
+
+	# Checks on the priors. Nothing is ever tuned on the data (DECISIONS, D6).
+	if (!is.numeric(prior_h1) || length(prior_h1) != 1L || !isTRUE(prior_h1 > 0 && prior_h1 < 1)) {
+		.exit("prior_h1 must be one number strictly between 0 and 1.",
+			"prior_h1 doit \u00eatre un seul nombre strictement entre 0 et 1.")
+	}
+	rscale <- .bay_check_rscale(rscale)
+	if (!is.numeric(u) || length(u) != 1L || !isTRUE(is.finite(u) && u > 0)) {
+		.exit("u must be one finite, strictly positive number.",
+			"u doit \u00eatre un seul nombre fini et strictement positif.")
+	}
+	laws <- unique(laws)
+	if (!length(laws) || !all(laws %in% .bay_law_names())) {
+		.exit("laws must be among normal_eq, normal_het, t_eq, t_het.",
+			"laws doit \u00eatre parmi normal_eq, normal_het, t_eq, t_het.")
+	}
+
+	ignored <- c(alpha = !is.null(alpha), boot = !is.null(boot), boot_type = !is.null(boot_type),
+		iter = !is.null(iter), conf = !is.null(conf), silent = !is.null(silent),
+		code = isTRUE(code), debug = isTRUE(debug), control = !is.null(control),
+		plot = isTRUE(plot))
+	notes <- list(en = character(0), fr = character(0))
+	note <- function(en, fr) {
+		notes$en <<- c(notes$en, en)
+		notes$fr <<- c(notes$fr, fr)
+	}
+	if (any(ignored)) {
+		nm <- paste(names(ignored)[ignored], collapse = ", ")
+		note(paste0("Argument(s) without effect here, ignored: ", nm, "."),
+			paste0("Argument(s) sans effet ici, ignor\u00e9(s) : ", nm, "."))
+	}
+
+	input <- .bay_parse_input(x = x, g = g, data = data, formula = formula, paired = paired,
+		id = id, wt = wt, within = within, between = between, maxcat = maxcat,
+		env = parent.frame())
+	if (input$n_removed > 0L) {
+		note(paste0(input$n_removed, " observation(s) with missing values removed."),
+			paste0(input$n_removed, " observation(s) avec valeurs manquantes retir\u00e9e(s)."))
+	}
+
+	# Plans not validated yet: an explicit refusal, never a wrong answer.
+	if (!identical(input$plan, "oneway")) {
+		plan_en <- c(factorial = "several factors", ancova = "covariates", paired = "paired data",
+			repeated = "repeated measures", mixed = "mixed models", manova = "MANOVA")[input$plan]
+		plan_fr <- c(factorial = "plusieurs facteurs", ancova = "covariables", paired = "donn\u00e9es appari\u00e9es",
+			repeated = "mesures r\u00e9p\u00e9t\u00e9es", mixed = "mod\u00e8les mixtes", manova = "MANOVA")[input$plan]
+		.exit(paste0("m.bay() does not handle ", plan_en, " yet: this plan is not validated (use m.test())."),
+			paste0("m.bay() ne traite pas encore ", plan_fr, " : ce plan n'est pas valid\u00e9 (utiliser m.test())."))
+	}
+	y <- input$response
+	y_values <- length(unique(y))
+	if (y_values == 2L) {
+		.exit("Binary response: its own law is not validated yet, the normal and t laws do not apply.",
+			"R\u00e9ponse binaire : sa loi propre n'est pas encore valid\u00e9e, les lois normale et t ne s'appliquent pas.")
+	}
+	if (isTRUE(input$discrete)) {
+		note("The response looks discrete: the normal and t laws are only an approximation here.",
+			"La r\u00e9ponse semble discr\u00e8te : les lois normale et t ne sont ici qu'une approximation.")
+	}
+
+	term <- names(input$factors)[1L]
+	shown <- if (identical(term, ".g")) "g" else term
+	gr <- input$factors[[1L]]
+	st <- .bay_laws_stats(y, gr)
+	if (min(st$n) < 3L) {
+		small <- st$levels[st$n < 3L]
+		note(paste0("Very small group(s) (n < 3), kept: ", paste(small, collapse = ", "),
+				". Their variance is poorly known."),
+			paste0("Tr\u00e8s petit(s) groupe(s) (n < 3), conserv\u00e9(s) : ", paste(small, collapse = ", "),
+				". Leur variance est mal connue."))
+	}
+	# Known limit (VALIDATION, B1): with a common g, the cost of a far group grows as
+	# d^k, and a larger variance as d^(n_s + 2u). Beyond this, a far small group can be
+	# read as a larger variance rather than as an effect.
+	if (min(st$n) + 2 * u < st$k) {
+		note("Many groups and a very small one: if that group stands far apart, the global answer is cautious, as that distance can also be read as a larger variance.",
+			"Beaucoup de groupes et un tr\u00e8s petit : si ce groupe est \u00e0 l'\u00e9cart, la r\u00e9ponse globale est prudente, car cet \u00e9cart peut aussi se lire comme une plus grande variance.")
+	}
+
+	draws <- as.integer(draws)
+	seed <- as.integer(seed)
+	rs <- if (isTRUE(sensitivity)) c(rscale / 2, rscale, rscale * 2) else rscale
+	tab <- .bay_laws_table(st, rs, u, draws, seed, laws = laws)
+	ans <- .bay_laws_average(tab, rscale, prior_h1 = prior_h1)
+	if (length(ans$laws_dropped)) {
+		note(paste0("Law(s) left out, the computation failed: ", paste(ans$laws_dropped, collapse = ", "), "."),
+			paste0("Loi(s) \u00e9cart\u00e9e(s), le calcul a \u00e9chou\u00e9 : ", paste(ans$laws_dropped, collapse = ", "), "."))
+	}
+	low <- ans$models$ess[!is.na(ans$models$ess)] < 200
+	if (any(low) || isTRUE(ans$error_pct > 5)) {
+		note(paste0("Numerical precision is low: error on the Bayes factor about ",
+				format(signif(ans$error_pct, 2), trim = TRUE), " %."),
+			paste0("Pr\u00e9cision num\u00e9rique faible : erreur sur le facteur de Bayes d'environ ",
+				format(signif(ans$error_pct, 2), trim = TRUE), " %."))
+	}
+
+	effects <- .bay_effects_row(term = shown, log_bf = ans$log_bf, prior_h1 = prior_h1,
+		rscale = rscale, error_pct = ans$error_pct, analogue = "global")
+	hyp <- data.frame(
+		label_en = c(paste0(shown, " has an effect on ", input$response_name),
+			paste0("No effect of ", shown, " on ", input$response_name)),
+		label_fr = c(paste0(shown, " agit sur ", input$response_name),
+			paste0("Aucun effet de ", shown, " sur ", input$response_name)),
+		posterior = c(ans$p_h1, ans$p_h0),
+		prior = c(prior_h1, 1 - prior_h1),
+		stringsAsFactors = FALSE)
+	hyp <- hyp[order(-hyp$posterior), , drop = FALSE]
+	rownames(hyp) <- NULL
+	lead_is_h1 <- ans$p_h1 >= ans$p_h0
+
+	sens <- NULL
+	if (isTRUE(sensitivity)) {
+		lb <- vapply(rs, function(r) .bay_laws_average(tab, r)$log_bf, numeric(1))
+		names(lb) <- format(rs, trim = TRUE)
+		odds_grid <- c(1/4, 1, 4) * prior_h1 / (1 - prior_h1)
+		grid <- .bay_sensitivity(lb, prior_odds = odds_grid)
+		# Dirichlet: u/3 and 3u, at the central r and odds. Then the noise imposed.
+		us <- c(u / 3, 3 * u)
+		lb_u <- vapply(us, function(uu) {
+			tu <- .bay_laws_table(st, rscale, uu, draws, seed, laws = laws)
+			.bay_laws_average(tu, rscale)$log_bf
+		}, numeric(1))
+		names(lb_u) <- format(us, trim = TRUE)
+		lb_laws <- ans$log_bf_law
+		odds0 <- prior_h1 / (1 - prior_h1)
+		all_p <- c(as.vector(grid$grid),
+			.bay_post_prob(log_bf = lb_u, prior_odds = odds0),
+			.bay_post_prob(log_bf = lb_laws, prior_odds = odds0))
+		if (!lead_is_h1) all_p <- 1 - all_p
+		range_lead <- range(all_p)
+		sens <- list(grid = grid$grid, by_u = .bay_post_prob(log_bf = lb_u, prior_odds = odds0),
+			by_law = .bay_post_prob(log_bf = lb_laws, prior_odds = odds0),
+			r = rs, u = sort(c(us, u)), range_lead = range_lead,
+			verdict = .bay_sensitivity_verdict(max(ans$p_h1, ans$p_h0), range_lead))
+	}
+
+	desc <- data.frame(group = st$levels, n = st$n,
+		mean = vapply(split(st$y_raw, st$g_raw), mean, numeric(1), USE.NAMES = FALSE),
+		SD = vapply(split(st$y_raw, st$g_raw), function(v) {
+			if (length(v) > 1L) stats::sd(v) else NA_real_
+		}, numeric(1), USE.NAMES = FALSE), stringsAsFactors = FALSE)
+	out <- list(
+		hypotheses = hyp, effects = effects,
+		laws = data.frame(law = names(ans$p_law), posterior = as.numeric(ans$p_law),
+			log_bf = as.numeric(ans$log_bf_law[names(ans$p_law)]), stringsAsFactors = FALSE),
+		models = ans$models, sensitivity = sens,
+		priors = list(prior_h1 = prior_h1, rscale = rscale, u = u, law_prior = "equal",
+			nu = "nu - 2 ~ Exp(1)"),
+		descriptive_stats = desc, prob_effect = ans$p_h1,
+		method = "Averaged over sampling laws", plan = input$plan,
+		label = if (identical(term, ".g")) paste0(input$response_name, " ~ g") else input$label,
+		n = st$N, notes = notes, call = call_expr)
+	class(out) <- "mbay"
+	if (isTRUE(verbose)) .bay_print_bilan(out)
+	if (isFALSE(return)) return(ans$p_h1)
+	if (isTRUE(verbose)) invisible(out) else out
+}
+
+#' @export
+print.mbay <- function(x, ...) {
+	.bay_print_bilan(x)
+	invisible(x)
+}

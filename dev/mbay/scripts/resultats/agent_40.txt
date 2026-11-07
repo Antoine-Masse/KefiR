@@ -1,0 +1,26 @@
+R version 4.6.1 (2026-06-24 ucrt) 
+Colonnes : jeu, loi, hypothese, reference (quadrature), KefiR (IS), ecart, erreur annoncee (rel_se)
+1 normal_eq  H0  ref   -34.1438  kefir   -34.1438  ecart   0.0000  err 0.0000  ess NA
+1 normal_eq  H1  ref   -35.0341  kefir   -35.0341  ecart   0.0000  err 0.0000  ess NA
+1 normal_het H0  ref   -34.6980  kefir   -34.6990  ecart  -0.0011  err 0.0026  ess 17578
+1 normal_het H1  ref   -35.5931  kefir   -35.5953  ecart  -0.0021  err 0.0026  ess 17574
+1 t_eq       H0  ref   -35.1216  kefir   -35.1173  ecart   0.0043  err 0.0103  ess 6366
+1 t_eq       H1  ref   -36.2107  kefir   -36.2070  ecart   0.0038  err 0.0083  ess 8407
+1 t_het      H0  ref   -35.6737  kefir   -35.6755  ecart  -0.0018  err 0.0052  ess 13043
+1 t_het      H1  ref   -36.7915  kefir   -36.7848  ecart   0.0067  err 0.0131  ess 4514
+2 normal_eq  H0  ref   -42.8625  kefir   -42.8625  ecart   0.0000  err 0.0000  ess NA
+2 normal_eq  H1  ref   -41.6201  kefir   -41.6200  ecart   0.0000  err 0.0000  ess NA
+2 normal_het H0  ref   -43.5006  kefir   -43.5056  ecart  -0.0050  err 0.0027  ess 17530
+2 normal_het H1  ref   -42.4736  kefir   -42.4715  ecart   0.0021  err 0.0027  ess 17418
+2 t_eq       H0  ref   -44.2414  kefir   -44.2353  ecart   0.0061  err 0.0106  ess 6150
+2 t_eq       H1  ref   -42.8305  kefir   -42.8253  ecart   0.0052  err 0.0089  ess 7789
+2 t_het      H0  ref   -44.7721  kefir   -44.7770  ecart  -0.0049  err 0.0054  ess 12717
+2 t_het      H1  ref   -43.4145  kefir   -43.4217  ecart  -0.0071  err 0.0102  ess 6530
+3 normal_eq  H0  ref   -41.3976  kefir   -41.3976  ecart   0.0000  err 0.0000  ess NA
+3 normal_eq  H1  ref   -41.2561  kefir   -41.2560  ecart   0.0001  err 0.0000  ess NA
+3 normal_het H0  ref   -35.4923  kefir   -35.4973  ecart  -0.0050  err 0.0029  ess 17106
+3 normal_het H1  ref   -35.7578  kefir   -35.7531  ecart   0.0047  err 0.0030  ess 17032
+3 t_eq       H0  ref   -37.2525  kefir   -37.2483  ecart   0.0042  err 0.0097  ess 6945
+3 t_eq       H1  ref   -37.1917  kefir   -37.1913  ecart   0.0004  err 0.0077  ess 9113
+3 t_het      H0  ref   -35.6134  kefir   -35.6196  ecart  -0.0062  err 0.0123  ess 4992
+3 t_het      H1  ref   -36.1597  kefir   -36.1606  ecart  -0.0009  err 0.0092  ess 7388

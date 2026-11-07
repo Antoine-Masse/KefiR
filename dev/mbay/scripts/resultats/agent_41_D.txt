@@ -1,0 +1,42 @@
+R version 4.6.1 (2026-06-24 ucrt) ; partie D ; N = 1 par case ; 6 coeurs ; 2026-11-06 22:54:08 
+
+B1 : petit groupe eloigne, plus il s'eloigne, plus H1 doit gagner
+n=(10,10,10,10,3) d=    5 : log BF     1.53, P(H1) 0.8215, P(variances inegales) 0.619, err 1.1%, zs 10.2, Welch p 0.00016
+n=(10,10,10,10,3) d=   50 : log BF     3.67, P(H1) 0.9752, P(variances inegales) 0.628, err 1.2%, zs 85.6, Welch p 3.3e-15
+n=(10,10,10,10,3) d=  500 : log BF     5.97, P(H1) 0.9975, P(variances inegales) 0.617, err 1.3%, zs 170.8, Welch p 1.8e-26
+n=(10,10,10,10,3) d= 5000 : log BF     8.28, P(H1) 0.9997, P(variances inegales) 0.622, err 1.4%, zs 256.0, Welch p 1e-37
+n=(30,30,2) d=    5 : log BF     1.93, P(H1) 0.8732, P(variances inegales) 0.674, err 1.0%, zs 12.1, Welch p 2.1e-30
+n=(30,30,2) d=   50 : log BF     6.16, P(H1) 0.9979, P(variances inegales) 0.602, err 1.0%, zs 122.5, Welch p 1.2e-66
+n=(30,30,2) d=  500 : log BF    10.76, P(H1) 1.0000, P(variances inegales) 0.600, err 1.0%, zs 255.8, Welch p 5.6e-103
+n=(30,30,2) d= 5000 : log BF    15.36, P(H1) 1.0000, P(variances inegales) 0.599, err 1.1%, zs 389.3, Welch p 2.6e-139
+n=(20,20,20,20,3) d=    5 : log BF     0.10, P(H1) 0.5245, P(variances inegales) 0.704, err 1.1%, zs 15.4, Welch p 4.5e-21
+n=(20,20,20,20,3) d=   50 : log BF     2.00, P(H1) 0.8806, P(variances inegales) 0.456, err 1.2%, zs 163.7, Welch p 3.1e-48
+n=(20,20,20,20,3) d=  500 : log BF     4.27, P(H1) 0.9862, P(variances inegales) 0.376, err 1.3%, zs 340.7, Welch p 1.6e-75
+n=(20,20,20,20,3) d= 5000 : log BF     6.57, P(H1) 0.9986, P(variances inegales) 0.364, err 1.3%, zs 518.0, Welch p 8.8e-103
+n=(10,10,10,10,10,10,10,3) d=    5 : log BF     0.58, P(H1) 0.6404, P(variances inegales) 0.949, err 1.8%, zs 10.5, Welch p 1.9e-06
+n=(10,10,10,10,10,10,10,3) d=   50 : log BF     0.67, P(H1) 0.6624, P(variances inegales) 1.000, err 2.4%, zs 138.8, Welch p 3.4e-26
+n=(10,10,10,10,10,10,10,3) d=  500 : log BF     0.72, P(H1) 0.6724, P(variances inegales) 1.000, err 2.6%, zs 286.6, Welch p 2.5e-46
+n=(10,10,10,10,10,10,10,3) d= 5000 : log BF     0.66, P(H1) 0.6587, P(variances inegales) 1.000, err 3.1%, zs 434.0, Welch p 2.4e-66
+n=(5,5,5,5,5,5,5,2) d=    5 : log BF     0.22, P(H1) 0.5543, P(variances inegales) 0.849, err 1.9%, zs 4.5, Welch p 0.013
+n=(5,5,5,5,5,5,5,2) d=   50 : log BF     0.12, P(H1) 0.5303, P(variances inegales) 1.000, err 3.2%, zs 58.0, Welch p 8.2e-11
+n=(5,5,5,5,5,5,5,2) d=  500 : log BF     0.21, P(H1) 0.5534, P(variances inegales) 1.000, err 6.1%, zs 122.4, Welch p 3.8e-20
+n=(5,5,5,5,5,5,5,2) d= 5000 : log BF    -0.23, P(H1) 0.4439, P(variances inegales) 1.000, err 5.0%, zs 186.8, Welch p 1.7e-29
+
+B2 : un groupe disperse sans rapport ne doit pas changer la reponse sur les deux autres
+deux groupes seuls : log BF 3.18, P(H1) 0.960
+S=1 : log BF 5.56, P(H1) 0.996, err 0.2%
+S=10 : log BF 2.82, P(H1) 0.944, err 0.9%
+S=100 : log BF 2.52, P(H1) 0.926, err 0.9%
+S=1000 : log BF 2.48, P(H1) 0.923, err 0.9%
+S=10000 : log BF 2.49, P(H1) 0.924, err 1.0%
+S=1e+06 : log BF 2.36, P(H1) 0.914, err 2.3%
+
+Cas bruts
+c(0,1e-160,2e-160,1,1+1e-10,1) : log BF 70.955, P 1.0000, err 11.8% 
+donnees constantes a l'arrondi : y est constant : les probabilités sont indéterminées. 
+N = k+1, (1,1+1e-15,5) : log BF 3.229, P 0.9619, err 2.0% 
+N = k+1, (1,1,5) : Aucune variation dans aucun groupe : les lois normale et t ne s'appliquent pas. 
+une valeur aberrante, n=20, k=2 : log BF 0.511, P 0.6251, err 1.3% 
+groupe de n=1 : log BF 1.071, P 0.7448, err 0.7% 
+(2,2) : log BF 1.275, P 0.7816, err 0.8% 
+n=1e4 par groupe, k=2 : log BF -3.700, P 0.0241, err 0.0% 

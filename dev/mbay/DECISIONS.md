@@ -18,6 +18,8 @@
 - **BAS** : installé, jamais comparé. Non écarté sur le fond, reste à évaluer pour l'exploration au-delà de 4 facteurs.
 - **bayestestR en Imports** : son calcul d'inclusion est reproduit à la main ; pas de raison d'ajouter deux paquets.
 
+**État au 7 novembre, PROPOSÉ.** La voie à un facteur n'emploie pas BayesFactor à l'exécution : calcul interne, sans compilateur et sans dépendance (`R/sys_bay_oneway.R`, `R/sys_bay_laws.R`). BayesFactor sert de contrôle dans les tests et reste hors de DESCRIPTION à ce stade. **Le jalon suivant dira si la proposition ci-dessus tient** : les variances par cellule et les lois t ne passent pas par `lmBF`, qui n'accepte pas de poids. Un essai de moteur interne à plusieurs g concorde avec `lmBF` sur 4 modèles à 2 facteurs et 3 facteurs (écarts de 0,01 à 0,09 sur log BF, de l'ordre des erreurs annoncées, scratchpad, un seul jeu) : à valider, pas validé.
+
 **Réserves à connaître.**
 - BayesFactor ne protège pas : `family=binomial()` et `var.equal=FALSE` sont acceptés et ignorés en silence, `cbind` et `(1+x|id)` donnent une erreur obscure, `x:id` aléatoire donne `BF=NA`. **`m.bay()` doit refuser lui-même ces cas.**
 - L'erreur numérique annoncée monte jusqu'à 80 % sur certains modèles à 3 facteurs (n=100) : elle doit être lue, recalculée (`recompute`) ou signalée à l'utilisateur.
@@ -71,13 +73,19 @@ P(H0)=P(H1)=1/2 par défaut, annoncée sur la même ligne que le résultat. Gril
 
 Celles de BayesFactor, pour rester comparable à JASP et à la littérature : facteur fixe r=1/2 ; deux groupes r=√2/2 sur δ (même a priori) ; covariable r=√2/4 ; effet aléatoire r=1.
 
-## D6. Pas d'aiguillage par test préliminaire : PROPOSÉ
+## D6. Pas d'aiguillage par test préliminaire : ARBITRÉE (orientation), voie à un facteur livrée
 
 Contrairement à `m.test()`, pas de bascule automatique vers une méthode selon une p-value de normalité, de variance, etc. Le gaussien est toujours calculé ; les diagnostics deviennent des alertes ; la voie robuste s'y ajoute et un désaccord s'affiche. Conséquence à accepter : `m.bay()` ne reproduit **pas** l'arbre de décision de `m.test()`, et pas de « Kruskal bayésien » pour k>2 (aucune méthode publiée trouvée ; cotes proportionnelles proposées sous leur vrai nom).
 
 **Mis en défaut (bloquant).** La voie gaussienne seule n'est pas défendable en cas d'hétéroscédasticité : H0 vraie, n=(5,5,40), sd=(4,4,1), **P>0,95 dans 16 % des jeux** (IC 95 % 12 à 21 %, N=300, `scripts/agent_12_verif_heterosc.R` ; 25,5 % chez le relecteur sur un autre tirage, écart non élucidé, tailles de simulation à comparer) ; aov 46 % de p<0,05, Welch 7 %. Et la voie de secours prévue ne se calcule pas sans Stan, et rstanarm n'a pas de variances hétérogènes prêtes à l'emploi. **Proposition** : voie interne sans compilateur pour les variances par groupe, et refuser de répondre « Oui » sans réserve quand le diagnostic d'hétéroscédasticité est net, tant que cette voie n'est pas validée. À ce jour, m.bay ne doit donc pas être publié sur ce cas.
 
 **État au 6 novembre.** Taux corrigé : 20,0 % à P>0,95 (N=3000), le 16 % ci-dessus était un tirage bas. La voie `.bay_bf_oneway_hetero` existe, à un facteur seulement : 0,7 % à P>0,95 sur ce plan, à calcul vérifié. Ce n'est pas encore une solution : a priori propre à KefiR, τ à choisir, puissance mesurée sur N=16-17 seulement, et surtout **deux défauts bloquants reproduits** : un petit groupe éloigné pousse le BF vers H0 (n=(10,10,10,10,3), écart 50σ : log BF -6,9, Welch p=3e-15) et un groupe dispersé sans rapport fait basculer le BF, sans plancher (`RELECTURE_ADVERSE_2026-11-06.md`, B1, B2 ; `agent_30`). **Cette loi n'est donc pas proposée.** Pistes non programmées : un g par groupe, un τ propre à chaque contraste ; à défaut, refuser ou signaler min(n_i) ≤ k. Multi-facteurs non couverts.
+
+**ARBITRÉE par Antoine, 6 novembre 2026 : orientation retenue.** Lois d'échantillonnage comparées selon les données, réponses moyennées sur leurs probabilités a posteriori ; a priori d'effet et d'hypothèse fixés d'avance, annoncés, avec sensibilité. Mots transmis par la session « KefiR officiel ».
+
+**Faisabilité à k > 2 : établie pour un facteur (7 novembre).** Voie `R/sys_bay_laws.R`, huit modèles sans compilateur. Loi propre sur les rapports d'échelle : Dirichlet(1,5) sur les proportions de précision, d'après [Dablander2024] (forme) et [Maier2025] (valeur à k = 2). Détails dans METHODOLOGIE §7 et chiffres dans VALIDATION §7. **Réglage propre à KefiR à k ≥ 3** : aucune source consultée ne combine ces éléments pour tester des moyennes. Ce que cette voie ne règle pas : un très petit groupe parmi beaucoup (n_s + 2u < k), voir METHODOLOGIE §7 ; plusieurs facteurs, à établir au jalon suivant.
+
+Lecture initiale de cette orientation, pour mémoire :
 
 **Orientation d'Antoine, 6 novembre** (transmise par sa session « KefiR officiel ») : « à toi de faire une fonction qui teste le plus rationnellement les lois les plus probables découlant des données ». Lecture de cette session, **à lui confirmer**, à étudier, rien n'est exécuté :
 1. **Lois d'échantillonnage** (normale ou t, variance commune ou par groupe, plus tard discrètes) : `m.bay` les compare et moyenne ses réponses sur leurs probabilités a posteriori, sans aiguillage par tests préalables. Cela remplace l'hypothèse « le gaussien toujours, le robuste en plus, sans gagnant » et le niveau 3 de METHODOLOGIE §7 devient la voie étudiée par défaut.
@@ -104,6 +112,8 @@ Covariable seule, ANCOVA appariée, MANOVA répétée, MANCOVA, pentes aléatoir
 Toute la normalisation est en ligne dans `m.test()` (lignes 262-1031) : rien n'est réutilisable en bloc. Options :
 - **A (proposée)** : extraire une fonction commune `.mtest_normalize_input()` et faire appeler `m.test()` et `m.bay()` dessus. Seule façon d'accepter durablement « exactement les mêmes entrées », mais touche `m.test()`, donc demande les tests de non-régression et ton accord.
 - **B** : recopier dans `m.bay()` sans toucher `m.test()`. Sans risque immédiat, mais divergence garantie, et les bugs d'entrée s'y recopient.
+
+**État au 7 novembre : option B prolongée, PROPOSÉ et réversible.** `R/sys_bay_input.R` réutilise les fonctions internes de `m.test()` sans les changer (`.strip_factor_calls`, `.msg`, `.exit`, `discret.test`). `m.test()` n'est pas touché. Les formes qui échouent dans `m.test()` (`formula=` nommé, `g` data.frame sans `data`) marchent ici. Divergence possible, à surveiller : les deux lectures de formule existent désormais.
 
 ## D10. Retour : ACQUIS sur le principe
 

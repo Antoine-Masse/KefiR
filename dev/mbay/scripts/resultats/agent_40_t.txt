@@ -1,0 +1,14 @@
+R version 4.6.1 (2026-06-24 ucrt) 
+Colonnes : jeu, loi, hypothese, reference (quadrature), KefiR (IS), ecart, erreur annoncee (rel_se)
+1 t_eq       H0  ref   -35.1216  kefir   -35.1241  ecart  -0.0025  err 0.0100  ess 6690
+1 t_eq       H1  ref   -36.2107  kefir   -36.2110  ecart  -0.0003  err 0.0079  ess 8843
+1 t_het      H0  ref   -35.6737  kefir   -35.6789  ecart  -0.0052  err 0.0122  ess 4999
+1 t_het      H1  ref   -36.7915  kefir   -36.8134  ecart  -0.0218  err 0.0085  ess 8195
+2 t_eq       H0  ref   -44.2414  kefir   -44.2442  ecart  -0.0029  err 0.0101  ess 6537
+2 t_eq       H1  ref   -42.8305  kefir   -42.8362  ecart  -0.0056  err 0.0094  ess 7247
+2 t_het      H0  ref   -44.7721  kefir   -44.7767  ecart  -0.0047  err 0.0129  ess 4614
+2 t_het      H1  ref   -43.4145  kefir   -43.4146  ecart  -0.0001  err 0.0114  ess 5565
+3 t_eq       H0  ref   -37.2525  kefir   -37.2529  ecart  -0.0004  err 0.0097  ess 6972
+3 t_eq       H1  ref   -37.1917  kefir   -37.1846  ecart   0.0071  err 0.0078  ess 9041
+3 t_het      H0  ref   -35.6134  kefir   -35.6082  ecart   0.0052  err 0.0126  ess 4765
+3 t_het      H1  ref   -36.1597  kefir   -36.1588  ecart   0.0009  err 0.0104  ess 6326
