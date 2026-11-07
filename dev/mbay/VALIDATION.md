@@ -339,6 +339,25 @@ n=(5,5,5,5,5,5,5,2) d=   50 : log BF     7.78, P(H1) 0.9996, P(variances inegale
 n=(5,5,5,5,5,5,5,2) d=  500 : log BF    14.70, P(H1) 1.0000, P(variances inegales) NA, err 1.5%, zs 122.4, Welch p 3.8e-20
 n=(5,5,5,5,5,5,5,2) d= 5000 : log BF    21.46, P(H1) 1.0000, P(variances inegales) 0.334, err 1.3%, zs 186.8, Welch p 1.7e-29
 n=(10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,3) d=    5 : log BF     6.58, P(H1) 0.9986, P(variances inegales) NA, err 2.0%, zs 5.5, Welch p 0.0043
+n=(10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,3) d=   50 : log BF    15.78, P(H1) 1.0000, P(variances inegales) NA, err 2.2%, zs 286.9, Welch p 5e-39
+n=(10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,3) d=  500 : log BF    25.05, P(H1) 1.0000, P(variances inegales) NA, err 2.1%, zs 682.2, Welch p 2.5e-94
+n=(10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,3) d= 5000 : log BF    34.26, P(H1) 1.0000, P(variances inegales) NA, err 2.1%, zs 1078.3, Welch p 7e-150
+B2 : un groupe disperse sans rapport ne doit pas changer la reponse sur les deux autres
+deux groupes seuls : log BF 3.18, P(H1) 0.960
+S=1 : log BF 5.55, P(H1) 0.996, err 0.2%
+S=10 : log BF 2.63, P(H1) 0.933, err 0.9%
+S=100 : log BF 2.42, P(H1) 0.918, err 0.9%
+S=1000 : log BF 2.40, P(H1) 0.917, err 0.9%
+S=10000 : log BF 2.40, P(H1) 0.917, err 0.9%
+S=1e+06 : log BF 2.34, P(H1) 0.912, err 0.9%
+c(0,1e-160,2e-160,1,1+1e-10,1) : log BF 68.942, P 1.0000, err 0.6%
+donnees constantes a l'arrondi : y est constant : les probabilités sont indéterminées.
+N = k+1, (1,1+1e-15,5) : log BF 3.029, P 0.9539, err 1.4%
+N = k+1, (1,1,5) : Aucune variation dans aucun groupe : les lois normale et t ne s'appliquent pas.
+une valeur aberrante, n=20, k=2 : log BF -1.683, P 0.1567, err 1.2%
+groupe de n=1 : log BF 0.942, P 0.7196, err 1.0%
+(2,2) : log BF 1.274, P 0.7814, err 0.8%
+n=1e4 par groupe, k=2 : log BF -3.734, P 0.0233, err 0.0%
 ```
 
 Pentes conformes au calcul à la main : d^(n_s + 2u − 2) une fois la seconde forme en jeu. Avant correction, k=20, n_s=3, d=10 donnait P(H1) = 0,17 (RELECTURE, B1). B2 : plancher à log BF ≈ 2,4, contre 3,18 pour les deux groupes seuls.
