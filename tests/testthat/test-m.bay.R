@@ -90,7 +90,7 @@ test_that("plans pas encore valides : refus explicite", {
 
 test_that("bilan : annonce a priori et sensibilite, ne laisse pas croire a une p-value", {
 	r <- m.bay(y ~ variete, data = d, verbose = FALSE, draws = 500L)
-	out <- capture.output(print(r))
+	out <- capture.output(print(r, detail = TRUE))
 	txt <- paste(out, collapse = "\n")
 	expect_match(txt, "r = ")
 	expect_match(txt, "Dirichlet")
@@ -102,6 +102,11 @@ test_that("bilan : annonce a priori et sensibilite, ne laisse pas croire a une p
 	expect_equal(dim(r$sensitivity$grid), c(3L, 3L))
 	r0 <- go(y ~ variete, data = d)
 	expect_match(paste(capture.output(print(r0)), collapse = "\n"), "sensitivity = FALSE")
+	# Par defaut, court ; le detail est sur demande.
+	court <- capture.output(print(r))
+	expect_lte(length(court), 14L)
+	expect_false(any(grepl("Dirichlet", court)))
+	expect_match(paste(court, collapse = " "), "p-value")
 })
 
 test_that("verdict de sensibilite : hypothese en tete, seuil, stable", {

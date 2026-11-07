@@ -68,8 +68,10 @@
 }
 
 # Prints the bilan. obj is the list returned by m.bay(). Text goes through .msg: one
-# string in each language, numbers with the decimal mark of that language.
-.bay_print_bilan <- function(obj) {
+# string in each language, numbers with the decimal mark of that language. The default is
+# short enough for a student or an engineer; detail = TRUE adds the shapes of the noise,
+# the varied priors and how to read the numbers.
+.bay_print_bilan <- function(obj, detail = FALSE) {
 	lang_fr <- identical(.msg("en", "fr"), "fr")
 	dec <- if (lang_fr) "," else "."
 	say <- function(en, fr) cat(.msg(en, fr), "\n", sep = "")
@@ -77,12 +79,13 @@
 	say(paste0("Bilan of m.bay: ", obj$label, " (N = ", obj$n, ")"),
 		paste0("Bilan de m.bay : ", obj$label, " (N = ", obj$n, ")"))
 
-	# Hypotheses.
+	# Hypotheses. A contradiction between the normal and the heavy-tailed laws caps the
+	# qualifier and is said on the first line of the answer.
 	say("Hypotheses, from the most to the least probable:",
 		"Hypoth\u00e8ses, de la plus probable \u00e0 la moins probable :")
 	h <- obj$hypotheses
-	lead <- h$posterior[1L]
-	sup <- .bay_support(lead)
+	sup <- .bay_support(h$posterior[1L])
+	if (isTRUE(obj$contradiction)) sup <- .bay_support(0)
 	width_en <- max(nchar(h$label_en))
 	width_fr <- max(nchar(h$label_fr))
 	for (i in seq_len(nrow(h))) {
@@ -93,6 +96,10 @@
 			paste0("  ", i, ". ", formatC(h$label_fr[i], width = -width_fr), " : ",
 				.bay_pct(h$posterior[i], ","), tail_fr))
 	}
+	if (isTRUE(obj$contradiction)) {
+		say("  Read with caution: the normal law (means) and the heavy-tailed laws (centres) contradict each other. The comparison then bears on the centres of the groups, not on their means; the support is capped at weak.",
+			"  \u00c0 lire avec r\u00e9serve : la loi normale (moyennes) et les queues lourdes (centres) se contredisent. La comparaison porte alors sur les centres des groupes, pas sur leurs moyennes ; le soutien est plafonn\u00e9 \u00e0 faible.")
+	}
 
 	# Verdict of the sensitivity, next to what it qualifies.
 	sens <- obj$sensitivity
@@ -101,17 +108,11 @@
 		rng_en <- paste0(.bay_pct(rng[1L], "."), " to ", .bay_pct(rng[2L], "."))
 		rng_fr <- paste0(.bay_pct(rng[1L], ","), " \u00e0 ", .bay_pct(rng[2L], ","))
 		if (identical(sens$verdict, "changes")) {
-			say(paste0("  The data do not settle it: over the priors, this probability goes from ",
-					rng_en, " and the leading hypothesis changes."),
-				paste0("  Les donn\u00e9es ne tranchent pas : selon les a priori, cette probabilit\u00e9 va de ",
-					rng_fr, " et l'hypoth\u00e8se en t\u00eate change."))
+			say(paste0("  The data do not settle it: over the priors, this probability goes from ", rng_en, "."),
+				paste0("  Les donn\u00e9es ne tranchent pas : selon les a priori, cette probabilit\u00e9 va de ", rng_fr, "."))
 		} else if (identical(sens$verdict, "crosses")) {
-			a <- .bay_support(rng[1L])
-			b <- .bay_support(rng[2L])
-			say(paste0("  The leading hypothesis does not change over the priors, but the support does: ",
-					rng_en, " (", a$en, " to ", b$en, ")."),
-				paste0("  L'hypoth\u00e8se en t\u00eate ne change pas selon les a priori, mais le soutien si : ",
-					rng_fr, " (", a$fr, " \u00e0 ", b$fr, ")."))
+			say(paste0("  Same leading hypothesis over the priors, from ", rng_en, "."),
+				paste0("  M\u00eame hypoth\u00e8se en t\u00eate selon les a priori, de ", rng_fr, "."))
 		} else {
 			say(paste0("  Stable over the priors: ", rng_en, "."),
 				paste0("  Stable selon les a priori : ", rng_fr, "."))
@@ -121,25 +122,14 @@
 			"  Sensibilit\u00e9 aux a priori non calcul\u00e9e (sensitivity = FALSE).")
 	}
 
-	if (!is.null(sens)) {
-		tip <- .bay_bf_txt(log(sens$odds_to_reverse), ".")
-		tip_fr <- .bay_bf_txt(log(sens$odds_to_reverse), ",")
-		say(paste0("  To level the two hypotheses, one would have to believe in the other one in advance at ", tip, " to 1."),
-			paste0("  Pour mettre les deux hypoth\u00e8ses \u00e0 \u00e9galit\u00e9, il faudrait croire d'avance \u00e0 l'autre \u00e0 ", tip_fr, " contre 1."))
-	}
-
 	# Per term.
-	say("Answers per term:", "R\u00e9ponses par terme :")
+	say("Answer per term:", "R\u00e9ponse par terme :")
 	e <- obj$effects
 	for (i in seq_len(nrow(e))) {
-		say(paste0("  Does ", e$term[i], " have an effect? Yes ", .bay_pct(e$p_h1[i], "."),
-				", no ", .bay_pct(e$p_h0[i], "."),
-				" (prior ", .bay_pct(e$prior_h1[i], "."), "; Bayes factor ",
-				.bay_bf_txt(e$log_bf[i], "."), ")."),
-			paste0("  ", e$term[i], " a-t-il un effet ? Oui ", .bay_pct(e$p_h1[i], ","),
-				", non ", .bay_pct(e$p_h0[i], ","),
-				" (a priori ", .bay_pct(e$prior_h1[i], ","), " ; facteur de Bayes ",
-				.bay_bf_txt(e$log_bf[i], ","), ")."))
+		say(paste0("  ", obj$questions$en[i], " Yes ", .bay_pct(e$p_h1[i], "."), ", no ", .bay_pct(e$p_h0[i], "."),
+				" (Bayes factor ", .bay_bf_txt(e$log_bf[i], "."), ")."),
+			paste0("  ", obj$questions$fr[i], " Oui ", .bay_pct(e$p_h1[i], ","), ", non ", .bay_pct(e$p_h0[i], ","),
+				" (facteur de Bayes ", .bay_bf_txt(e$log_bf[i], ","), ")."))
 	}
 
 	# Size, descriptive.
@@ -152,12 +142,35 @@
 		paste0("  ", paste0(d$group, " = ", vapply(d$mean, fmt, character(1), dc = ","), " (n = ", d$n, ")", collapse = " ; "),
 			". Plus grand \u00e9cart : ", fmt(obj$largest_gap, ","), " fois l'\u00e9cart-type intra-groupe."))
 
-	# Noise.
+	# Priors, one line.
+	p <- obj$priors
+	say(paste0("Priors, fixed in advance: difference ", .bay_pct(p$prior_h1, "."), ", scale of a difference r = ",
+			format(signif(p$rscale, 3), trim = TRUE), ", all shapes of noise on an equal footing."),
+		paste0("A priori, fix\u00e9s d'avance : diff\u00e9rence ", .bay_pct(p$prior_h1, ","), ", \u00e9chelle d'une diff\u00e9rence r = ",
+			num(p$rscale), ", toutes les formes de bruit \u00e0 \u00e9galit\u00e9."))
+	say("These are probabilities of hypotheses given the data and the priors, not p-values.",
+		"Ce sont des probabilit\u00e9s d'hypoth\u00e8ses sachant les donn\u00e9es et les a priori, pas des p-values.")
+
+	if (length(obj$notes$en)) {
+		say("Warnings:", "Avertissements :")
+		for (i in seq_along(obj$notes$en)) say(paste0("  ", obj$notes$en[i]), paste0("  ", obj$notes$fr[i]))
+	}
+	if (!isTRUE(detail)) {
+		say("Details: print(result, detail = TRUE).", "D\u00e9tail : print(resultat, detail = TRUE).")
+		return(invisible(obj))
+	}
+
+	# Detail.
+	if (!is.null(sens)) {
+		tip <- log(sens$odds_to_reverse)
+		say(paste0("To level the two hypotheses, one would have to believe in the other one in advance at ",
+				.bay_bf_txt(tip, "."), " to 1."),
+			paste0("Pour mettre les deux hypoth\u00e8ses \u00e0 \u00e9galit\u00e9, il faudrait croire d'avance \u00e0 l'autre \u00e0 ",
+				.bay_bf_txt(tip, ","), " contre 1."))
+	}
 	if (!is.null(obj$laws)) {
 		lb <- .bay_law_labels()
 		laws <- obj$laws[order(-obj$laws$posterior), , drop = FALSE]
-		txt_en <- paste0(lb$en[laws$law], " ", vapply(laws$posterior, .bay_pct, character(1), dec = "."))
-		txt_fr <- paste0(lb$fr[laws$law], " ", vapply(laws$posterior, .bay_pct, character(1), dec = ","))
 		if (nrow(laws) > 1L) {
 			say("Shape of the noise, compared and not chosen (posterior probabilities):",
 				"Forme du bruit, compar\u00e9e et non choisie (probabilit\u00e9s a posteriori) :")
@@ -165,27 +178,20 @@
 			say("Shape of the noise: one law only, not compared:",
 				"Forme du bruit : une seule loi retenue, non compar\u00e9e :")
 		}
-		say(paste0("  ", paste(txt_en, collapse = "; "), "."),
-			paste0("  ", paste(txt_fr, collapse = " ; "), "."))
+		say(paste0("  ", paste0(lb$en[laws$law], " ", vapply(laws$posterior, .bay_pct, character(1), dec = "."), collapse = "; "), "."),
+			paste0("  ", paste0(lb$fr[laws$law], " ", vapply(laws$posterior, .bay_pct, character(1), dec = ","), collapse = " ; "), "."))
 		if (!is.null(sens) && nrow(obj$laws) > 1L) {
 			bl <- sens$by_law[laws$law]
-			say(paste0("  If one shape were imposed, the probability of an effect would be: ",
+			say(paste0("  If one shape were imposed, the probability of a difference would be: ",
 					paste0(lb$en[laws$law], " ", vapply(bl, .bay_pct, character(1), dec = "."), collapse = "; "), "."),
-				paste0("  Si l'on imposait une seule forme, la probabilit\u00e9 d'un effet serait : ",
+				paste0("  Si l'on imposait une seule forme, la probabilit\u00e9 d'une diff\u00e9rence serait : ",
 					paste0(lb$fr[laws$law], " ", vapply(bl, .bay_pct, character(1), dec = ","), collapse = " ; "), "."))
 		}
 	}
-
-	# Priors.
-	p <- obj$priors
-	say("Priors, fixed in advance:", "A priori, fix\u00e9s d'avance :")
-	say(paste0("  Effect: ", .bay_pct(p$prior_h1, "."), " before seeing the data. Size of an effect: ",
-			"scale r = ", format(signif(p$rscale, 3), trim = TRUE), " on the standardised difference."),
-		paste0("  Effet : ", .bay_pct(p$prior_h1, ","), " avant de voir les donn\u00e9es. Taille d'un effet : ",
-			"\u00e9chelle r = ", num(p$rscale), " sur l'\u00e9cart standardis\u00e9."))
+	say("Priors in detail:", "A priori en d\u00e9tail :")
 	if (isTRUE(nrow(obj$descriptive_stats) > 2L)) {
-		say("  Forms of an effect, at even odds: all groups may differ; or one group alone stands apart (scale r x sqrt(2)).",
-			"  Formes d'un effet, \u00e0 poids \u00e9gaux : tous les groupes peuvent diff\u00e9rer ; ou un seul groupe s'\u00e9carte (\u00e9chelle r x racine de 2).")
+		say("  Forms of a difference, at even odds: all groups may differ; or one group alone stands apart (scale r x sqrt(2)).",
+			"  Formes d'une diff\u00e9rence, \u00e0 poids \u00e9gaux : tous les groupes peuvent diff\u00e9rer ; ou un seul groupe s'\u00e9carte (\u00e9chelle r x racine de 2).")
 	}
 	if (!is.null(obj$laws)) {
 		kept <- obj$laws$law
@@ -207,31 +213,22 @@
 				num(max(sens$r)), ", cotes H1:H0 ", paste(sens$odds[c(1L, length(sens$odds))], collapse = " \u00e0 "),
 				if (any(obj$laws$law %in% c("normal_het", "t_het"))) paste0(", Dirichlet ",
 					num(min(sens$u)), " \u00e0 ", num(max(sens$u))), "."))
+		if (isTRUE(nrow(obj$descriptive_stats) > 2L)) {
+			say(paste0("  With the first form alone, the probability of a difference would be ", .bay_pct(sens$all_groups, "."), "."),
+				paste0("  Avec la premi\u00e8re forme seule, la probabilit\u00e9 d'une diff\u00e9rence serait ", .bay_pct(sens$all_groups, ","), "."))
+		}
 	}
-
-	if (!is.null(sens) && isTRUE(nrow(obj$descriptive_stats) > 2L)) {
-		say(paste0("  With the first form of an effect alone, the probability of an effect would be ",
-				.bay_pct(sens$all_groups, "."), "."),
-			paste0("  Avec la premi\u00e8re forme d'effet seule, la probabilit\u00e9 d'un effet serait ",
-				.bay_pct(sens$all_groups, ","), "."))
-	}
-
-	# How to read it.
 	breaks <- .bay_support_breaks()
 	say("How to read it:", "Comment lire :")
-	say("  A probability here is the probability of a hypothesis given the data and the priors above.",
-		"  Une probabilit\u00e9 est ici celle d'une hypoth\u00e8se, sachant les donn\u00e9es et les a priori ci-dessus.")
 	say("  The Bayes factor says how much the data move the odds. It does not depend on the prior odds.",
 		"  Le facteur de Bayes dit de combien les donn\u00e9es d\u00e9placent les cotes. Il ne d\u00e9pend pas des cotes a priori.")
-	say("  Neither is a p-value: a p-value is the probability of data at least this extreme if there were no effect.",
-		"  Ni l'un ni l'autre n'est une p-value : une p-value est la probabilit\u00e9 de donn\u00e9es au moins aussi extr\u00eames s'il n'y avait pas d'effet.")
+	say("  A p-value is the probability of data at least this extreme if there were no difference: neither of the above.",
+		"  Une p-value est la probabilit\u00e9 de donn\u00e9es au moins aussi extr\u00eames s'il n'y avait pas de diff\u00e9rence : ni l'un ni l'autre ci-dessus.")
+	say("  A difference between groups observed without randomisation does not show a cause.",
+		"  Une diff\u00e9rence entre groupes observ\u00e9s sans tirage au sort ne montre pas une cause.")
 	say(paste0("  Support: weak under ", 100 * breaks[1L], " %, moderate under ", 100 * breaks[2L],
 			" %, strong under ", 100 * breaks[3L], " %, then very strong."),
 		paste0("  Soutien : faible sous ", 100 * breaks[1L], " %, mod\u00e9r\u00e9 sous ", 100 * breaks[2L],
 			" %, fort sous ", gsub(".", ",", 100 * breaks[3L], fixed = TRUE), " %, puis tr\u00e8s fort."))
-	if (length(obj$notes$en)) {
-		say("Warnings:", "Avertissements :")
-		for (i in seq_along(obj$notes$en)) say(paste0("  ", obj$notes$en[i]), paste0("  ", obj$notes$fr[i]))
-	}
 	invisible(obj)
 }

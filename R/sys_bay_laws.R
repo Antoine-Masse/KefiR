@@ -283,6 +283,10 @@
 		rel_se = stats::sd(w) / (mw * sqrt(length(w))))
 }
 
+# From this posterior probability of the heavy-tailed laws, the bilan says that the noise
+# looks heavy-tailed. Set from the false alarms on normal data (agent_46, VALIDATION).
+.bay_heavy_threshold <- function() 0.95
+
 # Absolute ceiling on the importance draws per model, whatever the growth.
 .bay_law_max_draws <- function() 40000L
 

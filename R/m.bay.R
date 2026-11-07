@@ -5,8 +5,9 @@
 #' not "how surprising are these data if there is no effect?", but "how probable is
 #' each hypothesis given these data?". Its main result is a bilan: the hypotheses,
 #' ranked from the most to the least probable, with their posterior probability and
-#' a plain qualifier, then the answer for each term ("does the temperature have an
-#' effect? yes with this probability, no with that one").
+#' a plain qualifier, then the answer for each term ("does the yield differ according
+#' to the temperature? yes with this probability, no with that one"). A difference between
+#' groups observed without randomisation does not show a cause.
 #'
 #' A probability of a hypothesis depends on priors. The bilan always states them and
 #' always shows how far the answer moves when they change. If the priors can change
@@ -50,6 +51,8 @@
 #'   The bilan says so when it is switched off.
 #' @param draws Importance draws per model. Default 4000.
 #' @param seed Seed of this call. The global random state is left untouched.
+#' @param detail If `TRUE`, the bilan also shows the shapes of the noise, the priors that
+#'   are varied and how to read the numbers. Also `print(result, detail = TRUE)`.
 #'
 #' @return With `return = TRUE`, a list of class `mbay`:
 #'   \describe{
@@ -84,7 +87,7 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
                   maxcat = 50, silent = NULL, code = FALSE, debug = FALSE,
                   prior_h1 = 1/2, rscale = 1/2, u = 1.5,
                   laws = c("normal_eq", "normal_het", "t_eq", "t_het"),
-                  sensitivity = TRUE, draws = 4000L, seed = 1L) {
+                  sensitivity = TRUE, draws = 4000L, seed = 1L, detail = FALSE) {
 	call_expr <- match.call()
 	if (isFALSE(return) && !("verbose" %in% names(call_expr))) verbose <- FALSE
 
@@ -216,28 +219,30 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	}
 
 	# Under heavy tails the groups are compared through their centres, which are not the
-	# means of a skewed group: equal means, different shapes can read as an effect
-	# (agent_43: one lognormal group, n = 400, P > 0.95 in 67 % of the data sets).
+	# means of a skewed group: equal means, different shapes can read as a difference
+	# (agent_43: one lognormal group, n = 400, P > 0.95 in 67 % of the data sets). When the
+	# normal law and the answer fall on opposite sides, the bilan says so on its first
+	# lines and caps the qualifier. Thresholds and false alarms: agent_46, VALIDATION.
 	p_t <- sum(ans$p_law[intersect(names(ans$p_law), c("t_eq", "t_het"))])
 	normal_kept <- intersect(names(ans$p_law), c("normal_eq", "normal_het"))
-	if (isTRUE(p_t > 1/2) && length(normal_kept)) {
+	contradiction <- FALSE
+	if (length(normal_kept)) {
 		best_normal <- normal_kept[which.max(ans$p_law[normal_kept])]
-		if (isTRUE(sign(ans$log_bf_law[best_normal]) != sign(ans$log_bf))) {
-			note("The answer rests on heavy tails, which compare the centres of the groups, and the law with a normal noise says the opposite: the groups may differ in shape without differing in mean. Look at the means and at the distributions.",
-				"La r\u00e9ponse repose sur les queues lourdes, qui comparent les centres des groupes, et la loi \u00e0 bruit normal dit le contraire : les groupes peuvent diff\u00e9rer par leur forme sans diff\u00e9rer en moyenne. Regarder les moyennes et les distributions.")
-		} else {
-			note("The noise looks heavy-tailed: the effect bears on the centres of the groups, not exactly on their means.",
-				"Le bruit semble \u00e0 queues lourdes : l'effet porte sur le centre des groupes, pas exactement sur leur moyenne.")
-		}
+		p_normal <- .bay_post_prob(log_bf = ans$log_bf_law[best_normal], prior_odds = prior_h1 / (1 - prior_h1))
+		contradiction <- isTRUE((ans$p_h1 > 0.75 && p_normal < 0.5) || (ans$p_h1 < 0.25 && p_normal > 0.5))
+	}
+	if (isTRUE(p_t >= .bay_heavy_threshold()) && !contradiction) {
+		note("The noise looks heavy-tailed: the comparison bears on the centres of the groups, not exactly on their means.",
+			"Le bruit semble \u00e0 queues lourdes : la comparaison porte sur le centre des groupes, pas exactement sur leur moyenne.")
 	}
 
 	effects <- .bay_effects_row(term = shown, log_bf = ans$log_bf, prior_h1 = prior_h1,
 		rscale = rscale, error_pct = ans$error_pct, analogue = "global")
 	hyp <- data.frame(
-		label_en = c(paste0(shown, " has an effect on ", input$response_name),
-			paste0("No effect of ", shown, " on ", input$response_name)),
-		label_fr = c(paste0(shown, " agit sur ", input$response_name),
-			paste0("Aucun effet de ", shown, " sur ", input$response_name)),
+		label_en = c(paste0(input$response_name, " differs according to ", shown),
+			paste0("No difference in ", input$response_name, " according to ", shown)),
+		label_fr = c(paste0(input$response_name, " diff\u00e8re selon ", shown),
+			paste0("Aucune diff\u00e9rence de ", input$response_name, " selon ", shown)),
 		posterior = c(ans$p_h1, ans$p_h0),
 		prior = c(prior_h1, 1 - prior_h1),
 		stringsAsFactors = FALSE)
@@ -295,19 +300,22 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 		models = ans$models, sensitivity = sens,
 		priors = list(prior_h1 = prior_h1, rscale = rscale, u = u, law_prior = "equal",
 			nu = "nu - 2 ~ Exp(1)"),
+		questions = list(en = paste0("Does ", input$response_name, " differ according to ", shown, "?"),
+			fr = paste0(input$response_name, " diff\u00e8re-t-il selon ", shown, " ?")),
+		contradiction = contradiction, detail = isTRUE(detail),
 		descriptive_stats = desc, prob_effect = ans$p_h1,
 		largest_gap = (max(desc$mean) - min(desc$mean)) / (st$unit * max(abs(st$y_raw))),
 		method = "Averaged over sampling laws", plan = input$plan,
 		label = if (identical(term, ".g")) paste0(input$response_name, " ~ g") else input$label,
 		n = st$N, notes = notes, call = call_expr)
 	class(out) <- "mbay"
-	if (isTRUE(verbose)) .bay_print_bilan(out)
+	if (isTRUE(verbose)) .bay_print_bilan(out, detail = detail)
 	if (isFALSE(return)) return(ans$p_h1)
 	if (isTRUE(verbose)) invisible(out) else out
 }
 
 #' @export
-print.mbay <- function(x, ...) {
-	.bay_print_bilan(x)
+print.mbay <- function(x, detail = isTRUE(x$detail), ...) {
+	.bay_print_bilan(x, detail = detail)
 	invisible(x)
 }

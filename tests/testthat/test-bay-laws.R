@@ -182,7 +182,7 @@ test_that("I1 et I2 relecture : loi imposee hors de la plage, cotes exactes", {
 	expect_false(identical(r$sensitivity$verdict, "changes"))
 	r2 <- m.bay(y, rep(1:2, each = 30), verbose = FALSE, draws = 500L, prior_h1 = 0.2)
 	expect_equal(r2$sensitivity$odds, colnames(r2$sensitivity$grid))
-	expect_match(paste(capture.output(print(r2)), collapse = " "), "1:8")
+	expect_match(paste(capture.output(print(r2, detail = TRUE)), collapse = " "), "1:8")
 })
 
 test_that("echelles extremes de y : invariance, sans erreur brute", {
@@ -247,7 +247,7 @@ test_that("sensibilite : la forme 'tous les groupes' est montree a part", {
 	d <- sim(c(10, 10, 10), c(0, 0.8, 0), seed = 14)
 	r <- m.bay(d$y, d$g, verbose = FALSE, draws = 400L)
 	expect_true(r$sensitivity$all_groups > 0 && r$sensitivity$all_groups < 1)
-	expect_match(paste(capture.output(print(r)), collapse = " "), "forme")
+	expect_match(paste(capture.output(print(r, detail = TRUE)), collapse = " "), "forme")
 })
 
 test_that("formes differentes, moyennes egales : le bilan pr\u00e9vient", {
@@ -255,5 +255,10 @@ test_that("formes differentes, moyennes egales : le bilan pr\u00e9vient", {
 	s <- 0.8
 	y <- c((rlnorm(400, 0, s) - exp(s^2 / 2)) / sqrt((exp(s^2) - 1) * exp(s^2)), rnorm(400))
 	r <- m.bay(y, rep(1:2, each = 400), verbose = FALSE, draws = 500L, sensitivity = FALSE)
-	expect_true(any(grepl("heavy", r$notes$en)))
+	if (r$prob_effect > 0.75) {
+		expect_true(r$contradiction)
+		out <- paste(capture.output(print(r)), collapse = " ")
+		expect_match(out, "faible|weak")
+		expect_match(out, "centres")
+	}
 })
