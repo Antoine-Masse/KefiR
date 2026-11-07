@@ -231,7 +231,8 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 		p_normal <- .bay_post_prob(log_bf = ans$log_bf_law[best_normal], prior_odds = prior_h1 / (1 - prior_h1))
 		contradiction <- isTRUE((ans$p_h1 > 0.75 && p_normal < 0.5) || (ans$p_h1 < 0.25 && p_normal > 0.5))
 	}
-	if (isTRUE(p_t >= .bay_heavy_threshold()) && !contradiction) {
+	heavy <- isTRUE(p_t >= .bay_heavy_threshold())
+	if (heavy && !contradiction) {
 		note("The noise looks heavy-tailed: the comparison bears on the centres of the groups, not exactly on their means.",
 			"Le bruit semble \u00e0 queues lourdes : la comparaison porte sur le centre des groupes, pas exactement sur leur moyenne.")
 	}
@@ -290,6 +291,7 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 
 	desc <- data.frame(group = st$levels, n = st$n,
 		mean = vapply(split(st$y_raw, st$g_raw), mean, numeric(1), USE.NAMES = FALSE),
+		median = vapply(split(st$y_raw, st$g_raw), stats::median, numeric(1), USE.NAMES = FALSE),
 		SD = vapply(split(st$y_raw, st$g_raw), function(v) {
 			if (length(v) > 1L) stats::sd(v) else NA_real_
 		}, numeric(1), USE.NAMES = FALSE), stringsAsFactors = FALSE)
@@ -302,7 +304,7 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 			nu = "nu - 2 ~ Exp(1)"),
 		questions = list(en = paste0("Does ", input$response_name, " differ according to ", shown, "?"),
 			fr = paste0(input$response_name, " diff\u00e8re-t-il selon ", shown, " ?")),
-		contradiction = contradiction, detail = isTRUE(detail),
+		contradiction = contradiction, heavy = heavy, detail = isTRUE(detail),
 		descriptive_stats = desc, prob_effect = ans$p_h1,
 		largest_gap = (max(desc$mean) - min(desc$mean)) / (st$unit * max(abs(st$y_raw))),
 		method = "Averaged over sampling laws", plan = input$plan,

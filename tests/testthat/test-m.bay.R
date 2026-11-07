@@ -104,7 +104,7 @@ test_that("bilan : annonce a priori et sensibilite, ne laisse pas croire a une p
 	expect_match(paste(capture.output(print(r0)), collapse = "\n"), "sensitivity = FALSE")
 	# Par defaut, court ; le detail est sur demande.
 	court <- capture.output(print(r))
-	expect_lte(length(court), 14L)
+	expect_lte(length(court), 16L)
 	expect_false(any(grepl("Dirichlet", court)))
 	expect_match(paste(court, collapse = " "), "p-value")
 })

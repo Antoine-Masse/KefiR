@@ -11,3 +11,4 @@
 ^kefir\.log$
 ^inst/dev$
 ^vignettes/\.RData$
+^\.claude$

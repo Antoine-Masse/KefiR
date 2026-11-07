@@ -11,13 +11,13 @@
 
 # Qualifier of the support for the leading hypothesis. Never called "confidence", so
 # that it cannot be mistaken for a confidence interval or a frequentist threshold.
-.bay_support_breaks <- function() c(0.75, 0.95, 0.993)
+.bay_support_breaks <- function() c(0.6, 0.75, 0.95, 0.993)
 
 .bay_support <- function(p) {
 	breaks <- .bay_support_breaks()
 	idx <- findInterval(p, breaks) + 1L
-	en <- c("weak support", "moderate support", "strong support", "very strong support")
-	fr <- c("soutien faible", "soutien mod\u00e9r\u00e9", "soutien fort", "soutien tr\u00e8s fort")
+	en <- c("no support, close to a coin toss", "weak support", "moderate support", "strong support", "very strong support")
+	fr <- c("aucun soutien, proche de pile ou face", "soutien faible", "soutien mod\u00e9r\u00e9", "soutien fort", "soutien tr\u00e8s fort")
 	list(en = en[idx], fr = fr[idx], level = idx)
 }
 
@@ -58,6 +58,40 @@
 	if (a$level != b$level) "crosses" else "stable"
 }
 
+# The sentence a reader looks for first. Never an equivalence, a size or a cause.
+.bay_verdict <- function(obj) {
+	h <- obj$hypotheses
+	p <- h$posterior[1L]
+	lead_h1 <- isTRUE(obj$prob_effect >= 0.5)
+	open <- identical(obj$sensitivity$verdict, "changes")
+	if (isTRUE(obj$contradiction)) {
+		return(list(en = "Verdict: undecided, the answer depends on the shape of the noise.",
+			fr = "Verdict : ind\u00e9cis, la r\u00e9ponse d\u00e9pend de la forme du bruit."))
+	}
+	if (p < 0.6) {
+		return(list(en = "Verdict: undecided. The data allow no conclusion, neither a difference nor its absence.",
+			fr = "Verdict : ind\u00e9cis. Les donn\u00e9es ne permettent de conclure ni \u00e0 une diff\u00e9rence, ni \u00e0 son absence."))
+	}
+	if (!lead_h1) {
+		if (p >= 0.95 && !open) {
+			return(list(en = "Verdict: very probably no difference of the size expected. This is not a proof of equivalence.",
+				fr = "Verdict : tr\u00e8s probablement pas de diff\u00e9rence de l'ordre attendu. Ce n'est pas une preuve d'\u00e9quivalence."))
+		}
+		return(list(en = "Verdict: rather no difference, without concluding. This does not prove that the groups are equivalent.",
+			fr = "Verdict : plut\u00f4t pas de diff\u00e9rence, sans conclure. Cela ne prouve pas que les groupes sont \u00e9quivalents."))
+	}
+	if (p >= 0.95 && !open) {
+		return(list(en = "Verdict: a difference very probably exists. This says neither that it matters, nor which groups differ, nor why.",
+			fr = "Verdict : une diff\u00e9rence existe tr\u00e8s probablement. Cela ne dit ni qu'elle est importante, ni quels groupes diff\u00e8rent, ni pourquoi."))
+	}
+	if (p >= 0.75 && !open) {
+		return(list(en = "Verdict: a difference probably exists. This says neither that it matters, nor which groups differ, nor why.",
+			fr = "Verdict : une diff\u00e9rence existe probablement. Cela ne dit ni qu'elle est importante, ni quels groupes diff\u00e8rent, ni pourquoi."))
+	}
+	list(en = "Verdict: rather a difference, without concluding.",
+		fr = "Verdict : plut\u00f4t une diff\u00e9rence, sans conclure.")
+}
+
 .bay_law_labels <- function() {
 	list(
 		en = c(normal_eq = "normal, equal variances", normal_het = "normal, unequal variances",
@@ -79,13 +113,16 @@
 	say(paste0("Bilan of m.bay: ", obj$label, " (N = ", obj$n, ")"),
 		paste0("Bilan de m.bay : ", obj$label, " (N = ", obj$n, ")"))
 
+	v <- .bay_verdict(obj)
+	say(v$en, v$fr)
+
 	# Hypotheses. A contradiction between the normal and the heavy-tailed laws caps the
-	# qualifier and is said on the first line of the answer.
-	say("Hypotheses, from the most to the least probable:",
-		"Hypoth\u00e8ses, de la plus probable \u00e0 la moins probable :")
+	# qualifier and is said right after.
+	say("Probability of each hypothesis, given the data and the starting point:",
+		"Probabilit\u00e9 de chaque hypoth\u00e8se, compte tenu des donn\u00e9es et du point de d\u00e9part :")
 	h <- obj$hypotheses
 	sup <- .bay_support(h$posterior[1L])
-	if (isTRUE(obj$contradiction)) sup <- .bay_support(0)
+	if (isTRUE(obj$contradiction)) sup <- .bay_support(min(h$posterior[1L], 0.6))
 	width_en <- max(nchar(h$label_en))
 	width_fr <- max(nchar(h$label_fr))
 	for (i in seq_len(nrow(h))) {
@@ -108,55 +145,83 @@
 		rng_en <- paste0(.bay_pct(rng[1L], "."), " to ", .bay_pct(rng[2L], "."))
 		rng_fr <- paste0(.bay_pct(rng[1L], ","), " \u00e0 ", .bay_pct(rng[2L], ","))
 		if (identical(sens$verdict, "changes")) {
-			say(paste0("  The data do not settle it: over the priors, this probability goes from ", rng_en, "."),
-				paste0("  Les donn\u00e9es ne tranchent pas : selon les a priori, cette probabilit\u00e9 va de ", rng_fr, "."))
+			say(paste0("  Depending on the starting point, the probability of hypothesis 1 goes from ", rng_en, ": the order can reverse."),
+				paste0("  Selon le point de d\u00e9part, la probabilit\u00e9 de l'hypoth\u00e8se 1 va de ", rng_fr, " : l'ordre peut s'inverser."))
 		} else if (identical(sens$verdict, "crosses")) {
-			say(paste0("  Same leading hypothesis over the priors, from ", rng_en, "."),
-				paste0("  M\u00eame hypoth\u00e8se en t\u00eate selon les a priori, de ", rng_fr, "."))
+			say(paste0("  Depending on the starting point, the probability of hypothesis 1 goes from ", rng_en, "; the order does not change."),
+				paste0("  Selon le point de d\u00e9part, la probabilit\u00e9 de l'hypoth\u00e8se 1 va de ", rng_fr, " ; l'ordre ne change pas."))
 		} else {
-			say(paste0("  Stable over the priors: ", rng_en, "."),
-				paste0("  Stable selon les a priori : ", rng_fr, "."))
+			if (identical(.bay_pct(rng[1L], "."), .bay_pct(rng[2L], "."))) {
+				say(paste0("  Unchanged whatever the starting point (always ", .bay_pct(rng[1L], "."), ")."),
+					paste0("  Inchang\u00e9 quel que soit le point de d\u00e9part (toujours ", .bay_pct(rng[1L], ","), ")."))
+			} else {
+				say(paste0("  Depending on the starting point: ", rng_en, "; the order does not change."),
+					paste0("  Selon le point de d\u00e9part : ", rng_fr, " ; l'ordre ne change pas."))
+			}
 		}
 	} else {
 		say("  Sensitivity to the priors not computed (sensitivity = FALSE).",
 			"  Sensibilit\u00e9 aux a priori non calcul\u00e9e (sensitivity = FALSE).")
 	}
 
-	# Per term.
-	say("Answer per term:", "R\u00e9ponse par terme :")
+	# Per term; with one term, the lines above already answer it, and only the strength of
+	# the evidence is added, said in the direction of the favoured hypothesis.
 	e <- obj$effects
-	for (i in seq_len(nrow(e))) {
-		say(paste0("  ", obj$questions$en[i], " Yes ", .bay_pct(e$p_h1[i], "."), ", no ", .bay_pct(e$p_h0[i], "."),
-				" (Bayes factor ", .bay_bf_txt(e$log_bf[i], "."), ")."),
-			paste0("  ", obj$questions$fr[i], " Oui ", .bay_pct(e$p_h1[i], ","), ", non ", .bay_pct(e$p_h0[i], ","),
-				" (facteur de Bayes ", .bay_bf_txt(e$log_bf[i], ","), ")."))
+	if (nrow(e) > 1L) {
+		say("Answer per term:", "R\u00e9ponse par terme :")
+		for (i in seq_len(nrow(e))) {
+			say(paste0("  ", obj$questions$en[i], " Yes ", .bay_pct(e$p_h1[i], "."), ", no ", .bay_pct(e$p_h0[i], "."),
+					" (Bayes factor ", .bay_bf_txt(e$log_bf[i], "."), ")."),
+				paste0("  ", obj$questions$fr[i], " Oui ", .bay_pct(e$p_h1[i], ","), ", non ", .bay_pct(e$p_h0[i], ","),
+					" (facteur de Bayes ", .bay_bf_txt(e$log_bf[i], ","), ")."))
+		}
+	} else {
+		ab <- abs(e$log_bf[1L])
+		if (e$log_bf[1L] >= 0) {
+			say(paste0("  The data are ", .bay_bf_txt(ab, "."), " times more compatible with a difference (Bayes factor ", .bay_bf_txt(e$log_bf[1L], "."), ")."),
+				paste0("  Les donn\u00e9es sont ", .bay_bf_txt(ab, ","), " fois plus compatibles avec une diff\u00e9rence (facteur de Bayes ", .bay_bf_txt(e$log_bf[1L], ","), ")."))
+		} else {
+			say(paste0("  The data are ", .bay_bf_txt(ab, "."), " times more compatible with no difference (Bayes factor ", .bay_bf_txt(e$log_bf[1L], "."), ")."),
+				paste0("  Les donn\u00e9es sont ", .bay_bf_txt(ab, ","), " fois plus compatibles avec l'absence de diff\u00e9rence (facteur de Bayes ", .bay_bf_txt(e$log_bf[1L], ","), ")."))
+		}
 	}
 
 	# Size, descriptive.
 	d <- obj$descriptive_stats
-	fmt <- function(x, dc) gsub(".", dc, format(signif(x, 4), trim = TRUE), fixed = TRUE)
-	say("Observed means (description of the sample, not a test):",
-		"Moyennes observ\u00e9es (description de l'\u00e9chantillon, pas un test) :")
-	say(paste0("  ", paste0(d$group, " = ", vapply(d$mean, fmt, character(1), dc = "."), " (n = ", d$n, ")", collapse = "; "),
-			". Largest gap: ", fmt(obj$largest_gap, "."), " times the within-group standard deviation."),
-		paste0("  ", paste0(d$group, " = ", vapply(d$mean, fmt, character(1), dc = ","), " (n = ", d$n, ")", collapse = " ; "),
-			". Plus grand \u00e9cart : ", fmt(obj$largest_gap, ","), " fois l'\u00e9cart-type intra-groupe."))
+	dg <- max(0L, 2L - floor(log10(max(abs(d$mean), 1e-300))))
+	fmt <- function(x, dc) gsub(".", dc, formatC(x, format = "f", digits = dg), fixed = TRUE)
+	hi <- which.max(d$mean)
+	lo <- which.min(d$mean)
+	gap <- d$mean[hi] - d$mean[lo]
+	say("Observed means (description of the sample, not a test of which groups differ):",
+		"Moyennes observ\u00e9es (description de l'\u00e9chantillon ; ce bilan ne dit pas quels groupes diff\u00e8rent) :")
+	say(paste0("  ", paste0(d$group, " = ", fmt(d$mean, "."), " (n = ", d$n, ")", collapse = "; "),
+			". Largest gap: ", d$group[hi], " - ", d$group[lo], " = ", fmt(gap, "."), ", i.e. ",
+			formatC(obj$largest_gap, format = "f", digits = 2), " within-group standard deviations."),
+		paste0("  ", paste0(d$group, " = ", fmt(d$mean, ","), " (n = ", d$n, ")", collapse = " ; "),
+			". Plus grand \u00e9cart : ", d$group[hi], " - ", d$group[lo], " = ", fmt(gap, ","), ", soit ",
+			gsub(".", ",", formatC(obj$largest_gap, format = "f", digits = 2), fixed = TRUE), " \u00e9cart-type (dispersion au sein d'un groupe)."))
+	if (isTRUE(obj$contradiction) || isTRUE(obj$heavy)) {
+		say(paste0("  Medians, closer to the centres compared: ", paste0(d$group, " = ", fmt(d$median, "."), collapse = "; "), "."),
+			paste0("  M\u00e9dianes, plus proches des centres compar\u00e9s : ", paste0(d$group, " = ", fmt(d$median, ","), collapse = " ; "), "."))
+	}
 
 	# Priors, one line.
 	p <- obj$priors
-	say(paste0("Priors, fixed in advance: difference ", .bay_pct(p$prior_h1, "."), ", scale of a difference r = ",
-			format(signif(p$rscale, 3), trim = TRUE), ", all shapes of noise on an equal footing."),
-		paste0("A priori, fix\u00e9s d'avance : diff\u00e9rence ", .bay_pct(p$prior_h1, ","), ", \u00e9chelle d'une diff\u00e9rence r = ",
-			num(p$rscale), ", toutes les formes de bruit \u00e0 \u00e9galit\u00e9."))
-	say("These are probabilities of hypotheses given the data and the priors, not p-values.",
-		"Ce sont des probabilit\u00e9s d'hypoth\u00e8ses sachant les donn\u00e9es et les a priori, pas des p-values.")
+	say(paste0("Starting point, set by the method before seeing the data: ", .bay_pct(p$prior_h1, "."), " chance that a difference exists, expected size r = ",
+			format(signif(p$rscale, 3), trim = TRUE), "."),
+		paste0("Point de d\u00e9part, fix\u00e9 par la m\u00e9thode avant de voir les donn\u00e9es : ", .bay_pct(p$prior_h1, ","), " de chances qu'une diff\u00e9rence existe, taille attendue r = ",
+			num(p$rscale), "."))
+	say("These are probabilities of hypotheses, not p-values: no threshold of 5 % applies. Whether a difference has a cause depends on the protocol (randomisation, order, operator).",
+		"Ce sont des probabilit\u00e9s d'hypoth\u00e8ses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une diff\u00e9rence d\u00e9pend du protocole (tirage au sort, ordre, op\u00e9rateur).")
 
 	if (length(obj$notes$en)) {
 		say("Warnings:", "Avertissements :")
 		for (i in seq_along(obj$notes$en)) say(paste0("  ", obj$notes$en[i]), paste0("  ", obj$notes$fr[i]))
 	}
 	if (!isTRUE(detail)) {
-		say("Details: print(result, detail = TRUE).", "D\u00e9tail : print(resultat, detail = TRUE).")
+		say("Shapes of the noise, priors in detail, how to read: print(result, detail = TRUE).",
+			"Formes du bruit, a priori en d\u00e9tail, mode de lecture : print(resultat, detail = TRUE).")
 		return(invisible(obj))
 	}
 
@@ -226,9 +291,9 @@
 		"  Une p-value est la probabilit\u00e9 de donn\u00e9es au moins aussi extr\u00eames s'il n'y avait pas de diff\u00e9rence : ni l'un ni l'autre ci-dessus.")
 	say("  A difference between groups observed without randomisation does not show a cause.",
 		"  Une diff\u00e9rence entre groupes observ\u00e9s sans tirage au sort ne montre pas une cause.")
-	say(paste0("  Support: weak under ", 100 * breaks[1L], " %, moderate under ", 100 * breaks[2L],
-			" %, strong under ", 100 * breaks[3L], " %, then very strong."),
-		paste0("  Soutien : faible sous ", 100 * breaks[1L], " %, mod\u00e9r\u00e9 sous ", 100 * breaks[2L],
-			" %, fort sous ", gsub(".", ",", 100 * breaks[3L], fixed = TRUE), " %, puis tr\u00e8s fort."))
+	say(paste0("  Support: none under ", 100 * breaks[1L], " %, weak under ", 100 * breaks[2L], " %, moderate under ", 100 * breaks[3L],
+			" %, strong under ", 100 * breaks[4L], " %, then very strong."),
+		paste0("  Soutien : aucun sous ", 100 * breaks[1L], " %, faible sous ", 100 * breaks[2L], " %, mod\u00e9r\u00e9 sous ", 100 * breaks[3L],
+			" %, fort sous ", gsub(".", ",", 100 * breaks[4L], fixed = TRUE), " %, puis tr\u00e8s fort."))
 	invisible(obj)
 }

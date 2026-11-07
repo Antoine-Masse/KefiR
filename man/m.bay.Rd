@@ -33,7 +33,8 @@ m.bay(
   laws = c("normal_eq", "normal_het", "t_eq", "t_het"),
   sensitivity = TRUE,
   draws = 4000L,
-  seed = 1L
+  seed = 1L,
+  detail = FALSE
 )
 }
 \arguments{
@@ -84,6 +85,9 @@ The bilan says so when it is switched off.}
 \item{draws}{Importance draws per model. Default 4000.}
 
 \item{seed}{Seed of this call. The global random state is left untouched.}
+
+\item{detail}{If \code{TRUE}, the bilan also shows the shapes of the noise, the priors that
+are varied and how to read the numbers. Also \code{print(result, detail = TRUE)}.}
 }
 \value{
 With \code{return = TRUE}, a list of class \code{mbay}:
@@ -107,8 +111,9 @@ factor within that law.}
 not "how surprising are these data if there is no effect?", but "how probable is
 each hypothesis given these data?". Its main result is a bilan: the hypotheses,
 ranked from the most to the least probable, with their posterior probability and
-a plain qualifier, then the answer for each term ("does the temperature have an
-effect? yes with this probability, no with that one").
+a plain qualifier, then the answer for each term ("does the yield differ according
+to the temperature? yes with this probability, no with that one"). A difference between
+groups observed without randomisation does not show a cause.
 
 A probability of a hypothesis depends on priors. The bilan always states them and
 always shows how far the answer moves when they change. If the priors can change
