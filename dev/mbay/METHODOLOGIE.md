@@ -97,13 +97,14 @@ Modèles à 2 facteurs [main ; 0,6 et 0,2 : relecteur, agent]. **Le choix fixe t
 - L'uniforme ne part pas de 1/2 et favorise les effets principaux : 0,737 à 3 facteurs, 0,316 et 0,053 pour les interactions [agent, relecteur].
 - L'hérédité forte n'est **pas publiée telle quelle** : l'idée vient de la littérature sur les prédicteurs liés [Chipman1996], le réglage est propre à KefiR.
 
-**À 3 facteurs, l'hérédité forte n'est pas définie de façon unique.** Tranché le 7 novembre (D2) pour la troisième ligne :
+**À 3 facteurs, l'hérédité forte n'est pas définie de façon unique.** Tranché le 9 novembre (D2) pour la dernière ligne :
 
 | Variante | P(A) | P(A:B) | P(A:B:C) | P(nul) | Statut |
 |---|---:|---:|---:|---:|---|
 | π = 1/2 à chaque ordre (celle de D2) | 1/2 | 1/8 | 1/128 | 1/8 | [main], non programmée |
 | π^k à l'ordre k (`agent_20`) | 1/2 | 1/16 | 1/4096 | 1/8 | [exécuté par l'agent] |
-| **π ~ Beta(1,1) intégrée sur les termes éligibles, p(M) = B(1+s, 1+e−s) [ScottBerger2010, éq. 8-9]** | 1/2 | 1/4 | 1/8 | 1/4 | **retenue le 7 novembre, D2** ; calcul exact de `agent_47` |
+| π ~ Beta(1,1) commune aux termes éligibles (HUP de [TaylorRodriguez2016]) | 1/2 | 1/4 | 1/8 | 1/4 | candidate du 7 novembre, **écartée** : A:B à 3/4 sachant A et B, fausses interactions (D2) |
+| **Une π_j ~ Beta(1,1) par ordre (HOP(1,1) de [TaylorRodriguez2016])** | 1/2 | 1/6 | 1/32 | 1/4 | **retenue le 9 novembre (D2)**, programmée dans `.bay_fact_prior` |
 
 **La seconde donne 1/16 à 2 facteurs, pas le 1/8 annoncé dans D2** : les chiffres d'`agent_20` étiquetés « hérédité » ne portent donc pas sur la loi annoncée. L'uniforme y a pour a priori P(nul) = 1/19 ≈ 0,053.
 

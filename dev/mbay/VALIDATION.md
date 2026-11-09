@@ -406,3 +406,35 @@ Moyenne sur 10 graines : 5 cas sur 6 à moins d'une erreur standard, un à −2,
 ### Concordance avec la voie interne à un facteur
 
 `lmBF(y ~ g)` et la première forme de `normal_eq` : écart < 1e-4 à k = 2, 3, 5 et r = 0,25, 0,5, 1 (`test-bay-factorial.R`).
+
+### Effets fixes, plans déséquilibrés, à côté d'aov de type II (`agent_50 B`)
+
+Cases : 2×2 (4, 8, 12, 16) ; 2×3 (3, 9, 5, 7, 10, 4) ; 2×2×2 (3 à 8). Effets ±f (−f, 0, f pour 3 niveaux), σ = 1. N = 300 par cas (2×2×2 : 150). m.bay : loi HOP, r = 0,5. « Faux » = terme sans effet réel ; aov : `car::Anova(type = 2)`, contrastes somme nulle.
+
+| Cas | m.bay : un faux terme P>0,5 / P>0,95 | aov : un faux p<0,05 | m.bay : vrai P>0,5 | aov : vrai p<0,05 |
+|---|---:|---:|---:|---:|
+| 2×2 sous H0 | 0,083 / 0,003 | 0,127 | – | – |
+| 2×2, A et B, f = 0,25 | 0,017 / 0 | 0,070 | 0,355 | 0,302 |
+| 2×2, A et B, f = 0,5 | 0,073 / 0 | 0,070 | 0,907 | 0,808 |
+| 2×2, A:B seule, f = 0,5 | (A, B : 0,653 / 0,180, voir ci-dessous) | 0,337 | 0,427 | 0,763 |
+| 2×3 sous H0 | 0,097 / 0,003 | 0,123 | – | – |
+| 2×3, A et B, f = 0,5 | 0,017 / 0,003 | 0,047 | 0,610 | 0,640 |
+| 2×3, A, B et A:B, f = 0,5 | 0 / 0 | 0 | 0,656 | 0,623 |
+| 2×2×2 sous H0 | 0,120 / 0 | 0,313 | – | – |
+| 2×2×2, A, B, C, f = 0,5 | 0,140 / 0 | 0,200 | 0,933 | 0,887 |
+
+**Lecture.** Sous H0, moins de « oui » à P>0,5 que de p<0,05 sur au moins un terme (8 à 12 % contre 12 à 31 %), et presque jamais P>0,95. Effets additifs : puissance comparable à aov, fausse interaction 1,7 à 7 %. **Interaction seule** : A et B y sont « oui » dans 65 % des jeux. C'est voulu par la question posée (« y diffère selon A, seul ou en interaction » : A joue bien, par l'interaction), et l'hérédité l'impose ; ce n'est pas une erreur de type I au sens d'aov, qui teste l'effet principal moyen. Le prix est ailleurs : **l'interaction réelle est moins souvent détectée** (P(A:B)>0,5 dans 43 % contre 76 % de p<0,05), parce qu'elle part de 1/6 a priori ; les seuils ne sont pas équivalents. À annoncer dans la documentation.
+
+**Non simulé** : facteurs à plus de 3 niveaux, 4 facteurs, plans très déséquilibrés (rapport > 5 entre cases).
+
+### Calibration sous l'a priori (`agent_50 A`, N = 1 200 jeux par plan)
+
+Modèle tiré selon la loi HOP, g ~ InvGamma(1/2, r²/2) par terme, effets sur le codage de BayesFactor (`fullDesignMatrix`), σ = 1. Probabilité annoncée par terme contre fréquence du terme vrai.
+
+| Plan | Ensemble : annoncé / vrai | z | Aucun effet : annoncé / vrai |
+|---|---|---:|---|
+| 2×2, 5 par case | 0,384 / 0,390 | 0,87 | 0,340 / 0,323 |
+| 2×3 déséquilibré | 0,396 / 0,399 | 0,55 | 0,324 / 0,323 |
+| 2×2 déséquilibré | 0,392 / 0,399 | 1,20 | 0,328 / 0,323 |
+
+Par tranche (0 à 0,1 ; 0,1 à 0,3 ; … ; 0,9 à 1), l'écart dépasse 0,03 seulement dans la tranche 0,5 à 0,7 : annoncé 0,585 à 0,589, observé 0,623 à 0,632, dans les trois plans (environ 230 termes par plan, soit un peu plus d'une erreur standard chacun). Légère prudence possible à ce niveau, sans effet sur les seuils de 0,75 et 0,95. À 600 jeux, le 2×2 déséquilibré donnait z = 2,48 : non confirmé à 1 200. Un jeu tiré avec g = 2·10⁴ faisait échouer l'`integrate` de `lmBF` (NA) : les modèles à un seul effet principal passent désormais par le calcul interne, et le jeu a été recalculé.

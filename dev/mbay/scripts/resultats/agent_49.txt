@@ -1,0 +1,31 @@
+R version 4.6.1 (2026-06-24 ucrt)
+A priori : inclusion de chaque terme, et P(A:B | A et B presents)
+2x2 half       somme 1.000000 | A 0.5000, B 0.5000, A:B 0.1250 | nul 0.2500 | P(A:B | A et B) 0.500
+2x2 beta       somme 1.000000 | A 0.5000, B 0.5000, A:B 0.2500 | nul 0.3333 | P(A:B | A et B) 0.750
+2x2 beta_ordre somme 1.000000 | A 0.5000, B 0.5000, A:B 0.1667 | nul 0.3333 | P(A:B | A et B) 0.500
+2x2 hop_ch     somme 1.000000 | A 0.3333, B 0.3333, A:B 0.0833 | nul 0.5000 | P(A:B | A et B) 0.500
+2x2 taille     somme 1.000000 | A 0.6250, B 0.6250, A:B 0.2500 | nul 0.2500 | P(A:B | A et B) 0.500
+2x2 unif       somme 1.000000 | A 0.6000, B 0.6000, A:B 0.2000 | nul 0.2000 | P(A:B | A et B) 0.500
+2x2x2 half       somme 1.000000 | A 0.5000, B 0.5000, C 0.5000, A:B 0.1250, A:C 0.1250, B:C 0.1250, A:B:C 0.0078 | nul 0.1250 | P(A:B | A et B) 0.500
+2x2x2 beta       somme 1.000000 | A 0.5000, B 0.5000, C 0.5000, A:B 0.2500, A:C 0.2500, B:C 0.2500, A:B:C 0.1250 | nul 0.2500 | P(A:B | A et B) 0.750
+2x2x2 beta_ordre somme 1.000000 | A 0.5000, B 0.5000, C 0.5000, A:B 0.1667, A:C 0.1667, B:C 0.1667, A:B:C 0.0312 | nul 0.2500 | P(A:B | A et B) 0.500
+2x2x2 hop_ch     somme 1.000000 | A 0.2500, B 0.2500, C 0.2500, A:B 0.0375, A:C 0.0375, B:C 0.0375, A:B:C 0.0013 | nul 0.5000 | P(A:B | A et B) 0.375
+2x2x2 taille     somme 1.000000 | A 0.7188, B 0.7188, C 0.7188, A:B 0.4063, A:C 0.4063, B:C 0.4063, A:B:C 0.1250 | nul 0.1250 | P(A:B | A et B) 0.672
+2x2x2 unif       somme 1.000000 | A 0.7368, B 0.7368, C 0.7368, A:B 0.3158, A:C 0.3158, B:C 0.3158, A:B:C 0.0526 | nul 0.0526 | P(A:B | A et B) 0.545
+
+Faux termes = sans effet reel ; vrais = a effet. Par loi : P(un faux terme > .5), P(un faux terme > .95), P(vrai > .5) moyenne.
+aov : P(un faux terme p<.05), P(vrai p<.05) moyenne.
+2x2_n10_H0_f0 (N=300) | half 0.163 0.000 - | beta 0.120 0.000 - | beta_ordre 0.120 0.000 - | hop_ch 0.040 0.000 - | taille 0.180 0.003 - | unif 0.227 0.003 - | aov 0.160 -
+2x2_n25_H0_f0 (N=300) | half 0.110 0.000 - | beta 0.060 0.000 - | beta_ordre 0.060 0.000 - | hop_ch 0.030 0.000 - | taille 0.093 0.000 - | unif 0.140 0.000 - | aov 0.140 -
+2x2_n10_A-B_f25 (N=300) | half 0.017 0.000 0.442 | beta 0.050 0.003 0.428 | beta_ordre 0.020 0.003 0.438 | hop_ch 0.013 0.000 0.275 | taille 0.027 0.003 0.602 | unif 0.020 0.003 0.548 | aov 0.047 0.358
+2x2_n10_A-B_f50 (N=300) | half 0.043 0.003 0.900 | beta 0.413 0.003 0.940 | beta_ordre 0.057 0.003 0.947 | hop_ch 0.043 0.003 0.865 | taille 0.067 0.003 0.992 | unif 0.057 0.003 0.957 | aov 0.043 0.882
+2x2_n25_A-B_f25 (N=300) | half 0.017 0.000 0.683 | beta 0.100 0.000 0.678 | beta_ordre 0.023 0.000 0.715 | hop_ch 0.017 0.000 0.592 | taille 0.030 0.000 0.840 | unif 0.023 0.000 0.787 | aov 0.030 0.692
+2x2_n25_A-B_f50 (N=300) | half 0.073 0.000 0.997 | beta 0.480 0.003 1.000 | beta_ordre 0.077 0.000 1.000 | hop_ch 0.073 0.000 0.997 | taille 0.080 0.000 1.000 | unif 0.077 0.000 1.000 | aov 0.047 0.997
+2x2_n10_AB_f25 (N=300) | half 0.187 0.007 0.050 | beta 0.150 0.010 0.083 | beta_ordre 0.133 0.007 0.067 | hop_ch 0.070 0.003 0.030 | taille 0.257 0.013 0.097 | unif 0.293 0.010 0.083 | aov 0.067 0.327
+2x2_n10_AB_f50 (N=300) | half 0.607 0.153 0.397 | beta 0.623 0.203 0.503 | beta_ordre 0.577 0.163 0.443 | hop_ch 0.383 0.103 0.307 | taille 0.717 0.223 0.543 | unif 0.733 0.217 0.497 | aov 0.113 0.863
+2x2_n25_AB_f25 (N=300) | half 0.367 0.047 0.183 | beta 0.383 0.057 0.267 | beta_ordre 0.340 0.047 0.200 | hop_ch 0.173 0.023 0.107 | taille 0.437 0.063 0.303 | unif 0.453 0.063 0.273 | aov 0.110 0.717
+2x2_n25_AB_f50 (N=300) | half 0.960 0.780 0.927 | beta 0.960 0.797 0.953 | beta_ordre 0.957 0.787 0.930 | hop_ch 0.913 0.683 0.893 | taille 0.977 0.817 0.957 | unif 0.977 0.813 0.947 | aov 0.107 1.000
+2x2x2_n5_H0_f0 (N=200) | half 0.230 0.000 - | beta 0.110 0.000 - | beta_ordre 0.115 0.000 - | hop_ch 0.050 0.000 - | taille 0.210 0.000 - | unif 0.455 0.005 - | aov 0.305 -
+2x2x2_n10_H0_f0 (N=200) | half 0.180 0.010 - | beta 0.045 0.005 - | beta_ordre 0.050 0.005 - | hop_ch 0.020 0.000 - | taille 0.115 0.010 - | unif 0.265 0.015 - | aov 0.315 -
+2x2x2_n5_A-B-C_f25 (N=200) | half 0.015 0.000 0.398 | beta 0.055 0.000 0.332 | beta_ordre 0.025 0.000 0.387 | hop_ch 0.005 0.000 0.190 | taille 0.080 0.000 0.570 | unif 0.065 0.000 0.683 | aov 0.115 0.347
+2x2x2_n5_A-B-C_f50 (N=200) | half 0.085 0.000 0.858 | beta 0.440 0.000 0.888 | beta_ordre 0.065 0.000 0.938 | hop_ch 0.005 0.000 0.808 | taille 0.370 0.000 0.980 | unif 0.215 0.000 0.982 | aov 0.190 0.862

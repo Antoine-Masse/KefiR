@@ -1,0 +1,12 @@
+R version 4.6.1 (2026-06-24 ucrt)
+B. Effets fixes, plans desequilibres, N = 300 par cas (2x2x2 : N/2)
+cas : m.bay P(un faux terme)>.5, >.95, P(vrai)>.5 moyenne | aov type II : un faux p<.05, vrai p<.05 moyenne
+B_2x2_deseq_H0_f0 (N=300) : 0.083 0.003 - | 0.127 -
+B_2x2_deseq_A-B_f50 (N=300) : 0.073 0.000 0.907 | 0.070 0.808
+B_2x2_deseq_AB_f50 (N=300) : 0.653 0.180 0.427 | 0.337 0.763
+B_2x2_deseq_A-B_f25 (N=300) : 0.017 0.000 0.355 | 0.070 0.302
+B_2x3_deseq_H0_f0 (N=300) : 0.097 0.003 - | 0.123 -
+B_2x3_deseq_A-B_f50 (N=300) : 0.017 0.003 0.610 | 0.047 0.640
+B_2x3_deseq_A-B-AB_f50 (N=300) : 0.000 0.000 0.656 | 0.000 0.623
+B_2x2x2_deseq_H0_f0 (N=150) : 0.120 0.000 - | 0.313 -
+B_2x2x2_deseq_A-B-C_f50 (N=150) : 0.140 0.000 0.933 | 0.200 0.887

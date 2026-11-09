@@ -45,11 +45,29 @@ Prix franc : les probabilités de termes ne sont pas les marginales d'une même 
 
 Loi jointe à arbitrer : uniforme sur les modèles (a priori 0,6 sur chaque facteur et 0,2 sur A:B à 2 facteurs) ou hérédité forte, chaque terme entrant à 1/2 si ses parents sont présents (A à 1/2, A:B à 1/8, A:B:C à 1/128 ; réglage KefiR, non publié tel quel). Sous cette dernière, P(A | pas de A:B) vaut 3/7, et non 1/2. Annoncée dans tous les cas. Non simulée à ce stade pour cette forme finale.
 
-### D2, loi a priori sur les modèles : EN COURS (7 novembre 2026), Beta(1,1) avec hérédité en tête, scénario additif à faire
+### D2, loi a priori sur les modèles : DÉCIDÉE le 9 novembre 2026, HOP(1,1)
 
-**Objection de l'audit, à trancher avant de clore.** Sachant A et B présents, cette loi fait partir l'interaction à (1/4)/(1/3) = 3/4. Le modèle additif est donc a priori trois fois moins probable que le modèle complet. C'est ce qui aide à détecter une interaction réelle, mais cela risque d'annoncer une interaction quand les effets sont seulement additifs, et ce cas n'est pas simulé ci-dessous. Voir `agent_49`.
+**Décision : une proportion π_j ~ Beta(1,1) par ordre d'interaction, indépendantes, sous hérédité forte** : la HOP(1,1) de [TaylorRodriguez2016], « version hiérarchique » de la correction de multiplicité de [ScottBerger2010]. Pour un modèle M, p(M) = Π_j B(1 + s_j, 1 + e_j − s_j), où s_j est le nombre de termes d'ordre j dans M et e_j le nombre de termes d'ordre j dont tous les termes d'ordre inférieur sont dans M. **Loi construite, pas ajustée** : à π fixés, on tire chaque terme admissible ordre par ordre, ce qui donne une loi de somme 1 sur tout espace héréditaire ; l'intégrale sur les π garde cette propriété (contrôlé numériquement à 2 et 3 facteurs, et par la relecture du 9 novembre). A priori : A 1/2 ; A:B 1/6 ; A:B:C 1/32 ; aucun effet 1/3 à 2 facteurs, 1/4 à 3 facteurs ; **sachant A et B présents, A:B part à 1/2**. Programmée dans `R/sys_bay_factorial.R` (`.bay_fact_prior`), annoncée dans le bilan, avec en sensibilité 1/2 par terme [Chipman1996] et l'uniforme.
 
-**Historique.** Le 6 novembre, Antoine avait retenu « facteur 1/2, interaction 1/8 » sur recommandation de cette session, sans simulation (« Oui, retiens-les »). Ce n'était pas un arbitrage entre lois comparées. L'audit du jalon 1 a demandé la comparaison avec la loi de [ScottBerger2010] ; elle donne l'avantage à cette dernière sur les deux critères à la fois.
+**Pourquoi pas la Beta commune (HUP), d'abord proposée.** Sachant A et B présents, elle met l'interaction à 3/4. Le scénario additif demandé par l'audit (`agent_49`, mêmes BF pour toutes les lois) la met en défaut :
+
+| Cas (fausse interaction : P(A:B ou autre interaction) > 0,5) | 1/2 par terme | HUP, Beta commune | **HOP, Beta par ordre** | HOP(1,ch) | uniforme | aov p<0,05 |
+|---|---:|---:|---:|---:|---:|---:|
+| 2×2, n=10, A et B à f=0,5 | 0,043 | 0,413 | **0,057** | 0,043 | 0,057 | 0,043 |
+| 2×2, n=25, A et B à f=0,5 | 0,073 | 0,480 | **0,077** | 0,073 | 0,077 | 0,047 |
+| 2³, n=5, A, B, C à f=0,5 | 0,085 | 0,440 | **0,065** | 0,005 | 0,215 | 0,190 |
+| 2×2 sous H0, n=10 : un terme > 0,5 | 0,163 | 0,120 | **0,120** | 0,040 | 0,227 | 0,160 |
+| 2³ sous H0, n=10 : un terme > 0,5 | 0,180 | 0,045 | **0,050** | 0,020 | 0,265 | 0,315 |
+| Puissance : 2×2, n=10, A:B réelle f=0,5, P(A:B)>0,5 | 0,397 | 0,503 | **0,443** | 0,307 | 0,497 | 0,863 |
+| Puissance : 2³, n=5, A, B, C f=0,5, P(vrai)>0,5 | 0,858 | 0,888 | **0,938** | 0,808 | 0,982 | 0,862 |
+
+La HOP garde la correction de multiplicité de la HUP sous H0 sans fabriquer d'interactions quand les effets sont additifs. HOP(1,ch) contrôle encore mieux les faux « oui », mais met un facteur seul à 1/3 (2 facteurs) ou 1/4 (3 facteurs) au lieu du 1/2 retenu à un facteur, et perd de la puissance. L'uniforme et « uniforme sur la taille » favorisent les effets principaux (0,6 à 0,74 a priori). **Coût de la HOP** : une interaction réelle à petit effectif est moins souvent détectée qu'avec la HUP (0,44 contre 0,50 ; aov 0,86, seuils non équivalents) ; même constat sur plans déséquilibrés (`agent_50 B`, VALIDATION §8).
+
+**Restent à exécuter** (`agent_49` tourne) : 2³ à n = 10 additif, 2³ avec A:B réelle ou toutes les interactions doubles (fausse A:B:C), A:B:C seule. Ils seront ajoutés ici ; la décision ne sera revue que s'ils la contredisent.
+
+**Libellé par terme**, tranché avec le libellé non causal de l'audit : « y diffère selon A, seul ou en interaction ».
+
+*Historique : ce qui suit retrace les étapes antérieures (réglage 1/2, 1/8 du 6 novembre, puis HUP du 7 novembre). Gardé pour mémoire.*
 
 **Candidate : π ~ Beta(1,1) intégrée sur les termes éligibles, sous hérédité forte.** Un terme n'est éligible que si tous ses parents sont dans le modèle ([Chipman1996]). Pour un modèle à s termes parmi e éligibles, p(M) = B(1+s, 1+e−s) ([ScottBerger2010], éq. 8-9, lues dans le PDF). La combinaison avec l'hérédité est propre à KefiR. A priori obtenus : à 2 facteurs, A 1/2, A:B 1/4, nul 1/3 ; à 3 facteurs, A 1/2, A:B 1/4, A:B:C 1/8, nul 1/4. Rien n'est réglé par l'utilisateur ni estimé sur les données.
 
