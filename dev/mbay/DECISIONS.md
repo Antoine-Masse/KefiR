@@ -2,7 +2,13 @@
 
 État : **ARBITRÉ** = tranché par Antoine ; **DÉCIDÉ** = tranché ici par la session de développement, sur consigne d'autonomie d'Antoine du 6 novembre, réversible si des résultats le contredisent ; **PROPOSÉ** = en attente d'un jalon à venir, réversible sur cette branche ; **ACQUIS** = imposé par sa consigne ou sans alternative sérieuse. Chiffres : `VALIDATION.md`. Modèles et formules : `METHODOLOGIE.md`.
 
-## D1. Moteur de calcul : PROPOSÉ
+## D1. Moteur de calcul : ARBITRÉE par Antoine le 9 novembre 2026 pour plusieurs facteurs
+
+**Plusieurs facteurs : BayesFactor en Imports.** Mots d'Antoine, transmis par « KefiR officiel » : « Oui, via BayesFactor ». Les vraisemblances marginales des modèles viennent de `BayesFactor::lmBF` ([BayesFactor], [Rouder2012]) ; KefiR n'écrit que l'assemblage (`R/sys_bay_factorial.R`) : espace des modèles héréditaires, loi a priori D2, probabilité par terme, sensibilité, bilan. Loi normale à variance commune seulement à ce jalon ; queues lourdes et variances inégales à plusieurs facteurs viendront plus tard, sans Stan si possible. **Un facteur** : le calcul interne déjà validé (huit modèles) est gardé ; à un facteur, `lmBF` et la première forme de `normal_eq` concordent à 1e-4 (k = 2, 3, 5 ; test `test-bay-factorial.R`).
+
+**Principe pour la suite, ARBITRÉ par Antoine le 9 novembre** (ses mots, transmis par « KefiR officiel ») : « Oui, comme m.test() qui croise de nombreuses libraires R, m.bay() doit pouvoir faire de même. » Pour chaque étape suivante (ANCOVA, apparié, mesures répétées, mixte, MANOVA, discret, voies robustes), chercher d'abord un paquet R établi qui fait le calcul (BayesFactor, bayestestR, BAS ; rstanarm ou brms pour les voies lourdes) et l'appeler, plutôt que d'écrire un moteur. Le code interne reste pour ce qu'aucun paquet ne fait, comme la comparaison de lois à un facteur. Pour chaque paquet : Imports ou Suggests selon son poids et sa nécessité, motif consigné ici, version et référence citées, contrôle indépendant. Dépendance lourde (compilateur, Stan) : Suggests, avec un message clair si elle manque.
+
+*Proposition d'origine, gardée pour mémoire :*
 
 | Plan | Moteur proposé | Coût pour `install_github` |
 |---|---|---|

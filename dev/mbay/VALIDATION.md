@@ -382,3 +382,27 @@ L'avis s'affiche quand P(loi t | données) ≥ 0,95.
 ### Tests
 
 Sur le code final : `test-bay-core` 237, `test-bay-oneway` 27, `test-m.bay` 57, `test-bay-laws` 77, `test-m.test` 52, `test-valreg` 12, `test-manova` 59 assertions, 0 échec, 0 erreur. Versions de code par lancement : JOURNAL.
+
+## 8. `m.bay()` à plusieurs facteurs, loi normale à variance commune, via BayesFactor (9 novembre)
+
+Vraisemblances : `BayesFactor::lmBF` 0.9.12-4.8 (D1). KefiR : espace héréditaire, loi HOP (D2), probabilité par terme, sensibilité, bilan (`R/sys_bay_factorial.R`).
+
+### Calcul indépendant (`agent_51`, agent qui n'a lu ni `R/`, ni `tests/`, ni ces documents)
+
+Trois plans 2×2 (5 par case ; 3, 7, 4, 9 ; 10 par case), modèles A, B, A+B, A+B+A:B contre le modèle constant. Référence : forme fermée à g fixés, puis trapèzes en log g (1D, 2D, 3D), convergence ≤ 7e-10, recoupée par Monte-Carlo naïf dans l'a priori des g.
+
+| Modèles | Écart `lmBF` − référence sur le log BF |
+|---|---|
+| À un terme (6) | < 1e-6 |
+| A+B (3) | 0,0008 à 0,0015 |
+| A+B+A:B (3) | 0,0001 à 0,023 |
+
+Moyenne sur 10 graines : 5 cas sur 6 à moins d'une erreur standard, un à −2,5 (jeu déséquilibré, A+B, −0,006 sur le log BF), compatible avec le hasard sur 6 comparaisons. Codage lu dans le paquet installé : base orthonormée du complément de 1 (`fixedFromRandomProjection`), produits pour les interactions, r « medium » = 0,5 par terme.
+
+**L'erreur annoncée par BayesFactor sous-estime son bruit** sur les modèles à plusieurs termes : écart-type entre graines 0,014 à 0,026 sur le log BF, contre 0,003 à 0,010 annoncés à 1e5 itérations. Recontrôlé par moi : à 1e4, 1e5 itérations, écart-type 0,022 et 0,020 (il ne baisse presque pas), erreur annoncée 0,018 et 0,013. KefiR garde 10 000 itérations et annonce au moins 3 % d'erreur dès qu'un modèle a plusieurs termes. Ce bruit (2 % sur le BF) ne change aucune conclusion à 3 décimales de probabilité près, sauf au voisinage immédiat d'un seuil.
+
+**Non vérifié** : facteurs à plus de 2 niveaux (base de dimension ≥ 2), plus de deux facteurs, r ≠ 0,5, code C++ de l'a priori multi-termes.
+
+### Concordance avec la voie interne à un facteur
+
+`lmBF(y ~ g)` et la première forme de `normal_eq` : écart < 1e-4 à k = 2, 3, 5 et r = 0,25, 0,5, 1 (`test-bay-factorial.R`).

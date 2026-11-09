@@ -171,7 +171,11 @@
 	eff <- eff[match(.bay_term_key(terms), .bay_term_key(eff$term)), , drop = FALSE]
 	eff$term <- terms
 	eff$rscale <- rscale
-	err_pct <- 100 * max(bf$error[, ic], na.rm = TRUE)
+	# The error BayesFactor reports can underestimate the spread between seeds on models with
+	# several terms: sd 0.014 to 0.026 on the log BF against 0.003 to 0.010 reported at 1e5
+	# iterations, 0.022 against 0.018 at 1e4 (agent_51, VALIDATION). Floor of 0.03 for those.
+	multi <- lengths(sp$models) >= 2L
+	err_pct <- 100 * max(bf$error[, ic], if (any(multi)) 0.03, na.rm = TRUE)
 	eff$error_pct <- err_pct
 	rownames(eff) <- NULL
 	p_null <- .bay_fact_null(bf$log_bf[, ic], lp)
