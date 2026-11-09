@@ -157,7 +157,11 @@ Remplace le §6 pour cette voie. Tout se reproduit par les commandes du JOURNAL,
 | Première forme, normale : `.bay_bf_oneway_zs`, `anovaBF` ; k=2 : `ttestBF` | < 1e-4 (tests) | `test-bay-laws.R` |
 | Noyau et constantes à k=3 contre intégration brute | ≤ 2e-3 (relecteur, sur le code d'avant le mélange) | `relecture/agent_rev3_03` |
 
-**Non comparé** : t à variance par groupe à k ≥ 3, et la seconde forme à variance par groupe (normale ou t) : trop de dimensions pour une quadrature. Ces parties reposent sur la calibration ci-dessous.
+| t et normale à variance par groupe, k=3, H0, première forme, seconde forme pour chaque groupe s, et leur mélange, 3 jeux (graines 4501 à 4503) | log m : écart moyen ≤ 0,021, extrêmes -0,075 et +0,041 sur 3 graines KefiR à 4 000 tirages ; log BF mélange contre H0 : ≤ 0,061 (6 % sur le BF), sans biais de signe | référence `agent_45`, comparaison `agent_48` |
+
+**Référence `agent_45`** : écrite par un agent qui n'avait pas lu `sys_bay_laws.R`, sur la seule spécification des a priori. Monte-Carlo naïf dans l'a priori (ϑ, ν, g et, pour t, les échelles λ_ij du mélange), μ, τ et l'effet intégrés exactement ; 10^8 tirages en t, 10^7 en normale ; erreur standard ≤ 0,0008. Contrôlée par quadratures déterministes (normale à variance par groupe, 5 formes ; t à variance par groupe sous H0, par une factorisation propre) à 1,5 erreur standard près, et par un Monte-Carlo entièrement direct, grossier. Pour t à variance par groupe sous H1, la référence est ce seul Monte-Carlo, de conditionnelle vérifiée. La référence porte sur y brut ; KefiR standardise y par l'écart-type intra-groupe poolé s_p, d'où le décalage (N−1) log s_p, que l'accord à 0,01 près confirme.
+
+**Non comparé** : k ≥ 4 à variance par groupe ; la loi t à variance par groupe sous H1 n'a pas de quadrature déterministe.
 
 ### Calibration sous l'a priori
 
@@ -361,6 +365,19 @@ n=1e4 par groupe, k=2 : log BF -3.734, P 0.0233, err 0.0%
 ```
 
 Pentes conformes au calcul à la main : d^(n_s + 2u − 2) une fois la seconde forme en jeu. Avant correction, k=20, n_s=3, d=10 donnait P(H1) = 0,17 (RELECTURE, B1). B2 : plancher à log BF ≈ 2,4, contre 3,18 pour les deux groupes seuls.
+
+### Seuil de l'avis « queues lourdes » (`agent_46`, N=300 par plan, 1500 tirages)
+
+L'avis s'affiche quand P(loi t | données) ≥ 0,95.
+
+| Données, k=2 et 3 | n=10 | n=30 | n=100 |
+|---|---:|---:|---:|
+| Normales, sans effet : fausse alerte | 0,3 à 0,7 % | 1,0 à 1,3 % | 0 à 0,3 % |
+| Normales, d=0,5 : fausse alerte | 0 % | 0 à 0,3 % | 0 % |
+| t3 : détection | 12 à 25 % | 52 à 75 % | 97 à 100 % |
+| Lognormale contre normale : détection | 7 à 9 % | 29 à 43 % | 72 à 81 % |
+
+À 0,9, la fausse alerte reste ≤ 1,3 % et la détection sur t3 gagne 4 à 9 points ; à 0,99, la fausse alerte tombe à 0 et la détection perd 5 à 15 points. 0,95 est retenu comme le seuil du « très probablement » du bilan. Contradiction (m.bay > 0,75 alors que la meilleure loi normale donne < 0,5, ou l'inverse) : jamais sur données normales, 0 à 9 % sur t3, jusqu'à 22 % sur lognormale à n=100, où la comparaison des centres diffère de celle des moyennes ; le bilan l'annonce alors en première ligne et plafonne le soutien.
 
 ### Tests
 

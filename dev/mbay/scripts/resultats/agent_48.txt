@@ -1,0 +1,51 @@
+R version 4.6.1 (2026-06-24 ucrt) 
+KefiR (4000 tirages, 3 graines) moins reference agent_45, en log m ; y standardise.
+   jeu        loi   forme  ecart.moy ecart.min ecart.max
+1    1 normal_het      H0 -1.033e-03   -0.0114    0.0049
+2    2 normal_het      H0  2.567e-03   -0.0141    0.0121
+3    3 normal_het      H0 -1.020e-02   -0.0108   -0.0098
+4    1      t_het      H0 -1.040e-02   -0.0290    0.0067
+5    2      t_het      H0  1.250e-02    0.0046    0.0173
+6    3      t_het      H0 -6.933e-03   -0.0119    0.0029
+7    1 normal_het melange -8.467e-03   -0.0134    0.0010
+8    2 normal_het melange -4.567e-03   -0.0201    0.0059
+9    3 normal_het melange  4.300e-03   -0.0052    0.0127
+10   1      t_het melange  5.267e-03    0.0002    0.0133
+11   2      t_het melange -1.167e-02   -0.0432    0.0046
+12   3      t_het melange -1.113e-02   -0.0315    0.0033
+13   1      t_het      s1  1.763e-02   -0.0015    0.0405
+14   2      t_het      s1  2.100e-02    0.0101    0.0320
+15   3      t_het      s1 -3.867e-03   -0.0200    0.0216
+16   1      t_het      s2 -3.333e-05   -0.0122    0.0120
+17   2      t_het      s2 -3.200e-03   -0.0285    0.0197
+18   3      t_het      s2  6.833e-03   -0.0016    0.0129
+19   1      t_het      s3 -1.027e-02   -0.0235    0.0126
+20   2      t_het      s3 -1.203e-02   -0.0498    0.0116
+21   3      t_het      s3 -1.337e-02   -0.0219   -0.0067
+22   1 normal_het    tous -8.600e-03   -0.0135    0.0009
+23   2 normal_het    tous -5.233e-03   -0.0210    0.0049
+24   3 normal_het    tous  4.033e-03   -0.0056    0.0124
+25   1      t_het    tous  5.100e-03   -0.0144    0.0242
+26   2      t_het    tous -1.890e-02   -0.0750    0.0170
+27   3      t_het    tous -2.143e-02   -0.0342   -0.0055
+
+Ecart sur le log BF du melange contre H0 (KefiR - reference) :
+   jeu        loi rep   ecart
+1    1 normal_het   1 -0.0039
+2    2 normal_het   1 -0.0092
+3    3 normal_het   1  0.0154
+4    1      t_het   1  0.0112
+5    2      t_het   1 -0.0010
+6    3      t_het   1  0.0151
+7    1 normal_het   2 -0.0168
+8    2 normal_het   2 -0.0062
+9    3 normal_het   2  0.0046
+10   1      t_het   2  0.0066
+11   2      t_het   2 -0.0110
+12   3      t_het   2 -0.0344
+13   1 normal_het   3 -0.0016
+14   2 normal_het   3 -0.0060
+15   3 normal_het   3  0.0235
+16   1      t_het   3  0.0292
+17   2      t_het   3 -0.0605
+18   3      t_het   3  0.0067

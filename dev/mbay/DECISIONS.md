@@ -39,9 +39,32 @@ Prix franc : les probabilités de termes ne sont pas les marginales d'une même 
 
 Loi jointe à arbitrer : uniforme sur les modèles (a priori 0,6 sur chaque facteur et 0,2 sur A:B à 2 facteurs) ou hérédité forte, chaque terme entrant à 1/2 si ses parents sont présents (A à 1/2, A:B à 1/8, A:B:C à 1/128 ; réglage KefiR, non publié tel quel). Sous cette dernière, P(A | pas de A:B) vaut 3/7, et non 1/2. Annoncée dans tous les cas. Non simulée à ce stade pour cette forme finale.
 
-### D2, loi a priori des hypothèses : ARBITRÉE par Antoine le 6 novembre 2026
+### D2, loi a priori sur les modèles : EN COURS (7 novembre 2026), Beta(1,1) avec hérédité en tête, scénario additif à faire
 
-**Par défaut : facteur 1/2, interaction 1/8 (hérédité forte), plutôt que l'uniforme sur les modèles.** Ses mots, transmis par sa session « KefiR officiel » : « Oui, retiens-les ». Il a tranché sur recommandation de cette session, sans connaître la simulation. Annoncée dans chaque bilan, avec sensibilité. Réglage propre à KefiR, inspiré de [Chipman1996]. **Restent ouverts : le libellé de la question par terme (« seul ou en interaction ») et le reste de D2.**
+**Objection de l'audit, à trancher avant de clore.** Sachant A et B présents, cette loi fait partir l'interaction à (1/4)/(1/3) = 3/4. Le modèle additif est donc a priori trois fois moins probable que le modèle complet. C'est ce qui aide à détecter une interaction réelle, mais cela risque d'annoncer une interaction quand les effets sont seulement additifs, et ce cas n'est pas simulé ci-dessous. Voir `agent_49`.
+
+**Historique.** Le 6 novembre, Antoine avait retenu « facteur 1/2, interaction 1/8 » sur recommandation de cette session, sans simulation (« Oui, retiens-les »). Ce n'était pas un arbitrage entre lois comparées. L'audit du jalon 1 a demandé la comparaison avec la loi de [ScottBerger2010] ; elle donne l'avantage à cette dernière sur les deux critères à la fois.
+
+**Candidate : π ~ Beta(1,1) intégrée sur les termes éligibles, sous hérédité forte.** Un terme n'est éligible que si tous ses parents sont dans le modèle ([Chipman1996]). Pour un modèle à s termes parmi e éligibles, p(M) = B(1+s, 1+e−s) ([ScottBerger2010], éq. 8-9, lues dans le PDF). La combinaison avec l'hérédité est propre à KefiR. A priori obtenus : à 2 facteurs, A 1/2, A:B 1/4, nul 1/3 ; à 3 facteurs, A 1/2, A:B 1/4, A:B:C 1/8, nul 1/4. Rien n'est réglé par l'utilisateur ni estimé sur les données.
+
+**Comparaison** (`scripts/agent_47_loi_sur_modeles.R`, N=300 jeux par cas, vraisemblances `anovaBF` en loi normale à variance commune, mêmes BF pour les trois lois) :
+
+| Cas | Critère | 1/2, 1/8 | Beta(1,1) | Uniforme | aov |
+|---|---|---:|---:|---:|---:|
+| 2³ sous H0, n=5 par case | au moins un terme P>0,5 / P>0,95 | 0,217 / 0,010 | **0,093 / 0,000** | 0,430 / 0,023 | p<0,05 : 0,270 |
+| 2³ sous H0, n=10 | idem | 0,163 / 0,003 | **0,070 / 0,000** | 0,277 / 0,007 | 0,317 |
+| 2×2 sous H0, n=10 | idem | 0,143 / 0,007 | **0,090 / 0,010** | 0,207 / 0,010 | 0,130 |
+| 2×2 sous H0, n=25 | idem | 0,090 / 0,000 | **0,053 / 0,000** | 0,147 / 0,003 | 0,123 |
+| Interaction réelle, n=10, f=0,25 | P(A:B)>0,5 / >0,95 | 0,057 / 0,003 | **0,107 / 0,007** | 0,090 / 0,007 | p<0,05 : 0,337 |
+| Interaction réelle, n=10, f=0,50 | idem | 0,417 / 0,123 | **0,553 / 0,167** | 0,543 / 0,160 | 0,877 |
+| Interaction réelle, n=25, f=0,25 | idem | 0,200 / 0,043 | **0,267 / 0,060** | 0,263 / 0,060 | 0,713 |
+| Interaction réelle, n=25, f=0,50 | idem | 0,930 / 0,713 | **0,960 / 0,763** | 0,963 / 0,757 | 0,997 |
+
+Sous H0, Beta(1,1) divise par deux environ les faux « oui » du réglage 1/2, 1/8. Face à une interaction réelle, elle la détecte aussi bien que l'uniforme et mieux que 1/2, 1/8 (+5 à +14 points). La raison : l'interaction part de 1/4 et non de 1/8, et la correction de multiplicité vient de l'intégration sur π, pas d'un a priori bas sur chaque terme. **Limites** : un seul plan à 3 facteurs, sous H0 ; aucun effet réel à 3 facteurs simulé ; loi normale à variance commune seulement ; l'écart à 2×2 sous H0 à P>0,95 (0,010 contre 0,007) est dans le bruit. À recontrôler sur le moteur multi-facteurs de m.bay quand il existera.
+
+**Libellé par terme**, tranché avec le libellé non causal de l'audit : « y diffère selon A, seul ou en interaction ».
+
+*Ce qui suit concerne l'ancien réglage 1/2, 1/8. Gardé pour mémoire.*
 
 Définition à 3 facteurs retenue par cohérence (chaque terme entre à 1/2 si tous ses parents sont présents) : A:B à 1/8, A:B:C à 1/128. Ce prolongement est une lecture, pas ses mots : il n'a parlé que de facteur et d'interaction.
 
