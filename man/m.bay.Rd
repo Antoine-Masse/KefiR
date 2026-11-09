@@ -140,7 +140,10 @@ BayesFactor package (Rouder et al. 2012) and each term is answered as "does y di
 according to A, alone or in interaction?". An interaction enters only with its factors,
 and the prior on the models gives one proportion ~ Beta(1,1) per order of interaction
 (Taylor-Rodriguez et al. 2016), which corrects for the number of terms; \code{prior_h1} and
-\code{laws} have no role there. The other plans of \code{\link[=m.test]{m.test()}} (covariates, paired, repeated
+\code{laws} have no role there. Two costs of this prior (DECISIONS, D2): when one interaction
+is real, the other interactions of the same order are more often called "yes"; and an
+interaction without its lower-order terms (A:B:C alone) is outside the hereditary models
+and is poorly seen. The other plans of \code{\link[=m.test]{m.test()}} (covariates, paired, repeated
 measures, mixed, MANOVA, discrete data) stop with an explicit message until they are
 validated.
 }
