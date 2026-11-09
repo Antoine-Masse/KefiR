@@ -28,9 +28,18 @@
 #' `laws` have no role there. Two costs of this prior (DECISIONS, D2): when one interaction
 #' is real, the other interactions of the same order are more often called "yes"; and an
 #' interaction without its lower-order terms (A:B:C alone) is outside the hereditary models
-#' and is poorly seen. The other plans of [m.test()] (covariates, paired, repeated
-#' measures, mixed, MANOVA, discrete data) stop with an explicit message until they are
-#' validated.
+#' and is poorly seen.
+#'
+#' Paired data and repeated measures (DECISIONS, D15), written as in [m.test()]
+#' (`y ~ time | id`, `Error(id/time)`, `(1 | id)`, `id =`, `paired = TRUE`): the subject is a
+#' random effect present in every model, "no difference" included. Two levels: Bayesian paired
+#' t test on the differences, [BayesFactor::ttestBF()] with `paired = TRUE` (Rouder et al. 2009),
+#' and the size of the difference as dz with its credible interval. More levels, or factors
+#' between subjects too: [BayesFactor::lmBF()] with `whichRandom` (Rouder et al. 2012), each
+#' model against the subjects alone; one factor within subject gets the post-hoc on
+#' groupings. Normal law only; several measures of one subject in one condition (mixed
+#' models) are refused. The other plans of [m.test()] (covariates, mixed, MANOVA, discrete
+#' data) stop with an explicit message until they are validated.
 #'
 #' @param x Response: numeric vector, column name or index if `data` is given, or a
 #'   formula.
@@ -107,7 +116,7 @@
 #' r <- m.bay(y ~ variety, data = d, draws = 1000, sensitivity = FALSE)
 #' r$effects[, c("term", "p_h1", "p_h0", "log_bf")]
 #'
-#' @importFrom BayesFactor lmBF extractBF posterior
+#' @importFrom BayesFactor lmBF extractBF posterior ttestBF
 #' @importFrom bayestestR hdi
 #' @export
 m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
@@ -185,7 +194,7 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	.bay_story_plan(story, input)
 
 	# Plans not validated yet: an explicit refusal, never a wrong answer.
-	if (!input$plan %in% c("oneway", "factorial")) {
+	if (!input$plan %in% c("oneway", "factorial", "paired", "repeated")) {
 		plan_en <- c(factorial = "several factors", ancova = "covariates", paired = "paired data",
 			repeated = "repeated measures", mixed = "mixed models", manova = "MANOVA")[input$plan]
 		plan_fr <- c(factorial = "plusieurs facteurs", ancova = "les covariables", paired = "les donn\u00e9es appari\u00e9es",
@@ -212,10 +221,10 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 			"La r\u00e9ponse semble discr\u00e8te : les lois normale et \u00e0 queues lourdes ne sont ici qu'une approximation.")
 	}
 
-	if (identical(input$plan, "factorial")) {
+	if (input$plan %in% c("factorial", "paired", "repeated")) {
 		return(.bay_m_factorial(input, call_expr, function() notes, note, prior_h1, rscale, laws, sensitivity,
 			draws, seed, detail, verbose, return, !("prior_h1" %in% names(call_expr)), !("laws" %in% names(call_expr)),
-			story))
+			story, posthoc))
 	}
 
 	term <- names(input$factors)[1L]
@@ -500,7 +509,7 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 	told <- isTRUE(story) && length(x$story$en) > 0L
 	if (told) .bay_story_replay(x$story)
-	if (identical(x$plan, "factorial")) {
+	if (x$plan %in% c("factorial", "paired", "repeated")) {
 		.bay_print_bilan_fact(x, detail = detail, narrated = told)
 	} else {
 		.bay_print_bilan(x, detail = detail, narrated = told)
@@ -511,13 +520,45 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 # Several factors: normal law with a common variance, likelihoods from BayesFactor
 # (sys_bay_factorial.R). prior_h1 and laws do not apply and are said so when given.
 .bay_m_factorial <- function(input, call_expr, get_notes, note, prior_h1, rscale, laws, sensitivity,
-                             draws, seed, detail, verbose, return, no_prior, no_laws, story = NULL) {
+                             draws, seed, detail, verbose, return, no_prior, no_laws, story = NULL, posthoc = TRUE) {
+	rm <- input$plan %in% c("paired", "repeated")
+	paired <- identical(input$plan, "paired")
+	n_dropped <- 0L
+	if (paired) {
+		# A pair needs both measures: subjects with one only are removed (D15).
+		pr <- .bay_paired_xy(input$response, input$factors[[1L]], input$id)
+		keep <- as.character(input$id) %in% pr$id
+		n_dropped <- nlevels(input$id) - length(pr$id)
+		if (length(pr$id) < 2L) {
+			.exit("Fewer than 2 complete pairs: the paired comparison is impossible.",
+				"Moins de 2 paires compl\u00e8tes : la comparaison appari\u00e9e est impossible.")
+		}
+		if (n_dropped > 0L) {
+			note(paste0(n_dropped, " subject(s) without a measure at both levels removed."),
+				paste0(n_dropped, " sujet(s) sans mesure aux deux niveaux retir\u00e9(s)."), tell = FALSE)
+		}
+		input$response <- input$response[keep]
+		input$factors <- input$factors[keep, , drop = FALSE]
+		input$id <- droplevels(input$id[keep])
+		if (any(duplicated(paste(input$id, input$factors[[1L]])))) {
+			.exit("Several measures for one subject at one level: the pairs are ambiguous (mixed model, not handled yet).",
+				"Plusieurs mesures pour un sujet \u00e0 un m\u00eame niveau : les paires sont ambigu\u00ebs (mod\u00e8le mixte, pas encore trait\u00e9).")
+		}
+	}
 	y <- input$response
 	factors <- input$factors
 	terms <- gsub("`", "", input$terms, fixed = TRUE)
 	sp <- .bay_fact_space(terms)
 	n_mod <- length(sp$models)
+	single <- length(terms) == 1L
 
+	if (rm) {
+		.bay_story_rm(story, input, y, paired, n_dropped)
+		if (!no_laws && !identical(laws, "normal_eq")) {
+			note("With subjects only the normal law is computed; laws is ignored.",
+				"Avec des sujets, seule la loi normale est calcul\u00e9e ; laws est ignor\u00e9.")
+		}
+	} else {
 	# Step 2 (title said by m.bay): sizes per cell, ties, values far from their cell.
 	cell_all <- table(interaction(factors, drop = FALSE))
 	chk <- .bay_story_checks(story, y, interaction(factors, drop = TRUE), "cell", "case")
@@ -547,19 +588,33 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 		.bay_tell(story, "No value lies far enough from its cell to put the normal law in doubt at first sight; it is not tested against the others.",
 			"Aucune valeur n'est assez \u00e9loign\u00e9e de sa case pour mettre d'embl\u00e9e la loi normale en doute ; elle n'est pas mise \u00e0 l'\u00e9preuve des autres.", "decide")
 	}
+	}
 
 	# Step 4: the priors, fixed by the method (DECISIONS, D2).
 	.bay_tell(story, "Starting point (priors), set by the method before seeing the data.", "Point de d\u00e9part (a priori), fix\u00e9 par la m\u00e9thode avant de voir les donn\u00e9es.", "step")
-	lp <- .bay_fact_prior(sp, "hop")
+	lp <- if (single) log(c(1 - prior_h1, prior_h1)) else .bay_fact_prior(sp, "hop")
 	incl <- vapply(seq_along(terms), function(i) sum(exp(lp[vapply(sp$models, function(m) i %in% m, logical(1))])), numeric(1))
 	r_txt <- .bay_num_txt(rscale)
-	.bay_tell(story, paste0("Size of an effect: r = ", r_txt$en, " per term (Zellner-Siow). Chance of each term, taken alone (these chances do not add up): ",
+	if (single) {
+		ph_txt <- .bay_num_txt(100 * prior_h1)
+		.bay_tell(story, paste0(ph_txt$en, " % chance that a difference exists", if (prior_h1 == 0.5) " (heads or tails: the method takes no side)" else "",
+				"; expected size r = ", r_txt$en, if (paired) " on the standardised difference within subject (dz)." else " per term (Zellner-Siow)."),
+			paste0(ph_txt$fr, " % de chances qu'une diff\u00e9rence existe", if (prior_h1 == 0.5) " (pile ou face : la m\u00e9thode ne prend pas parti)" else "",
+				" ; taille attendue r = ", r_txt$fr, if (paired) " sur la diff\u00e9rence standardis\u00e9e au sein des sujets (dz)." else " par terme (Zellner-Siow)."))
+	} else .bay_tell(story, paste0("Size of an effect: r = ", r_txt$en, " per term (Zellner-Siow). Chance of each term, taken alone (these chances do not add up): ",
 			paste0(terms, " ", vapply(incl, .bay_pct, character(1), dec = "."), collapse = ", "),
 			"; no difference at all ", .bay_pct(exp(lp[1L]), "."), "."),
 		paste0("Taille d'un effet : r = ", r_txt$fr, " par terme (Zellner-Siow). Chance de chaque terme, pris seul (ces chances ne s'additionnent pas) : ",
 			paste0(terms, " ", vapply(incl, .bay_pct, character(1), dec = ","), collapse = ", "),
 			" ; aucune diff\u00e9rence du tout ", .bay_pct(exp(lp[1L]), ","), "."))
-	if (any(sp$order > 1L)) {
+	if (rm) {
+		.bay_tell(story, if (paired) "Paired difference: the Bayesian paired t test of Rouder et al. (2009), with r = 0.5 as for a random subject effect (equal to lmBF(y ~ time + id) within 0.2 on the log scale)." else "Subjects: random effect of scale 1 (Rouder et al. 2012), in every model; each answer is read against the model with the subjects only.",
+			if (paired) "Diff\u00e9rence appari\u00e9e : test t appari\u00e9 bay\u00e9sien de Rouder et al. (2009), r = 0,5 comme pour un effet sujet al\u00e9atoire (\u00e9gal \u00e0 lmBF(y ~ temps + id) \u00e0 0,2 pr\u00e8s en \u00e9chelle log)." else "Sujets : effet al\u00e9atoire d'\u00e9chelle 1 (Rouder et al. 2012), dans chaque mod\u00e8le ; chaque r\u00e9ponse se lit contre le mod\u00e8le avec les sujets seuls.", "decide")
+	}
+	if (single) {
+		.bay_tell(story, "These values are not fitted on the data; step 5 varies them to see whether the answer holds.",
+			"Ces valeurs ne sont pas ajust\u00e9es sur les donn\u00e9es ; l'\u00e9tape 5 les fait varier pour voir si la r\u00e9ponse tient.", "decide")
+	} else if (any(sp$order > 1L)) {
 		.bay_tell(story, "Why: one proportion ~ Beta(1,1) per order of interaction (HOP, Taylor-Rodriguez et al. 2016): the more terms, the less likely each one in advance, which guards against false interactions; an interaction enters only with its factors.",
 			"Pourquoi : une proportion ~ Beta(1,1) par ordre d'interaction (HOP, Taylor-Rodriguez et al. 2016) : plus il y a de termes, moins chacun est probable d'avance, ce qui prot\u00e8ge des fausses interactions ; une interaction n'entre qu'avec ses facteurs.", "decide")
 	} else {
@@ -568,20 +623,27 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 		note("No interaction is tested (additive formula or x, g form); write y ~ A * B to test them.",
 			"Aucune interaction n'est test\u00e9e (formule additive ou forme x, g) ; \u00e9crire y ~ A * B pour les tester.")
 	}
-	if (!no_prior) {
+	if (!no_prior && !single) {
 		note("prior_h1 has no role with several factors: the prior on the models is fixed by the method.",
 			"prior_h1 est sans effet \u00e0 plusieurs facteurs : la loi sur les mod\u00e8les est fix\u00e9e par la m\u00e9thode.")
 	}
 
 	# Step 5: Bayes factors of the models, precision, sensitivity.
 	.bay_tell(story, paste0("Bayes factors of the ", n_mod, " models."), paste0("Facteurs de Bayes des ", n_mod, " mod\u00e8les."), "step",
-		fun = "lmBF() {BayesFactor}")
+		fun = if (paired) "ttestBF(paired = TRUE) {BayesFactor}" else if (rm) "lmBF(whichRandom = id) {BayesFactor}" else "lmBF() {BayesFactor}")
 	if (n_mod > 50L) {
 		.bay_tell(story, paste0(n_mod, " models: this can take a few minutes."),
 			paste0(n_mod, " mod\u00e8les : cela peut prendre quelques minutes."), "info")
 	}
-	fa <- .bay_factorial(input, rscale, sensitivity, as.integer(draws), as.integer(seed), note)
-	if (isTRUE(fa$spread <= 0.02)) {
+	fa <- .bay_factorial(input, rscale, sensitivity, as.integer(draws), as.integer(seed), note, prior_h1 = prior_h1)
+	if (single) {
+		b1 <- .bay_num_txt(exp(fa$log_bf_models[2L, if (isTRUE(sensitivity)) 2L else 1L]))
+		.bay_tell(story, paste0("Bayes factor, difference against none: ", b1$en, "."), paste0("Facteur de Bayes, diff\u00e9rence contre absence : ", b1$fr, "."))
+	}
+	if (paired) {
+		.bay_tell(story, "Precision: ttestBF integrates numerically, without draws; no simulation error.",
+			"Pr\u00e9cision : ttestBF int\u00e8gre num\u00e9riquement, sans tirage ; aucune erreur de simulation.")
+	} else if (isTRUE(fa$spread <= 0.02)) {
 		sp_txt <- .bay_num_txt(100 * fa$spread, 2)
 		.bay_tell(story, paste0("Precision: computed again with another seed, the probabilities move by at most ", sp_txt$en, " percentage point(s), negligible."),
 			paste0("Pr\u00e9cision : recalcul\u00e9es avec une autre graine, les probabilit\u00e9s bougent d'au plus ", sp_txt$fr, " point(s) de pourcentage, n\u00e9gligeable."))
@@ -594,8 +656,8 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 			"Les r\u00e9ponses ne sont pas \u00e9prouv\u00e9es contre d'autres points de d\u00e9part.", "decide")
 	} else {
 		r1 <- .bay_num_txt(min(sens$r)); r2 <- .bay_num_txt(max(sens$r))
-		.bay_tell(story, paste0("Sensitivity: r from ", r1$en, " to ", r2$en, ", crossed with three priors on the models (HOP, 1/2 per term, uniform)."),
-			paste0("Sensibilit\u00e9 : r de ", r1$fr, " \u00e0 ", r2$fr, ", crois\u00e9 avec trois lois sur les mod\u00e8les (HOP, 1/2 par terme, uniforme)."),
+		.bay_tell(story, if (single) paste0("Sensitivity: r from ", r1$en, " to ", r2$en, ", crossed with starting chances of a difference from 1 against 2 to 2 against 1.") else paste0("Sensitivity: r from ", r1$en, " to ", r2$en, ", crossed with three priors on the models (HOP, 1/2 per term, uniform)."),
+			if (single) paste0("Sensibilit\u00e9 : r de ", r1$fr, " \u00e0 ", r2$fr, ", crois\u00e9 avec des chances de d\u00e9part d'une diff\u00e9rence de 1 contre 2 \u00e0 2 contre 1.") else paste0("Sensibilit\u00e9 : r de ", r1$fr, " \u00e0 ", r2$fr, ", crois\u00e9 avec trois lois sur les mod\u00e8les (HOP, 1/2 par terme, uniforme)."),
 			fun = "m.bay() {KefiR}")
 		moved <- which(sens$verdict_terms == "changes")
 		if (length(moved)) {
@@ -610,19 +672,29 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 		} else {
 			.bay_tell(story, "No term changes side.", "Aucun terme ne change de c\u00f4t\u00e9.", "decide")
 		}
-		if (identical(sens$verdict, "changes")) {
+		if (identical(sens$verdict, "changes") && !single) {
 			.bay_tell(story, "The global answer (at least one factor or none) can reverse: the conclusion will not assert it.",
 				"La r\u00e9ponse globale (au moins un facteur ou aucun) peut s'inverser : la conclusion ne l'affirmera pas.", "decide")
 		}
+	}
+
+	# Step 6 for one term with subjects: which conditions differ, and by how much (D11, D15).
+	ph <- NULL
+	if (rm && single && isTRUE(posthoc)) {
+		g1 <- factors[[1L]]
+		ph <- if (paired) .bay_posthoc_paired(y, g1, input$id, rscale, draws, seed) else
+			.bay_posthoc_oneway(y, g1, rscale, prior_h1, draws, seed, id = input$id)
+		ph$caution <- FALSE
+		.bay_story_posthoc(story, ph, subjects = TRUE)
 	}
 
 	resp <- input$response_name
 	fac_txt <- paste(names(input$factors), collapse = ", ")
 	p_any <- 1 - fa$p_null
 	hyp <- data.frame(
-		label_en = c(paste0(resp, " differs according to at least one factor"),
+		label_en = c(if (single) paste0(resp, " differs according to ", fac_txt) else paste0(resp, " differs according to at least one factor"),
 			paste0("No difference in ", resp, " according to ", fac_txt)),
-		label_fr = c(paste0(resp, " diff\u00e8re selon au moins un facteur"),
+		label_fr = c(if (single) paste0(resp, " diff\u00e8re selon ", fac_txt) else paste0(resp, " diff\u00e8re selon au moins un facteur"),
 			paste0("Aucune diff\u00e9rence de ", resp, " selon ", fac_txt)),
 		posterior = c(p_any, fa$p_null), prior = c(1 - fa$prior_null, fa$prior_null),
 		null = c(FALSE, TRUE), stringsAsFactors = FALSE)
@@ -636,7 +708,8 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 			log_prior = fa$log_prior, stringsAsFactors = FALSE),
 		n_models = length(fa$space$models),
 		sensitivity = fa$sensitivity,
-		priors = list(rscale = rscale, model_prior = "HOP(1,1)", law = "normal_eq"),
+		priors = list(rscale = rscale, model_prior = if (single) "prior_h1" else "HOP(1,1)", law = "normal_eq", prior_h1 = if (single) prior_h1 else NULL),
+		posthoc = ph, n_subjects = fa$n_subjects,
 		questions = .bay_fact_questions(fa$effects$term, resp),
 		contradiction = FALSE, heavy = FALSE, detail = isTRUE(detail),
 		descriptive_stats = fa$means, cell_means = local({
@@ -644,7 +717,7 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 			data.frame(cell = levels(cl), n = as.integer(table(cl)), mean = as.numeric(tapply(input$response, cl, mean)), stringsAsFactors = FALSE)
 		}), sd_within = fa$sd_within, sd_is_within = fa$sd_is_within, balanced = fa$balanced,
 		prob_effect = p_any,
-		method = "Several factors, normal law with a common variance (BayesFactor)", plan = input$plan,
+		method = if (paired) "Paired data, Bayesian paired t test (BayesFactor)" else if (rm) "Repeated measures, normal law, random subject effect (BayesFactor)" else "Several factors, normal law with a common variance (BayesFactor)", plan = input$plan,
 		label = input$label, n = length(input$response), notes = get_notes(), call = call_expr)
 	class(out) <- "mbay"
 	.bay_tell(story, "Conclusion: the hypotheses ranked, what each one rests on, its support.",

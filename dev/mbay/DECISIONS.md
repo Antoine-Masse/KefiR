@@ -280,3 +280,36 @@ Demande, ses mots : « m.bay() doit faire comme m.test() proposer un bilan déci
   Testé dans `test-bay-story.R`.
 - **Écarts-types proches mais dispersions inégales probables** (rapport < 1,3) : le constat dit que les groupes diffèrent plutôt par leur forme (asymétrie, valeurs éloignées) que par leur écart-type. La loi à variances inégales réagit aussi aux différences de forme.
 - **Langue.** KefiR choisit la langue par `LC_CTYPE`, via `.msg()`. `LANGUAGE=en` seul laisse donc la sortie en français, pour `m.bay` comme pour `m.test`. En locale anglaise réelle (`Sys.setlocale("LC_CTYPE", "English_United States.utf8")`), le récit de `m.bay` est entièrement en anglais (testé). Le défaut propre à `.vbse()`, qui ne garde que le français dans `m.test`, reste signalé à part.
+
+## D15. Données appariées et mesures répétées : DÉCIDÉ le 9 novembre
+
+Ordre fixé par la session parente : appariés et mesures répétées, puis ANCOVA, puis le discret. Le principe d'Antoine s'applique : on appelle un paquet établi, ici BayesFactor, déjà en Imports.
+
+**Plans couverts.** Ils sont reconnus par `.bay_parse_input`, comme dans `m.test()` : `y ~ temps | id`, `Error(id/temps)`, `id =`, `paired = TRUE` sans id (l'ordre des lignes apparie).
+- **Apparié** : un facteur à 2 niveaux, une mesure par sujet et par niveau.
+- **Mesures répétées** : un facteur intra à 3 niveaux ou plus, ou plusieurs facteurs, intra et inter (plan en tranches).
+- **Refusés** avec un message clair :
+  - plusieurs mesures d'un même sujet dans une même condition (modèle mixte) ;
+  - pentes aléatoires ;
+  - covariables avec sujets.
+
+**Calcul.**
+- **Apparié** : `ttestBF(x, y, paired = TRUE, rscale = r)` [BayesFactor ; Rouder et al. 2009]. C'est un calcul exact, par intégration, sans tirage, sur les différences au sein des sujets. Les sujets qui n'ont qu'une des deux mesures sont retirés, et le récit le dit.
+  - Le même r = 0,5 sert pour l'apparié et pour l'effet sujet aléatoire. Sur 4 jeux, `ttestBF(paired, r = 0,5)` et `lmBF(y ~ temps + id, whichRandom = "id", rscaleFixed = 0,5) / lmBF(y ~ id)` diffèrent de 0,02 à 0,21 en log-BF ; avec r = 0,707 (défaut de `ttestBF`), l'écart est de 0,10 à 0,26. Les réponses à 2 temps et à 3 temps restent ainsi sur la même échelle.
+- **Mesures répétées** : `lmBF(... + id, whichRandom = "id")` [BayesFactor ; Rouder et al. 2012] pour chaque modèle de l'espace héréditaire. Chaque facteur de Bayes se lit contre le modèle « sujets seuls », de sorte que l'effet sujet est présent dans tous les modèles, « aucune différence » compris.
+  - La précision est mesurée en recalculant avec une autre graine, comme à plusieurs facteurs.
+- **A priori.**
+  - Un terme seul (apparié, ou un facteur intra) : `prior_h1`, comme à un facteur entre groupes. La sensibilité fait varier r (r/2 à 2r) et les chances de départ (1 contre 2 à 2 contre 1).
+  - Plusieurs termes : HOP, comme D2.
+- **Forme du bruit** : loi normale seule. Queues lourdes et variances inégales entre conditions ne sont pas validées avec des sujets, et le récit le dit. Les valeurs éloignées sont cherchées sur les écarts au niveau propre de chaque sujet.
+
+**Post-hoc (D11 étendu).**
+- **Apparié** : écart moyen (second niveau moins premier) et dz = écart / écart-type des différences, médianes et HDI à 95 %, tirés de `posterior(ttestBF)` [BayesFactor] et de `hdi()` [bayestestR].
+- **Un facteur intra à 3 niveaux ou plus** : partitions d'égalité, comme D11, avec le BF de chaque regroupement h donné par `lmBF(y ~ h + id, whichRandom)` / `lmBF(y ~ id)`.
+  - Le calcul est exact jusqu'à 5 niveaux (52 regroupements, 0,12 s chacun). Au-delà, on passe au tirage de Gibbs.
+  - Les écarts viennent de `posterior(lmBF(y ~ temps + id))`. δ est rapporté à l'écart-type résiduel au sein des sujets, ce que le récit nomme.
+- **Plusieurs facteurs avec sujets** : pas de post-hoc pour l'instant, comme à plusieurs facteurs sans sujets.
+
+**Écart à `m.test()`.**
+- `m.test()` contrôle la sphéricité (Mauchly) et corrige les degrés de liberté. Le modèle à effet sujet aléatoire suppose la symétrie composée : c'est la même hypothèse que l'ANOVA à mesures répétées non corrigée. Elle n'est pas testée ici ; le récit la nomme à l'étape 3 et renvoie à `m.test()`. Une voie qui la relâche (matrice de covariance libre, par exemple brms) reste à décider.
+- Les post-hocs de `m.test()` avec `(1|id)` ne sont pas appariés (PERIMETRE §4.4). Ici, ils le sont toujours.

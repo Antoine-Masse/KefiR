@@ -155,9 +155,18 @@ and the prior on the models gives one proportion ~ Beta(1,1) per order of intera
 \code{laws} have no role there. Two costs of this prior (DECISIONS, D2): when one interaction
 is real, the other interactions of the same order are more often called "yes"; and an
 interaction without its lower-order terms (A:B:C alone) is outside the hereditary models
-and is poorly seen. The other plans of \code{\link[=m.test]{m.test()}} (covariates, paired, repeated
-measures, mixed, MANOVA, discrete data) stop with an explicit message until they are
-validated.
+and is poorly seen.
+
+Paired data and repeated measures (DECISIONS, D15), written as in \code{\link[=m.test]{m.test()}}
+(\code{y ~ time | id}, \code{Error(id/time)}, \code{(1 | id)}, \verb{id =}, \code{paired = TRUE}): the subject is a
+random effect present in every model, "no difference" included. Two levels: Bayesian paired
+t test on the differences, \code{\link[BayesFactor:ttestBF]{BayesFactor::ttestBF()}} with \code{paired = TRUE} (Rouder et al. 2009),
+and the size of the difference as dz with its credible interval. More levels, or factors
+between subjects too: \code{\link[BayesFactor:lmBF]{BayesFactor::lmBF()}} with \code{whichRandom} (Rouder et al. 2012), each
+model against the subjects alone; one factor within subject gets the post-hoc on
+groupings. Normal law only; several measures of one subject in one condition (mixed
+models) are refused. The other plans of \code{\link[=m.test]{m.test()}} (covariates, mixed, MANOVA, discrete
+data) stop with an explicit message until they are validated.
 }
 
 \examples{

@@ -161,8 +161,9 @@ test_that("I3 relecture : l'integrale en g couvre un rapport inter/intra extreme
 
 test_that("B4 relecture : entrees mal comprises, refus ou bon plan", {
 	d <- data.frame(y = rnorm(30), temps = rep(c("a", "b", "c"), 10), dose = rep(c(1, 2, 5), 10))
-	expect_error(m.bay(y ~ temps, data = d, wt = "temps", verbose = FALSE), "mesures|appari")
-	expect_error(m.bay(y ~ temps, data = d, within = "temps", verbose = FALSE), "mesures|appari")
+	# wt / within sans id : l'ordre des lignes apparie, comme dans m.test (D15)
+	expect_identical(m.bay(y ~ temps, data = d, wt = "temps", verbose = FALSE, draws = 500L, sensitivity = FALSE, posthoc = FALSE)$plan, "repeated")
+	expect_identical(m.bay(y ~ temps, data = d, within = "temps", verbose = FALSE, draws = 500L, sensitivity = FALSE, posthoc = FALSE)$plan, "repeated")
 	expect_error(m.bay(y ~ I(dose > 2), data = d, verbose = FALSE), "variables")
 	expect_error(m.bay(y ~ ifelse(dose > 2, "a", "b"), data = d, verbose = FALSE), "variables")
 	expect_error(m.bay(d$y, rep(c("a", "b"), length.out = 15), verbose = FALSE), "longueur")

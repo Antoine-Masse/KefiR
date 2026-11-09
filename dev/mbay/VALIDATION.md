@@ -536,3 +536,62 @@ C'est testé dans `test-bay-posthoc.R`.
 - plans déséquilibrés ;
 - k de 6 à 8 : le calcul exact est vérifié, pas sa calibration ;
 - au-delà de 8 groupes : la calibration du tirage n'est pas simulée.
+
+## 10. Données appariées et mesures répétées (D15), 9 novembre
+
+### Calcul indépendant (`agent_55`, agent qui n'a lu ni `R/`, ni `tests/`, ni `dev/mbay`)
+
+Scripts et sorties : `relecture/agent_55/`. Mêmes jeux que les récits D, E et F (`relecture/lecteur_recit/recits_repete.txt`).
+
+| Calcul | Référence | m.bay |
+|---|---|---|
+| A. Apparié, 13 paires, log BF10 (intégrale de Rouder et al. 2009 programmée par l'agent ; `ttestBF` à 1,7e-10 près) | 0,5474 | 0,548 (BF 1,73) |
+| B1. 4 sessions, BF « session + sujet » contre « sujet seul » (intégrale en 2 dimensions sur g_fixe et g_sujet, programmée par l'agent ; `anovaBF` : 23,515) | 23,57 (log 3,1602) | 23,5 |
+| B2. Paires S1-S2 / S1-S3 / S1-S4 / S2-S3 / S2-S4 / S3-S4 | 0,439 / 0,661 / 0,916 / 0,490 / 0,846 / 0,684 | 0,440 / 0,661 / 0,916 / 0,491 / 0,847 / 0,686 |
+| B2. Trois regroupements de tête | 0,221 / 0,154 / 0,154 | 0,221 / 0,154 / 0,154 |
+| C. Plan en tranches, log BF contre « id seul » : groupe / séance / groupe + séance / groupe * séance (`anovaBF`, 50 000 itérations) | −0,340 / 0,270 / −0,018 / 1,245 | −0,336 / 0,254 / −0,065 / 1,266 |
+
+**B2, version corrigée.** Dans `ref.R`, la première version de l'agent mesurait les regroupements non nuls contre l'intercept seul, alors que « aucune différence » restait à 0. Sa propre spécification demandait « contre sujet seul ». Ses paires valaient donc les nôtres divisées par 1 − P(aucune différence) = 0,924, par exemple 0,991 au lieu de 0,916.
+- Le calcul corrigé, avec la seule division ajoutée, est dans `ref_B2_corrige.R` et `sortie_B2_corrige.txt`.
+- Il concorde à 0,3 point près.
+- Le fichier de l'agent est laissé tel quel.
+
+**Limite.** B2 et C reposent sur BayesFactor des deux côtés : ce sont des estimations par tirage, avec des erreurs de ±0,4 à ±2,5 %. Seuls A et B1 ont un calcul programmé indépendamment de BayesFactor.
+
+### Calibration (`agent_56`, N = 200 jeux par scénario)
+
+Écart-type sujet 2, écart-type résiduel 1, r = 0,5, `prior_h1` = 1/2. Le classique est le t apparié pour k = 2, et `aov(y ~ temps + Error(id/temps))` pour k ≥ 3. Résultats : `scripts/resultats/agent_56.txt`.
+
+| Scénario | « Différence » P>0,5 / P>0,75 / P>0,95 | Classique p<0,05 | Couverture de δ (dz si k = 2) | Paire égale dite différente (P>0,75) | Regroupement vrai en tête |
+|---|---|---:|---:|---:|---:|
+| k=2, n=12, H0 | 0,090 / 0,030 / 0 | 0,040 | 0,970 | – | – |
+| k=2, n=20, H0 | 0,090 / 0,005 / 0 | 0,040 | 0,990 | – | – |
+| k=2, n=15, écart 0,7 (dz ≈ 0,49) | 0,635 / 0,295 / 0,070 | 0,415 | 0,935 | – | – |
+| k=3, n=12, H0 | 0,055 / 0,030 / 0 | 0,040 | 0,983 | 0,025 | 0,960 |
+| k=3, n=15, une condition à +0,8 | 0,655 / 0,385 / 0,095 | 0,555 | 0,952 | 0,015 | 0,385 |
+| k=4, n=12, graduel (0 ; 0,3 ; 0,6 ; 0,9) | 0,520 / 0,275 / 0,065 | 0,440 | 0,944 | – | 0 |
+
+**Lecture.**
+- **Sous H0**, une différence est annoncée au-delà de « faible » (P > 0,75) dans 0,5 à 3 % des jeux, et au-delà de 0,95 jamais, contre 4 % de p < 0,05.
+- **Avec un effet**, la méthode est plus prudente que le test classique : 30 à 39 % au-delà de 0,75, contre 42 à 56 % de p < 0,05. Le facteur de Bayes demande plus de données pour un même effet.
+- **Les intervalles** couvrent la vraie valeur dans 94 à 99 % des cas. La sur-couverture sous H0 vient du rétrécissement vers zéro.
+- **Le regroupement vrai** sort en tête dans 96 % des jeux sous H0. Il le fait rarement quand l'effet est graduel : à n = 12, les 4 niveaux distincts ne se séparent pas.
+
+**Non simulé** :
+- plans en tranches, et plusieurs facteurs intra ;
+- sujets incomplets en mesures répétées ;
+- écart à la symétrie composée, que le modèle suppose et que le récit nomme ;
+- queues lourdes.
+
+### Tests
+
+`test-bay-repeated.R`, 7 tests :
+- l'apparié égale `ttestBF(paired)` à 1e-8 ;
+- les quatre écritures de l'apparié concordent ;
+- une paire incomplète est retirée et dite, et l'ordre des lignes est sans effet ;
+- les mesures répétées concordent avec `lmBF(+ id) / lmBF(id)` ;
+- l'effet sujet rend la réponse plus nette qu'avec des groupes indépendants ;
+- le plan en tranches concorde avec `anovaBF(whichRandom)` à 0,1 près en log ;
+- un plan avec répliques est refusé comme modèle mixte.
+
+`test-bay-posthoc.R` : à l'échelle 1e200, les intervalles restent finis. C'est le cas qui produisait le message « ci is too small » de bayestestR.

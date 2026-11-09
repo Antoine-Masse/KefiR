@@ -397,7 +397,10 @@
 	f <- function(v, dc) gsub(".", dc, format(signif(v, 2), trim = TRUE), fixed = TRUE)
 	ci <- function(i, dc, a, l, h) paste0(f(pr[[a]][i], dc), " [", f(pr[[l]][i], dc), if (dc == ",") " ; " else "; ", f(pr[[h]][i], dc), "]")
 	if (ph$k > 2L) {
-		say("Which groups differ (normal law with a common variance; probability, then estimated gap and 95 % credible interval):",
+		if (identical(ph$delta_unit, "within")) {
+			say("Which conditions differ (normal law, random subject effect; probability, then estimated gap and 95 % credible interval):",
+				"Quelles conditions diff\u00e8rent (loi normale, effet sujet al\u00e9atoire ; probabilit\u00e9, puis \u00e9cart estim\u00e9 et intervalle de cr\u00e9dibilit\u00e9 \u00e0 95 %) :")
+		} else say("Which groups differ (normal law with a common variance; probability, then estimated gap and 95 % credible interval):",
 			"Quels groupes diff\u00e8rent (loi normale \u00e0 variance commune ; probabilit\u00e9, puis \u00e9cart estim\u00e9 et intervalle de cr\u00e9dibilit\u00e9 \u00e0 95 %) :")
 		shown <- .bay_posthoc_shown(pr)
 		for (i in shown) {
@@ -413,13 +416,14 @@
 		}
 		if (length(shown) < nrow(pr)) say(paste0("  The other ", nrow(pr) - length(shown), " pairs lean towards alike; all pairs: $posthoc$pairs."),
 			paste0("  Les ", nrow(pr) - length(shown), " autres paires penchent vers semblables ; toutes les paires : $posthoc$pairs."))
-		if (identical(ph$method, "gibbs")) say(paste0("  Groupings explored by draws (more than ", .bay_posthoc_max_groups(), " groups): about ", max(1L, ceiling(200 * ph$mc_error)), " point(s) of sampling error."),
-			paste0("  Regroupements explor\u00e9s par tirage (plus de ", .bay_posthoc_max_groups(), " groupes) : environ ", max(1L, ceiling(200 * ph$mc_error)), " point(s) d'erreur de tirage."))
+		if (identical(ph$method, "gibbs")) say(paste0("  Groupings explored by draws (more than ", ph$max_exact, " groups): about ", max(1L, ceiling(200 * ph$mc_error)), " point(s) of sampling error."),
+			paste0("  Regroupements explor\u00e9s par tirage (plus de ", ph$max_exact, " groupes) : environ ", max(1L, ceiling(200 * ph$mc_error)), " point(s) d'erreur de tirage."))
 		say(paste0("  Most probable grouping: ", ph$partitions$partition[1L], " (", .bay_pct(ph$partitions$posterior[1L], "."), ")."),
 			paste0("  Regroupement le plus probable : ", ph$partitions$partition[1L], " (", .bay_pct(ph$partitions$posterior[1L], ","), ")."))
 	} else {
-		say("Size of the difference, if it exists (estimated gap: posterior median, and 95 % credible interval; delta in standard deviations):",
-			"Taille de l'\u00e9cart, s'il existe (\u00e9cart estim\u00e9 : m\u00e9diane a posteriori, et intervalle de cr\u00e9dibilit\u00e9 \u00e0 95 % ; delta en \u00e9carts-types) :")
+		unit <- .bay_delta_unit(ph)
+		say(paste0("Size of the difference, if it exists (estimated gap: posterior median, and 95 % credible interval; delta in ", unit$en, "):"),
+			paste0("Taille de l'\u00e9cart, s'il existe (\u00e9cart estim\u00e9 : m\u00e9diane a posteriori, et intervalle de cr\u00e9dibilit\u00e9 \u00e0 95 % ; delta en ", unit$fr, ") :"))
 		for (i in seq_len(nrow(pr))) {
 			say(paste0("  ", pr$group2[i], " - ", pr$group1[i], " = ", ci(i, ".", "diff", "diff_low", "diff_high"), ", delta = ", ci(i, ".", "delta", "delta_low", "delta_high"), "."),
 				paste0("  ", pr$group2[i], " - ", pr$group1[i], " = ", ci(i, ",", "diff", "diff_low", "diff_high"), ", delta = ", ci(i, ",", "delta", "delta_low", "delta_high"), "."))

@@ -13,7 +13,7 @@ Détail de l'existant : `PERIMETRE.md`. Choix : `DECISIONS.md`. Publication uniq
 | 4 | `m.bay()` 2 groupes et k groupes, validé contre JZS | **Fait le 7 nov.**, à auditer : `VALIDATION.md` §7 | |
 | 5 | Multi-facteurs, inclusion, `$effects` | À faire | D1, D2 |
 | 6 | ANCOVA, pentes hétérogènes | À faire | D1 |
-| 7 | Apparié, mesures répétées, split-plot | À faire | D1 |
+| 7 | Apparié, mesures répétées, split-plot | Fait le 9 novembre (D15) ; mixte avec répliques refusé | D1, D15 |
 | 8 | MANOVA 1 facteur puis plusieurs facteurs | À faire | D7 |
 | 9 | ROPE, probabilité de direction, taille d'effet, intervalle de crédibilité | À faire | D3 |
 | 10 | Post-hoc | À faire | D11 |

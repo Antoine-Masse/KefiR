@@ -25,7 +25,24 @@
 #   Makowski, D., Ben-Shachar, M. S., & Luedecke, D. (2019). bayestestR. JOSS, 4(40), 1541.
 
 # Option KefiR.bay_exact_max, for the tests and the validation only.
-.bay_posthoc_max_groups <- function() as.integer(getOption("KefiR.bay_exact_max", 8L))
+.bay_posthoc_max_groups <- function(rm = FALSE) {
+	if (rm) as.integer(getOption("KefiR.bay_exact_max_rm", 5L)) else as.integer(getOption("KefiR.bay_exact_max", 8L))
+}
+
+# Log Bayes factor of one grouping h against "no difference". Without subjects: the internal
+# one-factor computation, equal to lmBF. With subjects (D15): lmBF(y ~ h + id) over
+# lmBF(y ~ id), subject random; lb0 is the second, computed once.
+.bay_partition_bf <- function(y, h, rscale, id = NULL, lb0 = 0, iterations = 10000L) {
+	if (is.null(id)) return(.bay_bf_oneway_zs(y, h, rscale))
+	d <- data.frame(y = y, h = h, id = id)
+	BayesFactor::extractBF(BayesFactor::lmBF(y ~ h + id, data = d, whichRandom = "id", rscaleFixed = rscale,
+		iterations = iterations, progress = FALSE), logbf = TRUE)$bf - lb0
+}
+.bay_subject_lb0 <- function(y, id, iterations = 10000L) {
+	if (is.null(id)) return(0)
+	BayesFactor::extractBF(BayesFactor::lmBF(y ~ id, data = data.frame(y = y, id = id), whichRandom = "id",
+		iterations = iterations, progress = FALSE), logbf = TRUE)$bf
+}
 
 # Number of partitions of k items (Bell number), for the story.
 .bay_bell <- function(k) {
@@ -50,7 +67,8 @@
 
 # Gibbs sampler over the partitions (Gopalan and Berry 1998), for many groups.
 # Returns the visited partitions (matrix, one row per sweep) and the cached log Bayes factors.
-.bay_partition_gibbs <- function(y, g, rscale, prior_h1, sweeps, burn, seed, alpha = 1) {
+.bay_partition_gibbs <- function(y, g, rscale, prior_h1, sweeps, burn, seed, alpha = 1, id = NULL) {
+	lb0 <- .bay_subject_lb0(y, id)
 	gi <- as.integer(g)
 	k <- nlevels(g)
 	cache <- new.env(hash = TRUE)
@@ -60,7 +78,7 @@
 		key <- paste(p, collapse = ".")
 		lb <- cache[[key]]
 		if (is.null(lb)) {
-			lb <- if (max(p) == 1L) 0 else .bay_bf_oneway_zs(y, factor(p[gi]), rscale)
+			lb <- if (max(p) == 1L) 0 else .bay_partition_bf(y, factor(p[gi]), rscale, id, lb0)
 			assign(key, lb, envir = cache)
 		}
 		lp <- if (max(p) == 1L) log(1 - prior_h1) else {
@@ -126,7 +144,13 @@
 	paste(vapply(blocks, function(ix) paste(lev[ix][order(means[ix])], collapse = " = "), character(1)), collapse = " < ")
 }
 
-.bay_posthoc_oneway <- function(y, g, rscale, prior_h1, draws, seed, alphas = c(1, 1/2, 2)) {
+.bay_posthoc_oneway <- function(y, g, rscale, prior_h1, draws, seed, alphas = c(1, 1/2, 2), id = NULL) {
+	rm <- !is.null(id)
+	# Computed on the standardised response (Bayes factors and delta do not depend on the
+	# scale), the gaps put back in the units of y: no overflow at extreme scales (1e200).
+	sc <- max(abs(y - stats::median(y)))
+	if (!is.finite(sc) || sc <= 0) sc <- 1
+	y <- (y - mean(y)) / sc
 	g <- droplevels(as.factor(g))
 	lev <- levels(g)
 	k <- length(lev)
@@ -135,15 +159,18 @@
 	res <- data.frame(group1 = lev[pairs[1L, ]], group2 = lev[pairs[2L, ]], stringsAsFactors = FALSE)
 	parts_tab <- NULL
 	p_sens <- NULL
-	method <- if (k <= .bay_posthoc_max_groups()) "exact" else "gibbs"
+	method <- if (k <= .bay_posthoc_max_groups(rm)) "exact" else "gibbs"
 	mc_error <- 0
 	n_sweeps <- NA_integer_
 	if (method == "exact") {
 		parts <- .bay_partitions(k)
-		lb <- vapply(parts, function(p) {
-			if (max(p) == 1L) return(0)
-			.bay_bf_oneway_zs(y, factor(p[as.integer(g)]), rscale)
-		}, numeric(1))
+		lb <- .bay_with_seed(seed, {
+			lb0 <- .bay_subject_lb0(y, id)
+			vapply(parts, function(p) {
+				if (max(p) == 1L) return(0)
+				.bay_partition_bf(y, factor(p[as.integer(g)]), rscale, id, lb0)
+			}, numeric(1))
+		})
 		pm <- do.call(rbind, parts)
 		post_of <- function(alpha) {
 			lp <- .bay_partition_prior(parts, prior_h1, alpha)
@@ -161,7 +188,7 @@
 			stringsAsFactors = FALSE)
 	} else {
 		n_sweeps <- max(2000L, as.integer(draws) %/% 2L)
-		gb <- .bay_partition_gibbs(y, g, rscale, prior_h1, n_sweeps, 200L, seed, alphas[1L])
+		gb <- .bay_partition_gibbs(y, g, rscale, prior_h1, n_sweeps, 200L, seed, alphas[1L], id = id)
 		D <- gb$draws
 		nb <- apply(D, 1L, max)
 		null <- nb == 1L
@@ -199,7 +226,10 @@
 
 	# How much: posterior of the model where all groups may differ.
 	dd <- data.frame(y = y, g = g)
-	po <- .bay_with_seed(seed, BayesFactor::posterior(BayesFactor::lmBF(y ~ g, data = dd, rscaleFixed = rscale),
+	if (rm) dd$id <- id
+	fo <- if (rm) y ~ g + id else y ~ g
+	po <- .bay_with_seed(seed, BayesFactor::posterior(BayesFactor::lmBF(fo, data = dd, rscaleFixed = rscale,
+			whichRandom = if (rm) "id" else NULL, progress = FALSE),
 		iterations = max(4000L, as.integer(draws)), progress = FALSE))
 	po <- as.matrix(po)
 	eff <- po[, paste0("g-", lev), drop = FALSE]
@@ -213,8 +243,33 @@
 		dif <- m[, pairs[2L, j]] - m[, pairs[1L, j]]
 		c(hdi_of(dif), hdi_of(dif / sig))
 	}, numeric(6)))
-	res$diff <- st[, 1L]; res$diff_low <- st[, 2L]; res$diff_high <- st[, 3L]
+	res$diff <- sc * st[, 1L]; res$diff_low <- sc * st[, 2L]; res$diff_high <- sc * st[, 3L]
 	res$delta <- st[, 4L]; res$delta_low <- st[, 5L]; res$delta_high <- st[, 6L]
 	list(pairs = res, partitions = parts_tab, k = k, alphas = alphas, draws = nrow(po),
-		computed = TRUE, method = method, n_partitions = .bay_bell(k), sweeps = n_sweeps, mc_error = mc_error)
+		computed = TRUE, method = method, n_partitions = .bay_bell(k), sweeps = n_sweeps, mc_error = mc_error,
+		max_exact = .bay_posthoc_max_groups(rm), delta_unit = if (rm) "within" else "pooled")
+}
+
+# Paired data, two levels (D15): size of the difference from the posterior of ttestBF on the
+# differences [BayesFactor]: mean difference (second level minus first) and standardised
+# difference dz (over the standard deviation of the differences), medians and 95 % HDI.
+.bay_posthoc_paired <- function(y, g, id, rscale, draws, seed) {
+	g <- droplevels(as.factor(g))
+	lev <- levels(g)
+	sc <- max(abs(y - stats::median(y)))
+	if (!is.finite(sc) || sc <= 0) sc <- 1
+	pr <- .bay_paired_xy((y - mean(y)) / sc, g, id)
+	po <- .bay_with_seed(seed, BayesFactor::posterior(BayesFactor::ttestBF(x = pr$b, y = pr$a, paired = TRUE, rscale = rscale),
+		iterations = max(4000L, as.integer(draws)), progress = FALSE))
+	po <- as.matrix(po)
+	hdi_of <- function(x) {
+		h <- bayestestR::hdi(as.numeric(x), ci = 0.95)
+		c(stats::median(x), h$CI_low, h$CI_high)
+	}
+	a <- hdi_of(po[, "mu"]); b <- hdi_of(po[, "delta"])
+	res <- data.frame(group1 = lev[1L], group2 = lev[2L], p_differ = NA_real_, p_min = NA_real_, p_max = NA_real_,
+		diff = sc * a[1L], diff_low = sc * a[2L], diff_high = sc * a[3L], delta = b[1L], delta_low = b[2L], delta_high = b[3L],
+		stringsAsFactors = FALSE)
+	list(pairs = res, partitions = NULL, k = 2L, draws = nrow(po), computed = TRUE, method = "paired",
+		n_partitions = 2, sweeps = NA_integer_, mc_error = 0, delta_unit = "diff", n_pairs = length(pr$id))
 }

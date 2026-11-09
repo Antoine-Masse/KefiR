@@ -1,5 +1,29 @@
 # Journal de m.bay
 
+## Séance 7 : 9 novembre 2026, données appariées et mesures répétées (D15)
+
+**Cadre.** Demande de la session parente : après le post-hoc, traiter les plans du PERIMETRE dans l'ordre suivant : appariés et mesures répétées, puis ANCOVA, puis le discret.
+
+**Fait.**
+- Apparié : `ttestBF(paired = TRUE)`, exact. La taille de l'écart est donnée en dz, avec son intervalle de crédibilité.
+- Mesures répétées et plan en tranches : `lmBF(whichRandom = id)`, chaque modèle étant lu contre les sujets seuls. Un facteur intra reçoit le post-hoc par regroupements, avec sujet.
+- Récit :
+  - le plan reconnu, avec intra et inter ;
+  - les sujets complets ;
+  - les valeurs éloignées, cherchées une fois retiré le niveau de chaque sujet ;
+  - la symétrie composée, nommée ;
+  - l'étape « De combien les deux niveaux diffèrent » ou « Quelles conditions diffèrent ».
+- Les plans avec répliques (modèle mixte) restent refusés.
+- Post-hoc : y est standardisé avant le calcul. À l'échelle 1e200, les tirages débordaient et donnaient des intervalles NA (message de bayestestR vu dans la suite).
+
+**Vérifié.**
+- Calcul indépendant `agent_55` : l'apparié et 4 sessions concordent avec des intégrales programmées par l'agent. Le post-hoc concorde à 0,3 point près, après correction d'une erreur de dénominateur dans la référence.
+- Calibration `agent_56`. Tout est dans VALIDATION §10.
+
+**Non vérifié.**
+- Relecture des récits D, E et F par un lecteur type.
+- Calibration du plan en tranches et des sujets incomplets.
+
 ## Séance 6 : 9 novembre 2026, post-hoc à un facteur (D11)
 
 **Cadre.** La session parente a demandé le post-hoc à un facteur puis à plusieurs : paquets établis, contrôle indépendant, intégration au récit, taille d'effet avec intervalle de crédibilité. Elle a ensuite audité le post-hoc non commité, en quatre points.

@@ -157,6 +157,28 @@
 				" combinaisons de termes sont possibles (une interaction n'entre qu'avec ses facteurs : h\u00e9r\u00e9dit\u00e9)."))
 		.bay_tell(st, paste0("One answer per term, obtained by weighing these ", length(sp$models), " combinations together."),
 			paste0("Une r\u00e9ponse par terme, obtenue en pesant ensemble ces ", length(sp$models), " combinaisons."), "decide")
+	} else if (input$plan %in% c("paired", "repeated")) {
+		ns <- nlevels(input$id)
+		lv <- vapply(fac, nlevels, integer(1))
+		wi <- intersect(input$within, names(fac)); bw <- setdiff(names(fac), wi)
+		desc_en <- paste0(nm, " (", lv, " levels", ifelse(names(fac) %in% wi, ", within subject", ", between subjects"), ")", collapse = ", ")
+		desc_fr <- paste0(nm, " (", lv, " niveaux", ifelse(names(fac) %in% wi, ", intra-sujet", ", entre sujets"), ")", collapse = ", ")
+		if (identical(input$plan, "paired")) {
+			.bay_tell(st, paste0("Plan recognised: paired data, ", nm[1L], " (", paste(levels(fac[[1L]]), collapse = ", "), ") measured on the same ", ns, " subjects; N = ", N, "."),
+				paste0("Plan reconnu : donn\u00e9es appari\u00e9es, ", nm[1L], " (", paste(levels(fac[[1L]]), collapse = ", "), ") mesur\u00e9 sur les m\u00eames ", ns, " sujets ; N = ", N, "."), "step")
+		} else {
+			.bay_tell(st, paste0("Plan recognised: repeated measures on ", ns, " subjects, ", desc_en, "; N = ", N, "."),
+				paste0("Plan reconnu : mesures r\u00e9p\u00e9t\u00e9es sur ", ns, " sujets, ", desc_fr, " ; N = ", N, "."), "step")
+		}
+		terms <- gsub("`", "", input$terms, fixed = TRUE)
+		if (length(terms) == 1L) {
+			.bay_tell(st, paste0("One question: is there a difference in ", input$response_name, " according to ", nm[1L], ", each subject compared with itself?"),
+				paste0("Une seule question : y a-t-il une diff\u00e9rence de ", input$response_name, " selon ", nm[1L], ", chaque sujet compar\u00e9 \u00e0 lui-m\u00eame ?"), "decide")
+		} else {
+			sp <- .bay_fact_space(terms)
+			.bay_tell(st, paste0("Terms: ", paste(terms, collapse = ", "), "; one answer per term, obtained by weighing the ", length(sp$models), " combinations of terms together."),
+				paste0("Termes : ", paste(terms, collapse = ", "), " ; une r\u00e9ponse par terme, obtenue en pesant ensemble les ", length(sp$models), " combinaisons de termes."), "decide")
+		}
 	} else {
 		lab <- list(
 			en = c(ancova = "covariates (ANCOVA)", paired = "paired data", repeated = "repeated measures",
@@ -205,10 +227,18 @@
 }
 
 # Step 6, one factor: which groups differ, and by how much.
-.bay_story_posthoc <- function(st, ph, caution = FALSE) {
+.bay_story_posthoc <- function(st, ph, caution = FALSE, subjects = FALSE) {
 	if (is.null(st) || is.null(ph)) return(invisible(NULL))
-	.bay_tell(st, "Which groups differ, and by how much.", "Quels groupes diff\u00e8rent, et de combien.", "step",
-		fun = "lmBF(), posterior() {BayesFactor}, hdi() {bayestestR}")
+	if (identical(ph$method, "paired")) {
+		.bay_tell(st, "By how much the two levels differ.", "De combien les deux niveaux diff\u00e8rent.", "step",
+			fun = "posterior(ttestBF()) {BayesFactor}, hdi() {bayestestR}")
+	} else if (subjects) {
+		.bay_tell(st, "Which conditions differ, and by how much.", "Quelles conditions diff\u00e8rent, et de combien.", "step",
+			fun = "lmBF(whichRandom = id), posterior() {BayesFactor}, hdi() {bayestestR}")
+	} else {
+		.bay_tell(st, "Which groups differ, and by how much.", "Quels groupes diff\u00e8rent, et de combien.", "step",
+			fun = "lmBF(), posterior() {BayesFactor}, hdi() {bayestestR}")
+	}
 	pr <- ph$pairs
 	ci_txt <- function(x, lo, hi, dc) {
 		f <- function(v) gsub(".", dc, format(signif(v, 2), trim = TRUE), fixed = TRUE)
@@ -218,10 +248,10 @@
 	if (ph$k > 2L && identical(ph$method, "gibbs")) {
 		mc <- max(1L, ceiling(200 * ph$mc_error))
 		.bay_tell(st, paste0("Change of strategy: ", big(ph$n_partitions), " possible groupings, too many to compute them all (more than ",
-				.bay_posthoc_max_groups(), " groups); they are explored by draws (Gibbs sampler, Gopalan and Berry 1998), ",
+				ph$max_exact, " groups); they are explored by draws (Gibbs sampler, Gopalan and Berry 1998), ",
 				big(ph$sweeps), " rounds; the probabilities carry a sampling error of about ", mc, " percentage point(s)."),
 			paste0("Changement de strat\u00e9gie : ", big(ph$n_partitions), " regroupements possibles, trop pour les calculer tous (plus de ",
-				.bay_posthoc_max_groups(), " groupes) ; ils sont explor\u00e9s par tirage (\u00e9chantillonneur de Gibbs, Gopalan et Berry 1998), ",
+				ph$max_exact, " groupes) ; ils sont explor\u00e9s par tirage (\u00e9chantillonneur de Gibbs, Gopalan et Berry 1998), ",
 				big(ph$sweeps), " tours ; les probabilit\u00e9s portent une erreur de tirage d'environ ", mc, " point(s)."), "decide")
 	}
 	if (ph$k > 2L) {
@@ -233,14 +263,15 @@
 			paste0("Regroupements les plus probables (", n_fr, ") : ",
 				paste0(top$partition, " (", vapply(top$posterior, .bay_pct, character(1), dec = ","), ")", collapse = " ; "), "."))
 	}
+	unit <- .bay_delta_unit(ph)
 	shown <- .bay_posthoc_shown(pr)
 	for (i in shown) {
 		lead_en <- if (ph$k > 2L) paste0(pr$group1[i], " and ", pr$group2[i], ": different at ", .bay_pct(pr$p_differ[i], "."), "; estimated gap ") else "Estimated gap "
 		lead_fr <- if (ph$k > 2L) paste0(pr$group1[i], " et ", pr$group2[i], " : diff\u00e9rents \u00e0 ", .bay_pct(pr$p_differ[i], ","), " ; \u00e9cart estim\u00e9 ") else "\u00c9cart estim\u00e9 "
 		.bay_tell(st, paste0(lead_en, pr$group2[i], " - ", pr$group1[i], " = ", ci_txt(pr$diff[i], pr$diff_low[i], pr$diff_high[i], "."),
-				", i.e. ", ci_txt(pr$delta[i], pr$delta_low[i], pr$delta_high[i], "."), " SD."),
+				", i.e. ", ci_txt(pr$delta[i], pr$delta_low[i], pr$delta_high[i], "."), " ", unit$en, "."),
 			paste0(lead_fr, pr$group2[i], " - ", pr$group1[i], " = ", ci_txt(pr$diff[i], pr$diff_low[i], pr$diff_high[i], ","),
-				", soit ", ci_txt(pr$delta[i], pr$delta_low[i], pr$delta_high[i], ","), " \u00e9cart-type."))
+				", soit ", ci_txt(pr$delta[i], pr$delta_low[i], pr$delta_high[i], ","), " ", unit$fr, "."))
 	}
 	if (length(shown) < nrow(pr)) {
 		.bay_tell(st, paste0("The other ", nrow(pr) - length(shown), " pairs lean towards alike (different below 50 %); all pairs: $posthoc$pairs."),
@@ -265,4 +296,63 @@
 	if (nrow(pr) <= 15L || anyNA(pr$p_differ)) return(seq_len(nrow(pr)))
 	ix <- which(pr$p_differ >= 0.5)
 	ix[order(-pr$p_differ[ix])]
+}
+
+# Unit of the standardised difference: pooled SD between groups, residual SD within subject
+# (subject's own level removed), or SD of the paired differences (dz).
+.bay_delta_unit <- function(ph) {
+	switch(if (is.null(ph$delta_unit)) "pooled" else ph$delta_unit,
+		within = list(en = "residual SD within subject", fr = "\u00e9cart-type r\u00e9siduel au sein des sujets"),
+		diff = list(en = "SD of the differences (dz)", fr = "\u00e9cart-type des diff\u00e9rences (dz)"),
+		list(en = "SD", fr = "\u00e9cart-type"))
+}
+
+# Steps 2 to 4 for paired data and repeated measures (D15).
+.bay_story_rm <- function(st, input, y, paired, n_dropped) {
+	if (is.null(st)) return(invisible(NULL))
+	id <- input$id
+	fac <- input$factors
+	ns <- nlevels(id)
+	if (n_dropped > 0L) {
+		.bay_tell(st, paste0(n_dropped, " subject(s) without a measure at both levels removed: a pair needs both."),
+			paste0(n_dropped, " sujet(s) sans mesure aux deux niveaux retir\u00e9(s) : une paire demande les deux."), "decide")
+	}
+	cells <- interaction(fac, drop = TRUE)
+	wi <- intersect(input$within, names(fac))
+	wc <- if (length(wi)) interaction(fac[wi], drop = TRUE) else cells
+	full <- sum(tapply(wc, id, function(v) length(unique(v))) == nlevels(wc))
+	.bay_tell(st, paste0("Subjects: ", ns, "; measured in every condition within subject: ", full, "."),
+		paste0("Sujets : ", ns, " ; mesur\u00e9s dans toutes les conditions intra-sujet : ", full, "."))
+	if (full < ns) {
+		.bay_tell(st, "Incomplete subjects are kept: the model with a subject effect uses all their measures.",
+			"Les sujets incomplets sont gard\u00e9s : le mod\u00e8le \u00e0 effet sujet utilise toutes leurs mesures.", "decide")
+	}
+	dev <- y - stats::ave(y, id) + mean(y)
+	.bay_tell(st, "Values far from their condition are sought once each subject's own level is removed.",
+		"Les valeurs \u00e9loign\u00e9es sont cherch\u00e9es une fois retir\u00e9 le niveau propre de chaque sujet.", "info")
+	chk <- .bay_story_checks(st, dev, cells, "condition", "condition")
+	.bay_tell(st, "No value is removed.", "Aucune valeur n'est retir\u00e9e.", "decide")
+	.bay_tell(st, "Shape of the noise.", "Forme du bruit.", "step")
+	if (paired) {
+		.bay_tell(st, "Paired data: the comparison rests on the difference within each subject, which removes what varies from one subject to another.",
+			"Donn\u00e9es appari\u00e9es : la comparaison porte sur la diff\u00e9rence au sein de chaque sujet, ce qui retire ce qui varie d'un sujet \u00e0 l'autre.")
+	} else {
+		.bay_tell(st, "Repeated measures: each subject keeps its own level (random subject effect, present in every model compared, \"no difference\" included).",
+			"Mesures r\u00e9p\u00e9t\u00e9es : chaque sujet garde son niveau propre (effet sujet al\u00e9atoire, pr\u00e9sent dans tous les mod\u00e8les compar\u00e9s, \u00ab aucune diff\u00e9rence \u00bb compris).")
+	}
+	if (!paired) {
+		.bay_tell(st, "A random subject effect assumes that all conditions are equally correlated within a subject (compound symmetry); this is not tested here (m.test() checks sphericity with Mauchly's test).",
+			"Un effet sujet al\u00e9atoire suppose que toutes les conditions sont \u00e9galement corr\u00e9l\u00e9es au sein d'un sujet (sym\u00e9trie compos\u00e9e) ; ce n'est pas test\u00e9 ici (m.test() contr\u00f4le la sph\u00e9ricit\u00e9 par le test de Mauchly).")
+	}
+	.bay_tell(st, "Only the normal law is computed: heavy tails and unequal variances between conditions are not validated for subjects yet, so they are not compared.",
+		"Seule la loi normale est calcul\u00e9e : queues lourdes et variances in\u00e9gales entre conditions ne sont pas encore valid\u00e9es avec des sujets, elles ne sont donc pas compar\u00e9es.")
+	far <- chk$extremes[["far"]]
+	if (far > 0L) {
+		.bay_tell(st, paste0(far, " value(s) lie beyond 3 interquartile ranges of their condition: the answer assumes a normal noise, read it with caution."),
+			paste0(far, " valeur(s) au-del\u00e0 de 3 \u00e9carts interquartiles de leur condition : la r\u00e9ponse suppose un bruit normal, la lire avec r\u00e9serve."), "decide")
+	} else {
+		.bay_tell(st, "No value lies far enough to put the normal law in doubt at first sight; it is not tested against the others.",
+			"Aucune valeur n'est assez \u00e9loign\u00e9e pour mettre d'embl\u00e9e la loi normale en doute ; elle n'est pas mise \u00e0 l'\u00e9preuve des autres.", "decide")
+	}
+	invisible(chk)
 }

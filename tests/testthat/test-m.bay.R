@@ -75,9 +75,10 @@ test_that("plans pas encore valides : refus explicite", {
 		b = rep(0:1, 18))
 	expect_error(go(y ~ variete + x, data = e), "covariables")
 	expect_error(go(cbind(y, y2) ~ variete, data = e), "MANOVA")
-	expect_error(go(y ~ variete + Error(id/variete), data = e), "mesures r")
-	expect_error(go(y ~ variete + (1 | id), data = e), "mesures r")
-	expect_error(go(y ~ variete | id, data = e), "mesures r")
+	# mesures repetees : acceptees depuis D15 (test-bay-repeated.R), les trois ecritures concordent
+	lb <- vapply(list(y ~ variete + Error(id/variete), y ~ variete + (1 | id), y ~ variete | id),
+		function(f) go(f, data = e)$effects$log_bf, numeric(1))
+	expect_equal(lb[2:3], rep(lb[1], 2), tolerance = 1e-8)
 	expect_error(go(y ~ B, data = e, id = "id", paired = TRUE), "appari|mesures|mixte")
 	expect_error(go(b ~ variete, data = e), "binaire")
 	expect_error(go(y ~ absent, data = e), "introuvable")

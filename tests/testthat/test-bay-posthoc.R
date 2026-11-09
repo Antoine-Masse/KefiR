@@ -113,3 +113,14 @@ test_that("variances inegales : le recit et la conclusion disent de lire les pai
 	court <- paste(capture.output(print(r)), collapse = "\n")
 	expect_match(court, "lire avec r\u00e9serve|read with caution")
 })
+
+test_that("echelle extreme : les intervalles restent finis et suivent l'unite de y", {
+	set.seed(3)
+	y <- c(rnorm(10), rnorm(10, 1))
+	g <- rep(1:2, each = 10)
+	a <- .bay_posthoc_oneway(y, g, 0.5, 0.5, 2000, 1L)
+	b <- .bay_posthoc_oneway(y * 1e200, g, 0.5, 0.5, 2000, 1L)
+	expect_false(anyNA(b$pairs[, c("diff_low", "diff_high", "delta_low", "delta_high")]))
+	expect_equal(b$pairs$diff / 1e200, a$pairs$diff, tolerance = 1e-6)
+	expect_equal(b$pairs$delta, a$pairs$delta, tolerance = 1e-6)
+})

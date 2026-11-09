@@ -1,0 +1,145 @@
+### Cas D : tension avant / apres traitement, 14 patients (une mesure manquante)
+> m.bay(tension ~ moment | patient, data = d)
+
+1) Plan reconnu : données appariées, moment (avant, apres) mesuré sur les mêmes 14 sujets ; N = 27.
+	--> Une seule question : y a-t-il une différence de tension selon moment, chaque sujet comparé à lui-même ?
+2) Contrôles des données.
+	--> 1 sujet(s) sans mesure aux deux niveaux retiré(s) : une paire demande les deux.
+	==> Sujets : 13 ; mesurés dans toutes les conditions intra-sujet : 13.
+	Les valeurs éloignées sont cherchées une fois retiré le niveau propre de chaque sujet.
+	==> Effectifs : 13 par condition (2 conditions, N = 26).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur condition : 0 sur 26 au-delà de 1,5 écart interquartile, 0 au-delà de 3. [Tukey, quantile() {stats}]
+	--> Aucune valeur n'est retirée.
+3) Forme du bruit.
+	==> Données appariées : la comparaison porte sur la différence au sein de chaque sujet, ce qui retire ce qui varie d'un sujet à l'autre.
+	==> Seule la loi normale est calculée : queues lourdes et variances inégales entre conditions ne sont pas encore validées avec des sujets, elles ne sont donc pas comparées.
+	--> Aucune valeur n'est assez éloignée pour mettre d'emblée la loi normale en doute ; elle n'est pas mise à l'épreuve des autres.
+4) Point de départ (a priori), fixé par la méthode avant de voir les données.
+	==> 50 % de chances qu'une différence existe (pile ou face : la méthode ne prend pas parti) ; taille attendue r = 0,5 sur la différence standardisée au sein des sujets (dz).
+	--> Différence appariée : test t apparié bayésien de Rouder et al. (2009), r = 0,5 comme pour un effet sujet aléatoire (égal à lmBF(y ~ temps + id) à 0,2 près en échelle log).
+	--> Ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les fait varier pour voir si la réponse tient.
+5) Facteurs de Bayes des 2 modèles. [ttestBF(paired = TRUE) {BayesFactor}]
+	==> Facteur de Bayes, différence contre absence : 1,73.
+	==> Précision : ttestBF intègre numériquement, sans tirage ; aucune erreur de simulation.
+	==> Sensibilité : r de 0,25 à 1, croisé avec des chances de départ d'une différence de 1 contre 2 à 2 contre 1. [m.bay() {KefiR}]
+	==> Terme(s) qui changent de côté : moment (40,7 % à 77,6 %).
+	--> Prudence ajoutée : moment sera dit non tranché, quelle que soit sa probabilité affichée.
+6) De combien les deux niveaux diffèrent. [posterior(ttestBF()) {BayesFactor}, hdi() {bayestestR}]
+	==> Écart estimé apres - avant = -3,4 [-7,5 ; 0,58], soit -0,45 [-0,98 ; 0,11] écart-type des différences (dz).
+	Écart estimé : médiane a posteriori, légèrement ramenée vers zéro par l'a priori, donc un peu plus petite que l'écart observé de l'étape 7. Crochets : intervalle de crédibilité à 95 %, si une différence existe (la valeur s'y trouve avec 95 % de probabilité ; ce n'est pas un intervalle de confiance).
+7) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
+	Verdict : indécis. Les données ne permettent de conclure ni à une différence, ni à son absence.
+	  tension diffère selon moment : 63,4 % (non tranché par les données) ; Aucune différence de tension selon moment : 36,6 %.
+	Réponse (oui, non ou non tranché ; probabilité du oui compte tenu des données et du point de départ, et son a priori) :
+	  Différence de tension selon moment ? Non tranché (probabilité du oui 63,4 %, a priori 50,0 % ; selon le point de départ 40,7 % à 77,6 %).
+	     Les données déplacent peu ses cotes (multiplient par 1,73) ; seul l'a priori (50,0 %) le fait pencher vers le oui.
+	Taille de l'écart, s'il existe (écart estimé : médiane a posteriori, et intervalle de crédibilité à 95 % ; delta en écart-type des différences (dz)) :
+	  apres - avant = -3,4 [-7,5 ; 0,58], delta = -0,45 [-0,98 ; 0,11].
+	Moyennes observées par facteur (description de l'échantillon) :
+	  moment : avant = 138,4 (n = 13) ; apres = 134,1 (n = 13)
+	  Écart-type résiduel au sein des sujets (niveau propre de chaque sujet retiré) : 5,1.
+	Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend de la façon dont l'étude a été menée (tirage au sort, ordre, opérateur).
+	Facteurs de Bayes, a priori en détail, mode de lecture : print(resultat, detail = TRUE).
+
+### Cas E : temps de reaction a 4 sessions, 12 sujets
+> m.bay(rt ~ session | sujet, data = d)
+
+1) Plan reconnu : mesures répétées sur 12 sujets, session (4 niveaux, intra-sujet) ; N = 48.
+	--> Une seule question : y a-t-il une différence de rt selon session, chaque sujet comparé à lui-même ?
+2) Contrôles des données.
+	==> Sujets : 12 ; mesurés dans toutes les conditions intra-sujet : 12.
+	Les valeurs éloignées sont cherchées une fois retiré le niveau propre de chaque sujet.
+	==> Effectifs : 12 par condition (4 conditions, N = 48).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur condition : 3 sur 48 au-delà de 1,5 écart interquartile, 2 au-delà de 3. [Tukey, quantile() {stats}]
+	--> Aucune valeur n'est retirée.
+3) Forme du bruit.
+	==> Mesures répétées : chaque sujet garde son niveau propre (effet sujet aléatoire, présent dans tous les modèles comparés, « aucune différence » compris).
+	==> Un effet sujet aléatoire suppose que toutes les conditions sont également corrélées au sein d'un sujet (symétrie composée) ; ce n'est pas testé ici (m.test() contrôle la sphéricité par le test de Mauchly).
+	==> Seule la loi normale est calculée : queues lourdes et variances inégales entre conditions ne sont pas encore validées avec des sujets, elles ne sont donc pas comparées.
+	--> 2 valeur(s) au-delà de 3 écarts interquartiles de leur condition : la réponse suppose un bruit normal, la lire avec réserve.
+4) Point de départ (a priori), fixé par la méthode avant de voir les données.
+	==> 50 % de chances qu'une différence existe (pile ou face : la méthode ne prend pas parti) ; taille attendue r = 0,5 par terme (Zellner-Siow).
+	--> Sujets : effet aléatoire d'échelle 1 (Rouder et al. 2012), dans chaque modèle ; chaque réponse se lit contre le modèle avec les sujets seuls.
+	--> Ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les fait varier pour voir si la réponse tient.
+5) Facteurs de Bayes des 2 modèles. [lmBF(whichRandom = id) {BayesFactor}]
+	==> Facteur de Bayes, différence contre absence : 23,5.
+	==> Précision : recalculées avec une autre graine, les probabilités bougent d'au plus 0,0055 point(s) de pourcentage, négligeable.
+	==> Sensibilité : r de 0,25 à 1, croisé avec des chances de départ d'une différence de 1 contre 2 à 2 contre 1. [m.bay() {KefiR}]
+	--> Aucun terme ne change de côté.
+6) Quelles conditions diffèrent, et de combien. [lmBF(whichRandom = id), posterior() {BayesFactor}, hdi() {bayestestR}]
+	==> Regroupements les plus probables (15 comparés) : S4 < S3 = S2 = S1 (22,1 %) ; S4 < S3 = S2 < S1 (15,4 %) ; S4 < S3 < S2 = S1 (15,4 %).
+	==> S1 et S2 : différents à 44,0 % ; écart estimé S2 - S1 = -6,6 [-19 ; 5], soit -0,41 [-1,2 ; 0,34] écart-type résiduel au sein des sujets.
+	==> S1 et S3 : différents à 66,1 % ; écart estimé S3 - S1 = -12 [-24 ; 0,98], soit -0,74 [-1,5 ; 0,075] écart-type résiduel au sein des sujets.
+	==> S1 et S4 : différents à 91,6 % ; écart estimé S4 - S1 = -22 [-35 ; -7,4], soit -1,4 [-2,3 ; -0,44] écart-type résiduel au sein des sujets.
+	==> S2 et S3 : différents à 49,1 % ; écart estimé S3 - S2 = -5,2 [-17 ; 6,7], soit -0,32 [-1 ; 0,41] écart-type résiduel au sein des sujets.
+	==> S2 et S4 : différents à 84,7 % ; écart estimé S4 - S2 = -15 [-28 ; -1,9], soit -0,92 [-1,8 ; -0,13] écart-type résiduel au sein des sujets.
+	==> S3 et S4 : différents à 68,6 % ; écart estimé S4 - S3 = -9,7 [-22 ; 2,4], soit -0,61 [-1,4 ; 0,18] écart-type résiduel au sein des sujets.
+	Écart estimé : médiane a posteriori, légèrement ramenée vers zéro par l'a priori, donc un peu plus petite que l'écart observé de l'étape 7. Crochets : intervalle de crédibilité à 95 %, si une différence existe (la valeur s'y trouve avec 95 % de probabilité ; ce n'est pas un intervalle de confiance).
+	--> Toutes les paires viennent d'une seule loi sur les regroupements : aucune correction paire par paire n'est nécessaire, et les réponses ne peuvent pas se contredire.
+7) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
+	Verdict : une différence existe très probablement. Cela ne dit ni qu'elle est importante, ni pourquoi ; les paires sont plus bas.
+	  rt diffère selon session : 95,9 % (soutien fort) ; Aucune différence de rt selon session : 4,1 %.
+	Réponse (oui, non ou non tranché ; probabilité du oui compte tenu des données et du point de départ, et son a priori) :
+	  Différence de rt selon session ? Oui, soutien fort (probabilité du oui 95,9 %, a priori 50,0 %).
+	     Repose sur les données, qui multiplient ses cotes (rapport oui/non) par 23,5 (facteur de Bayes).
+	  La réponse ne change pas de côté quand r ou les chances de départ changent.
+	Quelles conditions diffèrent (loi normale, effet sujet aléatoire ; probabilité, puis écart estimé et intervalle de crédibilité à 95 %) :
+	  S1 / S2 : non tranché (différents à 44,0 %) ; écart estimé S2 - S1 = -6,6 [-19 ; 5], delta = -0,41 [-1,2 ; 0,34].
+	  S1 / S3 : différents, soutien faible (différents à 66,1 %) ; écart estimé S3 - S1 = -12 [-24 ; 0,98], delta = -0,74 [-1,5 ; 0,075].
+	  S1 / S4 : différents, soutien modéré (différents à 91,6 %) ; écart estimé S4 - S1 = -22 [-35 ; -7,4], delta = -1,4 [-2,3 ; -0,44].
+	  S2 / S3 : non tranché (différents à 49,1 %) ; écart estimé S3 - S2 = -5,2 [-17 ; 6,7], delta = -0,32 [-1 ; 0,41].
+	  S2 / S4 : différents, soutien modéré (différents à 84,7 %) ; écart estimé S4 - S2 = -15 [-28 ; -1,9], delta = -0,92 [-1,8 ; -0,13].
+	  S3 / S4 : différents, soutien faible (différents à 68,6 %) ; écart estimé S4 - S3 = -9,7 [-22 ; 2,4], delta = -0,61 [-1,4 ; 0,18].
+	  Regroupement le plus probable : S4 < S3 = S2 = S1 (22,1 %).
+	Moyennes observées par facteur (description de l'échantillon) :
+	  session : S1 = 462 (n = 12) ; S2 = 454 (n = 12) ; S3 = 448 (n = 12) ; S4 = 435 (n = 12)
+	  Écart-type résiduel au sein des sujets (niveau propre de chaque sujet retiré) : 15.
+	Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend de la façon dont l'étude a été menée (tirage au sort, ordre, opérateur).
+	Facteurs de Bayes, a priori en détail, mode de lecture : print(resultat, detail = TRUE).
+
+### Cas F : score selon le groupe (entre sujets) et la seance (intra), 2 x 3, 10 sujets par groupe
+> m.bay(score ~ groupe * seance + Error(id / seance), data = d)
+
+1) Plan reconnu : mesures répétées sur 20 sujets, groupe (2 niveaux, entre sujets), seance (3 niveaux, intra-sujet) ; N = 60.
+	--> Termes : groupe, seance, groupe:seance ; une réponse par terme, obtenue en pesant ensemble les 5 combinaisons de termes.
+2) Contrôles des données.
+	==> Sujets : 20 ; mesurés dans toutes les conditions intra-sujet : 20.
+	Les valeurs éloignées sont cherchées une fois retiré le niveau propre de chaque sujet.
+	==> Effectifs : 10 par condition (6 conditions, N = 60).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur condition : 0 sur 60 au-delà de 1,5 écart interquartile, 0 au-delà de 3. [Tukey, quantile() {stats}]
+	--> Aucune valeur n'est retirée.
+3) Forme du bruit.
+	==> Mesures répétées : chaque sujet garde son niveau propre (effet sujet aléatoire, présent dans tous les modèles comparés, « aucune différence » compris).
+	==> Un effet sujet aléatoire suppose que toutes les conditions sont également corrélées au sein d'un sujet (symétrie composée) ; ce n'est pas testé ici (m.test() contrôle la sphéricité par le test de Mauchly).
+	==> Seule la loi normale est calculée : queues lourdes et variances inégales entre conditions ne sont pas encore validées avec des sujets, elles ne sont donc pas comparées.
+	--> Aucune valeur n'est assez éloignée pour mettre d'emblée la loi normale en doute ; elle n'est pas mise à l'épreuve des autres.
+4) Point de départ (a priori), fixé par la méthode avant de voir les données.
+	==> Taille d'un effet : r = 0,5 par terme (Zellner-Siow). Chance de chaque terme, pris seul (ces chances ne s'additionnent pas) : groupe 50,0 %, seance 50,0 %, groupe:seance 16,7 % ; aucune différence du tout 33,3 %.
+	--> Sujets : effet aléatoire d'échelle 1 (Rouder et al. 2012), dans chaque modèle ; chaque réponse se lit contre le modèle avec les sujets seuls.
+	--> Pourquoi : une proportion ~ Beta(1,1) par ordre d'interaction (HOP, Taylor-Rodriguez et al. 2016) : plus il y a de termes, moins chacun est probable d'avance, ce qui protège des fausses interactions ; une interaction n'entre qu'avec ses facteurs.
+5) Facteurs de Bayes des 5 modèles. [lmBF(whichRandom = id) {BayesFactor}]
+	==> Précision numérique : deux calculs avec des graines différentes diffèrent jusqu'à 2,3 points de probabilité.
+	==> Sensibilité : r de 0,25 à 1, croisé avec trois lois sur les modèles (HOP, 1/2 par terme, uniforme). [m.bay() {KefiR}]
+	==> Terme(s) qui changent de côté : groupe (42,6 % à 69,4 %), seance (46,7 % à 78,6 %).
+	--> Prudence ajoutée : groupe, seance seront dits non tranchés, quelle que soit leur probabilité affichée.
+6) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
+	Verdict : indécis. Les données ne permettent de conclure ni à une différence, ni à son absence.
+	  score diffère selon au moins un facteur : 76,4 % (non tranché par les données) ; Aucune différence de score selon groupe, seance : 23,6 %.
+	     Repose sur l'ensemble des termes ; aucun n'est tranché seul (le plus probable : seance, 68,0 %).
+	Réponse par terme (oui, non ou non tranché ; probabilité du oui compte tenu des données et du point de départ, et son a priori) :
+	  Différence de score selon groupe, seul ou en interaction ? Non tranché (probabilité du oui 61,2 %, a priori 50,0 % ; selon le point de départ 42,6 % à 69,4 %).
+	     Les données déplacent peu ses cotes (multiplient par 1,58) ; seul l'a priori (50,0 %) le fait pencher vers le oui.
+	  Différence de score selon seance, seul ou en interaction ? Non tranché (probabilité du oui 68,0 %, a priori 50,0 % ; selon le point de départ 46,7 % à 78,6 %).
+	     Les données déplacent peu ses cotes (multiplient par 2,13) ; seul l'a priori (50,0 %) le fait pencher vers le oui.
+	  Les écarts selon groupe varient-ils avec seance (groupe:seance) ? Non tranché (probabilité du oui 41,8 %, a priori 16,7 %).
+	     Les données penchent vers le oui (cotes multipliées par 3,59) ; l'a priori (16,7 %) penche de l'autre côté : non tranché.
+	Moyennes observées par facteur (description ; ce bilan ne dit pas quels niveaux diffèrent) :
+	  groupe : entraine = 51,4 (n = 30) ; temoin = 53,8 (n = 30)
+	  seance : s1 = 51,2 (n = 20) ; s2 = 53,8 (n = 20) ; s3 = 52,9 (n = 20)
+	  Par case : entraine x s1 = 48,4 ; temoin x s1 = 54,0 ; entraine x s2 = 53,4 ; temoin x s2 = 54,1 ; entraine x s3 = 52,5 ; temoin x s3 = 53,3.
+	  Écart-type résiduel au sein des sujets (niveau propre de chaque sujet retiré) : 3,0.
+	Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend de la façon dont l'étude a été menée (tirage au sort, ordre, opérateur).
+	Facteurs de Bayes, a priori en détail, mode de lecture : print(resultat, detail = TRUE).
