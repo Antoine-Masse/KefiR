@@ -1,5 +1,30 @@
 # Journal de m.bay
 
+## Séance 4 : 7 au 9 novembre 2026, jalon 2 (plusieurs facteurs), sous-session auditée par « KefiR officiel »
+
+**Cadre.** Audit du jalon 1 accepté, avec six points (VALIDATION §7). Le moteur multi-facteurs interne avait été arrêté par le filtre de sécurité : non repris. Décision d'Antoine le 9 novembre (« Oui, via BayesFactor ») : D1 tranchée, puis son principe pour la suite (appeler des paquets établis). Simulations interrompues dans la nuit du 7 au 8 (machine), reprises depuis leurs tranches.
+
+**Fait.**
+- `R/sys_bay_factorial.R` : plusieurs facteurs croisés, loi normale à variance commune, vraisemblances `BayesFactor::lmBF` ; espace héréditaire, loi HOP, probabilité par terme, sensibilité (r × trois lois sur les modèles), bilan court. BayesFactor en Imports, `importFrom(lmBF, extractBF)`. Un facteur : calcul interne inchangé.
+- D2 tranchée : HOP(1,1) (`agent_47`, `agent_49`). D1 consignée avec le principe d'Antoine.
+- Validation : référence Monte-Carlo indépendante des lois hétérogènes (`agent_45`, `agent_48`) ; seuil des queues lourdes (`agent_46`) ; référence indépendante à deux g pour `lmBF` (`agent_51`) ; calibration et plans déséquilibrés (`agent_50`) ; relecture adverse (`RELECTURE_ADVERSE_2026-11-09.md`, dix points traités).
+- Deux défauts de BayesFactor contournés : `integrate` en échec à très grand effet (NA), erreur annoncée non fiable sur les modèles à plusieurs termes.
+
+**Vérifié (comment).** Voir VALIDATION §7 et §8 ; tests relancés sur le code final (7ad4dc2) : 8 fichiers, 126 tests, 582 assertions, 0 échec (dont test-m.test 20/52, test-manova 22/59, test-valreg 6/12) ; `R CMD check --no-manual --ignore-vignettes` : Status OK (une note de xref sur `ez`, absent de mbay-lib). `m.test()` intact : `git diff 3675fc7 HEAD -- R/m.test.R` vide ; aucun fichier de `R/` hors `m.bay.R` et `sys_bay_*` modifié.
+
+**Non vérifié.** Facteurs à plus de 3 niveaux ; 4 facteurs ; plans très déséquilibrés ; r ≠ 0,5 dans la référence indépendante ; cas `agent_49` sur A:B:C (en cours) ; lisibilité du bilan multi-facteurs par un lecteur type ; queues lourdes et variances inégales à plusieurs facteurs (hors périmètre de ce jalon, annoncé dans le bilan).
+
+**Écarts de méthode.** Deux fois l'argument `f=` capté par `fun` de `parLapplyLB` (agent_47, agent_50) : renommé. Les outils d'écriture transforment `\` et `\uXXXX` : patches par numéro de ligne et `chr(92)`. roxygen 8 réécrit NAMESPACE et d'autres Rd : rétablis à la main, seul `man/m.bay.Rd` régénéré.
+
+**Reproduire**, depuis le worktree :
+```bash
+Rscript dev/mbay/scripts/agent_49_scenario_additif.R 300 200 5
+Rscript dev/mbay/scripts/agent_50_multi_validation.R A 1200 3
+Rscript dev/mbay/scripts/agent_50_multi_validation.R B 300 2
+Rscript dev/mbay/scripts/agent_51_reference_2g.R
+Rscript dev/mbay/scripts/agent_48_compare_mc.R
+```
+
 ## Séance 3 : 6 et 7 novembre 2026, sous-session auditée par « KefiR officiel »
 
 **Cadre.** Consigne de la session « KefiR officiel », en remplacement de la routine d'une heure. Démarrée à la fin de l'ancienne routine (`f2b8d9d`, worktree propre, vérifié). Interruption dans la nuit du 6 au 7 (PC endormi, cause non confirmée) : simulations arrêtées et reprises ; elles sont désormais reprenables, 3 ou 4 cœurs, chargement léger.
