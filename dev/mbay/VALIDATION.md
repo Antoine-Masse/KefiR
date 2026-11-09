@@ -446,3 +446,93 @@ Modèle tiré selon la loi HOP, g ~ InvGamma(1/2, r²/2) par terme, effets sur l
 | 2×2 déséquilibré | 0,392 / 0,399 | 1,20 | 0,328 / 0,323 |
 
 Par tranche (0 à 0,1 ; 0,1 à 0,3 ; … ; 0,9 à 1), l'écart dépasse 0,03 seulement dans la tranche 0,5 à 0,7 : annoncé 0,585 à 0,589, observé 0,623 à 0,632, dans les trois plans (environ 230 termes par plan, soit un peu plus d'une erreur standard chacun). Légère prudence possible à ce niveau, sans effet sur les seuils de 0,75 et 0,95. À 600 jeux, le 2×2 déséquilibré donnait z = 2,48 : non confirmé à 1 200. Un jeu tiré avec g = 2·10⁴ faisait échouer l'`integrate` de `lmBF` (NA) : les modèles à un seul effet principal passent désormais par le calcul interne, et le jeu a été recalculé.
+
+## 9. Post-hoc à un facteur (D11), 9 novembre
+
+### Calcul indépendant (`agent_53`, agent qui n'a lu ni `R/`, ni `tests/`, ni `dev/mbay`)
+
+Jeu : 4 groupes de 12, `set.seed(4)`, moyennes vraies 10 ; 11,2 ; 10,1 ; 10. L'agent a programmé la spécification de D11 : 15 partitions, BF de `lmBF`, a priori nul à 1/2 et Ewens(1) sur le reste, puis 20 000 tirages a posteriori et la HDI de bayestestR. Scripts et sorties : `relecture/agent_53/`.
+
+| Paire | P(différents), référence | m.bay | Écart, référence (HDI) | m.bay (4 000 tirages) |
+|---|---:|---:|---|---|
+| L1-L2 | 0,9773 | 0,977 | 0,977 [0,287 ; 1,696] | 0,99 [0,28 ; 1,7] |
+| L1-L3 | 0,2978 | 0,298 | −0,204 [−0,877 ; 0,457] | −0,22 [−0,88 ; 0,43] |
+| L1-L4 | 0,4010 | 0,401 | −0,534 [−1,200 ; 0,156] | −0,55 [−1,2 ; 0,12] |
+| L2-L3 | 0,9903 | 0,990 | −1,181 [−1,888 ; −0,429] | −1,2 [−1,9 ; −0,44] |
+| L2-L4 | 0,9947 | 0,995 | −1,518 [−2,276 ; −0,769] | −1,5 [−2,3 ; −0,81] |
+| L3-L4 | 0,3046 | 0,305 | −0,330 [−0,997 ; 0,346] | −0,33 [−1 ; 0,3] |
+
+Regroupements de tête identiques : L1 = L3 = L4 < L2 (0,532), L1 = L3 | L2 | L4 (0,163), L1 | L2 | L3 = L4 (0,149). Les probabilités concordent à l'affichage près. Les écarts et les HDI concordent à la précision du tirage (4 000 contre 20 000 tirages), au signe de la paire près (m.bay donne groupe2 − groupe1). La cohérence P(i≠k) ≤ P(i≠j) + P(j≠k) tient sur les 24 triplets. **Limite** : les BF des partitions viennent de BayesFactor des deux côtés ; leur exactitude repose sur VALIDATION §8 (`agent_51`, calcul JZS indépendant à un terme).
+
+**Dans `test-bay-posthoc.R`** :
+- recalcul par `lmBF` direct à k = 3 ;
+- nombres de Bell, a priori de somme 1, rapport des poids d'Ewens ;
+- δ contre le d de Cohen à n = 400 (écart < 0,03), largeur de l'intervalle contre l'erreur standard asymptotique, borne contre l'intervalle de Student.
+
+### Simulation à côté de Tukey HSD (`agent_52`, N = 300 jeux par scénario)
+
+Moyennes vraies en écarts-types, σ = 1, r = 0,5, `prior_h1` = 1/2, Ewens α = 1. « Faux » : au moins une paire vraiment égale dite différente. « Puissance » : moyenne sur les paires vraiment différentes. Résultats : `scripts/resultats/agent_52.txt`.
+
+| Scénario | Faux P>0,5 | Faux P>0,75 | Faux P>0,95 | Tukey faux p<0,05 | Puissance P>0,5 | Puissance P>0,75 | Tukey p<0,05 | Couverture HDI δ | Regroupement vrai en tête |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| k=3, n=10, H0 | 0,107 | 0,013 | 0 | 0,063 | – | – | – | – | 0,953 |
+| k=3, n=20, H0 | 0,073 | 0,010 | 0,003 | 0,050 | – | – | – | – | 0,967 |
+| k=4, n=10, H0 | 0,073 | 0,020 | 0,003 | 0,060 | – | – | – | – | 0,967 |
+| k=5, n=10, H0 | 0,063 | 0,027 | 0,007 | 0,043 | – | – | – | – | 0,973 |
+| k=3, n=15, un groupe à +1 | 0,110 | 0,033 | 0,007 | 0,023 | 0,758 | 0,588 | 0,625 | 0,903 | 0,630 |
+| k=4, n=15, un groupe à +1 | 0,190 | 0,050 | 0,010 | 0,033 | 0,787 | 0,586 | 0,556 | 0,921 | 0,630 |
+| k=4, n=15, deux blocs (0, 0, 0,8, 0,8) | 0,250 | 0,093 | 0,017 | 0,040 | 0,583 | 0,377 | 0,331 | 0,916 | 0,330 |
+| k=3, n=15, trois niveaux (0 ; 0,6 ; 1,2) | – | – | – | – | 0,647 | 0,402 | 0,438 | 0,950 | 0,170 |
+
+**Lecture.**
+- Sous H0, une paire est dite différente au-delà de « faible » (P > 0,75) dans 1 à 3 % des jeux, contre 4 à 6 % de p < 0,05 chez Tukey. Le regroupement vrai (aucune différence) est en tête dans 95 à 97 % des jeux.
+- **Avec des différences réelles, les paires vraiment égales sortent plus souvent qu'avec Tukey.** Au-delà de « faible », c'est 3 à 9 % des jeux contre 2 à 4 % ; à P > 0,5, de 11 à 25 %. Dans le bilan, une paire entre 0,5 et 0,6 est « non tranchée », car son soutien est nul. La puissance au-delà de « faible » est comparable à Tukey (0,38 à 0,59 contre 0,33 à 0,63). Les seuils ne sont pas équivalents.
+- **La HDI de δ couvre la vraie valeur dans 90 à 95 % des cas**, sous le nominal quand seuls certains groupes diffèrent. Elle vient du modèle « tous les groupes peuvent différer », qui rapproche les écarts de zéro. C'est un intervalle de crédibilité, pas un intervalle de confiance. Le récit dit qu'il est « légèrement ramené vers zéro par l'a priori ».
+
+### Audit de la session parente (9 novembre)
+
+Données propres : 4 groupes de 12, moyennes vraies 0 ; 0,1 ; 1 ; 1,1.
+- Cohérence avec TukeyHSD : a/c et b/c à 98,3 % (p = 0,0006), d/c à 80,8 % (p = 0,12), a/b à 24,4 %.
+- Sous H0 à k = 4 (N = 40), la paire maximale dépasse 0,75 dans 5 % des jeux et 0,95 dans 0 %.
+- Durée : 13 s.
+- Quatre points demandés et traités : écart observé et écart estimé nommés, k > 6, couverture des intervalles, récit à variances inégales.
+
+### Couverture des intervalles, toutes les paires (`agent_54`, N = 300 jeux par scénario)
+
+Les intervalles viennent du modèle « tous les groupes peuvent différer ». Le tableau donne la part des jeux où l'intervalle à 95 % contient la vraie valeur, pour l'écart brut et pour δ. Résultats : `scripts/resultats/agent_54.txt`.
+
+| Scénario | Paires égales : écart / δ (nb) | Paires différentes : écart / δ (nb) |
+|---|---|---|
+| k=2, n=10, δ = 0,5 | – | 0,947 / 0,950 (1) |
+| k=3, n=10, H0 | 0,993 / 0,992 (3) | – |
+| k=3, n=15, un groupe à +1 | 0,987 / 0,993 (1) | 0,922 / 0,913 (2) |
+| k=4, n=20, deux blocs (0, 0, 0,8, 0,8) | 0,970 / 0,968 (2) | 0,925 / 0,927 (4) |
+| k=4, n=10, graduel (0 ; 0,3 ; 0,6 ; 0,9) | – | 0,942 / 0,955 (6) |
+
+**Lecture.**
+- Le rétrécissement vers zéro sur-couvre les paires vraiment égales : 0,97 à 0,99.
+- Il sous-couvre un peu les paires vraiment différentes quand d'autres sont égales : 0,91 à 0,93.
+- Quand toutes les paires diffèrent (k = 2, graduel), la couverture est nominale : 0,94 à 0,96.
+
+### Au-delà de 8 groupes : tirage de Gibbs
+
+- Accord avec l'énumération exacte, en forçant le tirage : 1,4 point au plus à k = 6 et 7. Avec 3 000 tours, les 203 et les 877 partitions sont toutes visitées.
+- Dans `test-bay-posthoc.R`, le seuil est abaissé à 3 par l'option `KefiR.bay_exact_max`. À k = 4, l'écart au calcul exact reste sous 3 points sur `p_differ` et sous 4 points sur `p_min` et `p_max` (repondération en α).
+- Aussi testés : la constante d'Ewens contre la somme directe à k = 5, et les nombres de Bell jusqu'à 9.
+- Récit à 9 groupes : `relecture/lecteur_recit/recits_posthoc.txt`, cas C. L'erreur de tirage annoncée est d'environ 4 points à 2 000 tours.
+
+### Récit à variances inégales
+
+Cas A de `relecture/lecteur_recit/recits_posthoc.txt` : 3 laboratoires, écarts-types 1, 1 et 3.
+- L'étape 4 annonce des variances inégales (99,5 %).
+- L'étape 6 donne les paires, puis « les lire avec réserve ».
+- La conclusion le répète sous les paires.
+
+C'est testé dans `test-bay-posthoc.R`.
+
+**Non simulé** :
+- variances inégales et queues lourdes : le post-hoc suppose la loi normale à variance commune, et le récit prévient alors ;
+- α = 1/2 et 2, calculés en sensibilité (`p_min`, `p_max`), sans simulation ;
+- plans déséquilibrés ;
+- k de 6 à 8 : le calcul exact est vérifié, pas sa calibration ;
+- au-delà de 8 groupes : la calibration du tirage n'est pas simulée.

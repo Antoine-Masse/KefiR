@@ -18,6 +18,7 @@ Roxygen: list(markdown = TRUE)
 Imports:
     stats,
     BayesFactor (>= 0.9.12-4.7),
+    bayestestR (>= 0.13.0),
     graphics,
     grDevices,
     lme4,

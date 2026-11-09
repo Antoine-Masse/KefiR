@@ -206,9 +206,38 @@ Toute la normalisation est en ligne dans `m.test()` (lignes 262-1031) : rien n'e
 Même structure que `m.test()` quand elle a un sens, classe distincte. `$effects` existe même à un facteur (une ligne), mêmes noms de termes, colonnes `term`, `bf10`, `log_bf`, `p_h1`, `p_h0`, `prior_h1`, `rscale`, `error_pct`, `analogue`. Aucune colonne ne se nomme `p.value`. Mode `return=FALSE` : valeur à décider (le « modèle complet contre nul » plutôt que le premier facteur, comme `$global_pvalue`).
 Lettres de groupes : pas par défaut (tableau des paires à la place).
 
-## D11. Post-hoc : PROPOSÉ
+## D11. Post-hoc : DÉCIDÉ le 9 novembre (un facteur ; plusieurs facteurs à suivre)
 
-Partitions de moyennes jusqu'à k=5, puis paires à cotes a priori ajustées. Dérivation propre pour le second cas, à présenter comme réglage de KefiR.
+Proposition initiale, gardée pour mémoire : partitions de moyennes jusqu'à k=5, puis paires à cotes a priori ajustées.
+
+**Décidé, selon le principe d'Antoine (paquets établis d'abord).**
+- **Quels groupes diffèrent : partitions d'égalité.** Chaque façon de regrouper les k groupes en blocs de moyennes égales (« a = c < b ») est un modèle. Sa vraisemblance marginale vient de `lmBF(y ~ h)` [BayesFactor], où h est le facteur fusionné, ou du calcul interne identique à `lmBF` pour un terme seul (VALIDATION §8).
+  - Le nombre de partitions suit les nombres de Bell : 5, 15, 52, 203, 877, 4 140 pour k = 3 à 8. Toutes sont calculées jusqu'à 8 groupes. Durées mesurées : 0,3 s à 6 groupes, 0,8 s à 7, 6,4 s à 8, 32 s à 9, d'où le seuil.
+  - **Au-delà de 8 groupes (ajout du 9 novembre, après l'audit de la session parente).** Les partitions sont explorées par l'échantillonneur de Gibbs de [GopalanBerry1998], la méthode même de l'article dont vient l'a priori.
+    - Chaque groupe est déplacé à son tour vers l'un des blocs des autres ou seul, avec le même a priori et les mêmes vraisemblances marginales (mises en cache).
+    - 200 tours de chauffe, puis max(2 000, draws/2) tours.
+    - Les probabilités de paires sont des fréquences de visite. Leur erreur de tirage est estimée par moyennes de lots (20 lots) et annoncée dans le récit.
+    - La sensibilité à α repondère les mêmes tirages, avec la constante de normalisation d'Ewens exacte : Γ(α+k)/Γ(α) − α(k−1)!.
+  - Écartées : les comparaisons par paires avec a priori de multiplicité ([WestfallJohnsonUtts1997], [ScottBerger2006]). Elles traitent chaque paire à part et peuvent donner a = b, b = c, a ≠ c, ce que la loi unique sur les partitions exclut. Garder la même loi de 3 à 12 groupes rend aussi les sorties comparables.
+  - Accord avec l'énumération exacte, en forçant le tirage à 6 et 7 groupes : 1,4 point au plus sur les paires (3 000 tours). Durées : 20 s à 9 groupes, 40 s à 10, 93 s à 12.
+  - Au-delà de 15 paires, le récit et le bilan ne détaillent que les paires qui penchent vers « différents » et résument les autres en une ligne. Toutes restent dans `$posthoc$pairs`.
+  - La probabilité que deux groupes diffèrent est la somme des partitions qui les séparent. Une seule loi porte donc sur toutes les paires : pas de multiplicité ajoutée paire par paire, pas de résultats incohérents du type a = b, b = c, a ≠ c.
+- **A priori sur les partitions.**
+  - « Aucune différence » garde l'a priori de la réponse globale, 1 − `prior_h1`.
+  - Les autres partitions se partagent `prior_h1` selon la loi d'Ewens (α = 1), celle du processus de Dirichlet : p ∝ Π (taille du bloc − 1)! ([GopalanBerry1998]).
+  - Cette loi favorise les regroupements, ce qui corrige le nombre de paires. Elle ne dépend pas des données.
+  - En sensibilité, α = 1/2 et α = 2.
+- **De combien : taille d'effet et intervalle.**
+  - Échantillons de la loi a posteriori du modèle « tous les groupes peuvent différer » : `posterior()` [BayesFactor].
+  - Pour chaque paire : différence brute et différence standardisée δ = (m_j − m_i)/σ, médianes et intervalle de crédibilité à 95 % (HDI, `hdi()` [bayestestR]).
+  - Les deux sont conditionnels à l'existence d'une différence (rétrécis vers zéro par l'a priori de Cauchy).
+- **Deux chiffres pour un écart, nommés (ajout du 9 novembre).** La conclusion donne l'**écart observé** : différence des moyennes, ou des médianes, de l'échantillon. Le post-hoc donne l'**écart estimé** : médiane a posteriori, ramenée vers zéro par l'a priori. Le récit dit pourquoi le second est un peu plus petit.
+- **Limite annoncée.** Le post-hoc suppose la loi normale à variance commune. Si l'étape 4 trouve des variances inégales probables ou des queues lourdes, le récit le dit à l'étape 6, et la conclusion le répète sous les paires (« À lire avec réserve »). La probabilité « aucune différence » du post-hoc peut alors différer de la réponse globale, qui moyenne les formes du bruit.
+- **Paquets.** BayesFactor (déjà en Imports). bayestestR ≥ 0.13 passe en Imports : il est léger (insight, datawizard) et sert la HDI, référence [bayestestR].
+- **Contrôles prévus.**
+  - Probabilités de paires recalculées à la main sur un jeu, par un agent indépendant.
+  - δ comparé au d de Cohen et à son intervalle fréquentiste à grand n.
+  - Simulation : paires faussement « différentes » sous H0 et sous « un groupe s'écarte », puissance, à côté de Tukey HSD.
 
 ## D12. Socle commun : ACQUIS
 

@@ -69,6 +69,15 @@
 
 # The sentence a reader looks for first. Never an equivalence, a size or a cause.
 .bay_verdict <- function(obj) {
+	v <- .bay_verdict_raw(obj)
+	if (!is.null(obj$posthoc) && isTRUE(obj$posthoc$k > 2L)) {
+		v$en <- sub("neither that it matters, nor which groups differ, nor why.", "neither that it matters nor why; the pairs are below.", v$en, fixed = TRUE)
+		v$fr <- sub("ni qu'elle est importante, ni quels groupes diff\u00e8rent, ni pourquoi.", "ni qu'elle est importante, ni pourquoi ; les paires sont plus bas.", v$fr, fixed = TRUE)
+	}
+	v
+}
+
+.bay_verdict_raw <- function(obj) {
 	h <- obj$hypotheses
 	p <- h$posterior[1L]
 	# A probability that comes from the prior rather than the data does not make a firm
@@ -205,7 +214,11 @@
 	hi <- which.max(d$mean)
 	lo <- which.min(d$mean)
 	gap <- d$mean[hi] - d$mean[lo]
-	say("Observed means (description of the sample, not a test of which groups differ):",
+	ph <- obj$posthoc
+	if (!is.null(ph)) .bay_print_posthoc(ph, say)
+	if (!is.null(ph) && isTRUE(ph$k > 2L)) {
+		say("Observed means (description of the sample):", "Moyennes observ\u00e9es (description de l'\u00e9chantillon) :")
+	} else say("Observed means (description of the sample, not a test of which groups differ):",
 		"Moyennes observ\u00e9es (description de l'\u00e9chantillon ; ce bilan ne dit pas quels groupes diff\u00e8rent) :")
 	say(paste0("  ", paste0(d$group, " = ", fmt(d$mean, "."), " (n = ", d$n, ")", collapse = "; "), "."),
 		paste0("  ", paste0(d$group, " = ", fmt(d$mean, ","), " (n = ", d$n, ")", collapse = " ; "), "."))
@@ -343,9 +356,9 @@
 	small_en <- "the smallness of "
 	small_fr <- "la petitesse de "
 	what_fr <- if (centres) "m\u00e9dianes, proches des centres compar\u00e9s" else "moyennes"
-	full_en <- paste0(if (k > 2L) "all the gaps between groups, the largest between " else "the gap between ", what_en, " (",
+	full_en <- paste0(if (k > 2L) "all the gaps between groups, the largest between " else "the gap between ", what_en, " (observed: ",
 		d$group[hi], " - ", d$group[lo], " = ", g_en, if (!centres) paste0(", i.e. ", sd_en, " pooled within-group SD") else paste0("; gap of the means ", gm_en), ")")
-	full_fr <- paste0(if (k > 2L) "l'ensemble des \u00e9carts entre groupes, le plus grand entre " else "l'\u00e9cart entre ", what_fr, " (",
+	full_fr <- paste0(if (k > 2L) "l'ensemble des \u00e9carts entre groupes, le plus grand entre " else "l'\u00e9cart entre ", what_fr, " (observ\u00e9 : ",
 		d$group[hi], " - ", d$group[lo], " = ", g_fr, if (!centres) paste0(", soit ", sd_fr, " \u00e9cart-type commun au sein des groupes") else paste0(" ; \u00e9cart des moyennes ", gm_fr), ")")
 	bf_en <- .bay_bf_txt(abs(lb), ".")
 	bf_fr <- .bay_bf_txt(abs(lb), ",")
@@ -376,4 +389,43 @@
 		}
 	}
 	list(en = en, fr = fr)
+}
+
+# Which groups differ, in the conclusion: one line per pair, qualifier of the leading side.
+.bay_print_posthoc <- function(ph, say) {
+	pr <- ph$pairs
+	f <- function(v, dc) gsub(".", dc, format(signif(v, 2), trim = TRUE), fixed = TRUE)
+	ci <- function(i, dc, a, l, h) paste0(f(pr[[a]][i], dc), " [", f(pr[[l]][i], dc), if (dc == ",") " ; " else "; ", f(pr[[h]][i], dc), "]")
+	if (ph$k > 2L) {
+		say("Which groups differ (normal law with a common variance; probability, then estimated gap and 95 % credible interval):",
+			"Quels groupes diff\u00e8rent (loi normale \u00e0 variance commune ; probabilit\u00e9, puis \u00e9cart estim\u00e9 et intervalle de cr\u00e9dibilit\u00e9 \u00e0 95 %) :")
+		shown <- .bay_posthoc_shown(pr)
+		for (i in shown) {
+			p <- pr$p_differ[i]
+			open <- isTRUE(pr$p_min[i] < 0.5 && pr$p_max[i] > 0.5)
+			s <- .bay_support(max(p, 1 - p))
+			side_en <- if (open || s$level == 1L) "not settled" else if (p >= 0.5) paste0("different, ", s$en) else paste0("alike, ", s$en)
+			side_fr <- if (open || s$level == 1L) "non tranch\u00e9" else if (p >= 0.5) paste0("diff\u00e9rents, ", s$fr) else paste0("semblables, ", s$fr)
+			say(paste0("  ", pr$group1[i], " / ", pr$group2[i], ": ", side_en, " (different at ", .bay_pct(p, "."), "); estimated gap ",
+					pr$group2[i], " - ", pr$group1[i], " = ", ci(i, ".", "diff", "diff_low", "diff_high"), ", delta = ", ci(i, ".", "delta", "delta_low", "delta_high"), "."),
+				paste0("  ", pr$group1[i], " / ", pr$group2[i], " : ", side_fr, " (diff\u00e9rents \u00e0 ", .bay_pct(p, ","), ") ; \u00e9cart estim\u00e9 ",
+					pr$group2[i], " - ", pr$group1[i], " = ", ci(i, ",", "diff", "diff_low", "diff_high"), ", delta = ", ci(i, ",", "delta", "delta_low", "delta_high"), "."))
+		}
+		if (length(shown) < nrow(pr)) say(paste0("  The other ", nrow(pr) - length(shown), " pairs lean towards alike; all pairs: $posthoc$pairs."),
+			paste0("  Les ", nrow(pr) - length(shown), " autres paires penchent vers semblables ; toutes les paires : $posthoc$pairs."))
+		if (identical(ph$method, "gibbs")) say(paste0("  Groupings explored by draws (more than ", .bay_posthoc_max_groups(), " groups): about ", max(1L, ceiling(200 * ph$mc_error)), " point(s) of sampling error."),
+			paste0("  Regroupements explor\u00e9s par tirage (plus de ", .bay_posthoc_max_groups(), " groupes) : environ ", max(1L, ceiling(200 * ph$mc_error)), " point(s) d'erreur de tirage."))
+		say(paste0("  Most probable grouping: ", ph$partitions$partition[1L], " (", .bay_pct(ph$partitions$posterior[1L], "."), ")."),
+			paste0("  Regroupement le plus probable : ", ph$partitions$partition[1L], " (", .bay_pct(ph$partitions$posterior[1L], ","), ")."))
+	} else {
+		say("Size of the difference, if it exists (estimated gap: posterior median, and 95 % credible interval; delta in standard deviations):",
+			"Taille de l'\u00e9cart, s'il existe (\u00e9cart estim\u00e9 : m\u00e9diane a posteriori, et intervalle de cr\u00e9dibilit\u00e9 \u00e0 95 % ; delta en \u00e9carts-types) :")
+		for (i in seq_len(nrow(pr))) {
+			say(paste0("  ", pr$group2[i], " - ", pr$group1[i], " = ", ci(i, ".", "diff", "diff_low", "diff_high"), ", delta = ", ci(i, ".", "delta", "delta_low", "delta_high"), "."),
+				paste0("  ", pr$group2[i], " - ", pr$group1[i], " = ", ci(i, ",", "diff", "diff_low", "diff_high"), ", delta = ", ci(i, ",", "delta", "delta_low", "delta_high"), "."))
+		}
+	}
+	if (isTRUE(ph$caution)) say("  To read with caution: these pairs assume a normal noise with a common variance, which the comparison of noise forms did not find.",
+		"  \u00c0 lire avec r\u00e9serve : ces paires supposent un bruit normal \u00e0 variance commune, ce que la comparaison des formes du bruit n'a pas trouv\u00e9.")
+	invisible(NULL)
 }

@@ -103,7 +103,8 @@ test_that("bilan : annonce a priori et sensibilite, ne laisse pas croire a une p
 	expect_match(paste(capture.output(print(r0)), collapse = "\n"), "sensitivity = FALSE")
 	# Par defaut, court ; le detail est sur demande.
 	court <- capture.output(print(r))
-	expect_lte(length(court), 16L)
+	# 16 lignes avant le post-hoc ; les paires en ajoutent k(k-1)/2 + 2 (D11).
+	expect_lte(length(court), 16L + nrow(r$posthoc$pairs) + 2L)
 	expect_false(any(grepl("Dirichlet", court)))
 	expect_match(paste(court, collapse = " "), "p-value")
 })
@@ -115,7 +116,7 @@ test_that("verdict de sensibilite : hypothese en tete, seuil, stable", {
 })
 
 test_that("sources ASCII", {
-	src <- c("m.bay.R", "sys_bay_input.R", "sys_bay_bilan.R", "sys_bay_laws.R", "sys_bay_oneway.R", "sys_bay_factorial.R", "sys_bay_story.R")
+	src <- c("m.bay.R", "sys_bay_input.R", "sys_bay_bilan.R", "sys_bay_laws.R", "sys_bay_oneway.R", "sys_bay_factorial.R", "sys_bay_story.R", "sys_bay_posthoc.R")
 	root <- testthat::test_path("..", "..", "R")
 	skip_if_not(dir.exists(root))
 	for (f in src) {

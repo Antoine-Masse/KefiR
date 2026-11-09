@@ -203,3 +203,66 @@
 	}
 	invisible(NULL)
 }
+
+# Step 6, one factor: which groups differ, and by how much.
+.bay_story_posthoc <- function(st, ph, caution = FALSE) {
+	if (is.null(st) || is.null(ph)) return(invisible(NULL))
+	.bay_tell(st, "Which groups differ, and by how much.", "Quels groupes diff\u00e8rent, et de combien.", "step",
+		fun = "lmBF(), posterior() {BayesFactor}, hdi() {bayestestR}")
+	pr <- ph$pairs
+	ci_txt <- function(x, lo, hi, dc) {
+		f <- function(v) gsub(".", dc, format(signif(v, 2), trim = TRUE), fixed = TRUE)
+		paste0(f(x), " [", f(lo), if (dc == ",") " ; " else "; ", f(hi), "]")
+	}
+	big <- function(n) formatC(n, format = "d", big.mark = " ")
+	if (ph$k > 2L && identical(ph$method, "gibbs")) {
+		mc <- max(1L, ceiling(200 * ph$mc_error))
+		.bay_tell(st, paste0("Change of strategy: ", big(ph$n_partitions), " possible groupings, too many to compute them all (more than ",
+				.bay_posthoc_max_groups(), " groups); they are explored by draws (Gibbs sampler, Gopalan and Berry 1998), ",
+				big(ph$sweeps), " rounds; the probabilities carry a sampling error of about ", mc, " percentage point(s)."),
+			paste0("Changement de strat\u00e9gie : ", big(ph$n_partitions), " regroupements possibles, trop pour les calculer tous (plus de ",
+				.bay_posthoc_max_groups(), " groupes) ; ils sont explor\u00e9s par tirage (\u00e9chantillonneur de Gibbs, Gopalan et Berry 1998), ",
+				big(ph$sweeps), " tours ; les probabilit\u00e9s portent une erreur de tirage d'environ ", mc, " point(s)."), "decide")
+	}
+	if (ph$k > 2L) {
+		top <- ph$partitions[seq_len(min(3L, nrow(ph$partitions))), , drop = FALSE]
+		n_en <- if (identical(ph$method, "gibbs")) paste0(big(nrow(ph$partitions)), " visited") else paste0(big(nrow(ph$partitions)), " compared")
+		n_fr <- if (identical(ph$method, "gibbs")) paste0(big(nrow(ph$partitions)), " visit\u00e9s") else paste0(big(nrow(ph$partitions)), " compar\u00e9s")
+		.bay_tell(st, paste0("Most probable groupings (", n_en, "): ",
+				paste0(top$partition, " (", vapply(top$posterior, .bay_pct, character(1), dec = "."), ")", collapse = "; "), "."),
+			paste0("Regroupements les plus probables (", n_fr, ") : ",
+				paste0(top$partition, " (", vapply(top$posterior, .bay_pct, character(1), dec = ","), ")", collapse = " ; "), "."))
+	}
+	shown <- .bay_posthoc_shown(pr)
+	for (i in shown) {
+		lead_en <- if (ph$k > 2L) paste0(pr$group1[i], " and ", pr$group2[i], ": different at ", .bay_pct(pr$p_differ[i], "."), "; estimated gap ") else "Estimated gap "
+		lead_fr <- if (ph$k > 2L) paste0(pr$group1[i], " et ", pr$group2[i], " : diff\u00e9rents \u00e0 ", .bay_pct(pr$p_differ[i], ","), " ; \u00e9cart estim\u00e9 ") else "\u00c9cart estim\u00e9 "
+		.bay_tell(st, paste0(lead_en, pr$group2[i], " - ", pr$group1[i], " = ", ci_txt(pr$diff[i], pr$diff_low[i], pr$diff_high[i], "."),
+				", i.e. ", ci_txt(pr$delta[i], pr$delta_low[i], pr$delta_high[i], "."), " SD."),
+			paste0(lead_fr, pr$group2[i], " - ", pr$group1[i], " = ", ci_txt(pr$diff[i], pr$diff_low[i], pr$diff_high[i], ","),
+				", soit ", ci_txt(pr$delta[i], pr$delta_low[i], pr$delta_high[i], ","), " \u00e9cart-type."))
+	}
+	if (length(shown) < nrow(pr)) {
+		.bay_tell(st, paste0("The other ", nrow(pr) - length(shown), " pairs lean towards alike (different below 50 %); all pairs: $posthoc$pairs."),
+			paste0("Les ", nrow(pr) - length(shown), " autres paires penchent vers semblables (diff\u00e9rentes \u00e0 moins de 50 %) ; toutes les paires : $posthoc$pairs."), "info")
+	}
+	.bay_tell(st, "Estimated gap: posterior median, pulled slightly towards zero by the prior, hence a little smaller than the observed gap of step 7. Brackets: 95 % credible interval, if a difference exists (the value lies there with 95 % probability; not a confidence interval).",
+		"\u00c9cart estim\u00e9 : m\u00e9diane a posteriori, l\u00e9g\u00e8rement ramen\u00e9e vers z\u00e9ro par l'a priori, donc un peu plus petite que l'\u00e9cart observ\u00e9 de l'\u00e9tape 7. Crochets : intervalle de cr\u00e9dibilit\u00e9 \u00e0 95 %, si une diff\u00e9rence existe (la valeur s'y trouve avec 95 % de probabilit\u00e9 ; ce n'est pas un intervalle de confiance).", "info")
+	if (ph$k > 2L) {
+		.bay_tell(st, "All pairs come from one single law over the groupings: no correction pair by pair is needed, and the answers cannot contradict each other.",
+			"Toutes les paires viennent d'une seule loi sur les regroupements : aucune correction paire par paire n'est n\u00e9cessaire, et les r\u00e9ponses ne peuvent pas se contredire.", "decide")
+	}
+	if (caution) {
+		.bay_tell(st, "These pairs assume a normal noise with a common variance, which step 4 did not find: read them with caution.",
+			"Ces paires supposent un bruit normal \u00e0 variance commune, ce que l'\u00e9tape 4 n'a pas trouv\u00e9 : les lire avec r\u00e9serve.", "decide")
+	}
+	invisible(NULL)
+}
+
+# Pairs shown in the story and the bilan: all of them up to 15; beyond, those that lean
+# towards different, most probable first (the others are summed up in one line).
+.bay_posthoc_shown <- function(pr) {
+	if (nrow(pr) <= 15L || anyNA(pr$p_differ)) return(seq_len(nrow(pr)))
+	ix <- which(pr$p_differ >= 0.5)
+	ix[order(-pr$p_differ[ix])]
+}

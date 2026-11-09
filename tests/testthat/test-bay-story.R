@@ -13,7 +13,7 @@ test_that("verbose = FALSE : rien n'est imprime, le recit est garde dans l'objet
 	expect_equal(length(r$story$en), length(r$story$fr))
 	titres <- grep("^[0-9]+\\) ", r$story$fr, value = TRUE)
 	expect_equal(as.integer(sub("\\).*", "", titres)), seq_along(titres))
-	expect_equal(length(titres), 6L)
+	expect_equal(length(titres), 7L)
 	expect_true(any(grepl("==>", r$story$fr, fixed = TRUE)))
 	expect_true(any(grepl("-->", r$story$fr, fixed = TRUE)))
 })
@@ -21,7 +21,7 @@ test_that("verbose = FALSE : rien n'est imprime, le recit est garde dans l'objet
 test_that("verbose = TRUE : six etapes, puis la conclusion sans titre ni point de depart repetes", {
 	txt <- capture.output(r <- m.bay(y ~ g, data = d1, draws = 1000))
 	expect_true(any(grepl("^1\\) ", txt)))
-	expect_true(any(grepl("^6\\) ", txt)))
+	expect_true(any(grepl("^7\\) ", txt)))
 	expect_false(any(grepl("Bilan de m.bay|Bilan of m.bay", txt)))
 	expect_false(any(grepl("^\tPoint de d|^\tStarting point", txt)))
 	# chaque hypothese est argumentee

@@ -155,3 +155,9 @@ Contrôlées selon ce qui est dit ligne à ligne ; détail et écarts au modèle
 ## Bilan
 
 92 références vérifiées, dont 71 au niveau métadonnées seules. 0 référence inventée. 2 intitulés candidats non confirmés. Le 2026-11-06 : 10 de ces 71 confrontées à leur source (tirage `random.Random(20261106)`) : 6 conformes, 1 erreur à l'usage (Kruschke2018), 1 attribution probablement fausse (Rouder2009), 2 imprécisions. Certaines entrées ne sont pas citées dans METHODOLOGIE.md : elles documentent des variantes écartées ou des outils.
+
+- [GopalanBerry1998] Gopalan, R., & Berry, D. A. (1998). Bayesian multiple comparisons using Dirichlet process priors. *Journal of the American Statistical Association*, 93(443), 1130-1139. https://doi.org/10.1080/01621459.1998.10473774 [référence citée de mémoire, DOI non revérifié en ligne] (partitions d'égalité des moyennes ; loi d'Ewens du processus de Dirichlet sur les partitions.)
+- [bayestestR] Makowski, D., Ben-Shachar, M. S., & Lüdecke, D. (2019). bayestestR: Describing effects and their uncertainty, existence and significance within the Bayesian framework. *Journal of Open Source Software*, 4(40), 1541. https://doi.org/10.21105/joss.01541 (version utilisée : 0.20.0 ; `hdi()`.)
+
+- **[WestfallJohnsonUtts1997]** Westfall, P. H., Johnson, W. O., & Utts, J. M. (1997). A Bayesian perspective on the Bonferroni adjustment. *Biometrika*, 84(2), 419-427. Considéré pour le post-hoc à plus de 8 groupes, écarté (D11) : les paires y sont traitées à part.
+- **[ScottBerger2006]** Scott, J. G., & Berger, J. O. (2006). An exploration of aspects of Bayesian multiple testing. *Journal of Statistical Planning and Inference*, 136(7), 2144-2162. Écarté pour le même motif (D11).

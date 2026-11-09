@@ -67,6 +67,13 @@
 #'   uses at least 10000 iterations; its noise hardly shrinks beyond, so a larger `draws`
 #'   brings little there.
 #' @param seed Seed of this call. The global random state is left untouched.
+#' @param posthoc If `TRUE` (default), one factor: which groups differ and by how much. Every
+#'   grouping of the groups into blocks of equal means is compared through [BayesFactor::lmBF()]
+#'   (all of them up to 8 groups; beyond, explored by the Gibbs sampler of Gopalan and Berry
+#'   1998), the probability that two groups differ is summed over the groupings that
+#'   separate them, and each pair gets its difference and standardised difference with a 95 %
+#'   credible interval ([BayesFactor::posterior()], [bayestestR::hdi()]). Normal law with a
+#'   common variance; the story says so when the noise looks otherwise.
 #' @param detail If `TRUE`, the bilan also shows the shapes of the noise, the priors that
 #'   are varied and how to read the numbers. Also `print(result, detail = TRUE)`.
 #'
@@ -84,6 +91,9 @@
 #'     \item{descriptive_stats}{n, mean and SD per group.}
 #'     \item{prob_effect}{Posterior probability that at least one effect exists.}
 #'     \item{method, plan, label, n, notes, call}{Description of the analysis.}
+#'     \item{posthoc}{One factor: `pairs` (probability that two groups differ, its range over the
+#'       prior on groupings, differences and standardised differences with 95 % credible
+#'       intervals) and `partitions` (groupings ranked by posterior probability).}
 #'     \item{story}{The steps told with `verbose = TRUE`, in English (`en`) and French
 #'       (`fr`), kept even when nothing was printed.}
 #'   }
@@ -97,7 +107,8 @@
 #' r <- m.bay(y ~ variety, data = d, draws = 1000, sensitivity = FALSE)
 #' r$effects[, c("term", "p_h1", "p_h0", "log_bf")]
 #'
-#' @importFrom BayesFactor lmBF extractBF
+#' @importFrom BayesFactor lmBF extractBF posterior
+#' @importFrom bayestestR hdi
 #' @export
 m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
                   paired = FALSE, id = NULL, wt = NULL, within = NULL, between = NULL,
@@ -106,7 +117,7 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
                   maxcat = 50, silent = NULL, code = FALSE, debug = FALSE,
                   prior_h1 = 1/2, rscale = 1/2, u = 1.5,
                   laws = c("normal_eq", "normal_het", "t_eq", "t_het"),
-                  sensitivity = TRUE, draws = 4000L, seed = 1L, detail = FALSE) {
+                  sensitivity = TRUE, draws = 4000L, seed = 1L, detail = FALSE, posthoc = TRUE) {
 	call_expr <- match.call()
 	if (isFALSE(return) && !("verbose" %in% names(call_expr))) verbose <- FALSE
 
@@ -446,6 +457,15 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	}
 	.bay_story_sensitivity(story, sens, hyp, het = any(laws %in% c("normal_het", "t_het")))
 
+	# Step 6: which groups differ, and by how much (DECISIONS, D11).
+	ph <- NULL
+	if (isTRUE(posthoc)) {
+		ph <- .bay_posthoc_oneway(y, gr, rscale, prior_h1, draws, seed)
+		p_het_all <- sum(ans$p_law[intersect(names(ans$p_law), c("normal_het", "t_het"))])
+		ph$caution <- isTRUE(p_het_all >= 0.75) || isTRUE(p_t > 0.5)
+		.bay_story_posthoc(story, ph, caution = ph$caution)
+	}
+
 	desc <- data.frame(group = st$levels, n = st$n,
 		mean = vapply(split(st$y_raw, st$g_raw), mean, numeric(1), USE.NAMES = FALSE),
 		median = vapply(split(st$y_raw, st$g_raw), stats::median, numeric(1), USE.NAMES = FALSE),
@@ -461,7 +481,7 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 			nu = "nu - 2 ~ Exp(1)"),
 		questions = list(en = paste0("Does ", input$response_name, " differ according to ", shown, "?"),
 			fr = paste0(input$response_name, " diff\u00e8re-t-il selon ", shown, " ?")),
-		contradiction = contradiction, heavy = heavy, p_tails = p_t, detail = isTRUE(detail),
+		contradiction = contradiction, heavy = heavy, p_tails = p_t, posthoc = ph, detail = isTRUE(detail),
 		descriptive_stats = desc, prob_effect = ans$p_h1,
 		largest_gap = (max(desc$mean) - min(desc$mean)) / (st$unit * max(abs(st$y_raw))),
 		method = "Averaged over sampling laws", plan = input$plan,

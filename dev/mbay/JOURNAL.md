@@ -1,5 +1,30 @@
 # Journal de m.bay
 
+## Séance 6 : 9 novembre 2026, post-hoc à un facteur (D11)
+
+**Cadre.** La session parente a demandé le post-hoc à un facteur puis à plusieurs : paquets établis, contrôle indépendant, intégration au récit, taille d'effet avec intervalle de crédibilité. Elle a ensuite audité le post-hoc non commité, en quatre points.
+
+**Fait.**
+- `R/sys_bay_posthoc.R` (nouveau) :
+  - partitions d'égalité, avec un a priori nul plus Ewens (Gopalan et Berry 1998) et les BF de `lmBF` ;
+  - écarts et δ par `posterior()` [BayesFactor] et `hdi()` [bayestestR] ; bayestestR passe en Imports.
+- Récit : nouvelle étape 6, « Quels groupes diffèrent, et de combien ». La conclusion donne une ligne par paire, avec son qualificatif.
+- Audit :
+  - « écart observé » (conclusion) et « écart estimé » (post-hoc) sont nommés ;
+  - calcul exact jusqu'à 8 groupes ; au-delà, tirage de Gibbs, annoncé comme changement de stratégie avec son erreur de tirage ;
+  - au-delà de 15 paires, seules celles qui penchent vers « différents » sont détaillées ;
+  - « À lire avec réserve » sous variances inégales, à l'étape 6 et dans la conclusion.
+
+**Vérifié.**
+- Calcul indépendant `agent_53` : concordance à l'affichage près.
+- Simulations `agent_52` (à côté de Tukey) et `agent_54` (couverture des intervalles).
+- Gibbs contre calcul exact à k = 6 et 7.
+- Tout est consigné dans VALIDATION §9.
+
+**Non vérifié.**
+- Relecture des nouvelles phrases du post-hoc par un lecteur type.
+- Calibration sous variances inégales et sous plans déséquilibrés.
+
 ## Séance 5 bis : 9 novembre 2026, audit des jalons 2 et 3
 
 **Cadre.** Audit de la session parente : jalons 2 et 3 acceptés, quatre points à régler avant le post-hoc.

@@ -34,7 +34,8 @@ m.bay(
   sensitivity = TRUE,
   draws = 4000L,
   seed = 1L,
-  detail = FALSE
+  detail = FALSE,
+  posthoc = TRUE
 )
 }
 \arguments{
@@ -94,6 +95,14 @@ brings little there.}
 
 \item{detail}{If \code{TRUE}, the bilan also shows the shapes of the noise, the priors that
 are varied and how to read the numbers. Also \code{print(result, detail = TRUE)}.}
+
+\item{posthoc}{If \code{TRUE} (default), one factor: which groups differ and by how much. Every
+grouping of the groups into blocks of equal means is compared through \code{\link[BayesFactor:lmBF]{BayesFactor::lmBF()}}
+(all of them up to 8 groups; beyond, explored by the Gibbs sampler of Gopalan and Berry
+1998), the probability that two groups differ is summed over the groupings that
+separate them, and each pair gets its difference and standardised difference with a 95 \%
+credible interval (\code{\link[BayesFactor:posterior]{BayesFactor::posterior()}}, \code{\link[bayestestR:hdi]{bayestestR::hdi()}}). Normal law with a
+common variance; the story says so when the noise looks otherwise.}
 }
 \value{
 With \code{return = TRUE}, a list of class \code{mbay}:
@@ -110,6 +119,9 @@ factor within that law.}
 \item{descriptive_stats}{n, mean and SD per group.}
 \item{prob_effect}{Posterior probability that at least one effect exists.}
 \item{method, plan, label, n, notes, call}{Description of the analysis.}
+\item{posthoc}{One factor: \code{pairs} (probability that two groups differ, its range over the
+prior on groupings, differences and standardised differences with 95 \% credible
+intervals) and \code{partitions} (groupings ranked by posterior probability).}
 \item{story}{The steps told with \code{verbose = TRUE}, in English (\code{en}) and French
 (\code{fr}), kept even when nothing was printed.}
 }

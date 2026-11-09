@@ -1,0 +1,8 @@
+R version 4.6.1 (2026-06-24 ucrt)
+agent_54 : couverture des intervalles a 95 % du post-hoc, N = 300 jeux par scenario, sigma = 1, r = 0.5
+scenario : paires egales -> couverture ecart / delta (nb de paires) || paires differentes -> couverture ecart / delta (nb)
+k2_n10_d0.5 : - / - (0) || 0.947 / 0.950 (1)
+k3_n10_H0 : 0.993 / 0.992 (3) || - / - (0)
+k3_n15_un_ecart : 0.987 / 0.993 (1) || 0.922 / 0.913 (2)
+k4_n20_deux_blocs : 0.970 / 0.968 (2) || 0.925 / 0.927 (4)
+k4_n10_graduel : - / - (0) || 0.942 / 0.955 (6)
