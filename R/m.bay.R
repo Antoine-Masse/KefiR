@@ -38,8 +38,16 @@
 #' between subjects too: [BayesFactor::lmBF()] with `whichRandom` (Rouder et al. 2012), each
 #' model against the subjects alone; one factor within subject gets the post-hoc on
 #' groupings. Normal law only; several measures of one subject in one condition (mixed
-#' models) are refused. The other plans of [m.test()] (covariates, mixed, MANOVA, discrete
-#' data) stop with an explicit message until they are validated.
+#' models) are refused.
+#'
+#' Analysis of covariance (DECISIONS, D16), `y ~ g + x` or `y ~ g * x`: covariates centred on
+#' their mean, present in every model, each answer read against the covariates alone
+#' ([BayesFactor::lmBF()], slope prior `rscaleCont` = sqrt(2)/4, varied with `r`). Groups that
+#' hardly overlap on a covariate cap the support at "weak". Parallel slopes: adjusted gaps
+#' and groupings as with one factor. Slopes that differ: gaps at the quartiles of the
+#' covariate and the zone where the groups differ (Bayesian Johnson-Neyman). A covariate
+#' alone, and covariates with subjects, are refused. The other plans of [m.test()] (mixed,
+#' MANOVA, discrete data) stop with an explicit message until they are validated.
 #'
 #' @param x Response: numeric vector, column name or index if `data` is given, or a
 #'   formula.
@@ -194,7 +202,15 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	.bay_story_plan(story, input)
 
 	# Plans not validated yet: an explicit refusal, never a wrong answer.
-	if (!input$plan %in% c("oneway", "factorial", "paired", "repeated")) {
+	if (identical(input$plan, "ancova") && !length(input$factors)) {
+		.exit("A covariate alone (no factor) is a regression, not handled by m.bay() yet.",
+			"Une covariable seule (sans facteur) est une r\u00e9gression, pas encore trait\u00e9e par m.bay().")
+	}
+	if (input$plan %in% c("paired", "repeated") && length(input$covariates)) {
+		.exit("Covariates with subjects (paired ANCOVA) are not handled by m.bay() yet.",
+			"Des covariables avec des sujets (ANCOVA appari\u00e9e) ne sont pas encore trait\u00e9es par m.bay().")
+	}
+	if (!input$plan %in% c("oneway", "factorial", "paired", "repeated", "ancova")) {
 		plan_en <- c(factorial = "several factors", ancova = "covariates", paired = "paired data",
 			repeated = "repeated measures", mixed = "mixed models", manova = "MANOVA")[input$plan]
 		plan_fr <- c(factorial = "plusieurs facteurs", ancova = "les covariables", paired = "les donn\u00e9es appari\u00e9es",
@@ -221,7 +237,7 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 			"La r\u00e9ponse semble discr\u00e8te : les lois normale et \u00e0 queues lourdes ne sont ici qu'une approximation.")
 	}
 
-	if (input$plan %in% c("factorial", "paired", "repeated")) {
+	if (input$plan %in% c("factorial", "paired", "repeated", "ancova")) {
 		return(.bay_m_factorial(input, call_expr, function() notes, note, prior_h1, rscale, laws, sensitivity,
 			draws, seed, detail, verbose, return, !("prior_h1" %in% names(call_expr)), !("laws" %in% names(call_expr)),
 			story, posthoc))
@@ -509,7 +525,7 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 	told <- isTRUE(story) && length(x$story$en) > 0L
 	if (told) .bay_story_replay(x$story)
-	if (x$plan %in% c("factorial", "paired", "repeated")) {
+	if (x$plan %in% c("factorial", "paired", "repeated", "ancova")) {
 		.bay_print_bilan_fact(x, detail = detail, narrated = told)
 	} else {
 		.bay_print_bilan(x, detail = detail, narrated = told)
@@ -524,11 +540,13 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 	rm <- input$plan %in% c("paired", "repeated")
 	paired <- identical(input$plan, "paired")
 	n_dropped <- 0L
+	dropped_ids <- character(0)
 	if (paired) {
 		# A pair needs both measures: subjects with one only are removed (D15).
 		pr <- .bay_paired_xy(input$response, input$factors[[1L]], input$id)
 		keep <- as.character(input$id) %in% pr$id
 		n_dropped <- nlevels(input$id) - length(pr$id)
+		dropped_ids <- setdiff(levels(input$id), pr$id)
 		if (length(pr$id) < 2L) {
 			.exit("Fewer than 2 complete pairs: the paired comparison is impossible.",
 				"Moins de 2 paires compl\u00e8tes : la comparaison appari\u00e9e est impossible.")
@@ -547,13 +565,22 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 	}
 	y <- input$response
 	factors <- input$factors
-	terms <- gsub("`", "", input$terms, fixed = TRUE)
-	sp <- .bay_fact_space(terms)
+	anc <- identical(input$plan, "ancova")
+	cov_names <- if (anc) names(input$covariates) else character(0)
+	terms <- .bay_space_terms(gsub("`", "", input$terms, fixed = TRUE), cov_names)
+	sp <- .bay_fact_space(terms, cov_names)
 	n_mod <- length(sp$models)
 	single <- length(terms) == 1L
+	overlap <- NULL
 
-	if (rm) {
-		.bay_story_rm(story, input, y, paired, n_dropped)
+	if (anc) {
+		overlap <- .bay_story_ancova(story, input, y)
+		if (!no_laws && !identical(laws, "normal_eq")) {
+			note("With covariates only the normal law is computed; laws is ignored.",
+				"Avec des covariables, seule la loi normale est calcul\u00e9e ; laws est ignor\u00e9.")
+		}
+	} else if (rm) {
+		.bay_story_rm(story, input, y, paired, n_dropped, dropped_ids)
 		if (!no_laws && !identical(laws, "normal_eq")) {
 			note("With subjects only the normal law is computed; laws is ignored.",
 				"Avec des sujets, seule la loi normale est calcul\u00e9e ; laws est ignor\u00e9.")
@@ -607,6 +634,10 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 		paste0("Taille d'un effet : r = ", r_txt$fr, " par terme (Zellner-Siow). Chance de chaque terme, pris seul (ces chances ne s'additionnent pas) : ",
 			paste0(terms, " ", vapply(incl, .bay_pct, character(1), dec = ","), collapse = ", "),
 			" ; aucune diff\u00e9rence du tout ", .bay_pct(exp(lp[1L]), ","), "."))
+	if (anc) {
+		.bay_tell(story, paste0("Covariate(s) ", paste(cov_names, collapse = ", "), ": in every model, \"no difference\" included; slope prior of Cauchy scale sqrt(2)/4 (rscaleCont, the \"medium\" of BayesFactor), shared with its interactions with a factor; each answer is read against the model with the covariates only."),
+			paste0("Covariable(s) ", paste(cov_names, collapse = ", "), " : dans chaque mod\u00e8le, \u00ab aucune diff\u00e9rence \u00bb compris ; pente a priori de Cauchy d'\u00e9chelle sqrt(2)/4 (rscaleCont, le \u00ab medium \u00bb de BayesFactor), partag\u00e9e avec ses interactions avec un facteur ; chaque r\u00e9ponse se lit contre le mod\u00e8le avec les covariables seules."), "decide")
+	}
 	if (rm) {
 		.bay_tell(story, if (paired) "Paired difference: the Bayesian paired t test of Rouder et al. (2009), with r = 0.5 as for a random subject effect (equal to lmBF(y ~ time + id) within 0.2 on the log scale)." else "Subjects: random effect of scale 1 (Rouder et al. 2012), in every model; each answer is read against the model with the subjects only.",
 			if (paired) "Diff\u00e9rence appari\u00e9e : test t appari\u00e9 bay\u00e9sien de Rouder et al. (2009), r = 0,5 comme pour un effet sujet al\u00e9atoire (\u00e9gal \u00e0 lmBF(y ~ temps + id) \u00e0 0,2 pr\u00e8s en \u00e9chelle log)." else "Sujets : effet al\u00e9atoire d'\u00e9chelle 1 (Rouder et al. 2012), dans chaque mod\u00e8le ; chaque r\u00e9ponse se lit contre le mod\u00e8le avec les sujets seuls.", "decide")
@@ -656,8 +687,8 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 			"Les r\u00e9ponses ne sont pas \u00e9prouv\u00e9es contre d'autres points de d\u00e9part.", "decide")
 	} else {
 		r1 <- .bay_num_txt(min(sens$r)); r2 <- .bay_num_txt(max(sens$r))
-		.bay_tell(story, if (single) paste0("Sensitivity: r from ", r1$en, " to ", r2$en, ", crossed with starting chances of a difference from 1 against 2 to 2 against 1.") else paste0("Sensitivity: r from ", r1$en, " to ", r2$en, ", crossed with three priors on the models (HOP, 1/2 per term, uniform)."),
-			if (single) paste0("Sensibilit\u00e9 : r de ", r1$fr, " \u00e0 ", r2$fr, ", crois\u00e9 avec des chances de d\u00e9part d'une diff\u00e9rence de 1 contre 2 \u00e0 2 contre 1.") else paste0("Sensibilit\u00e9 : r de ", r1$fr, " \u00e0 ", r2$fr, ", crois\u00e9 avec trois lois sur les mod\u00e8les (HOP, 1/2 par terme, uniforme)."),
+		.bay_tell(story, if (single) paste0("Sensitivity: r", if (anc) " (and rscaleCont with it)" else "", " from ", r1$en, " to ", r2$en, ", crossed with starting chances of a difference from 1 against 2 to 2 against 1.") else paste0("Sensitivity: r", if (anc) " (and rscaleCont with it)" else "", " from ", r1$en, " to ", r2$en, ", crossed with three priors on the models (HOP, 1/2 per term, uniform)."),
+			if (single) paste0("Sensibilit\u00e9 : r", if (anc) " (et rscaleCont avec lui)" else "", " de ", r1$fr, " \u00e0 ", r2$fr, ", crois\u00e9 avec des chances de d\u00e9part d'une diff\u00e9rence de 1 contre 2 \u00e0 2 contre 1.") else paste0("Sensibilit\u00e9 : r", if (anc) " (et rscaleCont avec lui)" else "", " de ", r1$fr, " \u00e0 ", r2$fr, ", crois\u00e9 avec trois lois sur les mod\u00e8les (HOP, 1/2 par terme, uniforme)."),
 			fun = "m.bay() {KefiR}")
 		moved <- which(sens$verdict_terms == "changes")
 		if (length(moved)) {
@@ -680,6 +711,29 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 
 	# Step 6 for one term with subjects: which conditions differ, and by how much (D11, D15).
 	ph <- NULL
+	if (anc && length(factors) == 1L && isTRUE(posthoc)) {
+		g1 <- factors[[1L]]
+		fn <- names(factors)[1L]
+		int <- terms[grepl(":", terms, fixed = TRUE)]
+		p_int <- if (length(int)) fa$effects$p_h1[match(.bay_term_key(int), .bay_term_key(fa$effects$term))] else numeric(0)
+		covc <- as.data.frame(lapply(input$covariates, function(v) v - mean(v)), check.names = FALSE)
+		if (length(int) && isTRUE(max(p_int, na.rm = TRUE) >= 0.5)) {
+			top <- which.max(p_int)
+			xn <- setdiff(strsplit(int[top], ":", fixed = TRUE)[[1]], fn)[1L]
+			ph <- .bay_posthoc_slopes(y, g1, covc[[xn]], mean(input$covariates[[xn]]), covc[setdiff(names(covc), xn)], rscale, draws, seed)
+			ph$xname <- xn
+			.bay_story_slopes(story, ph, xn, int[top], p_int[top])
+		} else {
+			ph <- .bay_posthoc_oneway(y, g1, rscale, prior_h1, draws, seed, cov = covc)
+			ph$caution <- FALSE
+			ph$caution_overlap <- isTRUE(any(fa$overlap$poor))
+			if (length(int)) {
+				.bay_tell(story, paste0("Slopes that differ are not the most probable (", int[1L], " ", .bay_pct(p_int[1L], "."), "): one adjusted gap per pair, at the mean of the covariates."),
+					paste0("Des pentes diff\u00e9rentes ne sont pas les plus probables (", int[1L], " ", .bay_pct(p_int[1L], ","), ") : un \u00e9cart ajust\u00e9 par paire, \u00e0 la moyenne des covariables."), "decide")
+			}
+			.bay_story_posthoc(story, ph, caution = ph$caution)
+		}
+	}
 	if (rm && single && isTRUE(posthoc)) {
 		g1 <- factors[[1L]]
 		ph <- if (paired) .bay_posthoc_paired(y, g1, input$id, rscale, draws, seed) else
@@ -692,9 +746,11 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 	fac_txt <- paste(names(input$factors), collapse = ", ")
 	p_any <- 1 - fa$p_null
 	hyp <- data.frame(
-		label_en = c(if (single) paste0(resp, " differs according to ", fac_txt) else paste0(resp, " differs according to at least one factor"),
+		label_en = c(paste0(if (single || (anc && length(factors) == 1L)) paste0(resp, " differs according to ", fac_txt) else paste0(resp, " differs according to at least one factor"),
+				if (anc) paste0(", at equal ", paste(cov_names, collapse = ", ")) else ""),
 			paste0("No difference in ", resp, " according to ", fac_txt)),
-		label_fr = c(if (single) paste0(resp, " diff\u00e8re selon ", fac_txt) else paste0(resp, " diff\u00e8re selon au moins un facteur"),
+		label_fr = c(paste0(if (single || (anc && length(factors) == 1L)) paste0(resp, " diff\u00e8re selon ", fac_txt) else paste0(resp, " diff\u00e8re selon au moins un facteur"),
+				if (anc) paste0(", \u00e0 m\u00eame ", paste(cov_names, collapse = ", ")) else ""),
 			paste0("Aucune diff\u00e9rence de ", resp, " selon ", fac_txt)),
 		posterior = c(p_any, fa$p_null), prior = c(1 - fa$prior_null, fa$prior_null),
 		null = c(FALSE, TRUE), stringsAsFactors = FALSE)
@@ -710,14 +766,16 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 		sensitivity = fa$sensitivity,
 		priors = list(rscale = rscale, model_prior = if (single) "prior_h1" else "HOP(1,1)", law = "normal_eq", prior_h1 = if (single) prior_h1 else NULL),
 		posthoc = ph, n_subjects = fa$n_subjects,
-		questions = .bay_fact_questions(fa$effects$term, resp),
+		questions = .bay_fact_questions(fa$effects$term, resp, adj = cov_names),
+		overlap = fa$overlap, cov_centres = fa$cov_centres,
+		cov_by_group = if (anc) sapply(input$covariates, function(v) tapply(v, interaction(input$factors, drop = TRUE), mean)) else NULL,
 		contradiction = FALSE, heavy = FALSE, detail = isTRUE(detail),
 		descriptive_stats = fa$means, cell_means = local({
 			cl <- interaction(input$factors, sep = " x ", drop = TRUE)
 			data.frame(cell = levels(cl), n = as.integer(table(cl)), mean = as.numeric(tapply(input$response, cl, mean)), stringsAsFactors = FALSE)
 		}), sd_within = fa$sd_within, sd_is_within = fa$sd_is_within, balanced = fa$balanced,
 		prob_effect = p_any,
-		method = if (paired) "Paired data, Bayesian paired t test (BayesFactor)" else if (rm) "Repeated measures, normal law, random subject effect (BayesFactor)" else "Several factors, normal law with a common variance (BayesFactor)", plan = input$plan,
+		method = if (anc) "Analysis of covariance, normal law, covariates centred (BayesFactor)" else if (paired) "Paired data, Bayesian paired t test (BayesFactor)" else if (rm) "Repeated measures, normal law, random subject effect (BayesFactor)" else "Several factors, normal law with a common variance (BayesFactor)", plan = input$plan,
 		label = input$label, n = length(input$response), notes = get_notes(), call = call_expr)
 	class(out) <- "mbay"
 	.bay_tell(story, "Conclusion: the hypotheses ranked, what each one rests on, its support.",

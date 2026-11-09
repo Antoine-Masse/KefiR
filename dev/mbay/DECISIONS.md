@@ -218,7 +218,7 @@ Proposition initiale, gardée pour mémoire : partitions de moyennes jusqu'à k=
     - 200 tours de chauffe, puis max(2 000, draws/2) tours.
     - Les probabilités de paires sont des fréquences de visite. Leur erreur de tirage est estimée par moyennes de lots (20 lots) et annoncée dans le récit.
     - La sensibilité à α repondère les mêmes tirages, avec la constante de normalisation d'Ewens exacte : Γ(α+k)/Γ(α) − α(k−1)!.
-  - Écartées : les comparaisons par paires avec a priori de multiplicité ([WestfallJohnsonUtts1997], [ScottBerger2006]). Elles traitent chaque paire à part et peuvent donner a = b, b = c, a ≠ c, ce que la loi unique sur les partitions exclut. Garder la même loi de 3 à 12 groupes rend aussi les sorties comparables.
+  - Écartées : les comparaisons par paires avec a priori de multiplicité ([Westfall1997], [ScottBerger2006]). Elles traitent chaque paire à part et peuvent donner a = b, b = c, a ≠ c, ce que la loi unique sur les partitions exclut. Garder la même loi de 3 à 12 groupes rend aussi les sorties comparables.
   - Accord avec l'énumération exacte, en forçant le tirage à 6 et 7 groupes : 1,4 point au plus sur les paires (3 000 tours). Durées : 20 s à 9 groupes, 40 s à 10, 93 s à 12.
   - Au-delà de 15 paires, le récit et le bilan ne détaillent que les paires qui penchent vers « différents » et résument les autres en une ligne. Toutes restent dans `$posthoc$pairs`.
   - La probabilité que deux groupes diffèrent est la somme des partitions qui les séparent. Une seule loi porte donc sur toutes les paires : pas de multiplicité ajoutée paire par paire, pas de résultats incohérents du type a = b, b = c, a ≠ c.
@@ -313,3 +313,29 @@ Ordre fixé par la session parente : appariés et mesures répétées, puis ANCO
 **Écart à `m.test()`.**
 - `m.test()` contrôle la sphéricité (Mauchly) et corrige les degrés de liberté. Le modèle à effet sujet aléatoire suppose la symétrie composée : c'est la même hypothèse que l'ANOVA à mesures répétées non corrigée. Elle n'est pas testée ici ; le récit la nomme à l'étape 3 et renvoie à `m.test()`. Une voie qui la relâche (matrice de covariance libre, par exemple brms) reste à décider.
 - Les post-hocs de `m.test()` avec `(1|id)` ne sont pas appariés (PERIMETRE §4.4). Ici, ils le sont toujours.
+
+## D16. ANCOVA : DÉCIDÉ le 9 novembre (points de la session parente intégrés)
+
+**Plan.** Un ou plusieurs facteurs entre groupes, une ou plusieurs covariables continues, sans sujets. Les plans suivants sont refusés : covariable seule, ANCOVA appariée, MANCOVA.
+
+**Calcul**, par `lmBF` [BayesFactor ; Rouder et Morey 2012 pour les covariables].
+- **Covariables centrées** avant tout calcul, comme `m.test()` depuis 5609fb7 ([AikenWest1991]). L'effet du groupe se lit alors à la moyenne de la covariable, et non à covariable = 0, souvent hors des données. Le récit annonce le centre.
+- Les covariables sont présentes dans tous les modèles, « aucune différence » compris. Chaque terme se lit contre le modèle « covariables seules ». C'est l'ajustement de l'ANCOVA, analogue au type II de `car::Anova` pour le facteur.
+- L'interaction groupe × covariable (pentes différentes) est un terme de l'espace héréditaire : elle n'entre qu'avec le facteur. Elle est testée seulement si la formule l'écrit (`y ~ g * x`), comme dans `m.test()`.
+- **A priori.**
+  - Facteur : r = 0,5.
+  - Covariable : `rscaleCont` = √2/4, le défaut « medium » de BayesFactor, sur la pente standardisée. BayesFactor applique cette même échelle, avec un g commun, à la covariable et à ses interactions avec un facteur ; le récit le dit.
+  - Sensibilité : r et `rscaleCont` sont divisés et multipliés par 2 ensemble, croisés avec les chances de départ (un terme) ou les trois lois sur les modèles (plusieurs termes).
+- **Forme du bruit** : loi normale seule, comme à plusieurs facteurs. La linéarité de la covariable n'est pas testée, et le récit le dit.
+
+**Recouvrement des covariables (prudence).** L'étendue de la covariable est comparée entre groupes, sur ce qu'elles ont en commun : l'intervalle entre le plus grand des minimums et le plus petit des maximums par groupe.
+- Si cette partie commune contient moins de la moitié des observations de l'un des groupes, ou si elle est vide, l'ajustement extrapole. Le récit le dit en « Prudence ajoutée », et le qualificatif de la réponse sur le facteur est plafonné à « faible », comme sous contradiction entre lois.
+
+**Post-hoc.**
+- **Pentes parallèles**, quand le terme groupe × covariable n'est pas en tête (P < 0,5) ou absent. Les regroupements suivent D11 avec les covariables : BF de « h + covariables » contre « covariables seules ». Les écarts ajustés, à la moyenne de la covariable, sont tirés de `posterior(lmBF(y ~ g + x))`.
+- **Pentes différentes probables** (P ≥ 0,5). C'est un changement de stratégie (« --> »), puisqu'un écart ajusté unique n'a plus de sens.
+  - Le récit donne les écarts entre groupes au premier quartile, à la médiane et au troisième quartile de la covariable, à partir de `posterior(lmBF(y ~ g * x))`.
+  - Il donne aussi la zone de la covariable, dans l'étendue observée, où l'intervalle à 95 % de l'écart exclut zéro. C'est l'équivalent bayésien de Johnson-Neyman ([JohnsonNeyman1936] ; [Preacher2006]).
+  - Pas de regroupements dans ce cas : ils supposeraient un écart unique.
+
+**Contrôle indépendant.** `car::Anova(lm, type = 2)` pour le sens des réponses, `emmeans` pour les écarts ajustés et leurs intervalles, et `emmeans(at = quartiles)` quand les pentes diffèrent.

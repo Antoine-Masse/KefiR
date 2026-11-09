@@ -23,14 +23,17 @@
 # Hereditary model space. An interaction enters only with all its lower-order terms
 # (strong heredity). Terms whose lower-order terms are missing from the formula are
 # refused, rather than tested against a comparison nobody asked for.
-.bay_fact_space <- function(terms) {
+.bay_fact_space <- function(terms, always = character(0)) {
+	# always: variables present in every model (covariates, D16); a lower-order term made of
+	# them only is not required.
 	keys <- .bay_term_key(terms)
 	fac <- strsplit(keys, ":", fixed = TRUE)
 	ord <- lengths(fac)
 	parents <- lapply(seq_along(keys), function(i) {
 		which(vapply(fac, function(f) length(f) < ord[i] && all(f %in% fac[[i]]), logical(1)))
 	})
-	short <- lengths(parents) < 2^ord - 2
+	n_always <- vapply(fac, function(f) sum(f %in% always), numeric(1))
+	short <- lengths(parents) < (2^ord - 2) - (2^n_always - 1)
 	if (any(short)) {
 		.exit(paste0("An interaction needs all its lower-order terms in the formula (write A * B): ",
 				paste(terms[short], collapse = ", "), "."),
@@ -79,7 +82,11 @@
 # lmBF integrates over g by importance sampling when there are several terms. Each r has
 # its own seed (seeds[ir]), so the central answer does not depend on whether the
 # sensitivity is computed (RELECTURE 2026-11-09, point 6).
-.bay_fact_logbf <- function(y, factors, sp, rs, iterations, seed, seeds = seed + seq_along(rs) - 1L, id = NULL) {
+.bay_fact_logbf <- function(y, factors, sp, rs, iterations, seed, seeds = seed + seq_along(rs) - 1L, id = NULL,
+                           cov = NULL, rconts = .bay_rcont() * rs / rs[1L]) {
+	# Covariates (ANCOVA, D16): centred by the caller, present in every model; each Bayes
+	# factor is read against the model with the covariates only; their slope prior is
+	# rscaleCont, varied with r in the sensitivity.
 	# Paired or repeated measures (DECISIONS, D15): the subject is a random effect present in
 	# every model, "no difference" included; each Bayes factor is read against the model with
 	# the subjects only. Two levels of one factor and complete pairs: ttestBF on the
@@ -90,6 +97,15 @@
 	dat <- data.frame(.y = y, factors, check.names = FALSE)
 	names(dat) <- c(".y", safe)
 	if (!is.null(id)) dat$.id <- id
+	has_cov <- !is.null(cov) && ncol(cov) > 0L
+	cov_txt <- ""
+	if (has_cov) {
+		cs <- paste0("c", seq_along(cov))
+		names(cs) <- names(cov)
+		for (i in seq_along(cov)) dat[[cs[i]]] <- cov[[i]]
+		safe <- c(safe, cs)
+		cov_txt <- paste(cs, collapse = " + ")
+	}
 	term_safe <- vapply(strsplit(sp$keys, ":", fixed = TRUE), function(f) {
 		paste(safe[f], collapse = ":")
 	}, character(1))
@@ -99,7 +115,10 @@
 	for (ir in seq_along(rs)) {
 		.bay_with_seed(seeds[ir], {
 			lb0 <- 0
-			if (!is.null(id) && !paired) {
+			if (has_cov) {
+				lb0 <- BayesFactor::extractBF(BayesFactor::lmBF(stats::as.formula(paste(".y ~", cov_txt)), data = dat,
+					rscaleCont = rconts[ir], iterations = iterations, progress = FALSE), logbf = TRUE)$bf
+			} else if (!is.null(id) && !paired) {
 				lb0 <- BayesFactor::extractBF(BayesFactor::lmBF(.y ~ .id, data = dat, whichRandom = ".id",
 					iterations = iterations, progress = FALSE), logbf = TRUE)$bf
 			}
@@ -115,14 +134,14 @@
 				# One main effect alone: the internal one-factor computation, equal to lmBF to
 				# 1e-4 (test-bay-factorial.R) and robust where the integrate() of lmBF fails, at
 				# very large effects (agent_50: g = 2e4 gave NA).
-				if (is.null(id) && length(m) == 1L && sp$order[m] == 1L) {
+				if (is.null(id) && !has_cov && length(m) == 1L && sp$order[m] == 1L) {
 					lb[j, ir] <- .bay_bf_oneway_zs(y, factors[[sp$keys[m]]], rs[ir])
 					next
 				}
-				fo <- stats::as.formula(paste(".y ~", paste(term_safe[m], collapse = " + "), if (!is.null(id)) "+ .id" else ""))
+				fo <- stats::as.formula(paste(".y ~", paste(c(if (has_cov) cov_txt, term_safe[m]), collapse = " + "), if (!is.null(id)) "+ .id" else ""))
 				x <- tryCatch(suppressMessages(BayesFactor::extractBF(BayesFactor::lmBF(fo, data = dat,
 					whichRandom = if (!is.null(id)) ".id" else NULL,
-					rscaleFixed = rs[ir], iterations = iterations, progress = FALSE), logbf = TRUE)),
+					rscaleFixed = rs[ir], rscaleCont = rconts[ir], iterations = iterations, progress = FALSE), logbf = TRUE)),
 					error = function(e) list(bf = NA_real_, error = NA_real_))
 				lb[j, ir] <- x$bf - lb0
 				err[j, ir] <- x$error
@@ -130,6 +149,31 @@
 		})
 	}
 	list(log_bf = lb, error = err)
+}
+
+# Prior scale of a covariate slope: the "medium" of BayesFactor (rscaleCont).
+.bay_rcont <- function() sqrt(2) / 4
+
+# Terms of the model space: without the covariates alone, which are in every model.
+.bay_space_terms <- function(terms, cov_names) {
+	if (!length(cov_names)) return(terms)
+	terms[!vapply(strsplit(terms, ":", fixed = TRUE), function(v) all(v %in% cov_names), logical(1))]
+}
+
+# Overlap of each covariate between groups (D16): the common range is from the largest of
+# the group minima to the smallest of the maxima; poor when it is empty or holds less than
+# half of the values of one group: the adjustment then extrapolates.
+.bay_cov_overlap <- function(cov, groups) {
+	if (is.null(cov) || !ncol(cov)) return(NULL)
+	groups <- droplevels(as.factor(groups))
+	out <- lapply(names(cov), function(v) {
+		x <- cov[[v]]
+		lo <- max(tapply(x, groups, min)); hi <- min(tapply(x, groups, max))
+		fr <- if (lo <= hi) tapply(x >= lo & x <= hi, groups, mean) else stats::setNames(rep(0, nlevels(groups)), levels(groups))
+		data.frame(covariate = v, low = lo, high = hi, min_share = min(fr), worst = names(fr)[which.min(fr)],
+			poor = lo > hi || min(fr) < 0.5, stringsAsFactors = FALSE)
+	})
+	do.call(rbind, out)
 }
 
 # Complete pairs, matched by subject: a = first level, b = second.
@@ -155,16 +199,16 @@
 
 # Plain questions, without a cause. A main effect is read "alone or in interaction",
 # because under heredity its probability includes the models where it interacts.
-.bay_fact_questions <- function(terms, resp) {
+.bay_fact_questions <- function(terms, resp, adj = character(0)) {
 	f <- strsplit(terms, ":", fixed = TRUE)
 	en <- fr <- character(length(terms))
 	for (i in seq_along(terms)) {
 		if (length(terms) == 1L) {
-			en[i] <- paste0("Difference in ", resp, " according to ", terms[i], "?")
-			fr[i] <- paste0("Diff\u00e9rence de ", resp, " selon ", terms[i], " ?")
+			en[i] <- paste0("Difference in ", resp, " according to ", terms[i], if (length(adj)) paste0(", at equal ", paste(adj, collapse = ", ")) else "", "?")
+			fr[i] <- paste0("Diff\u00e9rence de ", resp, " selon ", terms[i], if (length(adj)) paste0(", \u00e0 m\u00eame ", paste(adj, collapse = ", ")) else "", " ?")
 		} else if (length(f[[i]]) == 1L) {
-			en[i] <- paste0("Difference in ", resp, " according to ", terms[i], ", alone or in interaction?")
-			fr[i] <- paste0("Diff\u00e9rence de ", resp, " selon ", terms[i], ", seul ou en interaction ?")
+			en[i] <- paste0("Difference in ", resp, " according to ", terms[i], if (length(adj)) paste0(" at equal ", paste(adj, collapse = ", ")) else "", ", alone or in interaction?")
+			fr[i] <- paste0("Diff\u00e9rence de ", resp, " selon ", terms[i], if (length(adj)) paste0(" \u00e0 m\u00eame ", paste(adj, collapse = ", ")) else "", ", seul ou en interaction ?")
 		} else {
 			last <- f[[i]][length(f[[i]])]
 			first <- paste(f[[i]][-length(f[[i]])], collapse = ":")
@@ -183,12 +227,16 @@
 	paired <- !is.null(id) && length(input$factors) == 1L && nlevels(input$factors[[1L]]) == 2L
 	factors <- input$factors
 	# Non-syntactic names come back from the formula with backticks (RELECTURE 2026-11-09, 1).
-	terms <- gsub("`", "", input$terms, fixed = TRUE)
-	sp <- .bay_fact_space(terms)
+	cov <- input$covariates
+	cov_names <- if (!is.null(cov)) names(cov) else character(0)
+	if (length(cov_names)) cov <- as.data.frame(lapply(cov, function(v) v - mean(v)), check.names = FALSE) else cov <- NULL
+	terms <- .bay_space_terms(gsub("`", "", input$terms, fixed = TRUE), cov_names)
+	sp <- .bay_fact_space(terms, cov_names)
 
 	# An interaction with an empty cell cannot be estimated.
 	for (i in which(sp$order > 1L)) {
-		f <- strsplit(sp$keys[i], ":", fixed = TRUE)[[1]]
+		f <- setdiff(strsplit(sp$keys[i], ":", fixed = TRUE)[[1]], cov_names)
+		if (length(f) < 2L) next
 		cells <- table(interaction(factors[f], drop = FALSE))
 		if (any(cells == 0L)) {
 			.exit(paste0("Empty cell for ", terms[i], ": this interaction cannot be estimated, remove it from the formula."),
@@ -204,9 +252,10 @@
 			"Des facteurs sont confondus ou embo\u00eet\u00e9s (l'un d\u00e9termine l'autre) : on ne peut pas les comparer comme des facteurs crois\u00e9s. Les plans embo\u00eet\u00e9s ne sont pas encore trait\u00e9s.")
 	}
 	n_par <- 1L + sum(vapply(sp$keys, function(k) {
-		prod(vapply(strsplit(k, ":", fixed = TRUE)[[1]], function(v) nlevels(factors[[v]]) - 1L, numeric(1)))
+		prod(vapply(strsplit(k, ":", fixed = TRUE)[[1]], function(v) if (v %in% cov_names) 1 else nlevels(factors[[v]]) - 1L, numeric(1)))
 	}, numeric(1)))
 	if (!is.null(id)) n_par <- n_par + nlevels(id) - 1L
+	n_par <- n_par + length(cov_names)
 	if (length(y) <= n_par) {
 		.exit("No residual degree of freedom for the full model: fewer terms are needed.",
 			"Aucun degr\u00e9 de libert\u00e9 r\u00e9siduel pour le mod\u00e8le complet : il faut moins de termes.")
@@ -215,7 +264,8 @@
 	# Central r first, with the seed of the call; r/2 and 2r with their own seeds.
 	rs <- if (isTRUE(sensitivity)) c(rscale, rscale / 2, rscale * 2) else rscale
 	iterations <- max(10000L, as.integer(draws))
-	bf <- .bay_fact_logbf(y, factors, sp, rs, iterations, seed, seeds = seed + c(0L, 1L, 2L)[seq_along(rs)], id = id)
+	bf <- .bay_fact_logbf(y, factors, sp, rs, iterations, seed, seeds = seed + c(0L, 1L, 2L)[seq_along(rs)], id = id,
+		cov = cov, rconts = .bay_rcont() * rs / rscale)
 	# One term alone: its prior is prior_h1, as with one factor between groups.
 	single <- length(sp$keys) == 1L
 	lp <- if (single) log(c(1 - prior_h1, prior_h1)) else .bay_fact_prior(sp, "hop")
@@ -234,8 +284,9 @@
 	# redone with another seed, and the largest change of a probability is reported.
 	multi <- lengths(sp$models) >= 2L
 	spread <- 0
-	if (any(multi) || (!is.null(id) && !paired)) {
-		bf2 <- .bay_fact_logbf(y, factors, sp, rscale, iterations, seed, seeds = seed + 7919L, id = id)
+	if (any(multi) || (!is.null(id) && !paired) || !is.null(cov)) {
+		bf2 <- .bay_fact_logbf(y, factors, sp, rscale, iterations, seed, seeds = seed + 7919L, id = id,
+			cov = cov, rconts = .bay_rcont())
 		e2 <- .bay_fact_terms(sp, bf2$log_bf[, 1L], lp)
 		p2 <- e2$p_h1[match(.bay_term_key(terms), .bay_term_key(e2$term))]
 		spread <- max(abs(p2 - eff$p_h1), abs(.bay_fact_null(bf2$log_bf[, 1L], lp) - p_null), na.rm = TRUE)
@@ -292,7 +343,10 @@
 	# observation per cell there is none: the residual of the largest model compared is given.
 	cell <- interaction(factors, drop = TRUE)
 	within <- length(y) > nlevels(cell)
-	sd_within <- if (!is.null(id)) {
+	sd_within <- if (!is.null(cov)) {
+		# Residual once the covariates and the cells are accounted for.
+		stats::sigma(stats::lm(y ~ ., data = data.frame(y = y, cell = cell, cov, check.names = FALSE)))
+	} else if (!is.null(id)) {
 		# Residual within subject: what the subjects' own levels do not explain.
 		stats::sigma(stats::lm(y ~ id + cell))
 	} else if (within) {
@@ -305,7 +359,9 @@
 		space = sp, log_bf_models = bf$log_bf[, order(rs), drop = FALSE], error_models = bf$error, log_prior = lp,
 		means = do.call(rbind, means), balanced = balanced, min_cell = min(cells_n),
 		sd_within = sd_within, sd_is_within = within, spread = spread, single = single, paired = paired,
-		n_subjects = if (!is.null(id)) nlevels(id) else NA_integer_)
+		n_subjects = if (!is.null(id)) nlevels(id) else NA_integer_, terms = terms,
+		overlap = .bay_cov_overlap(input$covariates, interaction(factors, drop = TRUE)),
+		cov_centres = if (length(cov_names)) vapply(input$covariates, mean, numeric(1)) else NULL)
 }
 
 # Bilan with several factors. Same order as with one factor: verdict on the global
@@ -318,6 +374,7 @@
 	say <- function(en, fr) cat(pre, .msg(en, fr), "\n", sep = "")
 	num <- function(x) gsub(".", dec, format(signif(x, 3), trim = TRUE), fixed = TRUE)
 	rm <- obj$plan %in% c("paired", "repeated")
+	poor <- isTRUE(any(obj$overlap$poor))
 	if (!isTRUE(narrated)) {
 		if (rm) {
 			say(paste0("Bilan of m.bay: ", obj$label, " (N = ", obj$n, ", ", obj$n_subjects, " subjects, ", if (obj$plan == "paired") "paired data)" else "repeated measures)"),
@@ -333,6 +390,7 @@
 	# Global Bayes factor of the leading answer: posterior odds over prior odds.
 	lb_glob <- log(h$posterior[1L] / h$posterior[2L]) - log(h$prior[1L] / h$prior[2L])
 	sup <- .bay_support_bf(h$posterior[1L], lb_glob)
+	if (poor && sup$level > 2L) sup <- .bay_support(0.7)
 	say(paste0("  ", h$label_en[1L], ": ", .bay_pct(h$posterior[1L], "."), " (", sup$en, "); ",
 			h$label_en[2L], ": ", .bay_pct(h$posterior[2L], "."), "."),
 		paste0("  ", h$label_fr[1L], " : ", .bay_pct(h$posterior[1L], ","), " (", sup$fr, ") ; ",
@@ -367,6 +425,7 @@
 	for (i in seq_len(nrow(e))) {
 		yes <- e$p_h1[i] >= 0.5
 		s <- .bay_support_bf(max(e$p_h1[i], e$p_h0[i]), e$log_bf[i] * if (yes) 1 else -1)
+		if (poor && s$level > 2L) s <- .bay_support(0.7)
 		against <- !is.na(e$log_bf[i]) && ((e$log_bf[i] >= 0) != yes)
 		open <- s$level == 1L || against || (!is.null(sens) && identical(sens$verdict_terms[i], "changes"))
 		rr_en <- rr_fr <- ""
@@ -425,12 +484,19 @@
 			"  Sensibilit\u00e9 aux a priori non calcul\u00e9e (sensitivity = FALSE).")
 	}
 
+	if (poor) say("  Support capped at weak: the covariate ranges of the groups hardly overlap, the adjustment extrapolates.",
+		"  Soutien plafonn\u00e9 \u00e0 faible : les \u00e9tendues de la covariable se recouvrent peu entre groupes, l'ajustement extrapole.")
 	if (!is.null(obj$posthoc)) .bay_print_posthoc(obj$posthoc, say)
 	m <- obj$descriptive_stats
 	dg <- max(0L, 2L - floor(log10(max(abs(m$mean), 1e-300))))
 	if (isTRUE(obj$sd_within > 0)) dg <- min(10L, max(dg, 1L - floor(log10(obj$sd_within))))
 	fmt <- function(x, dc) gsub(".", dc, formatC(x, format = "f", digits = dg), fixed = TRUE)
-	if (!is.null(obj$posthoc)) say("Observed means per factor (description of the sample):",
+	if (identical(obj$plan, "ancova")) {
+		cg <- obj$cov_by_group
+		cg_txt <- function(dc) paste(vapply(colnames(cg), function(v) paste0(v, " : ", paste0(rownames(cg), " = ", gsub(".", dc, format(signif(cg[, v], 3), trim = TRUE), fixed = TRUE), collapse = if (dc == ",") " ; " else "; ")), character(1)), collapse = " | ")
+		say(paste0("Raw observed means per factor (not adjusted; mean covariate per group, ", cg_txt("."), "):"),
+			paste0("Moyennes observ\u00e9es par facteur (brutes, non ajust\u00e9es ; covariable moyenne par groupe, ", cg_txt(","), ") :"))
+	} else 	if (!is.null(obj$posthoc)) say("Observed means per factor (description of the sample):",
 		"Moyennes observ\u00e9es par facteur (description de l'\u00e9chantillon) :") else say("Observed means per factor (description, not a test of which levels differ):",
 		"Moyennes observ\u00e9es par facteur (description ; ce bilan ne dit pas quels niveaux diff\u00e8rent) :")
 	for (f in unique(m$factor)) {
@@ -443,8 +509,9 @@
 		say(paste0("  Per cell: ", paste0(cm$cell, " = ", fmt(cm$mean, "."), collapse = "; "), "."),
 			paste0("  Par case : ", paste0(cm$cell, " = ", fmt(cm$mean, ","), collapse = " ; "), "."))
 	}
-	sd_en <- if (rm) "Residual standard deviation within subject (each subject's own level removed): " else if (isTRUE(obj$sd_is_within)) "Within-cell standard deviation: " else "Residual standard deviation (one observation per cell): "
-	sd_fr <- if (rm) "\u00c9cart-type r\u00e9siduel au sein des sujets (niveau propre de chaque sujet retir\u00e9) : " else if (isTRUE(obj$sd_is_within)) "\u00c9cart-type au sein des cases : " else "\u00c9cart-type r\u00e9siduel (une observation par case) : "
+	anc <- identical(obj$plan, "ancova")
+	sd_en <- if (anc) "Residual standard deviation (covariates accounted for): " else if (rm) "Residual standard deviation within subject (each subject's own level removed): " else if (isTRUE(obj$sd_is_within)) "Within-cell standard deviation: " else "Residual standard deviation (one observation per cell): "
+	sd_fr <- if (anc) "\u00c9cart-type r\u00e9siduel (covariables prises en compte) : " else if (rm) "\u00c9cart-type r\u00e9siduel au sein des sujets (niveau propre de chaque sujet retir\u00e9) : " else if (isTRUE(obj$sd_is_within)) "\u00c9cart-type au sein des cases : " else "\u00c9cart-type r\u00e9siduel (une observation par case) : "
 	say(paste0("  ", sd_en, fmt(obj$sd_within, "."), if (!isTRUE(obj$balanced)) "; unbalanced plan, these means mix the other factors." else "."),
 		paste0("  ", sd_fr, fmt(obj$sd_within, ","), if (!isTRUE(obj$balanced)) " ; plan d\u00e9s\u00e9quilibr\u00e9, ces moyennes m\u00e9langent les autres facteurs." else "."))
 

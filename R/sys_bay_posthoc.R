@@ -32,17 +32,29 @@
 # Log Bayes factor of one grouping h against "no difference". Without subjects: the internal
 # one-factor computation, equal to lmBF. With subjects (D15): lmBF(y ~ h + id) over
 # lmBF(y ~ id), subject random; lb0 is the second, computed once.
-.bay_partition_bf <- function(y, h, rscale, id = NULL, lb0 = 0, iterations = 10000L) {
-	if (is.null(id)) return(.bay_bf_oneway_zs(y, h, rscale))
-	d <- data.frame(y = y, h = h, id = id)
-	BayesFactor::extractBF(BayesFactor::lmBF(y ~ h + id, data = d, whichRandom = "id", rscaleFixed = rscale,
+.bay_partition_bf <- function(y, h, rscale, id = NULL, lb0 = 0, iterations = 10000L, cov = NULL) {
+	if (is.null(id) && is.null(cov)) return(.bay_bf_oneway_zs(y, h, rscale))
+	d <- .bay_nuisance_data(y, id, cov)
+	d$h <- h
+	BayesFactor::extractBF(BayesFactor::lmBF(stats::as.formula(paste("y ~ h +", .bay_nuisance_rhs(d))), data = d,
+		whichRandom = if (!is.null(id)) "id" else NULL, rscaleFixed = rscale, rscaleCont = .bay_rcont(),
 		iterations = iterations, progress = FALSE), logbf = TRUE)$bf - lb0
 }
-.bay_subject_lb0 <- function(y, id, iterations = 10000L) {
-	if (is.null(id)) return(0)
-	BayesFactor::extractBF(BayesFactor::lmBF(y ~ id, data = data.frame(y = y, id = id), whichRandom = "id",
+# Model with the nuisance terms only (subjects, D15; or covariates, D16), against the intercept.
+.bay_subject_lb0 <- function(y, id, iterations = 10000L, cov = NULL) {
+	if (is.null(id) && is.null(cov)) return(0)
+	d <- .bay_nuisance_data(y, id, cov)
+	BayesFactor::extractBF(BayesFactor::lmBF(stats::as.formula(paste("y ~", .bay_nuisance_rhs(d))), data = d,
+		whichRandom = if (!is.null(id)) "id" else NULL, rscaleCont = .bay_rcont(),
 		iterations = iterations, progress = FALSE), logbf = TRUE)$bf
 }
+.bay_nuisance_data <- function(y, id, cov) {
+	d <- data.frame(y = y)
+	if (!is.null(id)) d$id <- id
+	if (!is.null(cov)) for (i in seq_along(cov)) d[[paste0("c", i)]] <- cov[[i]]
+	d
+}
+.bay_nuisance_rhs <- function(d) paste(setdiff(names(d), c("y", "h", "g")), collapse = " + ")
 
 # Number of partitions of k items (Bell number), for the story.
 .bay_bell <- function(k) {
@@ -67,8 +79,8 @@
 
 # Gibbs sampler over the partitions (Gopalan and Berry 1998), for many groups.
 # Returns the visited partitions (matrix, one row per sweep) and the cached log Bayes factors.
-.bay_partition_gibbs <- function(y, g, rscale, prior_h1, sweeps, burn, seed, alpha = 1, id = NULL) {
-	lb0 <- .bay_subject_lb0(y, id)
+.bay_partition_gibbs <- function(y, g, rscale, prior_h1, sweeps, burn, seed, alpha = 1, id = NULL, cov = NULL) {
+	lb0 <- .bay_subject_lb0(y, id, cov = cov)
 	gi <- as.integer(g)
 	k <- nlevels(g)
 	cache <- new.env(hash = TRUE)
@@ -78,7 +90,7 @@
 		key <- paste(p, collapse = ".")
 		lb <- cache[[key]]
 		if (is.null(lb)) {
-			lb <- if (max(p) == 1L) 0 else .bay_partition_bf(y, factor(p[gi]), rscale, id, lb0)
+			lb <- if (max(p) == 1L) 0 else .bay_partition_bf(y, factor(p[gi]), rscale, id, lb0, cov = cov)
 			assign(key, lb, envir = cache)
 		}
 		lp <- if (max(p) == 1L) log(1 - prior_h1) else {
@@ -144,8 +156,9 @@
 	paste(vapply(blocks, function(ix) paste(lev[ix][order(means[ix])], collapse = " = "), character(1)), collapse = " < ")
 }
 
-.bay_posthoc_oneway <- function(y, g, rscale, prior_h1, draws, seed, alphas = c(1, 1/2, 2), id = NULL) {
+.bay_posthoc_oneway <- function(y, g, rscale, prior_h1, draws, seed, alphas = c(1, 1/2, 2), id = NULL, cov = NULL) {
 	rm <- !is.null(id)
+	if (!is.null(cov) && !ncol(cov)) cov <- NULL
 	# Computed on the standardised response (Bayes factors and delta do not depend on the
 	# scale), the gaps put back in the units of y: no overflow at extreme scales (1e200).
 	sc <- max(abs(y - stats::median(y)))
@@ -159,16 +172,16 @@
 	res <- data.frame(group1 = lev[pairs[1L, ]], group2 = lev[pairs[2L, ]], stringsAsFactors = FALSE)
 	parts_tab <- NULL
 	p_sens <- NULL
-	method <- if (k <= .bay_posthoc_max_groups(rm)) "exact" else "gibbs"
+	method <- if (k <= .bay_posthoc_max_groups(rm || !is.null(cov))) "exact" else "gibbs"
 	mc_error <- 0
 	n_sweeps <- NA_integer_
 	if (method == "exact") {
 		parts <- .bay_partitions(k)
 		lb <- .bay_with_seed(seed, {
-			lb0 <- .bay_subject_lb0(y, id)
+			lb0 <- .bay_subject_lb0(y, id, cov = cov)
 			vapply(parts, function(p) {
 				if (max(p) == 1L) return(0)
-				.bay_partition_bf(y, factor(p[as.integer(g)]), rscale, id, lb0)
+				.bay_partition_bf(y, factor(p[as.integer(g)]), rscale, id, lb0, cov = cov)
 			}, numeric(1))
 		})
 		pm <- do.call(rbind, parts)
@@ -188,7 +201,7 @@
 			stringsAsFactors = FALSE)
 	} else {
 		n_sweeps <- max(2000L, as.integer(draws) %/% 2L)
-		gb <- .bay_partition_gibbs(y, g, rscale, prior_h1, n_sweeps, 200L, seed, alphas[1L], id = id)
+		gb <- .bay_partition_gibbs(y, g, rscale, prior_h1, n_sweeps, 200L, seed, alphas[1L], id = id, cov = cov)
 		D <- gb$draws
 		nb <- apply(D, 1L, max)
 		null <- nb == 1L
@@ -225,11 +238,11 @@
 	rownames(parts_tab) <- NULL
 
 	# How much: posterior of the model where all groups may differ.
-	dd <- data.frame(y = y, g = g)
-	if (rm) dd$id <- id
-	fo <- if (rm) y ~ g + id else y ~ g
+	dd <- .bay_nuisance_data(y, id, cov)
+	dd$g <- g
+	fo <- if (rm || !is.null(cov)) stats::as.formula(paste("y ~ g +", .bay_nuisance_rhs(dd))) else y ~ g
 	po <- .bay_with_seed(seed, BayesFactor::posterior(BayesFactor::lmBF(fo, data = dd, rscaleFixed = rscale,
-			whichRandom = if (rm) "id" else NULL, progress = FALSE),
+			rscaleCont = .bay_rcont(), whichRandom = if (rm) "id" else NULL, progress = FALSE),
 		iterations = max(4000L, as.integer(draws)), progress = FALSE))
 	po <- as.matrix(po)
 	eff <- po[, paste0("g-", lev), drop = FALSE]
@@ -247,7 +260,7 @@
 	res$delta <- st[, 4L]; res$delta_low <- st[, 5L]; res$delta_high <- st[, 6L]
 	list(pairs = res, partitions = parts_tab, k = k, alphas = alphas, draws = nrow(po),
 		computed = TRUE, method = method, n_partitions = .bay_bell(k), sweeps = n_sweeps, mc_error = mc_error,
-		max_exact = .bay_posthoc_max_groups(rm), delta_unit = if (rm) "within" else "pooled")
+		max_exact = .bay_posthoc_max_groups(rm || !is.null(cov)), delta_unit = if (rm) "within" else if (!is.null(cov)) "adjusted" else "pooled")
 }
 
 # Paired data, two levels (D15): size of the difference from the posterior of ttestBF on the
@@ -272,4 +285,51 @@
 		stringsAsFactors = FALSE)
 	list(pairs = res, partitions = NULL, k = 2L, draws = nrow(po), computed = TRUE, method = "paired",
 		n_partitions = 2, sweeps = NA_integer_, mc_error = 0, delta_unit = "diff", n_pairs = length(pr$id))
+}
+
+# Slopes that differ between groups (D16): one adjusted gap no longer has a meaning, it
+# depends on the covariate. From the posterior of lmBF(y ~ g + x + g:x) [BayesFactor], for
+# each pair the gap at the quartiles of x, and the zone of the observed range where its 95 %
+# interval excludes zero (Bayesian counterpart of Johnson and Neyman 1936). x: the covariate
+# in interaction, centred at centre; other: the other covariates (centred), kept in the model.
+.bay_posthoc_slopes <- function(y, g, x, centre, other, rscale, draws, seed) {
+	g <- droplevels(as.factor(g))
+	lev <- levels(g)
+	k <- length(lev)
+	sc <- max(abs(y - stats::median(y)))
+	if (!is.finite(sc) || sc <= 0) sc <- 1
+	d <- data.frame(y = (y - mean(y)) / sc, g = g, x = x)
+	if (!is.null(other) && ncol(other)) for (i in seq_along(other)) d[[paste0("c", i)]] <- other[[i]]
+	rhs <- paste(c("g", "x", "g:x", setdiff(names(d), c("y", "g", "x"))), collapse = " + ")
+	po <- .bay_with_seed(seed, BayesFactor::posterior(BayesFactor::lmBF(stats::as.formula(paste("y ~", rhs)), data = d,
+		rscaleFixed = rscale, rscaleCont = .bay_rcont(), progress = FALSE), iterations = max(4000L, as.integer(draws)), progress = FALSE))
+	po <- as.matrix(po)
+	cn <- colnames(po)
+	a <- po[, paste0("g-", lev), drop = FALSE]
+	b <- po[, grep("^g:x-", cn), drop = FALSE]
+	if (ncol(b) != k) b <- matrix(0, nrow(po), k)
+	hdi_of <- function(v) {
+		h <- bayestestR::hdi(as.numeric(v), ci = 0.95)
+		c(stats::median(v), h$CI_low, h$CI_high)
+	}
+	xo <- x + centre
+	at <- stats::quantile(xo, c(0.25, 0.5, 0.75), names = FALSE)
+	grid <- seq(min(xo), max(xo), length.out = 101L)
+	pairs <- utils::combn(k, 2L)
+	rows <- list(); zones <- character(ncol(pairs)); zone_list <- vector("list", ncol(pairs))
+	for (j in seq_len(ncol(pairs))) {
+		i1 <- pairs[1L, j]; i2 <- pairs[2L, j]
+		gap <- function(x0) sc * ((a[, i2] - a[, i1]) + (b[, i2] - b[, i1]) * (x0 - centre))
+		for (q in seq_along(at)) {
+			h <- hdi_of(gap(at[q]))
+			rows[[length(rows) + 1L]] <- data.frame(group1 = lev[i1], group2 = lev[i2], at = at[q], quartile = q,
+				diff = h[1L], diff_low = h[2L], diff_high = h[3L], stringsAsFactors = FALSE)
+		}
+		ex <- vapply(grid, function(x0) { h <- hdi_of(gap(x0)); h[2L] > 0 || h[3L] < 0 }, logical(1))
+		r <- rle(ex); ends <- cumsum(r$lengths); starts <- ends - r$lengths + 1L
+		zone_list[[j]] <- data.frame(from = grid[starts[r$values]], to = grid[ends[r$values]])
+	}
+	list(method = "slopes", k = k, at = at, gaps = do.call(rbind, rows), zones = zone_list,
+		pairs = data.frame(group1 = lev[pairs[1L, ]], group2 = lev[pairs[2L, ]], stringsAsFactors = FALSE),
+		range = range(xo), draws = nrow(po), computed = TRUE)
 }

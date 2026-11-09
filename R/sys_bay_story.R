@@ -157,6 +157,20 @@
 				" combinaisons de termes sont possibles (une interaction n'entre qu'avec ses facteurs : h\u00e9r\u00e9dit\u00e9)."))
 		.bay_tell(st, paste0("One answer per term, obtained by weighing these ", length(sp$models), " combinations together."),
 			paste0("Une r\u00e9ponse par terme, obtenue en pesant ensemble ces ", length(sp$models), " combinaisons."), "decide")
+	} else if (identical(input$plan, "ancova")) {
+		lv <- vapply(fac, nlevels, integer(1))
+		cv <- names(input$covariates)
+		.bay_tell(st, paste0("Plan recognised: analysis of covariance, ", paste0(nm, " (", lv, " groups)", collapse = ", "),
+				", covariate(s) ", paste(cv, collapse = ", "), "; N = ", N, "."),
+			paste0("Plan reconnu : analyse de covariance, ", paste0(nm, " (", lv, " groupes)", collapse = ", "),
+				", covariable(s) ", paste(cv, collapse = ", "), " ; N = ", N, "."), "step")
+		terms <- .bay_space_terms(gsub("`", "", input$terms, fixed = TRUE), cv)
+		invisible(.bay_fact_space(terms, cv))
+		slopes <- terms[grepl(":", terms, fixed = TRUE)]
+		.bay_tell(st, paste0("Question: does ", input$response_name, " differ according to ", paste(nm, collapse = ", "), " once ",
+				paste(cv, collapse = ", "), " is accounted for?", if (length(slopes)) paste0(" And do the slopes differ (", paste(slopes, collapse = ", "), ")?") else ""),
+			paste0("Question : ", input$response_name, " diff\u00e8re-t-il selon ", paste(nm, collapse = ", "), " une fois ",
+				paste(cv, collapse = ", "), " pris en compte ?", if (length(slopes)) paste0(" Et les pentes diff\u00e8rent-elles (", paste(slopes, collapse = ", "), ") ?") else ""), "decide")
 	} else if (input$plan %in% c("paired", "repeated")) {
 		ns <- nlevels(input$id)
 		lv <- vapply(fac, nlevels, integer(1))
@@ -277,11 +291,18 @@
 		.bay_tell(st, paste0("The other ", nrow(pr) - length(shown), " pairs lean towards alike (different below 50 %); all pairs: $posthoc$pairs."),
 			paste0("Les ", nrow(pr) - length(shown), " autres paires penchent vers semblables (diff\u00e9rentes \u00e0 moins de 50 %) ; toutes les paires : $posthoc$pairs."), "info")
 	}
-	.bay_tell(st, "Estimated gap: posterior median, pulled slightly towards zero by the prior, hence a little smaller than the observed gap of step 7. Brackets: 95 % credible interval, if a difference exists (the value lies there with 95 % probability; not a confidence interval).",
+	if (identical(ph$delta_unit %in% c("within", "adjusted", "diff"), TRUE)) {
+		.bay_tell(st, "Estimated gap: posterior median, pulled slightly towards zero by the prior. Brackets: 95 % credible interval, if a difference exists (the value lies there with 95 % probability; not a confidence interval).",
+			"\u00c9cart estim\u00e9 : m\u00e9diane a posteriori, l\u00e9g\u00e8rement ramen\u00e9e vers z\u00e9ro par l'a priori. Crochets : intervalle de cr\u00e9dibilit\u00e9 \u00e0 95 %, si une diff\u00e9rence existe (la valeur s'y trouve avec 95 % de probabilit\u00e9 ; ce n'est pas un intervalle de confiance).", "info")
+	} else .bay_tell(st, "Estimated gap: posterior median, pulled slightly towards zero by the prior, hence a little smaller than the observed gap of step 7. Brackets: 95 % credible interval, if a difference exists (the value lies there with 95 % probability; not a confidence interval).",
 		"\u00c9cart estim\u00e9 : m\u00e9diane a posteriori, l\u00e9g\u00e8rement ramen\u00e9e vers z\u00e9ro par l'a priori, donc un peu plus petite que l'\u00e9cart observ\u00e9 de l'\u00e9tape 7. Crochets : intervalle de cr\u00e9dibilit\u00e9 \u00e0 95 %, si une diff\u00e9rence existe (la valeur s'y trouve avec 95 % de probabilit\u00e9 ; ce n'est pas un intervalle de confiance).", "info")
 	if (ph$k > 2L) {
 		.bay_tell(st, "All pairs come from one single law over the groupings: no correction pair by pair is needed, and the answers cannot contradict each other.",
 			"Toutes les paires viennent d'une seule loi sur les regroupements : aucune correction paire par paire n'est n\u00e9cessaire, et les r\u00e9ponses ne peuvent pas se contredire.", "decide")
+	}
+	if (isTRUE(ph$caution_overlap)) {
+		.bay_tell(st, "These gaps compare the groups at the mean of the covariate, where some have few or no data (step 2): read them with caution.",
+			"Ces \u00e9carts comparent les groupes \u00e0 la moyenne de la covariable, l\u00e0 o\u00f9 certains ont peu ou pas de donn\u00e9es (\u00e9tape 2) : les lire avec r\u00e9serve.", "decide")
 	}
 	if (caution) {
 		.bay_tell(st, "These pairs assume a normal noise with a common variance, which step 4 did not find: read them with caution.",
@@ -303,19 +324,22 @@
 .bay_delta_unit <- function(ph) {
 	switch(if (is.null(ph$delta_unit)) "pooled" else ph$delta_unit,
 		within = list(en = "residual SD within subject", fr = "\u00e9cart-type r\u00e9siduel au sein des sujets"),
+		adjusted = list(en = "residual SD (covariates accounted for)", fr = "\u00e9cart-type r\u00e9siduel (covariables prises en compte)"),
 		diff = list(en = "SD of the differences (dz)", fr = "\u00e9cart-type des diff\u00e9rences (dz)"),
 		list(en = "SD", fr = "\u00e9cart-type"))
 }
 
 # Steps 2 to 4 for paired data and repeated measures (D15).
-.bay_story_rm <- function(st, input, y, paired, n_dropped) {
+.bay_story_rm <- function(st, input, y, paired, n_dropped, dropped_ids = character(0)) {
 	if (is.null(st)) return(invisible(NULL))
 	id <- input$id
 	fac <- input$factors
 	ns <- nlevels(id)
 	if (n_dropped > 0L) {
-		.bay_tell(st, paste0(n_dropped, " subject(s) without a measure at both levels removed: a pair needs both."),
-			paste0(n_dropped, " sujet(s) sans mesure aux deux niveaux retir\u00e9(s) : une paire demande les deux."), "decide")
+		lst <- paste(utils::head(dropped_ids, 10L), collapse = ", ")
+		if (length(dropped_ids) > 10L) lst <- paste0(lst, ", ...")
+		.bay_tell(st, paste0(n_dropped, " subject(s) without a measure at both levels removed (", lst, "): a pair needs both."),
+			paste0(n_dropped, " sujet(s) sans mesure aux deux niveaux retir\u00e9(s) (", lst, ") : une paire demande les deux."), "decide")
 	}
 	cells <- interaction(fac, drop = TRUE)
 	wi <- intersect(input$within, names(fac))
@@ -355,4 +379,86 @@
 			"Aucune valeur n'est assez \u00e9loign\u00e9e pour mettre d'embl\u00e9e la loi normale en doute ; elle n'est pas mise \u00e0 l'\u00e9preuve des autres.", "decide")
 	}
 	invisible(chk)
+}
+
+# Steps 2 and 3 for the analysis of covariance (D16).
+.bay_story_ancova <- function(st, input, y) {
+	fac <- input$factors
+	cov <- input$covariates
+	cells <- interaction(fac, drop = TRUE)
+	res <- stats::residuals(stats::lm(y ~ ., data = data.frame(y = y, cov, check.names = FALSE)))
+	.bay_tell(st, "Values far from their group are sought on what the covariates do not explain.",
+		"Les valeurs \u00e9loign\u00e9es sont cherch\u00e9es sur ce que les covariables n'expliquent pas.", "info")
+	chk <- .bay_story_checks(st, res + mean(y), cells)
+	ov <- .bay_cov_overlap(cov, cells)
+	for (i in seq_len(nrow(ov))) {
+		v <- ov$covariate[i]
+		lo <- .bay_num_txt(ov$low[i]); hi <- .bay_num_txt(ov$high[i]); sh <- .bay_pct(ov$min_share[i], ","); she <- .bay_pct(ov$min_share[i], ".")
+		if (ov$low[i] > ov$high[i]) {
+			.bay_tell(st, paste0("Covariate ", v, ": the groups do not overlap at all."),
+				paste0("Covariable ", v, " : les groupes ne se recouvrent pas du tout."))
+		} else {
+			.bay_tell(st, paste0("Covariate ", v, ": common range of the groups from ", lo$en, " to ", hi$en, "; it holds at least ", she, " of each group (", ov$worst[i], " the least)."),
+				paste0("Covariable ", v, " : \u00e9tendue commune aux groupes de ", lo$fr, " \u00e0 ", hi$fr, " ; elle contient au moins ", sh, " de chaque groupe (", ov$worst[i], " le moins)."))
+		}
+	}
+	if (any(ov$poor)) {
+		.bay_tell(st, "Caution added: the groups hardly overlap on the covariate, so the adjustment compares them where some have no data (extrapolation); the support of the answers on the groups will be capped at weak.",
+			"Prudence ajout\u00e9e : les groupes se recouvrent peu sur la covariable, l'ajustement les compare donc l\u00e0 o\u00f9 certains n'ont pas de donn\u00e9es (extrapolation) ; le soutien des r\u00e9ponses sur les groupes sera plafonn\u00e9 \u00e0 faible.", "decide")
+	}
+	ctr <- vapply(cov, mean, numeric(1))
+	ct <- .bay_num_txt(ctr)
+	.bay_tell(st, paste0("Covariate(s) centred on their mean (", paste0(names(cov), " = ", ct$en, collapse = ", "), "): the groups are compared at this value, inside the data, not at 0 (Aiken and West 1991)."),
+		paste0("Covariable(s) centr\u00e9e(s) sur leur moyenne (", paste0(names(cov), " = ", ct$fr, collapse = ", "), ") : les groupes sont compar\u00e9s \u00e0 cette valeur, dans les donn\u00e9es, et non \u00e0 0 (Aiken et West 1991)."), "decide")
+	.bay_tell(st, "No value is removed.", "Aucune valeur n'est retir\u00e9e.", "decide")
+	.bay_tell(st, "Shape of the noise.", "Forme du bruit.", "step")
+	.bay_tell(st, "Only the normal law with a common variance is computed, and the covariate acts in a straight line (linearity not tested): heavy tails, unequal variances and curvature are not validated with covariates yet.",
+		"Seule la loi normale \u00e0 variance commune est calcul\u00e9e, et la covariable agit en ligne droite (lin\u00e9arit\u00e9 non test\u00e9e) : queues lourdes, variances in\u00e9gales et courbure ne sont pas encore valid\u00e9es avec des covariables.")
+	far <- chk$extremes[["far"]]
+	if (far > 0L) {
+		.bay_tell(st, paste0(far, " value(s) lie beyond 3 interquartile ranges once the covariates are accounted for: read the answer with caution."),
+			paste0(far, " valeur(s) au-del\u00e0 de 3 \u00e9carts interquartiles une fois les covariables prises en compte : lire la r\u00e9ponse avec r\u00e9serve."), "decide")
+	} else {
+		.bay_tell(st, "No value lies far enough to put the normal law in doubt at first sight; it is not tested against the others.",
+			"Aucune valeur n'est assez \u00e9loign\u00e9e pour mettre d'embl\u00e9e la loi normale en doute ; elle n'est pas mise \u00e0 l'\u00e9preuve des autres.", "decide")
+	}
+	invisible(ov)
+}
+
+# Step 6 when the slopes differ (D16): gaps at the quartiles of the covariate, and where
+# the groups differ.
+.bay_story_slopes <- function(st, ph, xname, term, p_int) {
+	if (is.null(st)) return(invisible(NULL))
+	.bay_tell(st, paste0("Which groups differ, and by how much, along ", xname, "."),
+		paste0("Quels groupes diff\u00e8rent, et de combien, selon ", xname, "."), "step",
+		fun = "lmBF(y ~ g * x), posterior() {BayesFactor}, hdi() {bayestestR}")
+	.bay_tell(st, paste0("Change of strategy: slopes that differ are probable (", term, " ", .bay_pct(p_int, "."),
+			"), so the gap between groups depends on ", xname, ": one adjusted gap would mean nothing. Gaps at the quartiles of ", xname,
+			", and the zone where the groups differ (Bayesian counterpart of Johnson and Neyman)."),
+		paste0("Changement de strat\u00e9gie : des pentes diff\u00e9rentes sont probables (", term, " ", .bay_pct(p_int, ","),
+			"), donc l'\u00e9cart entre groupes d\u00e9pend de ", xname, " : un \u00e9cart ajust\u00e9 unique n'aurait pas de sens. \u00c9carts aux quartiles de ", xname,
+			", et zone o\u00f9 les groupes diff\u00e8rent (\u00e9quivalent bay\u00e9sien de Johnson et Neyman)."), "decide")
+	for (L in .bay_slopes_lines(ph, xname)) .bay_tell(st, L$en, L$fr)
+	.bay_tell(st, "Brackets: 95 % credible interval. Zone: values of the observed range where this interval excludes 0.",
+		"Crochets : intervalle de cr\u00e9dibilit\u00e9 \u00e0 95 %. Zone : valeurs de l'\u00e9tendue observ\u00e9e o\u00f9 cet intervalle exclut 0.", "info")
+	invisible(NULL)
+}
+
+.bay_slopes_lines <- function(ph, xname) {
+	f <- function(v, dc) gsub(".", dc, format(signif(v, 2), trim = TRUE), fixed = TRUE)
+	sep <- function(dc) if (dc == ",") " ; " else "; "
+	out <- list()
+	for (j in seq_len(nrow(ph$pairs))) {
+		a <- ph$pairs$group1[j]; b <- ph$pairs$group2[j]
+		gp <- ph$gaps[ph$gaps$group1 == a & ph$gaps$group2 == b, , drop = FALSE]
+		txt <- function(dc) paste0(vapply(seq_len(nrow(gp)), function(q) paste0(xname, " = ", f(gp$at[q], dc), " : ", f(gp$diff[q], dc),
+			" [", f(gp$diff_low[q], dc), sep(dc), f(gp$diff_high[q], dc), "]"), character(1)), collapse = sep(dc))
+		z <- ph$zones[[j]]
+		zt <- function(dc, none, word, and) if (!nrow(z)) none else paste(paste0(word, " ", f(z$from, dc), " ", and, " ", f(z$to, dc)), collapse = if (dc == ",") " et " else " and ")
+		f <- function(v, dc) vapply(v, function(w) gsub(".", dc, format(signif(w, 2), trim = TRUE), fixed = TRUE), character(1))
+		out[[j]] <- list(
+			en = paste0(b, " - ", a, ": ", txt("."), "; they differ ", zt(".", "nowhere in the observed range", "from", "to"), "."),
+			fr = paste0(b, " - ", a, " : ", txt(","), " ; ils diff\u00e8rent ", zt(",", "nulle part dans l'\u00e9tendue observ\u00e9e", "de", "\u00e0"), "."))
+	}
+	out
 }

@@ -1,5 +1,29 @@
 # Journal de m.bay
 
+## Séance 8 : 9 novembre 2026, analyse de covariance (D16)
+
+**Cadre.** Plan suivant du PERIMETRE. La session parente a validé le schéma et ajouté trois points : changer de stratégie quand les pentes diffèrent, centrer la covariable et dire son a priori, signaler le recouvrement. Contrôle demandé : `car::Anova` type II et `emmeans`.
+
+**Fait.**
+- Covariables centrées, présentes dans chaque modèle ; chaque réponse se lit contre « covariables seules » (`lmBF`, `rscaleCont` = √2/4, qui varie avec r dans la sensibilité). L'interaction groupe × covariable entre dans l'espace héréditaire sans exiger la covariable comme terme.
+- Récit :
+  - recouvrement des covariables entre groupes, avec « Prudence ajoutée » et soutien plafonné à faible quand il est mauvais ;
+  - centre annoncé ;
+  - linéarité nommée comme non testée ;
+  - moyennes brutes étiquetées comme telles, avec la covariable moyenne par groupe.
+- Post-hoc :
+  - pentes parallèles : regroupements et écarts ajustés ;
+  - pentes différentes probables : changement de stratégie, écarts aux quartiles et zone où les groupes diffèrent (Johnson-Neyman bayésien).
+- Bibliographie : Aiken et West 1991, Johnson et Neyman 1936 et Preacher et al. 2006 ont été contrôlées par la session parente ; le DOI de Preacher et al. 2006 a été confirmé sur Crossref. Le doublon Westfall a été retiré.
+
+**Vérifié.**
+- `agent_57` concorde avec m.bay à la précision des tirages, pour les BF, les écarts et la zone.
+- `agent_58` calibre la méthode : faux positifs rares, mais peu de puissance sur les pentes à n = 20.
+
+**Non vérifié.**
+- Relecture des récits G, H et I par un lecteur type.
+- Plusieurs facteurs ou plusieurs covariables en simulation.
+
 ## Séance 7 : 9 novembre 2026, données appariées et mesures répétées (D15)
 
 **Cadre.** Demande de la session parente : après le post-hoc, traiter les plans du PERIMETRE dans l'ordre suivant : appariés et mesures répétées, puis ANCOVA, puis le discret.

@@ -4,7 +4,7 @@
 1) Plan reconnu : données appariées, moment (avant, apres) mesuré sur les mêmes 14 sujets ; N = 27.
 	--> Une seule question : y a-t-il une différence de tension selon moment, chaque sujet comparé à lui-même ?
 2) Contrôles des données.
-	--> 1 sujet(s) sans mesure aux deux niveaux retiré(s) : une paire demande les deux.
+	--> 1 sujet(s) sans mesure aux deux niveaux retiré(s) (3) : une paire demande les deux.
 	==> Sujets : 13 ; mesurés dans toutes les conditions intra-sujet : 13.
 	Les valeurs éloignées sont cherchées une fois retiré le niveau propre de chaque sujet.
 	==> Effectifs : 13 par condition (2 conditions, N = 26).
@@ -27,7 +27,7 @@
 	--> Prudence ajoutée : moment sera dit non tranché, quelle que soit sa probabilité affichée.
 6) De combien les deux niveaux diffèrent. [posterior(ttestBF()) {BayesFactor}, hdi() {bayestestR}]
 	==> Écart estimé apres - avant = -3,4 [-7,5 ; 0,58], soit -0,45 [-0,98 ; 0,11] écart-type des différences (dz).
-	Écart estimé : médiane a posteriori, légèrement ramenée vers zéro par l'a priori, donc un peu plus petite que l'écart observé de l'étape 7. Crochets : intervalle de crédibilité à 95 %, si une différence existe (la valeur s'y trouve avec 95 % de probabilité ; ce n'est pas un intervalle de confiance).
+	Écart estimé : médiane a posteriori, légèrement ramenée vers zéro par l'a priori. Crochets : intervalle de crédibilité à 95 %, si une différence existe (la valeur s'y trouve avec 95 % de probabilité ; ce n'est pas un intervalle de confiance).
 7) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
 	Verdict : indécis. Les données ne permettent de conclure ni à une différence, ni à son absence.
 	  tension diffère selon moment : 63,4 % (non tranché par les données) ; Aucune différence de tension selon moment : 36,6 %.
@@ -76,7 +76,7 @@
 	==> S2 et S3 : différents à 49,1 % ; écart estimé S3 - S2 = -5,2 [-17 ; 6,7], soit -0,32 [-1 ; 0,41] écart-type résiduel au sein des sujets.
 	==> S2 et S4 : différents à 84,7 % ; écart estimé S4 - S2 = -15 [-28 ; -1,9], soit -0,92 [-1,8 ; -0,13] écart-type résiduel au sein des sujets.
 	==> S3 et S4 : différents à 68,6 % ; écart estimé S4 - S3 = -9,7 [-22 ; 2,4], soit -0,61 [-1,4 ; 0,18] écart-type résiduel au sein des sujets.
-	Écart estimé : médiane a posteriori, légèrement ramenée vers zéro par l'a priori, donc un peu plus petite que l'écart observé de l'étape 7. Crochets : intervalle de crédibilité à 95 %, si une différence existe (la valeur s'y trouve avec 95 % de probabilité ; ce n'est pas un intervalle de confiance).
+	Écart estimé : médiane a posteriori, légèrement ramenée vers zéro par l'a priori. Crochets : intervalle de crédibilité à 95 %, si une différence existe (la valeur s'y trouve avec 95 % de probabilité ; ce n'est pas un intervalle de confiance).
 	--> Toutes les paires viennent d'une seule loi sur les regroupements : aucune correction paire par paire n'est nécessaire, et les réponses ne peuvent pas se contredire.
 7) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
 	Verdict : une différence existe très probablement. Cela ne dit ni qu'elle est importante, ni pourquoi ; les paires sont plus bas.

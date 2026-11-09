@@ -70,7 +70,7 @@
 # The sentence a reader looks for first. Never an equivalence, a size or a cause.
 .bay_verdict <- function(obj) {
 	v <- .bay_verdict_raw(obj)
-	if (!is.null(obj$posthoc) && isTRUE(obj$posthoc$k > 2L)) {
+	if (!is.null(obj$posthoc) && (isTRUE(obj$posthoc$k > 2L) || identical(obj$posthoc$method, "slopes"))) {
 		v$en <- sub("neither that it matters, nor which groups differ, nor why.", "neither that it matters nor why; the pairs are below.", v$en, fixed = TRUE)
 		v$fr <- sub("ni qu'elle est importante, ni quels groupes diff\u00e8rent, ni pourquoi.", "ni qu'elle est importante, ni pourquoi ; les paires sont plus bas.", v$fr, fixed = TRUE)
 	}
@@ -393,11 +393,20 @@
 
 # Which groups differ, in the conclusion: one line per pair, qualifier of the leading side.
 .bay_print_posthoc <- function(ph, say) {
+	if (identical(ph$method, "slopes")) {
+		say(paste0("Which groups differ along ", ph$xname, " (slopes that differ; gap and 95 % credible interval at the quartiles, zone where they differ):"),
+			paste0("Quels groupes diff\u00e8rent selon ", ph$xname, " (pentes diff\u00e9rentes ; \u00e9cart et intervalle de cr\u00e9dibilit\u00e9 \u00e0 95 % aux quartiles, zone o\u00f9 ils diff\u00e8rent) :"))
+		for (L in .bay_slopes_lines(ph, ph$xname)) say(paste0("  ", L$en), paste0("  ", L$fr))
+		return(invisible(NULL))
+	}
 	pr <- ph$pairs
 	f <- function(v, dc) gsub(".", dc, format(signif(v, 2), trim = TRUE), fixed = TRUE)
 	ci <- function(i, dc, a, l, h) paste0(f(pr[[a]][i], dc), " [", f(pr[[l]][i], dc), if (dc == ",") " ; " else "; ", f(pr[[h]][i], dc), "]")
 	if (ph$k > 2L) {
-		if (identical(ph$delta_unit, "within")) {
+		if (identical(ph$delta_unit, "adjusted")) {
+			say("Which groups differ at the mean of the covariates (normal law; probability, then adjusted gap and 95 % credible interval):",
+				"Quels groupes diff\u00e8rent \u00e0 la moyenne des covariables (loi normale ; probabilit\u00e9, puis \u00e9cart ajust\u00e9 et intervalle de cr\u00e9dibilit\u00e9 \u00e0 95 %) :")
+		} else if (identical(ph$delta_unit, "within")) {
 			say("Which conditions differ (normal law, random subject effect; probability, then estimated gap and 95 % credible interval):",
 				"Quelles conditions diff\u00e8rent (loi normale, effet sujet al\u00e9atoire ; probabilit\u00e9, puis \u00e9cart estim\u00e9 et intervalle de cr\u00e9dibilit\u00e9 \u00e0 95 %) :")
 		} else say("Which groups differ (normal law with a common variance; probability, then estimated gap and 95 % credible interval):",
@@ -429,6 +438,8 @@
 				paste0("  ", pr$group2[i], " - ", pr$group1[i], " = ", ci(i, ",", "diff", "diff_low", "diff_high"), ", delta = ", ci(i, ",", "delta", "delta_low", "delta_high"), "."))
 		}
 	}
+	if (isTRUE(ph$caution_overlap)) say("  To read with caution: these gaps compare the groups where some have few or no values of the covariate.",
+		"  \u00c0 lire avec r\u00e9serve : ces \u00e9carts comparent les groupes l\u00e0 o\u00f9 certains ont peu ou pas de valeurs de la covariable.")
 	if (isTRUE(ph$caution)) say("  To read with caution: these pairs assume a normal noise with a common variance, which the comparison of noise forms did not find.",
 		"  \u00c0 lire avec r\u00e9serve : ces paires supposent un bruit normal \u00e0 variance commune, ce que la comparaison des formes du bruit n'a pas trouv\u00e9.")
 	invisible(NULL)

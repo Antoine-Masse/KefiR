@@ -165,8 +165,16 @@ and the size of the difference as dz with its credible interval. More levels, or
 between subjects too: \code{\link[BayesFactor:lmBF]{BayesFactor::lmBF()}} with \code{whichRandom} (Rouder et al. 2012), each
 model against the subjects alone; one factor within subject gets the post-hoc on
 groupings. Normal law only; several measures of one subject in one condition (mixed
-models) are refused. The other plans of \code{\link[=m.test]{m.test()}} (covariates, mixed, MANOVA, discrete
-data) stop with an explicit message until they are validated.
+models) are refused.
+
+Analysis of covariance (DECISIONS, D16), \code{y ~ g + x} or \code{y ~ g * x}: covariates centred on
+their mean, present in every model, each answer read against the covariates alone
+(\code{\link[BayesFactor:lmBF]{BayesFactor::lmBF()}}, slope prior \code{rscaleCont} = sqrt(2)/4, varied with \code{r}). Groups that
+hardly overlap on a covariate cap the support at "weak". Parallel slopes: adjusted gaps
+and groupings as with one factor. Slopes that differ: gaps at the quartiles of the
+covariate and the zone where the groups differ (Bayesian Johnson-Neyman). A covariate
+alone, and covariates with subjects, are refused. The other plans of \code{\link[=m.test]{m.test()}} (mixed,
+MANOVA, discrete data) stop with an explicit message until they are validated.
 }
 
 \examples{

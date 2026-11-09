@@ -87,10 +87,11 @@ test_that("session anglaise reelle : le recit sort en anglais", {
 })
 
 test_that("plan refuse : l'etape 1 le nomme avant le refus", {
-	d <- data.frame(y = rnorm(20), g = factor(rep(1:2, 10)), x = rnorm(20))
-	txt <- capture.output(expect_error(m.bay(y ~ g + x, data = d)))
-	expect_true(any(grepl("^1\\) ", txt)))
-	expect_true(any(grepl("ANCOVA", txt)))
+	# ANCOVA acceptee depuis D16 : un plan encore refuse, la MANOVA
+	d <- data.frame(y = rnorm(20), y2 = rnorm(20), g = factor(rep(1:2, 10)))
+	txt <- capture.output(expect_error(m.bay(cbind(y, y2) ~ g, data = d)))
+	expect_true(any(grepl("^1[)] ", txt)))
+	expect_true(any(grepl("MANOVA", txt)))
 })
 
 test_that("plusieurs facteurs : loi normale seule dite, a priori HOP, lmBF cite, sensibilite racontee", {

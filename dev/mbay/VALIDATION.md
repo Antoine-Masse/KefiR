@@ -595,3 +595,66 @@ Scripts et sorties : `relecture/agent_55/`. Mêmes jeux que les récits D, E et 
 - un plan avec répliques est refusé comme modèle mixte.
 
 `test-bay-posthoc.R` : à l'échelle 1e200, les intervalles restent finis. C'est le cas qui produisait le message « ci is too small » de bayestestR.
+
+## 11. Analyse de covariance (D16), 9 novembre
+
+### Calcul indépendant (`agent_57`, agent qui n'a lu ni `R/`, ni `tests/`, ni `dev/mbay`)
+
+Mêmes jeux que les récits G, H et I (`relecture/lecteur_recit/recits_ancova.txt`). L'agent a appliqué la spécification de D16 :
+- covariable centrée ;
+- `lmBF` contre « covariable seule » ;
+- a priori 1/2, 1/4, 1/4 sur les trois modèles quand l'interaction est écrite ;
+- `posterior()` à 20 000 tirages et HDI.
+
+Il l'a comparée à `car::Anova` type II et à `emmeans`. Scripts et sortie : `relecture/agent_57/`.
+
+| Calcul | Référence | m.bay |
+|---|---|---|
+| G. log BF engrais / P(engrais) | 2,2151 / 0,9016 | 2,2181 / 0,9019 |
+| G. Écarts ajustés E2−E1, E3−E1, E3−E2 (médiane) | 0,434 / 2,060 / 1,616 | 0,424 / 2,045 / 1,606 |
+| G. HDI de E3−E1 | [0,456 ; 3,588] | [0,434 ; 3,621] |
+| H. P(méthode) / P(méthode:note) | 0,999428 / 0,999321 | 0,999417 / 0,999308 |
+| H. Écart projet − classique aux quartiles 11,36 / 13,58 / 15,59 | −0,981 / 0,495 / 1,836 | −0,995 / 0,495 / 1,829 |
+| H. Zone où la HDI exclut 0 | [6,754 ; 11,630] et [13,846 ; 17,836] | [6,754 ; 11,630] et [13,957 ; 17,836] |
+| I. log BF régime | 2,2419 | 2,2418 |
+| I. Écart ajusté R2 − R1 | 4,318 [0,533 ; 8,286] | 4,482 [0,620 ; 8,203] (4 000 tirages) |
+| I. Part de chaque groupe dans l'étendue commune | 0,067 et 0,067 | 0,067, plus faible part (R1) |
+
+**Lecture.**
+- **H, zone.** La zone bayésienne diffère d'un pas de grille sur une borne (0,11). Les bornes exactes de Johnson-Neyman fréquentiste sont 11,47 et 13,82, ce qui confirme le sens et la place des deux zones.
+- **H, effets.** `car::Anova` donne méthode p = 0,30 et méthode:note p = 1,6e−6. Le « oui » à méthode de m.bay se lit « seul ou en interaction » : il vient des pentes, ce que le récit dit en changeant de stratégie.
+- **I, écart.** À 20 000 tirages, m.bay donne 4,36 à 4,42 selon la graine, identique à un appel direct de `posterior()` avec la même graine. L'écart avec la référence est donc du tirage, plus grand quand les groupes se recouvrent peu, car l'écart y est mal déterminé. `emmeans` donne 4,575 [1,07 ; 8,08].
+
+### Calibration (`agent_58`, N = 200 jeux par scénario)
+
+3 groupes, covariable U(5, 15), pente 0,8, résidu 1. Résultats : `scripts/resultats/agent_58.txt`.
+
+| Scénario | P(g) > 0,5 / > 0,75 / > 0,95 | car type II p < 0,05 | P(g:x) > 0,5 / > 0,75 | p(g:x) < 0,05 | Couverture de l'écart ajusté |
+|---|---|---:|---|---:|---:|
+| Pentes parallèles, H0, n = 15 | 0,055 / 0,010 / 0 | 0,025 | – | – | 0,990 |
+| Pentes parallèles, un groupe à +1, n = 15 | 0,835 / 0,585 / 0,300 | 0,755 | – | – | 0,932 |
+| `y ~ g * x` écrit, pentes égales, un groupe à +0,5, n = 20 | 0,235 / 0,120 / 0,025 | 0,345 | 0 / 0 | 0,070 | 0,972 |
+| `y ~ g * x` écrit, une pente +0,4, un groupe à +0,5, n = 20 | 0,705 / 0,565 / 0,350 | 0,315 | 0,630 / 0,460 | 0,935 | 0,955 |
+
+**Lecture.**
+- **Sous H0**, une différence est annoncée au-delà de « faible » dans 1 % des jeux.
+- **Avec un écart**, la méthode est plus prudente que le test de type II : 59 % au-delà de 0,75, contre 76 % de p < 0,05.
+- **Pentes égales**, quand l'interaction est écrite : jamais de « pentes différentes », contre 7 % de p < 0,05.
+- **Pente réellement différente** : elle n'est dite probable que dans 63 % des jeux, contre 94 % pour le test F, et au-delà de 0,75 dans 46 %. L'interaction part à 25 % (HOP) et son a priori de pente est petit (`rscaleCont` = √2/4, partagé avec la covariable). C'est un manque de puissance à n = 20. Quand l'interaction n'est pas reconnue, la réponse reste celle des pentes parallèles, et le récit dit pourquoi.
+- **P(g)** dépasse le type II dans ce dernier scénario, car il se lit « seul ou en interaction ».
+
+**Non simulé** :
+- plusieurs facteurs avec covariables ;
+- plusieurs covariables ;
+- groupes qui se recouvrent peu ;
+- non-linéarité.
+
+### Tests
+
+`test-bay-ancova.R`, 6 tests :
+- le BF du facteur égale `lmBF(y ~ g + xc) / lmBF(y ~ xc)` à 0,05 près ;
+- le centrage est vérifié : résultat identique quand la covariable est décalée de 1 000 ;
+- les écarts ajustés concordent avec `emmeans` à 0,1 près, et le sens avec `car::Anova` type II ;
+- avec des pentes différentes, les écarts aux quartiles concordent avec `emmeans(at = )` à 0,15 près, et la zone est trouvée ;
+- un faible recouvrement donne une prudence ajoutée et un soutien plafonné ;
+- la covariable seule et l'ANCOVA appariée sont refusées.
