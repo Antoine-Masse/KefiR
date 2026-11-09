@@ -93,3 +93,29 @@ test_that("effet enorme : pas de NA (integrate de lmBF en echec, agent_50)", {
 	expect_false(anyNA(r$effects$p_h1))
 	expect_true(r$effects$p_h1[2L] > 0.999)
 })
+
+test_that("relecture du 9 novembre : noms, facteurs confondus, graine, ecart-type, avis", {
+	skip_if_not_installed("BayesFactor")
+	# 1. Noms non syntaxiques.
+	d3 <- d2
+	names(d3)[1:2] <- c("my A", "B-2")
+	r1 <- gof(y ~ `my A` * `B-2`, data = d3)
+	expect_equal(r1$effects$p_h1, gof(y ~ A * B, data = d2)$effects$p_h1)
+	# 2. Facteurs confondus ou emboites : refus.
+	da <- d2
+	da$C <- factor(ifelse(da$A == "a1", "c1", "c2"))
+	expect_error(gof(y ~ A + C, data = da), "confondus|confounded")
+	da$N <- factor(paste(da$A, da$B))
+	expect_error(gof(y ~ A + N, data = da), "confondus|confounded")
+	# 6. La reponse centrale ne depend pas de sensitivity.
+	expect_equal(m.bay(y ~ A * B, data = d2, verbose = FALSE, sensitivity = TRUE)$effects$p_h1,
+		gof(y ~ A * B, data = d2)$effects$p_h1)
+	# 4. Ecart-type au sein des cases.
+	expect_equal(gof(y ~ A * B, data = d2)$sd_within, sigma(lm(y ~ A * B, data = d2)))
+	expect_match(paste(capture.output(print(gof(y ~ A * B, data = d2))), collapse = " "), "au sein des cases|Within-cell")
+	# 10. Aucune interaction testee : dit.
+	expect_true(any(grepl("No interaction", gof(y ~ A + B, data = d2)$notes$en)))
+	expect_false(any(grepl("No interaction", gof(y ~ A * B, data = d2)$notes$en)))
+	# 3. Precision mesuree par deux graines, en points de probabilite.
+	expect_true(all(gof(y ~ A * B, data = d2)$effects$error_pct < 5))
+})

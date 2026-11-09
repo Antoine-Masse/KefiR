@@ -56,7 +56,9 @@
 #'   and `"t_het"`.
 #' @param sensitivity If `TRUE` (default), computes the sensitivity to the priors.
 #'   The bilan says so when it is switched off.
-#' @param draws Importance draws per model. Default 4000.
+#' @param draws Importance draws per model. Default 4000. With several factors, BayesFactor
+#'   uses at least 10000 iterations; its noise hardly shrinks beyond, so a larger `draws`
+#'   brings little there.
 #' @param seed Seed of this call. The global random state is left untouched.
 #' @param detail If `TRUE`, the bilan also shows the shapes of the noise, the priors that
 #'   are varied and how to read the numbers. Also `print(result, detail = TRUE)`.
@@ -347,6 +349,15 @@ print.mbay <- function(x, detail = isTRUE(x$detail), ...) {
 		note("With several factors only the normal law with a common variance is computed; laws is ignored.",
 			"\u00c0 plusieurs facteurs, seule la loi normale \u00e0 variance commune est calcul\u00e9e ; laws est ignor\u00e9.")
 	}
+	if (!any(grepl(":", input$terms, fixed = TRUE))) {
+		note("No interaction is tested (additive formula or x, g form); write y ~ A * B to test them.",
+			"Aucune interaction n'est test\u00e9e (formule additive ou forme x, g) ; \u00e9crire y ~ A * B pour les tester.")
+	}
+	n_mod <- length(.bay_fact_space(gsub("`", "", input$terms, fixed = TRUE))$models)
+	if (isTRUE(verbose) && n_mod > 50L) {
+		message(.msg(paste0("Comparing ", n_mod, " models: this can take a few minutes."),
+			paste0("Comparaison de ", n_mod, " mod\u00e8les : cela peut prendre quelques minutes.")))
+	}
 	fa <- .bay_factorial(input, rscale, sensitivity, as.integer(draws), as.integer(seed), note)
 	resp <- input$response_name
 	fac_txt <- paste(names(input$factors), collapse = ", ")
@@ -371,7 +382,7 @@ print.mbay <- function(x, detail = isTRUE(x$detail), ...) {
 		priors = list(rscale = rscale, model_prior = "HOP(1,1)", law = "normal_eq"),
 		questions = .bay_fact_questions(fa$effects$term, resp),
 		contradiction = FALSE, heavy = FALSE, detail = isTRUE(detail),
-		descriptive_stats = fa$means, sd_within = fa$sd_within, balanced = fa$balanced,
+		descriptive_stats = fa$means, sd_within = fa$sd_within, sd_is_within = fa$sd_is_within, balanced = fa$balanced,
 		prob_effect = p_any,
 		method = "Several factors, normal law with a common variance (BayesFactor)", plan = input$plan,
 		label = input$label, n = length(input$response), notes = get_notes(), call = call_expr)

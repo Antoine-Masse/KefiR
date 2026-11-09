@@ -76,9 +76,10 @@
 }
 
 # Log BF of every model against the null model (intercept only), for each r.
-# lmBF integrates over g by importance sampling when there are several terms: the seed
-# of the call makes it reproducible.
-.bay_fact_logbf <- function(y, factors, sp, rs, iterations, seed) {
+# lmBF integrates over g by importance sampling when there are several terms. Each r has
+# its own seed (seeds[ir]), so the central answer does not depend on whether the
+# sensitivity is computed (RELECTURE 2026-11-09, point 6).
+.bay_fact_logbf <- function(y, factors, sp, rs, iterations, seed, seeds = seed + seq_along(rs) - 1L) {
 	safe <- paste0("f", seq_along(factors))
 	names(safe) <- names(factors)
 	dat <- data.frame(.y = y, factors, check.names = FALSE)
@@ -89,26 +90,26 @@
 	n_mod <- length(sp$models)
 	lb <- matrix(0, n_mod, length(rs))
 	err <- matrix(0, n_mod, length(rs))
-	.bay_with_seed(seed, {
-		for (j in seq_len(n_mod)[-1L]) {
-			m <- sp$models[[j]]
-			# One main effect alone: the internal one-factor computation, equal to lmBF to 1e-4
-			# (test-bay-factorial.R) and robust where the integrate() of lmBF fails, at very
-			# large effects (agent_50: g = 2e4 gave NA).
-			if (length(m) == 1L && sp$order[m] == 1L) {
-				for (ir in seq_along(rs)) lb[j, ir] <- .bay_bf_oneway_zs(y, factors[[sp$keys[m]]], rs[ir])
-				next
-			}
-			fo <- stats::as.formula(paste(".y ~", paste(term_safe[m], collapse = " + ")))
-			for (ir in seq_along(rs)) {
+	for (ir in seq_along(rs)) {
+		.bay_with_seed(seeds[ir], {
+			for (j in seq_len(n_mod)[-1L]) {
+				m <- sp$models[[j]]
+				# One main effect alone: the internal one-factor computation, equal to lmBF to
+				# 1e-4 (test-bay-factorial.R) and robust where the integrate() of lmBF fails, at
+				# very large effects (agent_50: g = 2e4 gave NA).
+				if (length(m) == 1L && sp$order[m] == 1L) {
+					lb[j, ir] <- .bay_bf_oneway_zs(y, factors[[sp$keys[m]]], rs[ir])
+					next
+				}
+				fo <- stats::as.formula(paste(".y ~", paste(term_safe[m], collapse = " + ")))
 				x <- tryCatch(suppressMessages(BayesFactor::extractBF(BayesFactor::lmBF(fo, data = dat,
 					rscaleFixed = rs[ir], iterations = iterations, progress = FALSE), logbf = TRUE)),
 					error = function(e) list(bf = NA_real_, error = NA_real_))
 				lb[j, ir] <- x$bf
 				err[j, ir] <- x$error
 			}
-		}
-	})
+		})
+	}
 	list(log_bf = lb, error = err)
 }
 
@@ -149,7 +150,8 @@
 .bay_factorial <- function(input, rscale, sensitivity, draws, seed, note) {
 	y <- input$response
 	factors <- input$factors
-	terms <- input$terms
+	# Non-syntactic names come back from the formula with backticks (RELECTURE 2026-11-09, 1).
+	terms <- gsub("`", "", input$terms, fixed = TRUE)
 	sp <- .bay_fact_space(terms)
 
 	# An interaction with an empty cell cannot be estimated.
@@ -161,6 +163,14 @@
 				paste0("Case vide pour ", terms[i], " : cette interaction ne peut pas \u00eatre estim\u00e9e, la retirer de la formule."))
 		}
 	}
+	# Confounded or nested factors (one determines the other): the terms cannot be told apart,
+	# and the answers would be misleading (RELECTURE 2026-11-09, 2).
+	fx <- stats::model.matrix(stats::as.formula(paste("~", paste0("`", names(factors), "`", collapse = " + "))),
+		data = factors)
+	if (qr(fx)$rank < ncol(fx)) {
+		.exit("Some factors are confounded or nested (one determines another): they cannot be compared as crossed factors. Nested plans are not handled yet.",
+			"Des facteurs sont confondus ou embo\u00eet\u00e9s (l'un d\u00e9termine l'autre) : on ne peut pas les comparer comme des facteurs crois\u00e9s. Les plans embo\u00eet\u00e9s ne sont pas encore trait\u00e9s.")
+	}
 	n_par <- 1L + sum(vapply(sp$keys, function(k) {
 		prod(vapply(strsplit(k, ":", fixed = TRUE)[[1]], function(v) nlevels(factors[[v]]) - 1L, numeric(1)))
 	}, numeric(1)))
@@ -169,33 +179,43 @@
 			"Aucun degr\u00e9 de libert\u00e9 r\u00e9siduel pour le mod\u00e8le complet : il faut moins de termes.")
 	}
 
-	rs <- if (isTRUE(sensitivity)) c(rscale / 2, rscale, rscale * 2) else rscale
-	ic <- if (isTRUE(sensitivity)) 2L else 1L
+	# Central r first, with the seed of the call; r/2 and 2r with their own seeds.
+	rs <- if (isTRUE(sensitivity)) c(rscale, rscale / 2, rscale * 2) else rscale
 	iterations <- max(10000L, as.integer(draws))
-	bf <- .bay_fact_logbf(y, factors, sp, rs, iterations, seed)
+	bf <- .bay_fact_logbf(y, factors, sp, rs, iterations, seed, seeds = seed + c(0L, 1L, 2L)[seq_along(rs)])
 	lp <- .bay_fact_prior(sp, "hop")
-	eff <- .bay_fact_terms(sp, bf$log_bf[, ic], lp)
+	eff <- .bay_fact_terms(sp, bf$log_bf[, 1L], lp)
 	# Same order as the formula.
 	eff <- eff[match(.bay_term_key(terms), .bay_term_key(eff$term)), , drop = FALSE]
 	eff$term <- terms
 	eff$rscale <- rscale
-	# The error BayesFactor reports can underestimate the spread between seeds on models with
-	# several terms: sd 0.014 to 0.026 on the log BF against 0.003 to 0.010 reported at 1e5
-	# iterations, 0.022 against 0.018 at 1e4 (agent_51, VALIDATION). Floor of 0.03 for those.
-	# Only the models that carry weight a posteriori matter for the answer.
-	lw <- bf$log_bf[, ic] + lp
-	w <- exp(lw - .bay_log_sum_exp(lw[!is.na(lw)]))
-	used <- !is.na(w) & w > 0.01
-	multi <- used & lengths(sp$models) >= 2L
-	err_pct <- 100 * max(bf$error[used, ic], if (any(multi)) 0.03, 0, na.rm = TRUE)
+	rownames(eff) <- NULL
+	p_null <- .bay_fact_null(bf$log_bf[, 1L], lp)
+	prior_null <- exp(lp[1L])
+
+	# Numerical precision, measured rather than taken from BayesFactor, whose reported error
+	# is unreliable on models with several terms, too low or too high, and hardly shrinks
+	# with more iterations (agent_51; RELECTURE 2026-11-09, 3): the central computation is
+	# redone with another seed, and the largest change of a probability is reported.
+	multi <- lengths(sp$models) >= 2L
+	spread <- 0
+	if (any(multi)) {
+		bf2 <- .bay_fact_logbf(y, factors, sp, rscale, iterations, seed, seeds = seed + 7919L)
+		e2 <- .bay_fact_terms(sp, bf2$log_bf[, 1L], lp)
+		p2 <- e2$p_h1[match(.bay_term_key(terms), .bay_term_key(e2$term))]
+		spread <- max(abs(p2 - eff$p_h1), abs(.bay_fact_null(bf2$log_bf[, 1L], lp) - p_null), na.rm = TRUE)
+	}
+	eff$error_pct <- 100 * spread
 	if (anyNA(bf$log_bf)) {
 		note("BayesFactor could not compute some models (very large effects); the terms that depend on them are left at NA.",
 			"BayesFactor n'a pas pu calculer certains mod\u00e8les (effets tr\u00e8s grands) ; les termes qui en d\u00e9pendent restent \u00e0 NA.")
 	}
-	eff$error_pct <- err_pct
-	rownames(eff) <- NULL
-	p_null <- .bay_fact_null(bf$log_bf[, ic], lp)
-	prior_null <- exp(lp[1L])
+	if (isTRUE(spread > 0.02)) {
+		note(paste0("Numerical precision: two computations with different seeds differ by up to ",
+				format(round(100 * spread, 1), trim = TRUE), " points of probability."),
+			paste0("Pr\u00e9cision num\u00e9rique : deux calculs avec des graines diff\u00e9rentes diff\u00e8rent jusqu'\u00e0 ",
+				gsub(".", ",", format(round(100 * spread, 1), trim = TRUE), fixed = TRUE), " points de probabilit\u00e9."))
+	}
 
 	sens <- NULL
 	if (isTRUE(sensitivity)) {
@@ -217,15 +237,9 @@
 			r <- if (lead) rng_terms[i, ] else 1 - rev(rng_terms[i, ])
 			.bay_sensitivity_verdict(max(eff$p_h1[i], eff$p_h0[i]), r)
 		}, character(1))
-		sens <- list(r = rs, priors = names(priors), cells = cells, p_terms = p_terms, p_any = p_any,
+		sens <- list(r = rs[order(rs)], priors = names(priors), cells = cells, p_terms = p_terms, p_any = p_any,
 			range_terms = rng_terms, verdict_terms = verdict_terms, range_lead = rng_any,
 			verdict = .bay_sensitivity_verdict(max(p_null, 1 - p_null), rng_any))
-	}
-	if (isTRUE(err_pct > 5)) {
-		note(paste0("Numerical precision is low: error on a Bayes factor up to ",
-				format(signif(err_pct, 2), trim = TRUE), " %. Try a larger draws."),
-			paste0("Pr\u00e9cision num\u00e9rique faible : erreur sur un facteur de Bayes jusqu'\u00e0 ",
-				gsub(".", ",", format(signif(err_pct, 2), trim = TRUE), fixed = TRUE), " %. Essayer un draws plus grand."))
 	}
 
 	cells_n <- table(interaction(factors, drop = FALSE))
@@ -235,10 +249,20 @@
 			n = as.integer(table(factors[[v]])),
 			mean = as.numeric(tapply(y, factors[[v]], mean)), stringsAsFactors = FALSE)
 	})
+	# Within-cell standard deviation, from the cell means (RELECTURE 2026-11-09, 4). With one
+	# observation per cell there is none: the residual of the largest model compared is given.
+	cell <- interaction(factors, drop = TRUE)
+	within <- length(y) > nlevels(cell)
+	sd_within <- if (within) {
+		stats::sigma(stats::lm(y ~ cell))
+	} else {
+		stats::sigma(stats::lm(stats::as.formula(paste("y ~", paste0("`", names(factors), "`", collapse = " + "))),
+			data = cbind(y = y, factors)))
+	}
 	list(effects = eff, p_null = p_null, prior_null = prior_null, sensitivity = sens,
-		space = sp, log_bf_models = bf$log_bf, error_models = bf$error, log_prior = lp,
+		space = sp, log_bf_models = bf$log_bf[, order(rs), drop = FALSE], error_models = bf$error, log_prior = lp,
 		means = do.call(rbind, means), balanced = balanced, min_cell = min(cells_n),
-		sd_within = stats::sigma(stats::lm(y ~ ., data = data.frame(y = y, factors))))
+		sd_within = sd_within, sd_is_within = within, spread = spread)
 }
 
 # Bilan with several factors. Same order as with one factor: verdict on the global
@@ -258,6 +282,11 @@
 			h$label_en[2L], ": ", .bay_pct(h$posterior[2L], "."), "."),
 		paste0("  ", h$label_fr[1L], " : ", .bay_pct(h$posterior[1L], ","), " (", sup$fr, ") ; ",
 			h$label_fr[2L], " : ", .bay_pct(h$posterior[2L], ","), "."))
+	if (!is.null(obj$sensitivity) && identical(obj$sensitivity$verdict, "changes")) {
+		rg <- obj$sensitivity$range_lead
+		say(paste0("  Depending on the starting point, the probability of the first answer goes from ", .bay_pct(rg[1L], "."), " to ", .bay_pct(rg[2L], "."), ": the order can reverse."),
+			paste0("  Selon le point de d\u00e9part, la probabilit\u00e9 de la premi\u00e8re r\u00e9ponse va de ", .bay_pct(rg[1L], ","), " \u00e0 ", .bay_pct(rg[2L], ","), " : l'ordre peut s'inverser."))
+	}
 
 	say("Answer per term, probability given the data and the starting point (prior in brackets):",
 		"R\u00e9ponse par terme, probabilit\u00e9 compte tenu des donn\u00e9es et du point de d\u00e9part (a priori entre crochets) :")
@@ -300,15 +329,18 @@
 		say(paste0("  ", f, ": ", paste0(mf$level, " = ", fmt(mf$mean, "."), " (n = ", mf$n, ")", collapse = "; ")),
 			paste0("  ", f, " : ", paste0(mf$level, " = ", fmt(mf$mean, ","), " (n = ", mf$n, ")", collapse = " ; ")))
 	}
-	say(paste0("  Within-cell standard deviation: ", fmt(obj$sd_within, "."), if (!isTRUE(obj$balanced)) "; unbalanced plan, these means mix the other factors." else "."),
-		paste0("  \u00c9cart-type au sein des cases : ", fmt(obj$sd_within, ","), if (!isTRUE(obj$balanced)) " ; plan d\u00e9s\u00e9quilibr\u00e9, ces moyennes m\u00e9langent les autres facteurs." else "."))
+	sd_en <- if (isTRUE(obj$sd_is_within)) "Within-cell standard deviation: " else "Residual standard deviation (one observation per cell): "
+	sd_fr <- if (isTRUE(obj$sd_is_within)) "\u00c9cart-type au sein des cases : " else "\u00c9cart-type r\u00e9siduel (une observation par case) : "
+	say(paste0("  ", sd_en, fmt(obj$sd_within, "."), if (!isTRUE(obj$balanced)) "; unbalanced plan, these means mix the other factors." else "."),
+		paste0("  ", sd_fr, fmt(obj$sd_within, ","), if (!isTRUE(obj$balanced)) " ; plan d\u00e9s\u00e9quilibr\u00e9, ces moyennes m\u00e9langent les autres facteurs." else "."))
 
 	say("Shape of the noise: normal with a common variance only. With several factors, heavy tails and unequal variances are not compared yet.",
 		"Forme du bruit : normale \u00e0 variance commune seulement. \u00c0 plusieurs facteurs, queues lourdes et variances in\u00e9gales ne sont pas encore compar\u00e9es.")
+	has_int <- any(grepl(":", e$term, fixed = TRUE))
 	say(paste0("Starting point, set by the method before seeing the data: expected size r = ", format(signif(obj$priors$rscale, 3), trim = TRUE),
-			"; an interaction enters only with its factors; one chance in two per factor, interactions less likely ([] above)."),
+			if (has_int) "; an interaction enters only with its factors; one chance in two per factor, interactions less likely ([] above)." else "; one chance in two per factor ([] above)."),
 		paste0("Point de d\u00e9part, fix\u00e9 par la m\u00e9thode avant de voir les donn\u00e9es : taille attendue r = ", num(obj$priors$rscale),
-			" ; une interaction n'entre qu'avec ses facteurs ; une chance sur deux par facteur, les interactions moins probables ([] ci-dessus)."))
+			if (has_int) " ; une interaction n'entre qu'avec ses facteurs ; une chance sur deux par facteur, les interactions moins probables ([] ci-dessus)." else " ; une chance sur deux par facteur ([] ci-dessus)."))
 	say("These are probabilities of hypotheses, not p-values: no threshold of 5 % applies. Whether a difference has a cause depends on the protocol (randomisation, order, operator).",
 		"Ce sont des probabilit\u00e9s d'hypoth\u00e8ses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une diff\u00e9rence d\u00e9pend du protocole (tirage au sort, ordre, op\u00e9rateur).")
 	if (length(obj$notes$en)) {

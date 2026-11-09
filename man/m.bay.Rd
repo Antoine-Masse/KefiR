@@ -82,7 +82,9 @@ and \code{"t_het"}.}
 \item{sensitivity}{If \code{TRUE} (default), computes the sensitivity to the priors.
 The bilan says so when it is switched off.}
 
-\item{draws}{Importance draws per model. Default 4000.}
+\item{draws}{Importance draws per model. Default 4000. With several factors, BayesFactor
+uses at least 10000 iterations; its noise hardly shrinks beyond, so a larger \code{draws}
+brings little there.}
 
 \item{seed}{Seed of this call. The global random state is left untouched.}
 
