@@ -13,6 +13,15 @@
 # that it cannot be mistaken for a confidence interval or a frequentist threshold.
 .bay_support_breaks <- function() c(0.6, 0.75, 0.95, 0.993)
 
+# Qualifier of the support when the data bring little: with a Bayes factor between 1/3 and 3
+# ("not worth more than a bare mention", Kass and Raftery 1995), the data hardly move the odds
+# and the answer is "not settled by the data", whatever probability the prior gives; the
+# probability itself is still shown (DECISIONS, D14).
+.bay_support_bf <- function(p, log_bf) {
+	if (is.na(log_bf) || abs(log_bf) >= log(3) || p < 0.6) return(.bay_support(p))
+	list(en = "not settled by the data", fr = "non tranch\u00e9 par les donn\u00e9es", level = 1L)
+}
+
 .bay_support <- function(p) {
 	breaks <- .bay_support_breaks()
 	idx <- findInterval(p, breaks) + 1L
@@ -62,6 +71,10 @@
 .bay_verdict <- function(obj) {
 	h <- obj$hypotheses
 	p <- h$posterior[1L]
+	# A probability that comes from the prior rather than the data does not make a firm
+	# verdict (Bayes factor of the leading answer between 1/3 and 3; DECISIONS, D14).
+	lb <- log(h$posterior[1L] / h$posterior[2L]) - log(h$prior[1L] / h$prior[2L])
+	if (isTRUE(abs(lb) < log(3))) p <- min(p, 0.59)
 	lead_h1 <- isTRUE(obj$prob_effect >= 0.5)
 	open <- identical(obj$sensitivity$verdict, "changes")
 	if (isTRUE(obj$contradiction)) {
@@ -126,7 +139,8 @@
 	say("Probability of each hypothesis, given the data and the starting point:",
 		"Probabilit\u00e9 de chaque hypoth\u00e8se, compte tenu des donn\u00e9es et du point de d\u00e9part :")
 	h <- obj$hypotheses
-	sup <- .bay_support(h$posterior[1L])
+	lb_lead <- obj$effects$log_bf[1L] * if (isTRUE(h$null[1L])) -1 else 1
+	sup <- .bay_support_bf(h$posterior[1L], lb_lead)
 	if (isTRUE(obj$contradiction)) sup <- .bay_support(min(h$posterior[1L], 0.6))
 	width_en <- max(nchar(h$label_en))
 	width_fr <- max(nchar(h$label_fr))
@@ -166,7 +180,7 @@
 					paste0("  Selon le point de d\u00e9part : ", rng_fr, " ; l'ordre ne change pas."))
 			}
 		}
-	} else {
+	} else if (!isTRUE(narrated)) {
 		say("  Sensitivity to the priors not computed (sensitivity = FALSE).",
 			"  Sensibilit\u00e9 aux a priori non calcul\u00e9e (sensitivity = FALSE).")
 	}
@@ -313,7 +327,7 @@
 	sd_fr <- gsub(".", ",", sd_en, fixed = TRUE)
 	r_en <- format(signif(obj$priors$rscale, 3), trim = TRUE)
 	r_fr <- gsub(".", ",", r_en, fixed = TRUE)
-	centres <- isTRUE(obj$heavy) || isTRUE(obj$contradiction)
+	centres <- isTRUE(obj$heavy) || isTRUE(obj$contradiction) || isTRUE(obj$p_tails > 0.5)
 	# Under heavy tails the groups are compared through their centres: the gap is then shown
 	# on the medians, closer to them, with the gap of the means beside it.
 	if (centres) {
@@ -326,11 +340,13 @@
 	}
 	k <- nrow(d)
 	what_en <- if (centres) "medians, close to the centres compared" else "means"
+	small_en <- "the smallness of "
+	small_fr <- "la petitesse de "
 	what_fr <- if (centres) "m\u00e9dianes, proches des centres compar\u00e9s" else "moyennes"
 	full_en <- paste0(if (k > 2L) "all the gaps between groups, the largest between " else "the gap between ", what_en, " (",
-		d$group[hi], " - ", d$group[lo], " = ", g_en, if (!centres) paste0(", i.e. ", sd_en, " within-group SD") else paste0("; gap of the means ", gm_en), ")")
+		d$group[hi], " - ", d$group[lo], " = ", g_en, if (!centres) paste0(", i.e. ", sd_en, " pooled within-group SD") else paste0("; gap of the means ", gm_en), ")")
 	full_fr <- paste0(if (k > 2L) "l'ensemble des \u00e9carts entre groupes, le plus grand entre " else "l'\u00e9cart entre ", what_fr, " (",
-		d$group[hi], " - ", d$group[lo], " = ", g_fr, if (!centres) paste0(", soit ", sd_fr, " \u00e9cart-type au sein d'un groupe") else paste0(" ; \u00e9cart des moyennes ", gm_fr), ")")
+		d$group[hi], " - ", d$group[lo], " = ", g_fr, if (!centres) paste0(", soit ", sd_fr, " \u00e9cart-type commun au sein des groupes") else paste0(" ; \u00e9cart des moyennes ", gm_fr), ")")
 	bf_en <- .bay_bf_txt(abs(lb), ".")
 	bf_fr <- .bay_bf_txt(abs(lb), ",")
 	weak <- abs(lb) < log(3)
@@ -351,8 +367,8 @@
 			}
 		} else {
 			if (for_it) {
-				en[i] <- paste0("Rests on ", gap_en, ": the data are ", more_en, " without a difference than with one of the size expected (r = ", r_en, ").")
-				fr[i] <- paste0("Repose sur ", gap_fr, " : les donn\u00e9es sont ", more_fr, " sans diff\u00e9rence qu'avec une diff\u00e9rence de l'ordre attendu (r = ", r_fr, ").")
+				en[i] <- paste0("Rests on ", if (i == 1L) small_en else "", gap_en, ": the data are ", more_en, " without a difference than with one of the size expected (r = ", r_en, ").")
+				fr[i] <- paste0("Repose sur ", if (i == 1L) small_fr else "", gap_fr, " : les donn\u00e9es sont ", more_fr, " sans diff\u00e9rence qu'avec une diff\u00e9rence de l'ordre attendu (r = ", r_fr, ").")
 			} else {
 				en[i] <- paste0("Against it: ", gap_en, " are ", more_en, " with a difference.")
 				fr[i] <- paste0("Contre elle : ", gap_fr, " sont ", more_fr, " avec une diff\u00e9rence.")

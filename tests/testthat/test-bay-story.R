@@ -37,16 +37,53 @@ test_that("verbose = TRUE : six etapes, puis la conclusion sans titre ni point d
 	expect_true(any(grepl("Point de d|Starting point", court)))
 })
 
-test_that("changement de strategie dit : ex-aequo, lois ecartees", {
-	set.seed(4)
-	d <- data.frame(y = c(rep(1:3, 6), rep(2:4, 6)), g = factor(rep(c("a", "b"), each = 18)))
-	r <- suppressWarnings(m.bay(y ~ g, data = d, verbose = FALSE, draws = 1000))
-	if (nrow(r$laws) < 4L) {
-		expect_true(any(grepl("Changement de strat|Change of strategy", c(r$story$fr, r$story$en))))
+test_that("changement de strategie dit : groupe constant (integrale divergente), echantillonnage trop pauvre", {
+	set.seed(2)
+	d <- data.frame(y = c(rep(5, 8), round(rnorm(8, 6, 1), 2), round(rnorm(8, 6.5, 1), 2)), g = factor(rep(c("a", "b", "c"), each = 8)))
+	r <- m.bay(y ~ g, data = d, verbose = FALSE, draws = 1000)
+	expect_true(any(grepl("constant", r$story$fr)))
+	expect_true(any(grepl("Changement de strat.*valeur finie", r$story$fr)))
+	expect_false("normal_het" %in% r$laws$law)
+	set.seed(1)
+	n <- 30
+	d3 <- data.frame(y = c(rnorm(n, 0, 1), rnorm(n, 0.5, 1), rt(n, 1.2)), g = factor(rep(c("a", "b", "c"), each = n)))
+	r3 <- suppressWarnings(m.bay(y ~ g, data = d3, verbose = FALSE, draws = 100, sensitivity = FALSE))
+	if (length(setdiff(c("normal_eq", "normal_het", "t_eq", "t_het"), r3$laws$law))) {
+		expect_true(any(grepl("trop pauvre", r3$story$fr)))
+		expect_true(any(grepl("Changement de strat", r3$story$fr)))
 	} else {
 		succeed()
 	}
-	expect_true(any(grepl("Ex-aequo", r$story$fr)))
+})
+
+test_that("etape 4 : variances inegales annoncees, avec le groupe le plus disperse", {
+	set.seed(11)
+	d <- data.frame(y = c(rnorm(15, 10, 2), rnorm(15, 11, 2), rnorm(15, 12, 6)), g = factor(rep(c("a", "b", "c"), each = 15)))
+	r <- m.bay(y ~ g, data = d, verbose = FALSE, draws = 1000, sensitivity = FALSE)
+	expect_true(any(grepl("Variances in.*le groupe c est le plus dispers", r$story$fr)))
+	expect_true(any(grepl("Unequal variances.*group c", r$story$en)))
+})
+
+test_that("qualificatif : un facteur de Bayes entre 1/3 et 3 donne non tranche par les donnees, verdict indecis", {
+	s <- .bay_support_bf(0.94, log(2))
+	expect_equal(s$level, 1L)
+	expect_match(s$fr, "non tranch")
+	expect_equal(.bay_support_bf(0.94, log(20))$level, .bay_support(0.94)$level)
+	expect_equal(.bay_support_bf(0.55, log(2))$level, 1L)
+	# verdict plafonne : forte probabilite venue de l'a priori
+	obj <- list(hypotheses = data.frame(posterior = c(0.9, 0.1), prior = c(0.8, 0.2)), prob_effect = 0.9,
+		sensitivity = NULL, contradiction = FALSE)
+	expect_match(.bay_verdict(obj)$fr, "ind")
+})
+
+test_that("session anglaise reelle : le recit sort en anglais", {
+	old <- Sys.getlocale("LC_CTYPE")
+	on.exit(Sys.setlocale("LC_CTYPE", old), add = TRUE)
+	ok <- suppressWarnings(Sys.setlocale("LC_CTYPE", "English_United States.utf8"))
+	skip_if(identical(ok, "") || !identical(.msg("en", "fr"), "en"), "locale anglaise indisponible")
+	txt <- capture.output(m.bay(y ~ g, data = d1, draws = 500, sensitivity = FALSE))
+	expect_true(any(grepl("^1\\) Plan recognised", txt)))
+	expect_false(any(grepl("Plan reconnu|Contr", txt)))
 })
 
 test_that("plan refuse : l'etape 1 le nomme avant le refus", {

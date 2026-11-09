@@ -197,8 +197,8 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 			"R\u00e9ponse binaire : sa loi propre n'est pas encore valid\u00e9e, les lois normale et t ne s'appliquent pas.")
 	}
 	if (isTRUE(input$discrete)) {
-		note("The response looks discrete: the normal and t laws are only an approximation here.",
-			"La r\u00e9ponse semble discr\u00e8te : les lois normale et t ne sont ici qu'une approximation.")
+		note("The response looks discrete: the normal and heavy-tailed laws are only an approximation here.",
+			"La r\u00e9ponse semble discr\u00e8te : les lois normale et \u00e0 queues lourdes ne sont ici qu'une approximation.")
 	}
 
 	if (identical(input$plan, "factorial")) {
@@ -232,9 +232,9 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 				paste(lab$en[left], collapse = "; "), ". A law for discrete data is not validated yet."),
 			paste0("Valeurs r\u00e9p\u00e9t\u00e9es : pour ces donn\u00e9es l'int\u00e9grale de certaines lois diverge, elles ont \u00e9t\u00e9 \u00e9cart\u00e9es : ",
 				paste(lab$fr[left], collapse = " ; "), ". Une loi pour donn\u00e9es discr\u00e8tes n'est pas encore valid\u00e9e."), tell = FALSE)
-		.bay_tell(story, paste0("Change of strategy: law(s) left out because, with these repeated values, their integral diverges: ",
+		.bay_tell(story, paste0("Change of strategy: law(s) left out because, with these repeated values (a group without spread), their computation has no finite value: ",
 				paste(lab$en[left], collapse = "; "), ". The comparison goes on with the others."),
-			paste0("Changement de strat\u00e9gie : loi(s) \u00e9cart\u00e9e(s) car, avec ces valeurs r\u00e9p\u00e9t\u00e9es, leur int\u00e9grale diverge : ",
+			paste0("Changement de strat\u00e9gie : loi(s) \u00e9cart\u00e9e(s) car, avec ces valeurs r\u00e9p\u00e9t\u00e9es (un groupe sans dispersion), leur calcul n'a pas de valeur finie : ",
 				paste(lab$fr[left], collapse = " ; "), ". La comparaison continue avec les autres."), "decide")
 	} else if (chk$extremes[["mild"]] > 0L) {
 		.bay_tell(story, paste0("No value is removed: the ", length(laws_kept), " shapes of the noise stay in the running, and the heavy-tailed ones are there for such values."),
@@ -289,6 +289,42 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	pl <- sort(ans$p_law, decreasing = TRUE)
 	.bay_tell(story, paste0("Posterior probabilities: ", paste0(lab$en[names(pl)], " ", vapply(pl, .bay_pct, character(1), dec = "."), collapse = "; "), "."),
 		paste0("Probabilit\u00e9s a posteriori : ", paste0(lab$fr[names(pl)], " ", vapply(pl, .bay_pct, character(1), dec = ","), collapse = " ; "), "."))
+
+	# What the comparison of the shapes finds about the variances, said as a finding (the
+	# analogue of the check of variances in m.test()); the tails are said by the decision below.
+	sds <- vapply(split(y, gr), function(v) if (length(v) > 1L) stats::sd(v) else NA_real_, numeric(1))
+	if (any(names(ans$p_law) %in% c("normal_het", "t_het")) && any(names(ans$p_law) %in% c("normal_eq", "t_eq"))) {
+		p_het <- sum(ans$p_law[intersect(names(ans$p_law), c("normal_het", "t_het"))])
+		hi_sd <- which.max(sds); lo_sd <- which.min(sds)
+		if (identical(hi_sd, lo_sd)) lo_sd <- setdiff(seq_along(sds), hi_sd)[1L]
+		sd_txt <- function(dc) paste0(names(sds)[hi_sd], " ", gsub(".", dc, format(signif(sds[hi_sd], 3), trim = TRUE), fixed = TRUE),
+			if (dc == ",") " contre " else " against ", names(sds)[lo_sd], " ", gsub(".", dc, format(signif(sds[lo_sd], 3), trim = TRUE), fixed = TRUE))
+		alike <- isTRUE(sds[hi_sd] / sds[lo_sd] < 1.3)
+		if (p_het >= 0.75 && alike) {
+			.bay_tell(story, paste0("Unequal spreads probable (", .bay_pct(p_het, "."), "), although the standard deviations are close (", sd_txt("."),
+					"): the groups differ rather by their shape (asymmetry, far values) than by their standard deviation."),
+				paste0("Dispersions in\u00e9gales probables (", .bay_pct(p_het, ","), "), bien que les \u00e9carts-types soient proches (", sd_txt(","),
+					") : les groupes diff\u00e8rent plut\u00f4t par leur forme (asym\u00e9trie, valeurs \u00e9loign\u00e9es) que par leur \u00e9cart-type."))
+			.bay_tell(story, "No common spread is imposed: each group keeps its own in the comparison.",
+				"Aucune dispersion commune n'est impos\u00e9e : chaque groupe garde la sienne dans la comparaison.", "decide")
+		} else if (p_het >= 0.75) {
+			.bay_tell(story, paste0("Unequal variances probable (", .bay_pct(p_het, "."), "): group ", names(sds)[hi_sd],
+					" is the most dispersed (standard deviation ", sd_txt("."), ")."),
+				paste0("Variances in\u00e9gales probables (", .bay_pct(p_het, ","), ") : le groupe ", names(sds)[hi_sd],
+					" est le plus dispers\u00e9 (\u00e9cart-type ", sd_txt(","), ")."))
+			.bay_tell(story, "No common variance is imposed: each group keeps its own spread in the comparison.",
+				"Aucune variance commune n'est impos\u00e9e : chaque groupe garde sa dispersion dans la comparaison.", "decide")
+		} else if (p_het <= 0.25) {
+			.bay_tell(story, paste0("Equal variances probable (", .bay_pct(1 - p_het, "."), ")."),
+				paste0("Variances \u00e9gales probables (", .bay_pct(1 - p_het, ","), ")."))
+		} else {
+			lean_en <- if (p_het < 0.5) "lean towards equal variances" else "lean towards unequal variances"
+			lean_fr <- if (p_het < 0.5) "penchent vers des variances \u00e9gales" else "penchent vers des variances in\u00e9gales"
+			.bay_tell(story, paste0("Variances: the data ", lean_en, " without settling it (unequal at ", .bay_pct(p_het, "."), "; standard deviations ", sd_txt("."), ")."),
+				paste0("Variances : les donn\u00e9es ", lean_fr, " sans trancher (in\u00e9gales \u00e0 ", .bay_pct(p_het, ","), " ; \u00e9carts-types ", sd_txt(","), ")."))
+		}
+	}
+
 
 	# Under heavy tails the groups are compared through their centres, which are not the
 	# means of a skewed group: equal means, different shapes can read as a difference
@@ -349,10 +385,10 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	if (contradiction) {
 		.bay_tell(story, paste0("According to the normal law (which compares means), the probability of a difference is ", .bay_pct(p_normal, "."),
 				"; averaged over the shapes, dominated here by heavy tails (which compare centres), it is ", .bay_pct(ans$p_h1, "."),
-				". The two readings fall on opposite sides: the centres and the means do not tell the same story."),
+				". The two readings fall on either side of 50 %: the centres and the means do not tell the same story. The normal law is implausible here, but it is the one that answers about the means."),
 			paste0("Selon la loi normale (qui compare les moyennes), la probabilit\u00e9 d'une diff\u00e9rence est de ", .bay_pct(p_normal, ","),
 				" ; en moyenne sur les formes, domin\u00e9es ici par les queues lourdes (qui comparent les centres), elle est de ", .bay_pct(ans$p_h1, ","),
-				". Les deux lectures tombent de part et d'autre : centres et moyennes ne racontent pas la m\u00eame chose."))
+				". Les deux lectures tombent de part et d'autre de 50 % : centres et moyennes ne racontent pas la m\u00eame chose. La loi normale est peu plausible ici, mais c'est elle qui r\u00e9pond sur les moyennes."))
 		.bay_tell(story, paste0("Caution added: ", .bay_pct(ans$p_h1, "."), " is not taken at face value; the support is capped at weak and the verdict says that the answer depends on what is compared (means or centres)."),
 			paste0("Prudence ajout\u00e9e : on ne retient pas ", .bay_pct(ans$p_h1, ","), " tel quel ; le soutien est plafonn\u00e9 \u00e0 faible et le verdict dit que la r\u00e9ponse d\u00e9pend de ce que l'on compare (moyennes ou centres)."), "decide")
 	}
@@ -425,7 +461,7 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 			nu = "nu - 2 ~ Exp(1)"),
 		questions = list(en = paste0("Does ", input$response_name, " differ according to ", shown, "?"),
 			fr = paste0(input$response_name, " diff\u00e8re-t-il selon ", shown, " ?")),
-		contradiction = contradiction, heavy = heavy, detail = isTRUE(detail),
+		contradiction = contradiction, heavy = heavy, p_tails = p_t, detail = isTRUE(detail),
 		descriptive_stats = desc, prob_effect = ans$p_h1,
 		largest_gap = (max(desc$mean) - min(desc$mean)) / (st$unit * max(abs(st$y_raw))),
 		method = "Averaged over sampling laws", plan = input$plan,
@@ -549,8 +585,8 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 				paste0("Terme(s) qui changent de c\u00f4t\u00e9 : ", paste0(terms[moved], " (", vapply(rr[, 1L], .bay_pct, character(1), dec = ","), " \u00e0 ",
 					vapply(rr[, 2L], .bay_pct, character(1), dec = ","), ")", collapse = ", "), "."))
 			many <- length(moved) > 1L
-			.bay_tell(story, paste0("Caution added: ", paste(terms[moved], collapse = ", "), if (many) " will be called not settled, whatever their central probability." else " will be called not settled, whatever its central probability."),
-				paste0("Prudence ajout\u00e9e : ", paste(terms[moved], collapse = ", "), if (many) " seront dits non tranch\u00e9s, quelle que soit leur probabilit\u00e9 centrale." else " sera dit non tranch\u00e9, quelle que soit sa probabilit\u00e9 centrale."), "decide")
+			.bay_tell(story, paste0("Caution added: ", paste(terms[moved], collapse = ", "), if (many) " will be called not settled, whatever their displayed probability." else " will be called not settled, whatever its displayed probability."),
+				paste0("Prudence ajout\u00e9e : ", paste(terms[moved], collapse = ", "), if (many) " seront dits non tranch\u00e9s, quelle que soit leur probabilit\u00e9 affich\u00e9e." else " sera dit non tranch\u00e9, quelle que soit sa probabilit\u00e9 affich\u00e9e."), "decide")
 		} else {
 			.bay_tell(story, "No term changes side.", "Aucun terme ne change de c\u00f4t\u00e9.", "decide")
 		}

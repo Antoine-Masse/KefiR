@@ -281,7 +281,9 @@
 	v <- .bay_verdict(obj)
 	say(v$en, v$fr)
 	h <- obj$hypotheses
-	sup <- .bay_support(h$posterior[1L])
+	# Global Bayes factor of the leading answer: posterior odds over prior odds.
+	lb_glob <- log(h$posterior[1L] / h$posterior[2L]) - log(h$prior[1L] / h$prior[2L])
+	sup <- .bay_support_bf(h$posterior[1L], lb_glob)
 	say(paste0("  ", h$label_en[1L], ": ", .bay_pct(h$posterior[1L], "."), " (", sup$en, "); ",
 			h$label_en[2L], ": ", .bay_pct(h$posterior[2L], "."), "."),
 		paste0("  ", h$label_fr[1L], " : ", .bay_pct(h$posterior[1L], ","), " (", sup$fr, ") ; ",
@@ -312,9 +314,10 @@
 	e <- obj$effects
 	sens <- obj$sensitivity
 	for (i in seq_len(nrow(e))) {
-		s <- .bay_support(max(e$p_h1[i], e$p_h0[i]))
 		yes <- e$p_h1[i] >= 0.5
-		open <- s$level == 1L || (!is.null(sens) && identical(sens$verdict_terms[i], "changes"))
+		s <- .bay_support_bf(max(e$p_h1[i], e$p_h0[i]), e$log_bf[i] * if (yes) 1 else -1)
+		against <- !is.na(e$log_bf[i]) && ((e$log_bf[i] >= 0) != yes)
+		open <- s$level == 1L || against || (!is.null(sens) && identical(sens$verdict_terms[i], "changes"))
 		rr_en <- rr_fr <- ""
 		if (!is.null(sens) && identical(sens$verdict_terms[i], "changes")) {
 			rr <- sens$range_terms[i, ]
@@ -338,14 +341,17 @@
 			v_fr <- if (up) "multiplient" else "divisent"
 			w_en <- if (yes) "yes" else "no"
 			w_fr <- if (yes) "oui" else "non"
-			if (open) {
+			if (open && up != yes) {
+				say(paste0("     The data lean towards ", if (up) "yes" else "no", " (odds ", if (up) "multiplied" else "divided", " by ", bf_en, "); the prior (", .bay_pct(e$prior_h1[i], "."),
+						") leans the other way: not settled."),
+					paste0("     Les donn\u00e9es penchent vers le ", if (up) "oui" else "non", " (cotes ", if (up) "multipli\u00e9es" else "divis\u00e9es", " par ", bf_fr, ") ; l'a priori (", .bay_pct(e$prior_h1[i], ","),
+						") penche de l'autre c\u00f4t\u00e9 : non tranch\u00e9."))
+			} else if (open && abs(e$log_bf[i]) < log(3)) {
+				say(paste0("     The data hardly move its odds (", v_en, " by ", bf_en, "); only the prior (", .bay_pct(e$prior_h1[i], "."), ") makes it lean towards ", w_en, "."),
+					paste0("     Les donn\u00e9es d\u00e9placent peu ses cotes (", v_fr, " par ", bf_fr, ") ; seul l'a priori (", .bay_pct(e$prior_h1[i], ","), ") le fait pencher vers le ", w_fr, "."))
+			} else if (open) {
 				say(paste0("     The data ", v_en, " its odds (yes against no) by ", bf_en, ": too little to settle it."),
 					paste0("     Les donn\u00e9es ", v_fr, " ses cotes (rapport oui/non) par ", bf_fr, " : trop peu pour trancher."))
-			} else if (up != yes) {
-				say(paste0("     The data ", v_en, " its odds (yes against no) by ", bf_en, ", not enough to overturn its prior of ",
-						.bay_pct(e$prior_h1[i], "."), ": the \"", w_en, "\" rests on the prior, not on the data."),
-					paste0("     Les donn\u00e9es ", v_fr, " ses cotes (rapport oui/non) par ", bf_fr, ", pas assez pour renverser son a priori de ",
-						.bay_pct(e$prior_h1[i], ","), " : le \u00ab ", w_fr, " \u00bb repose sur l'a priori, pas sur les donn\u00e9es."))
 			} else if (abs(e$log_bf[i]) < log(3)) {
 				say(paste0("     The data hardly move its odds (", v_en, " by ", bf_en, "): the \"", w_en, "\" rests mainly on the prior of ",
 						.bay_pct(e$prior_h1[i], "."), "."),
@@ -362,7 +368,7 @@
 			say("  No answer changes side when r or the prior on the models changes.",
 				"  Aucune r\u00e9ponse ne change de c\u00f4t\u00e9 quand r ou la loi sur les mod\u00e8les change.")
 		}
-	} else {
+	} else if (!isTRUE(narrated)) {
 		say("  Sensitivity to the priors not computed (sensitivity = FALSE).",
 			"  Sensibilit\u00e9 aux a priori non calcul\u00e9e (sensitivity = FALSE).")
 	}

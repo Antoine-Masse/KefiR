@@ -113,6 +113,10 @@
 		.bay_tell(st, paste0("Constant ", unit_en, "(s): ", paste(const, collapse = ", "), "."),
 			paste0(if (unit_fr == "case") "Case(s) constante(s) : " else "Groupe(s) constant(s) : ", paste(const, collapse = ", "), "."))
 	}
+	if (length(const)) {
+		.bay_tell(st, paste0("To check: a value repeated identically through a whole ", unit_en, " often signals a measurement ceiling or an entry error; the analysis goes on without removing it."),
+			paste0("\u00c0 v\u00e9rifier : une valeur r\u00e9p\u00e9t\u00e9e \u00e0 l'identique dans tout un", if (unit_fr == "case") "e " else " ", unit_fr, " signale souvent un plafond de mesure ou une erreur de saisie ; l'analyse continue sans le retirer."), "decide")
+	}
 	ex <- .bay_extremes(y, g)
 	.bay_tell(st, paste0("Values far from their ", unit_en, ": ", ex[["mild"]], " of ", N, " beyond 1.5 interquartile ranges, ",
 			ex[["far"]], " beyond 3."),
@@ -148,11 +152,11 @@
 				paste0(nm, " (", lv, " niveaux)", collapse = ", "), " ; ", cells, " cases, N = ", N, "."), "step")
 		sp <- .bay_fact_space(terms)
 		.bay_tell(st, paste0("Terms: ", paste(terms, collapse = ", "), ". ", length(sp$models),
-				" models respect heredity (an interaction enters only with its factors)."),
+				" combinations of terms are possible (an interaction enters only with its factors: heredity)."),
 			paste0("Termes : ", paste(terms, collapse = ", "), ". ", length(sp$models),
-				" mod\u00e8les respectent l'h\u00e9r\u00e9dit\u00e9 (une interaction n'entre qu'avec ses facteurs)."))
-		.bay_tell(st, paste0("One answer per term, all drawn from one single law over these ", length(sp$models), " models."),
-			paste0("Une r\u00e9ponse par terme, toutes tir\u00e9es d'une seule loi sur ces ", length(sp$models), " mod\u00e8les."), "decide")
+				" combinaisons de termes sont possibles (une interaction n'entre qu'avec ses facteurs : h\u00e9r\u00e9dit\u00e9)."))
+		.bay_tell(st, paste0("One answer per term, obtained by weighing these ", length(sp$models), " combinations together."),
+			paste0("Une r\u00e9ponse par terme, obtenue en pesant ensemble ces ", length(sp$models), " combinaisons."), "decide")
 	} else {
 		lab <- list(
 			en = c(ancova = "covariates (ANCOVA)", paired = "paired data", repeated = "repeated measures",
@@ -181,18 +185,18 @@
 	u1 <- .bay_num_txt(min(sens$u)); u2 <- .bay_num_txt(max(sens$u))
 	o <- sens$odds[c(1L, length(sens$odds))]
 	rg <- sens$range_lead
-	.bay_tell(st, paste0("Sensitivity: expected size r from ", r1$en, " to ", r2$en, ", prior odds of a difference ", o[1L], " to ", o[2L],
+	.bay_tell(st, paste0("Sensitivity: expected size r from ", r1$en, " to ", r2$en, ", starting chances of a difference from 1 against 2 to 2 against 1",
 			if (het) ", spread of the variances between groups", ". \"", hyp$label_en[1L], "\" then goes from ",
 			.bay_pct(rg[1L], "."), " to ", .bay_pct(rg[2L], "."), "."),
-		paste0("Sensibilit\u00e9 : taille attendue r de ", r1$fr, " \u00e0 ", r2$fr, ", cotes a priori d'une diff\u00e9rence ", o[1L], " \u00e0 ", o[2L],
+		paste0("Sensibilit\u00e9 : taille attendue r de ", r1$fr, " \u00e0 ", r2$fr, ", chances de d\u00e9part d'une diff\u00e9rence de 1 contre 2 \u00e0 2 contre 1",
 			if (het) ", r\u00e9partition des variances entre groupes", ". \u00ab ", hyp$label_fr[1L], " \u00bb va alors de ",
 			.bay_pct(rg[1L], ","), " \u00e0 ", .bay_pct(rg[2L], ","), "."), fun = "m.bay() {KefiR}")
 	if (identical(sens$verdict, "changes")) {
 		.bay_tell(st, "Caution added: the leading hypothesis can reverse with the starting point; the conclusion will not assert it.",
 			"Prudence ajout\u00e9e : l'hypoth\u00e8se en t\u00eate peut s'inverser selon le point de d\u00e9part ; la conclusion ne l'affirmera pas.", "decide")
 	} else if (identical(sens$verdict, "crosses")) {
-		.bay_tell(st, "The order holds; only the qualifier of the support can change.",
-			"L'ordre tient ; seul le qualificatif du soutien peut changer.", "decide")
+		.bay_tell(st, "The order holds; only the degree of support (weak, moderate, strong) can change.",
+			"L'ordre tient ; seul le degr\u00e9 de soutien (faible, mod\u00e9r\u00e9, fort) peut changer.", "decide")
 	} else {
 		.bay_tell(st, "The answer does not depend on these choices.",
 			"La r\u00e9ponse ne d\u00e9pend pas de ces choix.", "decide")

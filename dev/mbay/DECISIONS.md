@@ -232,3 +232,22 @@ Demande, ses mots : « m.bay() doit faire comme m.test() proposer un bilan déci
 **L'indice de confiance** est la probabilité a posteriori suivie du qualificatif de soutien (aucun, faible, modéré, fort, très fort ; seuils de Kass et Raftery). Le mot « confiance » n'est pas imprimé, pour qu'on ne le prenne pas pour un intervalle de confiance ou un niveau 1 − α ; le bilan dit « soutien ». Ce choix est réversible si Antoine tient au mot.
 
 **Écart à `m.test()`.** `.vbse()` ne garde que son texte français quand on lui passe une chaîne (`if (length(ang)==1) ang <- fr`) : en session anglaise, `m.test()` raconte en français. `m.bay()` choisit la langue par `.msg()` avant d'appeler `.vbse()`. Le défaut de `.vbse()` est signalé, pas corrigé (il sert `m.test()`).
+
+**Ajouts du 9 novembre, après l'audit de la session parente.**
+- **Constats de l'étape 4.** La part des lois à variances inégales est annoncée comme un constat, l'équivalent du contrôle de Levene ou Bartlett dans `m.test()` :
+  - « Variances inégales probables » à 75 % ou plus, avec le groupe le plus dispersé et son écart-type ;
+  - « Variances égales probables » à 25 % ou moins ;
+  - « les données ne tranchent pas » entre les deux.
+  Les queues lourdes sont dites par la décision qui suit (« l'emportent », « les plus probables », « les formes normales… »).
+- **Qualificatif quand les données apportent peu** (règle revue après la seconde relecture). Si le facteur de Bayes de la réponse en tête est entre 1/3 et 3 (« ne vaut guère plus qu'une mention », Kass et Raftery 1995) :
+  - le qualificatif est « non tranché par les données » ;
+  - le verdict est « indécis », dans un sens comme dans l'autre ;
+  - la probabilité reste affichée.
+  Pour un terme, s'y ajoute le cas où les données penchent dans le sens opposé à la réponse : il est « non tranché ; les données penchent vers le oui, l'a priori de l'autre côté ».
+  Raisons :
+  - un terme d'interaction part de 1/6, et un « non » à 93 % peut ne devoir presque rien aux données ;
+  - la première version (« faible, venu de l'a priori ») était fausse quand l'a priori était de 1/2 et que les données avaient fait monter la probabilité ;
+  - deux situations symétriques (facteur de Bayes 0,9 et 1,6) recevaient des verdicts différents.
+  Testé dans `test-bay-story.R`.
+- **Écarts-types proches mais dispersions inégales probables** (rapport < 1,3) : le constat dit que les groupes diffèrent plutôt par leur forme (asymétrie, valeurs éloignées) que par leur écart-type. La loi à variances inégales réagit aussi aux différences de forme.
+- **Langue.** KefiR choisit la langue par `LC_CTYPE`, via `.msg()`. `LANGUAGE=en` seul laisse donc la sortie en français, pour `m.bay` comme pour `m.test`. En locale anglaise réelle (`Sys.setlocale("LC_CTYPE", "English_United States.utf8")`), le récit de `m.bay` est entièrement en anglais (testé). Le défaut propre à `.vbse()`, qui ne garde que le français dans `m.test`, reste signalé à part.

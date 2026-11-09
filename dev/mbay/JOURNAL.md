@@ -1,5 +1,28 @@
 # Journal de m.bay
 
+## Séance 5 bis : 9 novembre 2026, audit des jalons 2 et 3
+
+**Cadre.** Audit de la session parente : jalons 2 et 3 acceptés, quatre points à régler avant le post-hoc.
+
+**Fait.**
+- D2 recompté (`agent_49b`) avec la lecture « seul ou en interaction » : dans le cas A:B:C seule, A, B et C ne sont pas des termes faux. Les fausses interactions de la HOP tombent à 5–6,5 % au-delà de « faible » (P > 0,75).
+- Étape 4 :
+  - les variances inégales sont annoncées comme un constat, avec le groupe le plus dispersé ;
+  - quand les écarts-types sont proches, le constat dit que les groupes diffèrent plutôt par leur forme.
+- Règle du qualificatif (D14) : un facteur de Bayes entre 1/3 et 3 donne « non tranché par les données » et un verdict « indécis ». Un terme que les données poussent à l'opposé de l'a priori est « non tranché ».
+- Langue : KefiR choisit la langue par `LC_CTYPE`, et `LANGUAGE=en` seul n'y suffit pas. En locale anglaise réelle, le récit sort en anglais (testé).
+- Cas rares vus et testés :
+  - groupe constant : loi écartée, puis « À vérifier » ;
+  - échantillonnage d'importance trop pauvre (draws = 100) : loi écartée.
+- Seconde relecture par un lecteur neuf, sur huit cas : 12 points, dont 10 corrigés (`relecture/lecteur_recit/RELECTURE.md`).
+
+**Vérifié.**
+- Suites relancées sur le code final, 0 échec : story 8/41, m.bay 11/61, factorial 8/56, oneway 7/27, core 32/237, laws 20/79, m.test 20/52, valreg 6/12, manova 22/59.
+- `R CMD check` : Status OK.
+- `m.test.R`, `sys_vbse.R` et `sys_msg.R` sont intacts.
+
+**Non vérifié.** La version `recits_v4.txt` n'a pas été relue par un troisième lecteur.
+
 ## Séance 5 : 9 novembre 2026, jalon 3 (bilan en récit)
 
 **Cadre.** Demande d'Antoine relayée par la session « KefiR officiel » : un bilan qui raconte son cheminement, comme le verbose de `m.test()`, et finit sur des hypothèses argumentées avec un indice de confiance, sans p-value. Décision D14.
