@@ -72,13 +72,23 @@ La HOP garde la correction de multiplicité de la HUP sous H0 sans fabriquer d'i
 | n=10, A, B, C, A:B : un faux > 0,5 | 0,130 | 0,800 | **0,270** | 0,070 | 0,215 | 0,130 |
 | n=5, toutes les interactions doubles : fausse A:B:C > 0,5 | 0,020 | 0,840 | **0,030** | 0,015 | 0,030 | 0,025 |
 | n=10, toutes les interactions doubles : fausse A:B:C > 0,5 | 0,050 | 1,000 | **0,060** | 0,050 | 0,055 | 0,030 |
-| n=10, A:B:C seule (sans effets principaux) : un faux > 0,5 | 0,335 | 0,525 | **0,370** | 0,125 | 0,670 | 0,235 |
+| n=10, A:B:C seule (sans effets principaux) : fausse A:B, A:C ou B:C > 0,5 | 0,220 | 0,495 | **0,340** | 0,100 | 0,505 | – |
 | Même cas, puissance sur A:B:C | 0,215 | 0,490 | **0,325** | 0,100 | 0,490 | 0,995 |
+
+**Au-delà de « faible »** (P > 0,75, `agent_49b`, mêmes BF), la part de jeux avec au moins une fausse interaction devient, sous HOP et contre 1/2 par terme :
+- A, B, C réels : 5,0 % contre 6,5 % ;
+- A:B réelle, n=5 : 5,5 % contre 3,0 % ;
+- A:B réelle, n=10 : 6,5 % contre 4,0 % ;
+- A:B:C seule : 23,5 % contre 17 %.
+
+À P > 0,95, la part est de 0,5 % dans les trois premiers cas, et de 14,5 % pour A:B:C seule.
+
+**Libellé corrigé le 9 novembre.** Une première version comptait comme faux, dans le cas A:B:C seule, A, B et C. Or la réponse par terme porte sur « seul ou en interaction » : A agit donc par A:B:C. Seuls A:B, A:C et B:C y sont faux. De même, dans le 2×2 « A:B seule » (`agent_50 B`), A et B ne sont pas des faux termes.
 
 **Lecture.**
 - Additif et toutes interactions doubles : la HOP reste au niveau de 1/2 par terme ou mieux. La HUP fabrique des interactions (60 à 100 %).
-- **Une interaction réelle parmi plusieurs possibles** (A:B vraie, A:C et B:C fausses) : **la HOP fait moins bien** que 1/2 par terme et qu'aov, avec 20 à 27 % de faux « oui » contre 11 à 13 %. C'est la contrepartie de la proportion partagée par ordre : une interaction double nette relève π₂, donc l'a priori des autres interactions doubles. Ce coût est connu de la construction ([TaylorRodriguez2016] : échangeabilité à l'intérieur d'un ordre). Il n'existe pas sous H0 ni en additif, où la HOP fait mieux que 1/2 par terme (5 % contre 18 % sous H0 à n=10 ; 12 % contre 22 % en additif).
-- **A:B:C seule, sans effet principal** : aucune loi héréditaire ne la représente, puisque A:B:C n'entre qu'avec A, B, C, A:B, A:C et B:C. Sa détection tombe à 0,33 (aov 0,995), et les termes inférieurs reçoivent de faux « oui » (37 %). Ce cas sort de l'espace héréditaire par construction ([Chipman1996]). Il faut le dire dans la documentation plutôt que d'abandonner l'hérédité.
+- **Une interaction réelle parmi plusieurs possibles** (A:B vraie, A:C et B:C fausses) : **la HOP fait moins bien** que 1/2 par terme et qu'aov à P > 0,5, avec 20 à 27 % de faux « oui » contre 11 à 13 %. L'écart se réduit à 5,5–6,5 % contre 3–4 % au-delà de « faible ». C'est la contrepartie de la proportion partagée par ordre : une interaction double nette relève π₂, donc l'a priori des autres interactions doubles. Ce coût est connu de la construction ([TaylorRodriguez2016] : échangeabilité à l'intérieur d'un ordre). Il n'existe pas sous H0 ni en additif, où la HOP fait mieux que 1/2 par terme (5 % contre 18 % sous H0 à n=10 ; 12 % contre 22 % en additif).
+- **A:B:C seule, sans effet principal** : aucune loi héréditaire ne la représente, puisque A:B:C n'entre qu'avec A, B, C, A:B, A:C et B:C. Sa détection tombe à 0,33 (aov 0,995), et les interactions doubles, fausses, reçoivent un « oui » dans 34 % des jeux (23,5 % au-delà de « faible »). Ce cas sort de l'espace héréditaire par construction ([Chipman1996]). Il faut le dire dans la documentation plutôt que d'abandonner l'hérédité.
 
 **Décision maintenue : HOP(1,1).** Le bilan de chiffres reste favorable, sous H0, en additif et en puissance additive. Les deux coûts sont documentés :
 - sur-détection d'une seconde interaction quand une première est réelle ;

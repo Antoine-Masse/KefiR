@@ -1,0 +1,6 @@
+R version 4.6.1 (2026-06-24 ucrt)
+Faux terme : P>.5 / P>.75 / P>.95 (au moins un dans le jeu), par loi. A:B:C seule : A, B, C comptes comme vrais (ils agissent via A:B:C).
+n10_A-B-C_f50 (N=200, faux : A:B,A:C,B:C,A:B:C) | half 0.220 0.065 0.010 | beta 0.605 0.165 0.025 | beta_ordre 0.120 0.050 0.005 | hop_ch 0.060 0.015 0.000 | taille 0.405 0.105 0.010 | unif 0.240 0.070 0.010 |
+n5_A-B-C-AB_f50 (N=200, faux : A:C,B:C,A:B:C) | half 0.110 0.030 0.005 | beta 0.625 0.155 0.020 | beta_ordre 0.205 0.055 0.005 | hop_ch 0.045 0.020 0.000 | taille 0.525 0.115 0.020 | unif 0.205 0.045 0.005 |
+n10_A-B-C-AB_f50 (N=200, faux : A:C,B:C,A:B:C) | half 0.130 0.040 0.005 | beta 0.800 0.155 0.015 | beta_ordre 0.270 0.065 0.005 | hop_ch 0.070 0.025 0.005 | taille 0.440 0.110 0.005 | unif 0.215 0.050 0.005 |
+n10_ABC_f50 (N=200, faux : A:B,A:C,B:C) | half 0.220 0.170 0.095 | beta 0.495 0.365 0.195 | beta_ordre 0.340 0.235 0.145 | hop_ch 0.100 0.085 0.035 | taille 0.560 0.430 0.245 | unif 0.505 0.375 0.195 |

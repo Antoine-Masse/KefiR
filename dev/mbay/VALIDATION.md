@@ -416,7 +416,7 @@ Cases : 2×2 (4, 8, 12, 16) ; 2×3 (3, 9, 5, 7, 10, 4) ; 2×2×2 (3 à 8). Effet
 | 2×2 sous H0 | 0,083 / 0,003 | 0,127 | – | – |
 | 2×2, A et B, f = 0,25 | 0,017 / 0 | 0,070 | 0,355 | 0,302 |
 | 2×2, A et B, f = 0,5 | 0,073 / 0 | 0,070 | 0,907 | 0,808 |
-| 2×2, A:B seule, f = 0,5 | (A, B : 0,653 / 0,180, voir ci-dessous) | 0,337 | 0,427 | 0,763 |
+| 2×2, A:B seule, f = 0,5 | aucun faux terme (A et B agissent par A:B ; « oui » à A ou B : 0,653 / 0,180, voir ci-dessous) | 0,337 | 0,427 | 0,763 |
 | 2×3 sous H0 | 0,097 / 0,003 | 0,123 | – | – |
 | 2×3, A et B, f = 0,5 | 0,017 / 0,003 | 0,047 | 0,610 | 0,640 |
 | 2×3, A, B et A:B, f = 0,5 | 0 / 0 | 0 | 0,656 | 0,623 |
@@ -432,7 +432,8 @@ Cases : 2×2 (4, 8, 12, 16) ; 2×3 (3, 9, 5, 7, 10, 4) ; 2×2×2 (3 à 8). Effet
 Résultats complets dans `scripts/resultats/agent_49.txt` ; tableau et lecture dans DECISIONS, D2.
 - Une interaction double réelle (A:B) fait monter les fausses interactions doubles sous HOP : 20,5 % (n=5) et 27 % (n=10), contre 13 % pour aov et 11 à 13 % pour 1/2 par terme.
 - Avec toutes les interactions doubles réelles, A:B:C fausse sort dans 3 à 6 % des jeux.
-- A:B:C seule, sans effet inférieur, est hors de l'espace héréditaire : puissance 0,33 contre 0,995 pour aov.
+- A:B:C seule, sans effet inférieur, est hors de l'espace héréditaire : puissance 0,33 contre 0,995 pour aov. Les seuls faux termes y sont A:B, A:C et B:C, puisque A, B et C agissent par A:B:C.
+- Au-delà du qualificatif « faible » (P>0,75), les fausses interactions de la HOP tombent à 5 à 6,5 % (`agent_49b`, relecture des mêmes BF, `resultats/agent_49b.txt`).
 
 ### Calibration sous l'a priori (`agent_50 A`, N = 1 200 jeux par plan)
 
