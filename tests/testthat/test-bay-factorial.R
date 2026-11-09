@@ -83,3 +83,13 @@ test_that("refus et avis a plusieurs facteurs", {
 	expect_true(any(grepl("laws", r$notes$en)))
 	expect_false(any(grepl("laws", gof(y ~ A * B, data = d2)$notes$en)))
 })
+
+test_that("effet enorme : pas de NA (integrate de lmBF en echec, agent_50)", {
+	skip_if_not_installed("BayesFactor")
+	set.seed(13)
+	e <- expand.grid(A = c("a1", "a2"), B = c("b1", "b2", "b3"), r = 1:5)
+	e$y <- rnorm(nrow(e), 150 * c(-1, 0, 1)[as.integer(e$B)])
+	r <- gof(y ~ A * B, data = e)
+	expect_false(anyNA(r$effects$p_h1))
+	expect_true(r$effects$p_h1[2L] > 0.999)
+})

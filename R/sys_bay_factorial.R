@@ -91,11 +91,19 @@
 	err <- matrix(0, n_mod, length(rs))
 	.bay_with_seed(seed, {
 		for (j in seq_len(n_mod)[-1L]) {
-			fo <- stats::as.formula(paste(".y ~", paste(term_safe[sp$models[[j]]], collapse = " + ")))
+			m <- sp$models[[j]]
+			# One main effect alone: the internal one-factor computation, equal to lmBF to 1e-4
+			# (test-bay-factorial.R) and robust where the integrate() of lmBF fails, at very
+			# large effects (agent_50: g = 2e4 gave NA).
+			if (length(m) == 1L && sp$order[m] == 1L) {
+				for (ir in seq_along(rs)) lb[j, ir] <- .bay_bf_oneway_zs(y, factors[[sp$keys[m]]], rs[ir])
+				next
+			}
+			fo <- stats::as.formula(paste(".y ~", paste(term_safe[m], collapse = " + ")))
 			for (ir in seq_along(rs)) {
-				b <- BayesFactor::lmBF(fo, data = dat, rscaleFixed = rs[ir], iterations = iterations,
-					progress = FALSE)
-				x <- BayesFactor::extractBF(b, logbf = TRUE)
+				x <- tryCatch(suppressMessages(BayesFactor::extractBF(BayesFactor::lmBF(fo, data = dat,
+					rscaleFixed = rs[ir], iterations = iterations, progress = FALSE), logbf = TRUE)),
+					error = function(e) list(bf = NA_real_, error = NA_real_))
 				lb[j, ir] <- x$bf
 				err[j, ir] <- x$error
 			}
@@ -174,8 +182,16 @@
 	# The error BayesFactor reports can underestimate the spread between seeds on models with
 	# several terms: sd 0.014 to 0.026 on the log BF against 0.003 to 0.010 reported at 1e5
 	# iterations, 0.022 against 0.018 at 1e4 (agent_51, VALIDATION). Floor of 0.03 for those.
-	multi <- lengths(sp$models) >= 2L
-	err_pct <- 100 * max(bf$error[, ic], if (any(multi)) 0.03, na.rm = TRUE)
+	# Only the models that carry weight a posteriori matter for the answer.
+	lw <- bf$log_bf[, ic] + lp
+	w <- exp(lw - .bay_log_sum_exp(lw[!is.na(lw)]))
+	used <- !is.na(w) & w > 0.01
+	multi <- used & lengths(sp$models) >= 2L
+	err_pct <- 100 * max(bf$error[used, ic], if (any(multi)) 0.03, 0, na.rm = TRUE)
+	if (anyNA(bf$log_bf)) {
+		note("BayesFactor could not compute some models (very large effects); the terms that depend on them are left at NA.",
+			"BayesFactor n'a pas pu calculer certains mod\u00e8les (effets tr\u00e8s grands) ; les termes qui en d\u00e9pendent restent \u00e0 NA.")
+	}
 	eff$error_pct <- err_pct
 	rownames(eff) <- NULL
 	p_null <- .bay_fact_null(bf$log_bf[, ic], lp)

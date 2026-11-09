@@ -84,15 +84,15 @@ un_A <- function(i, plan, r = 0.5) {
 }
 
 # Effets fixes : vrais termes de taille f, codage +-f pour 2 niveaux, (-f, 0, f) pour 3.
-un_B <- function(i, plan, vrai, f) {
-	set.seed(700000L + 1000L * nchar(plan) + 37L * length(vrai) + round(100 * f) + i)
+un_B <- function(i, plan, vrai, ef) {
+	set.seed(700000L + 1000L * nchar(plan) + 37L * length(vrai) + round(100 * ef) + i)
 	d <- plan_data(plan)
 	k <- ncol(d)
 	termes <- termes_de(k)
 	sp <- .bay_fact_space(termes)
 	code <- function(v) { l <- nlevels(v); c(-1, 0, 1)[if (l == 2) c(1, 3) else 1:3][as.integer(v)] }
 	mu <- numeric(nrow(d))
-	for (t in vrai) mu <- mu + f * Reduce(`*`, lapply(strsplit(t, ":", fixed = TRUE)[[1]], function(v) code(d[[v]])))
+	for (t in vrai) mu <- mu + ef * Reduce(`*`, lapply(strsplit(t, ":", fixed = TRUE)[[1]], function(v) code(d[[v]])))
 	y <- mu + stats::rnorm(nrow(d))
 	bf <- .bay_fact_logbf(y, d, sp, 0.5, 10000L, i)
 	e <- .bay_fact_terms(sp, bf$log_bf[, 1L], .bay_fact_prior(sp, "hop"))
@@ -140,7 +140,7 @@ if (QUOI == "A") {
 	for (s in SCEN) {
 		NN <- if (s[[1]] == "2x2x2_deseq") N %/% 2L else N
 		nom <- sprintf("B_%s_%s_f%d", s[[1]], if (length(s[[2]])) gsub(":", "", paste(s[[2]], collapse = "-")) else "H0", round(100 * s[[3]]))
-		r <- lot(nom, un_B, NN, plan = s[[1]], vrai = s[[2]], f = s[[3]])
+		r <- lot(nom, un_B, NN, plan = s[[1]], vrai = s[[2]], ef = s[[3]])
 		termes <- termes_de(if (s[[1]] == "2x2x2_deseq") 3L else 2L)
 		nt <- length(termes)
 		faux <- which(!termes %in% s[[2]]); vrais <- which(termes %in% s[[2]])
