@@ -339,3 +339,31 @@ Ordre fixé par la session parente : appariés et mesures répétées, puis ANCO
   - Pas de regroupements dans ce cas : ils supposeraient un écart unique.
 
 **Contrôle indépendant.** `car::Anova(lm, type = 2)` pour le sens des réponses, `emmeans` pour les écarts ajustés et leurs intervalles, et `emmeans(at = quartiles)` quand les pentes diffèrent.
+
+## D17. Réponses discrètes : PROPOSÉ le 9 novembre (mesures faites, code à venir)
+
+Demandé par la session parente dans l'ordre du PERIMETRE, avec trois points de cadrage : la surdispersion, les tableaux de contingence et l'ordinal.
+
+**Mesures faites avant de décider.**
+- **BAS 2.0.2**, sans compilateur. `bas.glm(force.heredity = TRUE)` regroupe les indicatrices d'un facteur en un seul terme (2 modèles, pas 4) et donne la vraisemblance marginale d'un GLM de Poisson ou binomial sous l'a priori robuste [Bayarri2012].
+- **Binaire à un facteur.** Sur 5 jeux à 3 groupes, `contingencyTableBF` (Gunel et Dickey 1974, multinomiales indépendantes, lignes fixées) et BAS robuste vont dans le sens du χ². BAS est plus favorable à H0, de 1,5 à 2 en log-BF : par exemple +0,74 contre −0,98 à p = 0,027. Les a priori diffèrent ; aucune des deux voies n'est fausse.
+- **Binomiale négative.**
+  - brms reste impraticable sans compilateur : plus de 6 minutes de compilation sans fin, mesuré par agent_06.
+  - `rstanarm::stan_glm.nb` est précompilé. Avec `bridgesampling::bridge_sampler`, il faut 8,8 s pour deux modèles à n = 60.
+  - Les a priori par défaut de rstanarm sont larges, faits pour estimer : le log-BF obtenu (−4,97) penche fortement vers H0, ce qui est l'effet de Lindley. L'a priori des coefficients doit donc être fixé pour le test.
+- **Ordinal.**
+  - Aucun paquet CRAN ne propose les tests de rangs bayésiens de van Doorn, Ly, Marsman et Wagenmakers (2020, J. Appl. Stat. 47(16), 2984-3006). Il n'en existe que des scripts OSF et le module JASP, et seulement pour 2 groupes.
+  - `rstanarm::stan_polr` refuse le modèle nul (`o ~ 1`). Sous H0, cependant, les probabilités de catégorie suivent l'a priori de Dirichlet de `stan_polr`, et la vraisemblance marginale est alors une Dirichlet-multinomiale exacte.
+
+**Proposition.**
+1. **Binaire ou catégoriel, un facteur** : `contingencyTableBF`. C'est le pendant direct du χ² et du test G de `m.test()`. Post-hoc par paires de groupes sur le même modèle.
+2. **Binaire avec plusieurs facteurs ou une covariable** : `BAS::bas.glm(binomial, robust)`, espace héréditaire. Contrôle croisé avec la voie 1 sur le cas à un facteur.
+3. **Comptages** : comparaison de lois, comme à un facteur continu, sans choix préalable.
+   - Poisson et binomiale négative (`rstanarm`, Suggests), même a priori sur le log du rapport de taux, BF par `bridgesampling` pour les quatre modèles : {Poisson, BN} × {H0, H1}.
+   - La part de la BN est le constat de surdispersion. Si elle l'emporte, le récit le dit en « Changement de stratégie ».
+   - Sans rstanarm, voie BAS Poisson seule, avec le rapport déviance/ddl comme alerte, et « Prudence ajoutée » au-delà de 1,5.
+   - À valider sous H0 avec des comptages surdispersés.
+4. **Ordinal (peu de valeurs ordonnées, non comptages)** : logit cumulatif `stan_polr` (Suggests). Le modèle complet passe par bridge sampling, le nul par la Dirichlet-multinomiale exacte, sous le même a priori sur les seuils. À défaut de rstanarm, `contingencyTableBF` sans l'ordre, annoncé comme tel.
+5. **A priori des coefficients** des voies 3 et 4 : à décider après lecture (Gelman et al. 2008 ; [Bayarri2012] pour la cohérence avec BAS), puis à vérifier par la calibration sous H0.
+
+**Ordre de travail.** 1, puis 2, puis 3 ; 4 en dernier.
