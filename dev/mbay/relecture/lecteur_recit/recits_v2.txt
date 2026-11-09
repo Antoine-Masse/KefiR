@@ -1,0 +1,227 @@
+### Cas 1 : rendement selon la variete (3 varietes, 12 parcelles chacune)
+> m.bay(rendement ~ variete, data = d)
+
+1) Plan reconnu : un facteur, variete, à 3 groupes (a, b, c) ; N = 36.
+	--> Une seule question : y a-t-il une différence de rendement selon variete ? Aucun test préalable ne choisit la méthode : les formes du bruit seront comparées, pas choisies.
+2) Contrôles des données.
+	==> Effectifs : 12 par groupe (3 groupes, N = 36).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur groupe : 2 sur 36 au-delà de 1,5 écart interquartile, 0 au-delà de 3. [Tukey, quantile() {stats}]
+	--> Aucune valeur n'est retirée : les 4 formes du bruit restent en lice, et celles à queues lourdes sont là pour ce genre de valeurs.
+3) Point de départ (a priori), fixé avant de voir les données.
+	==> 50,0 % de chances qu'une différence existe (pile ou face : la méthode ne prend pas parti) ; taille attendue r = 0,5 (échelle « medium » de Rouder et al. 2012) ; chacune des 4 formes du bruit part à 25,0 %.
+	==> Avec plus de 2 groupes, deux formes de différence partent à égalité : tous les groupes peuvent différer, ou un seul groupe s'écarte.
+	--> Ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les fait varier pour voir si la réponse tient.
+4) Comparaison des formes du bruit (la façon dont les valeurs s'écartent du centre de leur groupe : normale ou à queues lourdes, variances égales ou non). [m.bay() {KefiR}, échantillonnage d'importance]
+	==> Probabilités a posteriori : normale, variances inégales 72,0 % ; normale, variances égales 12,5 % ; queues lourdes, variances inégales 9,5 % ; queues lourdes, variances égales 6,0 %.
+	--> Les formes normales sont les plus probables (84,4 %) : la réponse porte surtout sur les moyennes.
+	--> Aucune forme n'est choisie : la réponse de chacune est pondérée par sa probabilité.
+5) Facteur de Bayes et précision numérique. [m.bay() {KefiR}]
+	==> Facteur de Bayes, différence contre absence : 0,902 (proche de 1 : les données départagent à peine les deux).
+	==> Imprécision du calcul par simulation : environ 0,91 % sur le facteur de Bayes, sans effet sur la conclusion (ce n'est pas un risque d'erreur).
+	==> Sensibilité : taille attendue r de 0,25 à 1, cotes a priori d'une différence 1:2 à 2:1, répartition des variances entre groupes. « Aucune différence de rendement selon variete » va alors de 31,0 % à 78,4 %. [m.bay() {KefiR}]
+	--> Prudence ajoutée : l'hypothèse en tête peut s'inverser selon le point de départ ; la conclusion ne l'affirmera pas.
+6) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
+	Verdict : indécis. Les données ne permettent de conclure ni à une différence, ni à son absence.
+	Probabilité de chaque hypothèse, compte tenu des données et du point de départ :
+	  1. Aucune différence de rendement selon variete : 52,6 % (aucun soutien, proche de pile ou face)
+	     Repose sur l'ensemble des écarts entre groupes, le plus grand entre moyennes (b - a = 0,8, soit 0,91 écart-type au sein d'un groupe) : les données sont à peine plus probables (1,11 fois) sans différence qu'avec une différence de l'ordre attendu (r = 0,5).
+	  2. rendement diffère selon variete              : 47,4 %
+	     Contre elle : ces données sont à peine plus probables (1,11 fois) sans différence ; elle tient surtout à son a priori (50,0 %), abaissé par les données.
+	  Selon le point de départ, la probabilité de l'hypothèse 1 va de 31,0 % à 78,4 % : l'ordre peut s'inverser.
+	Moyennes observées (description de l'échantillon ; ce bilan ne dit pas quels groupes diffèrent) :
+	  a = 10,3 (n = 12) ; b = 11,0 (n = 12) ; c = 10,7 (n = 12).
+	Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend de la façon dont l'étude a été menée (tirage au sort, ordre, opérateur).
+	Formes du bruit, a priori en détail, mode de lecture : print(resultat, detail = TRUE).
+
+### Cas 2 : temps de reponse selon le protocole (2 protocoles, 20 essais chacun)
+> m.bay(temps ~ protocole, data = d)
+
+1) Plan reconnu : un facteur, protocole, à 2 groupes (P1, P2) ; N = 40.
+	--> Une seule question : y a-t-il une différence de temps selon protocole ? Aucun test préalable ne choisit la méthode : les formes du bruit seront comparées, pas choisies.
+2) Contrôles des données.
+	==> Effectifs : 20 par groupe (2 groupes, N = 40).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur groupe : 4 sur 40 au-delà de 1,5 écart interquartile, 0 au-delà de 3. [Tukey, quantile() {stats}]
+	--> Aucune valeur n'est retirée : les 4 formes du bruit restent en lice, et celles à queues lourdes sont là pour ce genre de valeurs.
+3) Point de départ (a priori), fixé avant de voir les données.
+	==> 50,0 % de chances qu'une différence existe (pile ou face : la méthode ne prend pas parti) ; taille attendue r = 0,5 (échelle « medium » de Rouder et al. 2012) ; chacune des 4 formes du bruit part à 25,0 %.
+	--> Ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les fait varier pour voir si la réponse tient.
+4) Comparaison des formes du bruit (la façon dont les valeurs s'écartent du centre de leur groupe : normale ou à queues lourdes, variances égales ou non). [m.bay() {KefiR}, échantillonnage d'importance]
+	==> Probabilités a posteriori : queues lourdes, variances inégales 48,4 % ; normale, variances inégales 26,9 % ; queues lourdes, variances égales 23,6 % ; normale, variances égales 1,1 %.
+	--> Les queues lourdes sont les plus probables (72,0 %), pas assez pour ne parler que des centres (la méthode demande 95,0 % de probabilité) : la réponse mêle moyennes et centres (centre : la valeur typique d'un groupe, proche de sa médiane).
+	--> Aucune forme n'est choisie : la réponse de chacune est pondérée par sa probabilité.
+5) Facteur de Bayes et précision numérique. [m.bay() {KefiR}]
+	==> Facteur de Bayes, différence contre absence : 5,04 (les données favorisent une différence).
+	==> Imprécision du calcul par simulation : environ 1,7 % sur le facteur de Bayes, sans effet sur la conclusion (ce n'est pas un risque d'erreur).
+	==> Sensibilité : taille attendue r de 0,25 à 1, cotes a priori d'une différence 1:2 à 2:1, répartition des variances entre groupes. « temps diffère selon protocole » va alors de 64,8 % à 91,3 %. [m.bay() {KefiR}]
+	--> L'ordre tient ; seul le qualificatif du soutien peut changer.
+6) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
+	Verdict : une différence existe probablement. Cela ne dit ni qu'elle est importante, ni quels groupes diffèrent, ni pourquoi.
+	Probabilité de chaque hypothèse, compte tenu des données et du point de départ :
+	  1. temps diffère selon protocole              : 83,5 % (soutien modéré)
+	     Repose sur l'écart entre moyennes (P2 - P1 = 1,48, soit 0,85 écart-type au sein d'un groupe) : les données sont 5,04 fois plus probables avec une différence que sans.
+	  2. Aucune différence de temps selon protocole : 16,5 %
+	     Contre elle : ces données sont 5,04 fois plus probables avec une différence.
+	  Selon le point de départ, la probabilité de l'hypothèse 1 va de 64,8 % à 91,3 % ; l'ordre ne change pas.
+	Moyennes observées (description de l'échantillon ; ce bilan ne dit pas quels groupes diffèrent) :
+	  P1 = 0,05 (n = 20) ; P2 = 1,53 (n = 20).
+	Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend de la façon dont l'étude a été menée (tirage au sort, ordre, opérateur).
+	Formes du bruit, a priori en détail, mode de lecture : print(resultat, detail = TRUE).
+
+### Cas 3 : note (de 1 a 4) selon le groupe de TP
+> m.bay(note ~ groupe, data = d)
+
+1) Plan reconnu : un facteur, groupe, à 2 groupes (G1, G2) ; N = 36.
+	--> Une seule question : y a-t-il une différence de note selon groupe ? Aucun test préalable ne choisit la méthode : les formes du bruit seront comparées, pas choisies.
+2) Contrôles des données.
+	==> La réponse semble discrète : les lois normale et t ne sont ici qu'une approximation.
+	==> Effectifs : 18 par groupe (2 groupes, N = 36).
+	==> Ex-aequo : 89 % des valeurs répètent une valeur déjà vue.
+	==> Valeurs éloignées de leur groupe : 0 sur 36 au-delà de 1,5 écart interquartile, 0 au-delà de 3. [Tukey, quantile() {stats}]
+	--> Rien à retirer : les 4 formes du bruit restent en lice.
+3) Point de départ (a priori), fixé avant de voir les données.
+	==> 50,0 % de chances qu'une différence existe (pile ou face : la méthode ne prend pas parti) ; taille attendue r = 0,5 (échelle « medium » de Rouder et al. 2012) ; chacune des 4 formes du bruit part à 25,0 %.
+	--> Ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les fait varier pour voir si la réponse tient.
+4) Comparaison des formes du bruit (la façon dont les valeurs s'écartent du centre de leur groupe : normale ou à queues lourdes, variances égales ou non). [m.bay() {KefiR}, échantillonnage d'importance]
+	==> Probabilités a posteriori : normale, variances égales 70,6 % ; normale, variances inégales 25,9 % ; queues lourdes, variances égales 2,4 % ; queues lourdes, variances inégales 1,0 %.
+	--> Les formes normales sont les plus probables (96,5 %) : la réponse porte surtout sur les moyennes.
+	--> Aucune forme n'est choisie : la réponse de chacune est pondérée par sa probabilité.
+5) Facteur de Bayes et précision numérique. [m.bay() {KefiR}]
+	==> Facteur de Bayes, différence contre absence : 26,1 (les données favorisent une différence).
+	==> Imprécision du calcul par simulation : environ 0,28 % sur le facteur de Bayes, sans effet sur la conclusion (ce n'est pas un risque d'erreur).
+	==> Sensibilité : taille attendue r de 0,25 à 1, cotes a priori d'une différence 1:2 à 2:1, répartition des variances entre groupes. « note diffère selon groupe » va alors de 90,5 % à 98,1 %. [m.bay() {KefiR}]
+	--> L'ordre tient ; seul le qualificatif du soutien peut changer.
+6) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
+	Verdict : une différence existe très probablement. Cela ne dit ni qu'elle est importante, ni quels groupes diffèrent, ni pourquoi.
+	Probabilité de chaque hypothèse, compte tenu des données et du point de départ :
+	  1. note diffère selon groupe              : 96,3 % (soutien fort)
+	     Repose sur l'écart entre moyennes (G2 - G1 = 1,00, soit 1,19 écart-type au sein d'un groupe) : les données sont 26,1 fois plus probables avec une différence que sans.
+	  2. Aucune différence de note selon groupe : 3,7 %
+	     Contre elle : ces données sont 26,1 fois plus probables avec une différence.
+	  Selon le point de départ, la probabilité de l'hypothèse 1 va de 90,5 % à 98,1 % ; l'ordre ne change pas.
+	Moyennes observées (description de l'échantillon ; ce bilan ne dit pas quels groupes diffèrent) :
+	  G1 = 2,00 (n = 18) ; G2 = 3,00 (n = 18).
+	Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend de la façon dont l'étude a été menée (tirage au sort, ordre, opérateur).
+	Formes du bruit, a priori en détail, mode de lecture : print(resultat, detail = TRUE).
+
+### Cas 4 : mesure selon la machine (2 machines, 400 pieces chacune)
+> m.bay(mesure ~ machine, data = d, sensitivity = FALSE)
+
+1) Plan reconnu : un facteur, machine, à 2 groupes (M1, M2) ; N = 800.
+	--> Une seule question : y a-t-il une différence de mesure selon machine ? Aucun test préalable ne choisit la méthode : les formes du bruit seront comparées, pas choisies.
+2) Contrôles des données.
+	==> Effectifs : 400 par groupe (2 groupes, N = 800).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur groupe : 28 sur 800 au-delà de 1,5 écart interquartile, 7 au-delà de 3. [Tukey, quantile() {stats}]
+	--> Aucune valeur n'est retirée : les 4 formes du bruit restent en lice, et celles à queues lourdes sont là pour ce genre de valeurs.
+3) Point de départ (a priori), fixé avant de voir les données.
+	==> 50,0 % de chances qu'une différence existe (pile ou face : la méthode ne prend pas parti) ; taille attendue r = 0,5 (échelle « medium » de Rouder et al. 2012) ; chacune des 4 formes du bruit part à 25,0 %.
+	--> Ces valeurs ne sont pas ajustées sur les données ; leur influence n'est pas contrôlée (sensitivity = FALSE).
+4) Comparaison des formes du bruit (la façon dont les valeurs s'écartent du centre de leur groupe : normale ou à queues lourdes, variances égales ou non). [m.bay() {KefiR}, échantillonnage d'importance]
+	==> Probabilités a posteriori : queues lourdes, variances inégales > 99,9 % ; queues lourdes, variances égales < 0,1 % ; normale, variances égales < 0,1 % ; normale, variances inégales < 0,1 %.
+	--> Les queues lourdes l'emportent (> 99,9 %) : la réponse portera sur les centres des groupes, pas exactement sur leurs moyennes.
+	--> Une forme domine : la réponse est presque la sienne (les autres restent avec leur faible poids).
+5) Facteur de Bayes et précision numérique. [m.bay() {KefiR}]
+	==> Facteur de Bayes, différence contre absence : 165 (les données favorisent une différence).
+	==> Imprécision du calcul par simulation : environ 2,6 % sur le facteur de Bayes, sans effet sur la conclusion (ce n'est pas un risque d'erreur).
+	==> Selon la loi normale (qui compare les moyennes), la probabilité d'une différence est de 7,4 % ; en moyenne sur les formes, dominées ici par les queues lourdes (qui comparent les centres), elle est de 99,4 %. Les deux lectures tombent de part et d'autre : centres et moyennes ne racontent pas la même chose.
+	--> Prudence ajoutée : on ne retient pas 99,4 % tel quel ; le soutien est plafonné à faible et le verdict dit que la réponse dépend de ce que l'on compare (moyennes ou centres).
+	==> Sensibilité aux a priori non calculée (sensitivity = FALSE).
+	--> La conclusion n'est pas éprouvée contre d'autres points de départ.
+6) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
+	Verdict : indécis, la réponse dépend de la forme du bruit.
+	Probabilité de chaque hypothèse, compte tenu des données et du point de départ :
+	  1. mesure diffère selon machine              : 99,4 % (soutien faible)
+	     Repose sur l'écart entre médianes, proches des centres comparés (M2 - M1 = 0,3072 ; écart des moyennes 0,0133) : les données sont 165 fois plus probables avec une différence que sans.
+	  2. Aucune différence de mesure selon machine : 0,6 %
+	     Contre elle : ces données sont 165 fois plus probables avec une différence.
+	  À lire avec réserve : la loi normale (moyennes) et les queues lourdes (centres) se contredisent. La comparaison porte alors sur les centres des groupes, pas sur leurs moyennes ; le soutien est plafonné à faible.
+	  Sensibilité aux a priori non calculée (sensitivity = FALSE).
+	Moyennes observées (description de l'échantillon ; ce bilan ne dit pas quels groupes diffèrent) :
+	  M1 = 0,0191 (n = 400) ; M2 = 0,0324 (n = 400).
+	  Médianes, plus proches des centres comparés : M1 = -0,2725 ; M2 = 0,0347.
+	Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend de la façon dont l'étude a été menée (tirage au sort, ordre, opérateur).
+	Formes du bruit, a priori en détail, mode de lecture : print(resultat, detail = TRUE).
+
+### Cas 5 : rendement selon la temperature (2 niveaux) et le catalyseur (3 types), 5 essais par combinaison
+> m.bay(rendement ~ temperature * catalyseur, data = d)
+
+1) Plan reconnu : 2 facteurs croisés, temperature (2 niveaux), catalyseur (3 niveaux) ; 6 cases, N = 30.
+	==> Termes : temperature, catalyseur, temperature:catalyseur. 5 modèles respectent l'hérédité (une interaction n'entre qu'avec ses facteurs).
+	--> Une réponse par terme, toutes tirées d'une seule loi sur ces 5 modèles.
+2) Contrôles des données.
+	==> Effectifs : 5 par case (6 cases, N = 30).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur case : 1 sur 30 au-delà de 1,5 écart interquartile, 0 au-delà de 3. [Tukey, quantile() {stats}]
+	--> Aucune valeur n'est retirée.
+3) Forme du bruit.
+	==> À plusieurs facteurs, seule la loi normale à variance commune est calculée : queues lourdes et variances inégales n'y sont pas encore validées, elles ne sont donc pas comparées.
+	--> Aucune valeur n'est assez éloignée de sa case pour mettre d'emblée la loi normale en doute ; elle n'est pas mise à l'épreuve des autres.
+4) Point de départ (a priori), fixé par la méthode avant de voir les données.
+	==> Taille d'un effet : r = 0,5 par terme (Zellner-Siow). Chance de chaque terme, pris seul (ces chances ne s'additionnent pas) : temperature 50,0 %, catalyseur 50,0 %, temperature:catalyseur 16,7 % ; aucune différence du tout 33,3 %.
+	--> Pourquoi : une proportion ~ Beta(1,1) par ordre d'interaction (HOP, Taylor-Rodriguez et al. 2016) : plus il y a de termes, moins chacun est probable d'avance, ce qui protège des fausses interactions ; une interaction n'entre qu'avec ses facteurs.
+5) Facteurs de Bayes des 5 modèles. [lmBF() {BayesFactor}]
+	==> Précision : recalculées avec une autre graine, les probabilités bougent d'au plus 0,19 point(s) de pourcentage, négligeable.
+	==> Sensibilité : r de 0,25 à 1, croisé avec trois lois sur les modèles (HOP, 1/2 par terme, uniforme). [m.bay() {KefiR}]
+	==> Terme(s) qui changent de côté : catalyseur (18,3 % à 59,0 %).
+	--> Prudence ajoutée : catalyseur sera dit non tranché, quelle que soit sa probabilité centrale.
+6) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
+	Verdict : une différence existe très probablement. Cela ne dit ni qu'elle est importante, ni quels groupes diffèrent, ni pourquoi.
+	  rendement diffère selon au moins un facteur : 97,0 % (soutien fort) ; Aucune différence de rendement selon temperature, catalyseur : 3,0 %.
+	     Repose sur le terme le plus probable : temperature (oui 96,3 %).
+	Réponse par terme, probabilité compte tenu des données et du point de départ (a priori entre crochets) :
+	  Différence de rendement selon temperature, seul ou en interaction ? Oui, soutien fort (probabilité du oui 96,3 %, a priori 50,0 %).
+	     Repose sur les données, qui multiplient ses cotes (rapport oui/non) par 26,2 (facteur de Bayes).
+	  Différence de rendement selon catalyseur, seul ou en interaction ? Non tranché (probabilité du oui 47,8 %, a priori 50,0 % ; selon le point de départ 18,3 % à 59,0 %).
+	     Les données divisent ses cotes (rapport oui/non) par 1,09 : trop peu pour trancher.
+	  Les écarts selon temperature varient-ils avec catalyseur (temperature:catalyseur) ? Non, soutien modéré (probabilité du oui 14,2 %, a priori 16,7 %).
+	     Les données déplacent peu ses cotes (divisent par 1,21) : le « non » repose surtout sur l'a priori de 16,7 %.
+	Moyennes observées par facteur (description ; ce bilan ne dit pas quels niveaux diffèrent) :
+	  temperature : basse = 49,81 (n = 15) ; haute = 50,92 (n = 15)
+	  catalyseur : C1 = 50,57 (n = 10) ; C2 = 50,57 (n = 10) ; C3 = 49,97 (n = 10)
+	  Par case : basse x C1 = 49,83 ; haute x C1 = 51,31 ; basse x C2 = 49,95 ; haute x C2 = 51,18 ; basse x C3 = 49,64 ; haute x C3 = 50,29.
+	  Écart-type au sein des cases : 0,81.
+	Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend de la façon dont l'étude a été menée (tirage au sort, ordre, opérateur).
+	Facteurs de Bayes, a priori en détail, mode de lecture : print(resultat, detail = TRUE).
+
+### Cas 6 : resistance selon le traitement thermique et l'alliage (interaction), 6 essais par combinaison
+> m.bay(resistance ~ traitement * alliage, data = d)
+
+1) Plan reconnu : 2 facteurs croisés, traitement (2 niveaux), alliage (2 niveaux) ; 4 cases, N = 24.
+	==> Termes : traitement, alliage, traitement:alliage. 5 modèles respectent l'hérédité (une interaction n'entre qu'avec ses facteurs).
+	--> Une réponse par terme, toutes tirées d'une seule loi sur ces 5 modèles.
+2) Contrôles des données.
+	==> Effectifs : 6 par case (4 cases, N = 24).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur case : 4 sur 24 au-delà de 1,5 écart interquartile, 1 au-delà de 3. [Tukey, quantile() {stats}]
+	--> Aucune valeur n'est retirée.
+3) Forme du bruit.
+	==> À plusieurs facteurs, seule la loi normale à variance commune est calculée : queues lourdes et variances inégales n'y sont pas encore validées, elles ne sont donc pas comparées.
+	--> 1 valeur(s) au-delà de 3 écarts interquartiles de leur case (étape 2) : la réponse suppose un bruit normal, la lire avec réserve.
+4) Point de départ (a priori), fixé par la méthode avant de voir les données.
+	==> Taille d'un effet : r = 0,5 par terme (Zellner-Siow). Chance de chaque terme, pris seul (ces chances ne s'additionnent pas) : traitement 50,0 %, alliage 50,0 %, traitement:alliage 16,7 % ; aucune différence du tout 33,3 %.
+	--> Pourquoi : une proportion ~ Beta(1,1) par ordre d'interaction (HOP, Taylor-Rodriguez et al. 2016) : plus il y a de termes, moins chacun est probable d'avance, ce qui protège des fausses interactions ; une interaction n'entre qu'avec ses facteurs.
+5) Facteurs de Bayes des 5 modèles. [lmBF() {BayesFactor}]
+	==> Précision : recalculées avec une autre graine, les probabilités bougent d'au plus 0,58 point(s) de pourcentage, négligeable.
+	==> Sensibilité : r de 0,25 à 1, croisé avec trois lois sur les modèles (HOP, 1/2 par terme, uniforme). [m.bay() {KefiR}]
+	==> Terme(s) qui changent de côté : traitement (40,4 % à 65,6 %), alliage (49,8 % à 71,6 %).
+	--> Prudence ajoutée : traitement, alliage seront dits non tranchés, quelle que soit leur probabilité centrale.
+6) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
+	Verdict : plutôt une différence, sans conclure.
+	  resistance diffère selon au moins un facteur : 70,4 % (soutien faible) ; Aucune différence de resistance selon traitement, alliage : 29,6 %.
+	     Repose sur l'ensemble des termes ; aucun n'est tranché seul (le plus probable : alliage, 60,4 %).
+	Réponse par terme, probabilité compte tenu des données et du point de départ (a priori entre crochets) :
+	  Différence de resistance selon traitement, seul ou en interaction ? Non tranché (probabilité du oui 53,6 %, a priori 50,0 % ; selon le point de départ 40,4 % à 65,6 %).
+	     Les données multiplient ses cotes (rapport oui/non) par 1,16 : trop peu pour trancher.
+	  Différence de resistance selon alliage, seul ou en interaction ? Non tranché (probabilité du oui 60,4 %, a priori 50,0 % ; selon le point de départ 49,8 % à 71,6 %).
+	     Les données multiplient ses cotes (rapport oui/non) par 1,52 : trop peu pour trancher.
+	  Les écarts selon traitement varient-ils avec alliage (traitement:alliage) ? Non, soutien faible (probabilité du oui 31,5 %, a priori 16,7 %).
+	     Les données multiplient ses cotes (rapport oui/non) par 2,3, pas assez pour renverser son a priori de 16,7 % : le « non » repose sur l'a priori, pas sur les données.
+	Moyennes observées par facteur (description ; ce bilan ne dit pas quels niveaux diffèrent) :
+	  traitement : T0 = 300,1 (n = 12) ; T1 = 301,4 (n = 12)
+	  alliage : A1 = 299,9 (n = 12) ; A2 = 301,6 (n = 12)
+	  Par case : T0 x A1 = 300,3 ; T1 x A1 = 299,5 ; T0 x A2 = 299,9 ; T1 x A2 = 303,2.
+	  Écart-type au sein des cases : 2,0.
+	Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend de la façon dont l'étude a été menée (tirage au sort, ordre, opérateur).
+	Facteurs de Bayes, a priori en détail, mode de lecture : print(resultat, detail = TRUE).

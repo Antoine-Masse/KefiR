@@ -182,3 +182,22 @@ Partitions de moyennes jusqu'à k=5, puis paires à cotes a priori ajustées. D�
 ## D12. Socle commun : ACQUIS
 
 Fonctions internes de `R/sys_bay_core.R`, réutilisables par `cor.bay` et `g.bay`, sans développer ces deux fonctions avant ta demande.
+
+## D14. Bilan en récit : ACQUIS (demande d'Antoine, 9 novembre ; mise en œuvre décidée ici)
+
+Demande, ses mots : « m.bay() doit faire comme m.test() proposer un bilan décisionnel adaptatif qui s'adapte en direct, présente ses éventuels changements de stratégies pour arriver enfin à la fin sur, au lieu de p-values cette fois, des hypothèses argumentés et associés à un indice de confiance. »
+
+**Décidé.**
+- `verbose = TRUE` raconte six étapes numérotées, imprimées au fil du calcul par `.vbse()` : plan, contrôles des données, a priori (ou forme du bruit puis a priori à plusieurs facteurs), formes du bruit, facteurs de Bayes et sensibilité, conclusion. « ==> » est un constat, « --> » la décision qui en découle, et la fonction et le paquet sont entre crochets.
+- Chaque ligne ne dit que ce qui a été calculé dans l'appel : les avertissements sont dits à l'étape où ils naissent, pas répétés à la fin.
+- Deux mentions distinctes, après la relecture par le lecteur type (`relecture/lecteur_recit/RELECTURE.md`, point 5) :
+  - « Changement de stratégie : » quand le calcul change : loi écartée pour ex-aequo (intégrale divergente) ou pour échantillonnage trop pauvre ;
+  - « Prudence ajoutée : » quand seule la conclusion se retient : contradiction entre lois, qui plafonne le soutien ; sensibilité qui peut renverser l'hypothèse en tête ; terme qui change de côté et devient « non tranché ».
+- La conclusion est le bilan court, en retrait sous l'étape 6, sans titre, sans point de départ ni avertissements (dits plus haut). Chaque hypothèse porte une ligne « Repose sur » ou « Contre elle » :
+  - un facteur : le plus grand écart observé en écarts-types, et le facteur de Bayes en clair (« 5 fois plus probable avec une différence que sans ») ;
+  - plusieurs facteurs : pour la réponse globale, le terme le plus probable ; pour chaque terme, les données qui multiplient ou divisent ses cotes.
+- `verbose = FALSE` n'imprime rien. L'objet garde le récit (`$story`, en et fr) et `print(x, story = TRUE)` le rejoue à l'identique.
+
+**L'indice de confiance** est la probabilité a posteriori suivie du qualificatif de soutien (aucun, faible, modéré, fort, très fort ; seuils de Kass et Raftery). Le mot « confiance » n'est pas imprimé, pour qu'on ne le prenne pas pour un intervalle de confiance ou un niveau 1 − α ; le bilan dit « soutien ». Ce choix est réversible si Antoine tient au mot.
+
+**Écart à `m.test()`.** `.vbse()` ne garde que son texte français quand on lui passe une chaîne (`if (length(ang)==1) ang <- fr`) : en session anglaise, `m.test()` raconte en français. `m.bay()` choisit la langue par `.msg()` avant d'appeler `.vbse()`. Le défaut de `.vbse()` est signalé, pas corrigé (il sert `m.test()`).

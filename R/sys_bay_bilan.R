@@ -105,13 +105,18 @@
 # string in each language, numbers with the decimal mark of that language. The default is
 # short enough for a student or an engineer; detail = TRUE adds the shapes of the noise,
 # the varied priors and how to read the numbers.
-.bay_print_bilan <- function(obj, detail = FALSE) {
+.bay_print_bilan <- function(obj, detail = FALSE, narrated = FALSE) {
 	lang_fr <- identical(.msg("en", "fr"), "fr")
 	dec <- if (lang_fr) "," else "."
-	say <- function(en, fr) cat(.msg(en, fr), "\n", sep = "")
+	# As the last step of the story, the conclusion is indented under its title and leaves
+	# out what the steps already said (title, starting point, warnings).
+	pre <- if (isTRUE(narrated)) "\t" else ""
+	say <- function(en, fr) cat(pre, .msg(en, fr), "\n", sep = "")
 	num <- function(x) gsub(".", dec, format(signif(x, 3), trim = TRUE), fixed = TRUE)
-	say(paste0("Bilan of m.bay: ", obj$label, " (N = ", obj$n, ")"),
-		paste0("Bilan de m.bay : ", obj$label, " (N = ", obj$n, ")"))
+	if (!isTRUE(narrated)) {
+		say(paste0("Bilan of m.bay: ", obj$label, " (N = ", obj$n, ")"),
+			paste0("Bilan de m.bay : ", obj$label, " (N = ", obj$n, ")"))
+	}
 
 	v <- .bay_verdict(obj)
 	say(v$en, v$fr)
@@ -125,6 +130,7 @@
 	if (isTRUE(obj$contradiction)) sup <- .bay_support(min(h$posterior[1L], 0.6))
 	width_en <- max(nchar(h$label_en))
 	width_fr <- max(nchar(h$label_fr))
+	args <- .bay_hyp_args_oneway(obj)
 	for (i in seq_len(nrow(h))) {
 		tail_en <- if (i == 1L) paste0(" (", sup$en, ")") else ""
 		tail_fr <- if (i == 1L) paste0(" (", sup$fr, ")") else ""
@@ -132,6 +138,7 @@
 				.bay_pct(h$posterior[i], "."), tail_en),
 			paste0("  ", i, ". ", formatC(h$label_fr[i], width = -width_fr), " : ",
 				.bay_pct(h$posterior[i], ","), tail_fr))
+		if (!is.null(args)) say(paste0("     ", args$en[i]), paste0("     ", args$fr[i]))
 	}
 	if (isTRUE(obj$contradiction)) {
 		say("  Read with caution: the normal law (means) and the heavy-tailed laws (centres) contradict each other. The comparison then bears on the centres of the groups, not on their means; the support is capped at weak.",
@@ -175,15 +182,6 @@
 				paste0("  ", obj$questions$fr[i], " Oui ", .bay_pct(e$p_h1[i], ","), ", non ", .bay_pct(e$p_h0[i], ","),
 					" (facteur de Bayes ", .bay_bf_txt(e$log_bf[i], ","), ")."))
 		}
-	} else {
-		ab <- abs(e$log_bf[1L])
-		if (e$log_bf[1L] >= 0) {
-			say(paste0("  The data are ", .bay_bf_txt(ab, "."), " times more compatible with a difference (Bayes factor ", .bay_bf_txt(e$log_bf[1L], "."), ")."),
-				paste0("  Les donn\u00e9es sont ", .bay_bf_txt(ab, ","), " fois plus compatibles avec une diff\u00e9rence (facteur de Bayes ", .bay_bf_txt(e$log_bf[1L], ","), ")."))
-		} else {
-			say(paste0("  The data are ", .bay_bf_txt(ab, "."), " times more compatible with no difference (Bayes factor ", .bay_bf_txt(e$log_bf[1L], "."), ")."),
-				paste0("  Les donn\u00e9es sont ", .bay_bf_txt(ab, ","), " fois plus compatibles avec l'absence de diff\u00e9rence (facteur de Bayes ", .bay_bf_txt(e$log_bf[1L], ","), ")."))
-		}
 	}
 
 	# Size, descriptive.
@@ -195,27 +193,23 @@
 	gap <- d$mean[hi] - d$mean[lo]
 	say("Observed means (description of the sample, not a test of which groups differ):",
 		"Moyennes observ\u00e9es (description de l'\u00e9chantillon ; ce bilan ne dit pas quels groupes diff\u00e8rent) :")
-	say(paste0("  ", paste0(d$group, " = ", fmt(d$mean, "."), " (n = ", d$n, ")", collapse = "; "),
-			". Largest gap: ", d$group[hi], " - ", d$group[lo], " = ", fmt(gap, "."), ", i.e. ",
-			formatC(obj$largest_gap, format = "f", digits = 2), " within-group standard deviations."),
-		paste0("  ", paste0(d$group, " = ", fmt(d$mean, ","), " (n = ", d$n, ")", collapse = " ; "),
-			". Plus grand \u00e9cart : ", d$group[hi], " - ", d$group[lo], " = ", fmt(gap, ","), ", soit ",
-			gsub(".", ",", formatC(obj$largest_gap, format = "f", digits = 2), fixed = TRUE), " \u00e9cart-type (dispersion au sein d'un groupe)."))
+	say(paste0("  ", paste0(d$group, " = ", fmt(d$mean, "."), " (n = ", d$n, ")", collapse = "; "), "."),
+		paste0("  ", paste0(d$group, " = ", fmt(d$mean, ","), " (n = ", d$n, ")", collapse = " ; "), "."))
 	if (isTRUE(obj$contradiction) || isTRUE(obj$heavy)) {
 		say(paste0("  Medians, closer to the centres compared: ", paste0(d$group, " = ", fmt(d$median, "."), collapse = "; "), "."),
 			paste0("  M\u00e9dianes, plus proches des centres compar\u00e9s : ", paste0(d$group, " = ", fmt(d$median, ","), collapse = " ; "), "."))
 	}
 
-	# Priors, one line.
+	# Priors, one line (said at step 3 of the story).
 	p <- obj$priors
-	say(paste0("Starting point, set by the method before seeing the data: ", .bay_pct(p$prior_h1, "."), " chance that a difference exists, expected size r = ",
+	if (!isTRUE(narrated)) say(paste0("Starting point, set by the method before seeing the data: ", .bay_pct(p$prior_h1, "."), " chance that a difference exists, expected size r = ",
 			format(signif(p$rscale, 3), trim = TRUE), "."),
 		paste0("Point de d\u00e9part, fix\u00e9 par la m\u00e9thode avant de voir les donn\u00e9es : ", .bay_pct(p$prior_h1, ","), " de chances qu'une diff\u00e9rence existe, taille attendue r = ",
 			num(p$rscale), "."))
-	say("These are probabilities of hypotheses, not p-values: no threshold of 5 % applies. Whether a difference has a cause depends on the protocol (randomisation, order, operator).",
-		"Ce sont des probabilit\u00e9s d'hypoth\u00e8ses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une diff\u00e9rence d\u00e9pend du protocole (tirage au sort, ordre, op\u00e9rateur).")
+	say("These are probabilities of hypotheses, not p-values: no threshold of 5 % applies. Whether a difference has a cause depends on how the study was run (randomisation, order, operator).",
+		"Ce sont des probabilit\u00e9s d'hypoth\u00e8ses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une diff\u00e9rence d\u00e9pend de la fa\u00e7on dont l'\u00e9tude a \u00e9t\u00e9 men\u00e9e (tirage au sort, ordre, op\u00e9rateur).")
 
-	if (length(obj$notes$en)) {
+	if (length(obj$notes$en) && !isTRUE(narrated)) {
 		say("Warnings:", "Avertissements :")
 		for (i in seq_along(obj$notes$en)) say(paste0("  ", obj$notes$en[i]), paste0("  ", obj$notes$fr[i]))
 	}
@@ -296,4 +290,74 @@
 		paste0("  Soutien : aucun sous ", 100 * breaks[1L], " %, faible sous ", 100 * breaks[2L], " %, mod\u00e9r\u00e9 sous ", 100 * breaks[3L],
 			" %, fort sous ", gsub(".", ",", 100 * breaks[4L], fixed = TRUE), " %, puis tr\u00e8s fort."))
 	invisible(obj)
+}
+
+# What each hypothesis rests on, one factor: the largest observed gap, in units of the
+# within-group spread, and how much more probable it is under one hypothesis than under
+# the other (the Bayes factor, against a difference of the size expected, r). Rows in the
+# order of obj$hypotheses. The gap is given in full on the first row only.
+.bay_hyp_args_oneway <- function(obj) {
+	h <- obj$hypotheses
+	if (is.null(h$null)) return(NULL)
+	d <- obj$descriptive_stats
+	e <- obj$effects
+	lb <- e$log_bf[1L]
+	if (is.na(lb)) return(NULL)
+	hi <- which.max(d$mean)
+	lo <- which.min(d$mean)
+	gap <- d$mean[hi] - d$mean[lo]
+	dg <- max(0L, 2L - floor(log10(max(abs(d$mean), 1e-300))))
+	g_en <- formatC(gap, format = "f", digits = dg)
+	sd_en <- formatC(obj$largest_gap, format = "f", digits = 2)
+	g_fr <- gsub(".", ",", g_en, fixed = TRUE)
+	sd_fr <- gsub(".", ",", sd_en, fixed = TRUE)
+	r_en <- format(signif(obj$priors$rscale, 3), trim = TRUE)
+	r_fr <- gsub(".", ",", r_en, fixed = TRUE)
+	centres <- isTRUE(obj$heavy) || isTRUE(obj$contradiction)
+	# Under heavy tails the groups are compared through their centres: the gap is then shown
+	# on the medians, closer to them, with the gap of the means beside it.
+	if (centres) {
+		hi <- which.max(d$median)
+		lo <- which.min(d$median)
+		g_en <- formatC(d$median[hi] - d$median[lo], format = "f", digits = dg)
+		g_fr <- gsub(".", ",", g_en, fixed = TRUE)
+		gm_en <- formatC(diff(range(d$mean)), format = "f", digits = dg)
+		gm_fr <- gsub(".", ",", gm_en, fixed = TRUE)
+	}
+	k <- nrow(d)
+	what_en <- if (centres) "medians, close to the centres compared" else "means"
+	what_fr <- if (centres) "m\u00e9dianes, proches des centres compar\u00e9s" else "moyennes"
+	full_en <- paste0(if (k > 2L) "all the gaps between groups, the largest between " else "the gap between ", what_en, " (",
+		d$group[hi], " - ", d$group[lo], " = ", g_en, if (!centres) paste0(", i.e. ", sd_en, " within-group SD") else paste0("; gap of the means ", gm_en), ")")
+	full_fr <- paste0(if (k > 2L) "l'ensemble des \u00e9carts entre groupes, le plus grand entre " else "l'\u00e9cart entre ", what_fr, " (",
+		d$group[hi], " - ", d$group[lo], " = ", g_fr, if (!centres) paste0(", soit ", sd_fr, " \u00e9cart-type au sein d'un groupe") else paste0(" ; \u00e9cart des moyennes ", gm_fr), ")")
+	bf_en <- .bay_bf_txt(abs(lb), ".")
+	bf_fr <- .bay_bf_txt(abs(lb), ",")
+	weak <- abs(lb) < log(3)
+	more_en <- if (weak) paste0("hardly more probable (", bf_en, " times)") else paste0(bf_en, " times more probable")
+	more_fr <- if (weak) paste0("\u00e0 peine plus probables (", bf_fr, " fois)") else paste0(bf_fr, " fois plus probables")
+	en <- fr <- character(nrow(h))
+	for (i in seq_len(nrow(h))) {
+		gap_en <- if (i == 1L) full_en else "these data"
+		gap_fr <- if (i == 1L) full_fr else "ces donn\u00e9es"
+		for_it <- xor(isTRUE(h$null[i]), lb >= 0)
+		if (!isTRUE(h$null[i])) {
+			if (for_it) {
+				en[i] <- paste0("Rests on ", gap_en, ": the data are ", more_en, " with a difference than without.")
+				fr[i] <- paste0("Repose sur ", gap_fr, " : les donn\u00e9es sont ", more_fr, " avec une diff\u00e9rence que sans.")
+			} else {
+				en[i] <- paste0("Against it: ", gap_en, " are ", more_en, " without a difference; it rests mainly on its prior (", .bay_pct(h$prior[i], "."), "), lowered by the data.")
+				fr[i] <- paste0("Contre elle : ", gap_fr, " sont ", more_fr, " sans diff\u00e9rence ; elle tient surtout \u00e0 son a priori (", .bay_pct(h$prior[i], ","), "), abaiss\u00e9 par les donn\u00e9es.")
+			}
+		} else {
+			if (for_it) {
+				en[i] <- paste0("Rests on ", gap_en, ": the data are ", more_en, " without a difference than with one of the size expected (r = ", r_en, ").")
+				fr[i] <- paste0("Repose sur ", gap_fr, " : les donn\u00e9es sont ", more_fr, " sans diff\u00e9rence qu'avec une diff\u00e9rence de l'ordre attendu (r = ", r_fr, ").")
+			} else {
+				en[i] <- paste0("Against it: ", gap_en, " are ", more_en, " with a difference.")
+				fr[i] <- paste0("Contre elle : ", gap_fr, " sont ", more_fr, " avec une diff\u00e9rence.")
+			}
+		}
+	}
+	list(en = en, fr = fr)
 }

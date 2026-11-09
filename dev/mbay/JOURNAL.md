@@ -1,5 +1,43 @@
 # Journal de m.bay
 
+## Séance 5 : 9 novembre 2026, jalon 3 (bilan en récit)
+
+**Cadre.** Demande d'Antoine relayée par la session « KefiR officiel » : un bilan qui raconte son cheminement, comme le verbose de `m.test()`, et finit sur des hypothèses argumentées avec un indice de confiance, sans p-value. Décision D14.
+
+**Fait.**
+- `R/sys_bay_story.R` (nouveau) : le récit numéroté est imprimé par `.vbse()` au fil du calcul. « ==> » marque un constat, « --> » une décision, et la fonction et son paquet sont entre crochets.
+- Les avertissements sont dits à l'étape où ils naissent. Le récit est gardé dans `$story` (en, fr) et `print(x, story = TRUE)` le rejoue.
+- Étapes à un facteur : plan, contrôles (effectifs, ex-aequo, groupes constants, valeurs éloignées selon Tukey), point de départ, formes du bruit, facteur de Bayes, précision et sensibilité, conclusion.
+- Étapes à plusieurs facteurs : plan et espace héréditaire, contrôles par case, forme du bruit (normale seule, dit), a priori HOP avec son motif, facteurs de Bayes [lmBF() {BayesFactor}], précision et sensibilité par terme, conclusion.
+- Conclusion : le bilan court, en retrait, sans titre ni point de départ ni avertissements déjà dits. Chaque hypothèse et chaque terme reçoit une ligne « Repose sur » ou « Contre elle ».
+- Un terme est dit « Non tranché » quand le soutien est nul ou que la sensibilité le renverse. Quand le facteur de Bayes est sous 3, la ligne dit que la réponse repose surtout sur l'a priori.
+- Sous queues lourdes, l'écart est donné sur les médianes.
+- Moyennes par case quand une interaction est testée.
+- Relecture par un lecteur type (étudiante de BUT et ingénieur qualité) sur six cas : 14 points, dont une erreur, l'écart des « centres » qui était en fait celui des moyennes. 11 sont corrigés, 3 laissés avec leur motif (`relecture/lecteur_recit/RELECTURE.md`).
+
+**Vérifié (comment).**
+- `test-bay-story.R` (nouveau, 5 tests, 29 assertions) :
+  - `verbose = FALSE` n'imprime rien ;
+  - six étapes numérotées dans l'ordre ;
+  - pas de titre ni de point de départ répétés dans la conclusion ;
+  - une ligne d'argument par hypothèse et par terme ;
+  - aucune p-value chiffrée ;
+  - `print(story = TRUE)` est identique à l'impression directe ;
+  - un plan refusé est nommé à l'étape 1 avant le refus.
+- Suites relancées sur le code final, 0 échec : story 5/29, m.bay 11/61, factorial 8/56, oneway 7/27, core 32/237, laws 20/79, m.test 20/52, valreg 6/12.
+- `R CMD check --no-manual --ignore-vignettes` : Status OK.
+- `R/m.test.R`, `R/sys_vbse.R` et `R/sys_msg.R` sont identiques à 3675fc7.
+
+**Non vérifié.**
+- `test-manova.R` n'a pas été relancé (26 min ; aucun fichier qu'il touche n'a changé depuis le jalon 2, où il passait).
+- La version corrigée du récit n'a pas été relue par un second lecteur.
+- Le récit n'a pas été vu en session anglaise.
+- Le récit des cas rares (loi écartée pour ESS, cas divergent) est écrit mais n'a été vu sur aucun jeu de données.
+
+**Défaut signalé, non corrigé (hors périmètre).** `.vbse()` remplace tout texte anglais d'une seule chaîne par le texte français (`if (length(ang)==1) ang <- fr`). En session anglaise, le verbose de `m.test()` sort donc en français. `m.bay()` contourne ce défaut en choisissant la langue avant l'appel.
+
+**Reproduction.** Six récits : `Rscript dev/mbay/relecture/lecteur_recit/lecteur_story.R (écrit dans le scratchpad, chemin à adapter)`, dont le texte est recopié dans `dev/mbay/relecture/lecteur_recit/recits_v2.txt`. Tests : `testthat::test_file("tests/testthat/test-bay-story.R")`.
+
 ## Séance 4 : 7 au 9 novembre 2026, jalon 2 (plusieurs facteurs), sous-session auditée par « KefiR officiel »
 
 **Cadre.** Audit du jalon 1 accepté, avec six points (VALIDATION §7). Le moteur multi-facteurs interne avait été arrêté par le filtre de sécurité : non repris. Décision d'Antoine le 9 novembre (« Oui, via BayesFactor ») : D1 tranchée, puis son principe pour la suite (appeler des paquets établis). Simulations interrompues dans la nuit du 7 au 8 (machine), reprises depuis leurs tranches.

@@ -133,8 +133,8 @@
 	en <- fr <- character(length(terms))
 	for (i in seq_along(terms)) {
 		if (length(f[[i]]) == 1L) {
-			en[i] <- paste0("Does ", resp, " differ according to ", terms[i], ", alone or in interaction?")
-			fr[i] <- paste0(resp, " diff\u00e8re-t-il selon ", terms[i], ", seul ou en interaction ?")
+			en[i] <- paste0("Difference in ", resp, " according to ", terms[i], ", alone or in interaction?")
+			fr[i] <- paste0("Diff\u00e9rence de ", resp, " selon ", terms[i], ", seul ou en interaction ?")
 		} else {
 			last <- f[[i]][length(f[[i]])]
 			first <- paste(f[[i]][-length(f[[i]])], collapse = ":")
@@ -267,13 +267,17 @@
 
 # Bilan with several factors. Same order as with one factor: verdict on the global
 # question, then each term, its sensitivity, what was compared, the starting point.
-.bay_print_bilan_fact <- function(obj, detail = FALSE) {
+.bay_print_bilan_fact <- function(obj, detail = FALSE, narrated = FALSE) {
 	lang_fr <- identical(.msg("en", "fr"), "fr")
 	dec <- if (lang_fr) "," else "."
-	say <- function(en, fr) cat(.msg(en, fr), "\n", sep = "")
+	# As the last step of the story: indented, without what the steps already said.
+	pre <- if (isTRUE(narrated)) "\t" else ""
+	say <- function(en, fr) cat(pre, .msg(en, fr), "\n", sep = "")
 	num <- function(x) gsub(".", dec, format(signif(x, 3), trim = TRUE), fixed = TRUE)
-	say(paste0("Bilan of m.bay: ", obj$label, " (N = ", obj$n, ", several factors)"),
-		paste0("Bilan de m.bay : ", obj$label, " (N = ", obj$n, ", plusieurs facteurs)"))
+	if (!isTRUE(narrated)) {
+		say(paste0("Bilan of m.bay: ", obj$label, " (N = ", obj$n, ", several factors)"),
+			paste0("Bilan de m.bay : ", obj$label, " (N = ", obj$n, ", plusieurs facteurs)"))
+	}
 	v <- .bay_verdict(obj)
 	say(v$en, v$fr)
 	h <- obj$hypotheses
@@ -282,32 +286,76 @@
 			h$label_en[2L], ": ", .bay_pct(h$posterior[2L], "."), "."),
 		paste0("  ", h$label_fr[1L], " : ", .bay_pct(h$posterior[1L], ","), " (", sup$fr, ") ; ",
 			h$label_fr[2L], " : ", .bay_pct(h$posterior[2L], ","), "."))
+	e <- obj$effects
+	top <- which.max(e$p_h1)
+	if (length(top)) {
+		top_open <- !is.null(obj$sensitivity) && identical(obj$sensitivity$verdict_terms[top], "changes")
+		if (isTRUE(obj$prob_effect >= 0.5) && top_open) {
+			say(paste0("     Rests on the terms together; none is settled alone (the most probable: ", e$term[top], ", ", .bay_pct(e$p_h1[top], "."), ")."),
+				paste0("     Repose sur l'ensemble des termes ; aucun n'est tranch\u00e9 seul (le plus probable : ", e$term[top], ", ", .bay_pct(e$p_h1[top], ","), ")."))
+		} else if (isTRUE(obj$prob_effect >= 0.5)) {
+			say(paste0("     Rests on the most probable term: ", e$term[top], " (yes ", .bay_pct(e$p_h1[top], "."), ")."),
+				paste0("     Repose sur le terme le plus probable : ", e$term[top], " (oui ", .bay_pct(e$p_h1[top], ","), ")."))
+		} else {
+			say(paste0("     Rests on this: no term reaches 50 %; the most probable, ", e$term[top], ", is at ", .bay_pct(e$p_h1[top], "."), "."),
+				paste0("     Repose sur ceci : aucun terme n'atteint 50 % ; le plus probable, ", e$term[top], ", est \u00e0 ", .bay_pct(e$p_h1[top], ","), "."))
+		}
+	}
 	if (!is.null(obj$sensitivity) && identical(obj$sensitivity$verdict, "changes")) {
 		rg <- obj$sensitivity$range_lead
 		say(paste0("  Depending on the starting point, the probability of the first answer goes from ", .bay_pct(rg[1L], "."), " to ", .bay_pct(rg[2L], "."), ": the order can reverse."),
 			paste0("  Selon le point de d\u00e9part, la probabilit\u00e9 de la premi\u00e8re r\u00e9ponse va de ", .bay_pct(rg[1L], ","), " \u00e0 ", .bay_pct(rg[2L], ","), " : l'ordre peut s'inverser."))
 	}
 
-	say("Answer per term, probability given the data and the starting point (prior in brackets):",
-		"R\u00e9ponse par terme, probabilit\u00e9 compte tenu des donn\u00e9es et du point de d\u00e9part (a priori entre crochets) :")
+	say("Answer per term (yes, no or not settled; probability of a yes given the data and the starting point, and its prior):",
+		"R\u00e9ponse par terme (oui, non ou non tranch\u00e9 ; probabilit\u00e9 du oui compte tenu des donn\u00e9es et du point de d\u00e9part, et son a priori) :")
 	e <- obj$effects
 	sens <- obj$sensitivity
 	for (i in seq_len(nrow(e))) {
 		s <- .bay_support(max(e$p_h1[i], e$p_h0[i]))
-		lead_en <- if (e$p_h1[i] >= 0.5) "yes" else "no"
-		lead_fr <- if (e$p_h1[i] >= 0.5) "oui" else "non"
-		tail_en <- tail_fr <- ""
-		if (!is.null(sens)) {
+		yes <- e$p_h1[i] >= 0.5
+		open <- s$level == 1L || (!is.null(sens) && identical(sens$verdict_terms[i], "changes"))
+		rr_en <- rr_fr <- ""
+		if (!is.null(sens) && identical(sens$verdict_terms[i], "changes")) {
 			rr <- sens$range_terms[i, ]
-			if (identical(sens$verdict_terms[i], "changes")) {
-				tail_en <- paste0(" Depending on the starting point ", .bay_pct(rr[1L], "."), " to ", .bay_pct(rr[2L], "."), ": not settled.")
-				tail_fr <- paste0(" Selon le point de d\u00e9part ", .bay_pct(rr[1L], ","), " \u00e0 ", .bay_pct(rr[2L], ","), " : non tranch\u00e9.")
+			rr_en <- paste0("; depending on the starting point ", .bay_pct(rr[1L], "."), " to ", .bay_pct(rr[2L], "."))
+			rr_fr <- paste0(" ; selon le point de d\u00e9part ", .bay_pct(rr[1L], ","), " \u00e0 ", .bay_pct(rr[2L], ","))
+		}
+		p_en <- paste0("probability of a yes ", .bay_pct(e$p_h1[i], "."), ", prior ", .bay_pct(e$prior_h1[i], "."))
+		p_fr <- paste0("probabilit\u00e9 du oui ", .bay_pct(e$p_h1[i], ","), ", a priori ", .bay_pct(e$prior_h1[i], ","))
+		if (open) {
+			say(paste0("  ", obj$questions$en[i], " Not settled (", p_en, rr_en, ")."),
+				paste0("  ", obj$questions$fr[i], " Non tranch\u00e9 (", p_fr, rr_fr, ")."))
+		} else {
+			say(paste0("  ", obj$questions$en[i], " ", if (yes) "Yes" else "No", ", ", s$en, " (", p_en, ")."),
+				paste0("  ", obj$questions$fr[i], " ", if (yes) "Oui" else "Non", ", ", s$fr, " (", p_fr, ")."))
+		}
+		if (!is.na(e$log_bf[i])) {
+			up <- e$log_bf[i] >= 0
+			bf_en <- .bay_bf_txt(abs(e$log_bf[i]), ".")
+			bf_fr <- .bay_bf_txt(abs(e$log_bf[i]), ",")
+			v_en <- if (up) "multiply" else "divide"
+			v_fr <- if (up) "multiplient" else "divisent"
+			w_en <- if (yes) "yes" else "no"
+			w_fr <- if (yes) "oui" else "non"
+			if (open) {
+				say(paste0("     The data ", v_en, " its odds (yes against no) by ", bf_en, ": too little to settle it."),
+					paste0("     Les donn\u00e9es ", v_fr, " ses cotes (rapport oui/non) par ", bf_fr, " : trop peu pour trancher."))
+			} else if (up != yes) {
+				say(paste0("     The data ", v_en, " its odds (yes against no) by ", bf_en, ", not enough to overturn its prior of ",
+						.bay_pct(e$prior_h1[i], "."), ": the \"", w_en, "\" rests on the prior, not on the data."),
+					paste0("     Les donn\u00e9es ", v_fr, " ses cotes (rapport oui/non) par ", bf_fr, ", pas assez pour renverser son a priori de ",
+						.bay_pct(e$prior_h1[i], ","), " : le \u00ab ", w_fr, " \u00bb repose sur l'a priori, pas sur les donn\u00e9es."))
+			} else if (abs(e$log_bf[i]) < log(3)) {
+				say(paste0("     The data hardly move its odds (", v_en, " by ", bf_en, "): the \"", w_en, "\" rests mainly on the prior of ",
+						.bay_pct(e$prior_h1[i], "."), "."),
+					paste0("     Les donn\u00e9es d\u00e9placent peu ses cotes (", v_fr, " par ", bf_fr, ") : le \u00ab ", w_fr, " \u00bb repose surtout sur l'a priori de ",
+						.bay_pct(e$prior_h1[i], ","), "."))
+			} else {
+				say(paste0("     Rests on the data, which ", v_en, " its odds (yes against no) by ", bf_en, " (Bayes factor)."),
+					paste0("     Repose sur les donn\u00e9es, qui ", v_fr, " ses cotes (rapport oui/non) par ", bf_fr, " (facteur de Bayes)."))
 			}
 		}
-		say(paste0("  ", obj$questions$en[i], " Yes ", .bay_pct(e$p_h1[i], "."), " [", .bay_pct(e$prior_h1[i], "."), "], ",
-				lead_en, " with ", s$en, ".", tail_en),
-			paste0("  ", obj$questions$fr[i], " Oui ", .bay_pct(e$p_h1[i], ","), " [", .bay_pct(e$prior_h1[i], ","), "], ",
-				lead_fr, " avec ", s$fr, ".", tail_fr))
 	}
 	if (!is.null(sens)) {
 		if (all(sens$verdict_terms != "changes") && !identical(sens$verdict, "changes")) {
@@ -321,6 +369,7 @@
 
 	m <- obj$descriptive_stats
 	dg <- max(0L, 2L - floor(log10(max(abs(m$mean), 1e-300))))
+	if (isTRUE(obj$sd_within > 0)) dg <- min(10L, max(dg, 1L - floor(log10(obj$sd_within))))
 	fmt <- function(x, dc) gsub(".", dc, formatC(x, format = "f", digits = dg), fixed = TRUE)
 	say("Observed means per factor (description, not a test of which levels differ):",
 		"Moyennes observ\u00e9es par facteur (description ; ce bilan ne dit pas quels niveaux diff\u00e8rent) :")
@@ -329,21 +378,26 @@
 		say(paste0("  ", f, ": ", paste0(mf$level, " = ", fmt(mf$mean, "."), " (n = ", mf$n, ")", collapse = "; ")),
 			paste0("  ", f, " : ", paste0(mf$level, " = ", fmt(mf$mean, ","), " (n = ", mf$n, ")", collapse = " ; ")))
 	}
+	cm <- obj$cell_means
+	if (!is.null(cm) && any(grepl(":", e$term, fixed = TRUE)) && nrow(cm) <= 16L) {
+		say(paste0("  Per cell: ", paste0(cm$cell, " = ", fmt(cm$mean, "."), collapse = "; "), "."),
+			paste0("  Par case : ", paste0(cm$cell, " = ", fmt(cm$mean, ","), collapse = " ; "), "."))
+	}
 	sd_en <- if (isTRUE(obj$sd_is_within)) "Within-cell standard deviation: " else "Residual standard deviation (one observation per cell): "
 	sd_fr <- if (isTRUE(obj$sd_is_within)) "\u00c9cart-type au sein des cases : " else "\u00c9cart-type r\u00e9siduel (une observation par case) : "
 	say(paste0("  ", sd_en, fmt(obj$sd_within, "."), if (!isTRUE(obj$balanced)) "; unbalanced plan, these means mix the other factors." else "."),
 		paste0("  ", sd_fr, fmt(obj$sd_within, ","), if (!isTRUE(obj$balanced)) " ; plan d\u00e9s\u00e9quilibr\u00e9, ces moyennes m\u00e9langent les autres facteurs." else "."))
 
-	say("Shape of the noise: normal with a common variance only. With several factors, heavy tails and unequal variances are not compared yet.",
+	if (!isTRUE(narrated)) say("Shape of the noise: normal with a common variance only. With several factors, heavy tails and unequal variances are not compared yet.",
 		"Forme du bruit : normale \u00e0 variance commune seulement. \u00c0 plusieurs facteurs, queues lourdes et variances in\u00e9gales ne sont pas encore compar\u00e9es.")
 	has_int <- any(grepl(":", e$term, fixed = TRUE))
-	say(paste0("Starting point, set by the method before seeing the data: expected size r = ", format(signif(obj$priors$rscale, 3), trim = TRUE),
+	if (!isTRUE(narrated)) say(paste0("Starting point, set by the method before seeing the data: expected size r = ", format(signif(obj$priors$rscale, 3), trim = TRUE),
 			if (has_int) "; an interaction enters only with its factors; one chance in two per factor, interactions less likely ([] above)." else "; one chance in two per factor ([] above)."),
 		paste0("Point de d\u00e9part, fix\u00e9 par la m\u00e9thode avant de voir les donn\u00e9es : taille attendue r = ", num(obj$priors$rscale),
 			if (has_int) " ; une interaction n'entre qu'avec ses facteurs ; une chance sur deux par facteur, les interactions moins probables ([] ci-dessus)." else " ; une chance sur deux par facteur ([] ci-dessus)."))
-	say("These are probabilities of hypotheses, not p-values: no threshold of 5 % applies. Whether a difference has a cause depends on the protocol (randomisation, order, operator).",
-		"Ce sont des probabilit\u00e9s d'hypoth\u00e8ses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une diff\u00e9rence d\u00e9pend du protocole (tirage au sort, ordre, op\u00e9rateur).")
-	if (length(obj$notes$en)) {
+	say("These are probabilities of hypotheses, not p-values: no threshold of 5 % applies. Whether a difference has a cause depends on how the study was run (randomisation, order, operator).",
+		"Ce sont des probabilit\u00e9s d'hypoth\u00e8ses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une diff\u00e9rence d\u00e9pend de la fa\u00e7on dont l'\u00e9tude a \u00e9t\u00e9 men\u00e9e (tirage au sort, ordre, op\u00e9rateur).")
+	if (length(obj$notes$en) && !isTRUE(narrated)) {
 		say("Warnings:", "Avertissements :")
 		for (i in seq_along(obj$notes$en)) say(paste0("  ", obj$notes$en[i]), paste0("  ", obj$notes$fr[i]))
 	}

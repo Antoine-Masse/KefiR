@@ -55,7 +55,11 @@ a data.frame of factors.}
 
 \item{control}{Reference level. Not used yet.}
 
-\item{verbose}{If \code{TRUE}, prints the bilan.}
+\item{verbose}{If \code{TRUE}, tells the analysis step by step as \code{\link[=m.test]{m.test()}} does: numbered
+steps printed as the computation goes, "==>" for what was found, "-->" for what the
+function decides from it (a law left out, a lead that the priors can reverse), the
+function and package in brackets; the last step is the bilan. If \code{FALSE}, nothing.
+\code{print(result, story = TRUE)} replays the steps; \code{print(result)} gives the bilan alone.}
 
 \item{plot}{Not used yet.}
 
@@ -106,6 +110,8 @@ factor within that law.}
 \item{descriptive_stats}{n, mean and SD per group.}
 \item{prob_effect}{Posterior probability that at least one effect exists.}
 \item{method, plan, label, n, notes, call}{Description of the analysis.}
+\item{story}{The steps told with \code{verbose = TRUE}, in English (\code{en}) and French
+(\code{fr}), kept even when nothing was printed.}
 }
 }
 \description{
