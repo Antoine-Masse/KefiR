@@ -125,9 +125,16 @@ unequal variances) and averages its answers over their posterior probabilities.
 }
 \section{Plans covered}{
 
-Available now: one factor, 2 groups or k groups. The other plans of \code{\link[=m.test]{m.test()}}
-(several factors, covariates, paired, repeated measures, mixed, MANOVA, discrete
-data) stop with an explicit message until they are validated.
+Available now: one factor, 2 groups or k groups, with the four shapes of noise
+compared; several crossed factors (for example \code{y ~ A * B}), with the normal law and a
+common variance only. With several factors, the marginal likelihoods come from the
+BayesFactor package (Rouder et al. 2012) and each term is answered as "does y differ
+according to A, alone or in interaction?". An interaction enters only with its factors,
+and the prior on the models gives one proportion ~ Beta(1,1) per order of interaction
+(Taylor-Rodriguez et al. 2016), which corrects for the number of terms; \code{prior_h1} and
+\code{laws} have no role there. The other plans of \code{\link[=m.test]{m.test()}} (covariates, paired, repeated
+measures, mixed, MANOVA, discrete data) stop with an explicit message until they are
+validated.
 }
 
 \examples{

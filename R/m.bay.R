@@ -18,9 +18,16 @@
 #' unequal variances) and averages its answers over their posterior probabilities.
 #'
 #' @section Plans covered:
-#' Available now: one factor, 2 groups or k groups. The other plans of [m.test()]
-#' (several factors, covariates, paired, repeated measures, mixed, MANOVA, discrete
-#' data) stop with an explicit message until they are validated.
+#' Available now: one factor, 2 groups or k groups, with the four shapes of noise
+#' compared; several crossed factors (for example `y ~ A * B`), with the normal law and a
+#' common variance only. With several factors, the marginal likelihoods come from the
+#' BayesFactor package (Rouder et al. 2012) and each term is answered as "does y differ
+#' according to A, alone or in interaction?". An interaction enters only with its factors,
+#' and the prior on the models gives one proportion ~ Beta(1,1) per order of interaction
+#' (Taylor-Rodriguez et al. 2016), which corrects for the number of terms; `prior_h1` and
+#' `laws` have no role there. The other plans of [m.test()] (covariates, paired, repeated
+#' measures, mixed, MANOVA, discrete data) stop with an explicit message until they are
+#' validated.
 #'
 #' @param x Response: numeric vector, column name or index if `data` is given, or a
 #'   formula.
@@ -79,6 +86,7 @@
 #' r <- m.bay(y ~ variety, data = d, draws = 1000, sensitivity = FALSE)
 #' r$effects[, c("term", "p_h1", "p_h0", "log_bf")]
 #'
+#' @importFrom BayesFactor lmBF extractBF
 #' @export
 m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
                   paired = FALSE, id = NULL, wt = NULL, within = NULL, between = NULL,
@@ -148,7 +156,7 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	}
 
 	# Plans not validated yet: an explicit refusal, never a wrong answer.
-	if (!identical(input$plan, "oneway")) {
+	if (!input$plan %in% c("oneway", "factorial")) {
 		plan_en <- c(factorial = "several factors", ancova = "covariates", paired = "paired data",
 			repeated = "repeated measures", mixed = "mixed models", manova = "MANOVA")[input$plan]
 		plan_fr <- c(factorial = "plusieurs facteurs", ancova = "les covariables", paired = "les donn\u00e9es appari\u00e9es",
@@ -172,6 +180,11 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	if (isTRUE(input$discrete)) {
 		note("The response looks discrete: the normal and t laws are only an approximation here.",
 			"La r\u00e9ponse semble discr\u00e8te : les lois normale et t ne sont ici qu'une approximation.")
+	}
+
+	if (identical(input$plan, "factorial")) {
+		return(.bay_m_factorial(input, call_expr, function() notes, note, prior_h1, rscale, laws, sensitivity,
+			draws, seed, detail, verbose, return, !("prior_h1" %in% names(call_expr)), !("laws" %in% names(call_expr))))
 	}
 
 	term <- names(input$factors)[1L]
@@ -318,6 +331,52 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 
 #' @export
 print.mbay <- function(x, detail = isTRUE(x$detail), ...) {
-	.bay_print_bilan(x, detail = detail)
+	if (identical(x$plan, "factorial")) .bay_print_bilan_fact(x, detail = detail) else .bay_print_bilan(x, detail = detail)
 	invisible(x)
+}
+
+# Several factors: normal law with a common variance, likelihoods from BayesFactor
+# (sys_bay_factorial.R). prior_h1 and laws do not apply and are said so when given.
+.bay_m_factorial <- function(input, call_expr, get_notes, note, prior_h1, rscale, laws, sensitivity,
+                             draws, seed, detail, verbose, return, no_prior, no_laws) {
+	if (!no_prior) {
+		note("prior_h1 has no role with several factors: the prior on the models is fixed by the method.",
+			"prior_h1 est sans effet \u00e0 plusieurs facteurs : la loi sur les mod\u00e8les est fix\u00e9e par la m\u00e9thode.")
+	}
+	if (!no_laws && !identical(laws, "normal_eq")) {
+		note("With several factors only the normal law with a common variance is computed; laws is ignored.",
+			"\u00c0 plusieurs facteurs, seule la loi normale \u00e0 variance commune est calcul\u00e9e ; laws est ignor\u00e9.")
+	}
+	fa <- .bay_factorial(input, rscale, sensitivity, as.integer(draws), as.integer(seed), note)
+	resp <- input$response_name
+	fac_txt <- paste(names(input$factors), collapse = ", ")
+	p_any <- 1 - fa$p_null
+	hyp <- data.frame(
+		label_en = c(paste0(resp, " differs according to at least one factor"),
+			paste0("No difference in ", resp, " according to ", fac_txt)),
+		label_fr = c(paste0(resp, " diff\u00e8re selon au moins un facteur"),
+			paste0("Aucune diff\u00e9rence de ", resp, " selon ", fac_txt)),
+		posterior = c(p_any, fa$p_null), prior = c(1 - fa$prior_null, fa$prior_null),
+		null = c(FALSE, TRUE), stringsAsFactors = FALSE)
+	hyp <- hyp[order(-hyp$posterior), , drop = FALSE]
+	rownames(hyp) <- NULL
+	out <- list(
+		hypotheses = hyp, effects = fa$effects, laws = NULL,
+		models = data.frame(model = vapply(fa$space$models, function(m) {
+				if (length(m)) paste(fa$space$terms[m], collapse = " + ") else "(null)"
+			}, character(1)), log_bf = fa$log_bf_models[, if (isTRUE(sensitivity)) 2L else 1L],
+			log_prior = fa$log_prior, stringsAsFactors = FALSE),
+		n_models = length(fa$space$models),
+		sensitivity = fa$sensitivity,
+		priors = list(rscale = rscale, model_prior = "HOP(1,1)", law = "normal_eq"),
+		questions = .bay_fact_questions(fa$effects$term, resp),
+		contradiction = FALSE, heavy = FALSE, detail = isTRUE(detail),
+		descriptive_stats = fa$means, sd_within = fa$sd_within, balanced = fa$balanced,
+		prob_effect = p_any,
+		method = "Several factors, normal law with a common variance (BayesFactor)", plan = input$plan,
+		label = input$label, n = length(input$response), notes = get_notes(), call = call_expr)
+	class(out) <- "mbay"
+	if (isTRUE(verbose)) .bay_print_bilan_fact(out, detail = detail)
+	if (isFALSE(return)) return(p_any)
+	if (isTRUE(verbose)) invisible(out) else out
 }

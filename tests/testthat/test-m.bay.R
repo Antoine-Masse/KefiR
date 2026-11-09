@@ -75,7 +75,6 @@ test_that("plans pas encore valides : refus explicite", {
 		b = rep(0:1, 18))
 	expect_error(go(y ~ variete + x, data = e), "covariables")
 	expect_error(go(cbind(y, y2) ~ variete, data = e), "MANOVA")
-	expect_error(go(y ~ variete * B, data = e), "plusieurs facteurs")
 	expect_error(go(y ~ variete + Error(id/variete), data = e), "mesures r")
 	expect_error(go(y ~ variete + (1 | id), data = e), "mesures r")
 	expect_error(go(y ~ variete | id, data = e), "mesures r")
@@ -116,7 +115,7 @@ test_that("verdict de sensibilite : hypothese en tete, seuil, stable", {
 })
 
 test_that("sources ASCII", {
-	src <- c("m.bay.R", "sys_bay_input.R", "sys_bay_bilan.R", "sys_bay_laws.R", "sys_bay_oneway.R")
+	src <- c("m.bay.R", "sys_bay_input.R", "sys_bay_bilan.R", "sys_bay_laws.R", "sys_bay_oneway.R", "sys_bay_factorial.R")
 	root <- testthat::test_path("..", "..", "R")
 	skip_if_not(dir.exists(root))
 	for (f in src) {
