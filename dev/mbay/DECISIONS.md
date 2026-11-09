@@ -63,7 +63,28 @@ Loi jointe à arbitrer : uniforme sur les modèles (a priori 0,6 sur chaque fact
 
 La HOP garde la correction de multiplicité de la HUP sous H0 sans fabriquer d'interactions quand les effets sont additifs. HOP(1,ch) contrôle encore mieux les faux « oui », mais met un facteur seul à 1/3 (2 facteurs) ou 1/4 (3 facteurs) au lieu du 1/2 retenu à un facteur, et perd de la puissance. L'uniforme et « uniforme sur la taille » favorisent les effets principaux (0,6 à 0,74 a priori). **Coût de la HOP** : une interaction réelle à petit effectif est moins souvent détectée qu'avec la HUP (0,44 contre 0,50 ; aov 0,86, seuils non équivalents) ; même constat sur plans déséquilibrés (`agent_50 B`, VALIDATION §8).
 
-**Restent à exécuter** (`agent_49` tourne) : 2³ à n = 10 additif, 2³ avec A:B réelle ou toutes les interactions doubles (fausse A:B:C), A:B:C seule. Ils seront ajoutés ici ; la décision ne sera revue que s'ils la contredisent.
+**Cas à 3 facteurs exécutés le 9 novembre** (`agent_49`, fin du calcul, N = 200 par cas, mêmes BF pour toutes les lois). On compte la proportion de jeux où au moins un terme faux dépasse P = 0,5, et la puissance P(vrai) > 0,5.
+
+| Cas 2³ | 1/2 par terme | HUP | **HOP** | HOP(1,ch) | uniforme | aov p<0,05 |
+|---|---:|---:|---:|---:|---:|---:|
+| n=10, A, B, C à f=0,5 : un faux > 0,5 | 0,220 | 0,605 | **0,120** | 0,060 | 0,240 | 0,185 |
+| n=5, A, B, C, A:B : un faux > 0,5 | 0,110 | 0,625 | **0,205** | 0,045 | 0,205 | 0,135 |
+| n=10, A, B, C, A:B : un faux > 0,5 | 0,130 | 0,800 | **0,270** | 0,070 | 0,215 | 0,130 |
+| n=5, toutes les interactions doubles : fausse A:B:C > 0,5 | 0,020 | 0,840 | **0,030** | 0,015 | 0,030 | 0,025 |
+| n=10, toutes les interactions doubles : fausse A:B:C > 0,5 | 0,050 | 1,000 | **0,060** | 0,050 | 0,055 | 0,030 |
+| n=10, A:B:C seule (sans effets principaux) : un faux > 0,5 | 0,335 | 0,525 | **0,370** | 0,125 | 0,670 | 0,235 |
+| Même cas, puissance sur A:B:C | 0,215 | 0,490 | **0,325** | 0,100 | 0,490 | 0,995 |
+
+**Lecture.**
+- Additif et toutes interactions doubles : la HOP reste au niveau de 1/2 par terme ou mieux. La HUP fabrique des interactions (60 à 100 %).
+- **Une interaction réelle parmi plusieurs possibles** (A:B vraie, A:C et B:C fausses) : **la HOP fait moins bien** que 1/2 par terme et qu'aov, avec 20 à 27 % de faux « oui » contre 11 à 13 %. C'est la contrepartie de la proportion partagée par ordre : une interaction double nette relève π₂, donc l'a priori des autres interactions doubles. Ce coût est connu de la construction ([TaylorRodriguez2016] : échangeabilité à l'intérieur d'un ordre). Il n'existe pas sous H0 ni en additif, où la HOP fait mieux que 1/2 par terme (5 % contre 18 % sous H0 à n=10 ; 12 % contre 22 % en additif).
+- **A:B:C seule, sans effet principal** : aucune loi héréditaire ne la représente, puisque A:B:C n'entre qu'avec A, B, C, A:B, A:C et B:C. Sa détection tombe à 0,33 (aov 0,995), et les termes inférieurs reçoivent de faux « oui » (37 %). Ce cas sort de l'espace héréditaire par construction ([Chipman1996]). Il faut le dire dans la documentation plutôt que d'abandonner l'hérédité.
+
+**Décision maintenue : HOP(1,1).** Le bilan de chiffres reste favorable, sous H0, en additif et en puissance additive. Les deux coûts sont documentés :
+- sur-détection d'une seconde interaction quand une première est réelle ;
+- aveuglement à une interaction d'ordre supérieur sans effets inférieurs.
+
+1/2 par terme est déjà dans la sensibilité : un terme que la loi sur les modèles fait changer de côté est dit « non tranché ». La sensibilité ne couvre pas pour autant tout ce coût, car les fausses interactions à 20–27 % peuvent rester du même côté sous les trois lois. Non mesuré : la part de ces faux « oui » que la sensibilité requalifie en « non tranché ». **Point ouvert pour la session parente** : faut-il tester une HOP dont le paramètre de second ordre est moins partagé, ou une loi hybride ? Ni l'une ni l'autre n'est programmée.
 
 **Libellé par terme**, tranché avec le libellé non causal de l'audit : « y diffère selon A, seul ou en interaction ».
 

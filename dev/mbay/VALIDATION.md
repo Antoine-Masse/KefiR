@@ -427,6 +427,13 @@ Cases : 2×2 (4, 8, 12, 16) ; 2×3 (3, 9, 5, 7, 10, 4) ; 2×2×2 (3 à 8). Effet
 
 **Non simulé** : facteurs à plus de 3 niveaux, 4 facteurs, plans très déséquilibrés (rapport > 5 entre cases).
 
+### Plans 2³ équilibrés, interaction réelle ou d'ordre 3 (`agent_49`, fin du 9 novembre)
+
+Résultats complets dans `scripts/resultats/agent_49.txt` ; tableau et lecture dans DECISIONS, D2.
+- Une interaction double réelle (A:B) fait monter les fausses interactions doubles sous HOP : 20,5 % (n=5) et 27 % (n=10), contre 13 % pour aov et 11 à 13 % pour 1/2 par terme.
+- Avec toutes les interactions doubles réelles, A:B:C fausse sort dans 3 à 6 % des jeux.
+- A:B:C seule, sans effet inférieur, est hors de l'espace héréditaire : puissance 0,33 contre 0,995 pour aov.
+
 ### Calibration sous l'a priori (`agent_50 A`, N = 1 200 jeux par plan)
 
 Modèle tiré selon la loi HOP, g ~ InvGamma(1/2, r²/2) par terme, effets sur le codage de BayesFactor (`fullDesignMatrix`), σ = 1. Probabilité annoncée par terme contre fréquence du terme vrai.
