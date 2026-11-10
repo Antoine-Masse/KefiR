@@ -788,3 +788,16 @@ La référence exacte prévue, brms (`cumulative`) avec bridgesampling, n'a pas 
 
 L'écart atteint 0,16 en log au plus, loin de log 3. **Limite** : ce n'est pas une vraisemblance marginale exacte par tirage, seulement une approximation plus fine, sous le même a priori.
 
+## 15. Variances inégales à plusieurs facteurs : le défaut mesuré (`agent_64`), 10 novembre
+
+On rejoue la mise en défaut de D6 dans un plan 2 × 2 sous H0 (aucun effet), avec des effectifs et des écarts-types inégaux par case : n = (5, 5, 5, 40), écarts-types (4, 4, 4, 1). N = 200 jeux. Résultats : `scripts/resultats/agent_64.txt`.
+
+| Méthode | Au moins un terme dit « oui » |
+|---|---:|
+| m.bay, P > 0,95 | 12,5 % |
+| m.bay, P > 0,75 | 33,5 % |
+| aov, p < 0,05 | 58,0 % |
+| Welch sur les 4 cases, p < 0,05 | 5,0 % |
+
+**Lecture.** Le moteur à plusieurs facteurs, qui suppose une variance commune, se trompe ici comme le faisait la voie normale seule à un facteur avant D6 : 12,5 % de faux « oui » à P > 0,95. Le critère de réussite de la prochaine étape est de ramener ce taux au niveau d'un facteur avec variances par groupe, soit 0,7 % à P > 0,95 (D6).
+
