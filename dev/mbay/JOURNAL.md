@@ -1,5 +1,15 @@
 # Journal de m.bay
 
+## Séance 14 : 10 novembre 2026, audit de 23c941e et mesures répétées avec répliques (D21)
+
+**Fait.**
+- **Audit de 23c941e.** Quatre retouches : mots du compte rendu repris du bilan, écarts par niveau quand une interaction est non tranchée, repli des listes numérotées, réponse dans le titre de l'étape 6 (5eb84c5).
+- **D21.** Plan « mixed » accepté sans pentes aléatoires : sujet et sujet × condition aléatoires, dans le calcul comme dans le post-hoc ; récit « avec répliques ».
+
+**Vérifié.** `agent_67` (VALIDATION §18) ; `test-bay-mixed.R` contre `lmBF` ; tous les tests bay.
+
+**Non fait.** Pentes aléatoires ; R CMD check sur ce lot.
+
 ## Séance 13 : 10 novembre 2026, variances par case (D19) et post-hoc à plusieurs facteurs (D20)
 
 **Fait.**

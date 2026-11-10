@@ -1,0 +1,3 @@
+R version 4.6.1 (2026-06-24 ucrt)
+agent_67 : mixte avec repliques, scenario H1, 10 sujets x 3 conditions x 4 repliques, N = 200
+m.bay P>.75 : 0.170 | P>.95 : 0.040 || naif (sujet seul) P>.75 : 0.510 | P>.95 : 0.330 || ANOVA RM sur moyennes p<.05 : 0.265 || temps median 4.32 s, max 6.06 s

@@ -37,7 +37,7 @@
 	d <- .bay_nuisance_data(y, id, cov)
 	d$h <- h
 	BayesFactor::extractBF(BayesFactor::lmBF(stats::as.formula(paste("y ~ h +", .bay_nuisance_rhs(d))), data = d,
-		whichRandom = if (!is.null(id)) "id" else NULL, rscaleFixed = rscale, rscaleCont = .bay_rcont(),
+		whichRandom = .bay_rand_names(d), rscaleFixed = rscale, rscaleCont = .bay_rcont(),
 		iterations = iterations, progress = FALSE), logbf = TRUE)$bf - lb0
 }
 # Model with the nuisance terms only (subjects, D15; or covariates, D16), against the intercept.
@@ -45,16 +45,30 @@
 	if (is.null(id) && is.null(cov)) return(0)
 	d <- .bay_nuisance_data(y, id, cov)
 	BayesFactor::extractBF(BayesFactor::lmBF(stats::as.formula(paste("y ~", .bay_nuisance_rhs(d))), data = d,
-		whichRandom = if (!is.null(id)) "id" else NULL, rscaleCont = .bay_rcont(),
+		whichRandom = .bay_rand_names(d), rscaleCont = .bay_rcont(),
 		iterations = iterations, progress = FALSE), logbf = TRUE)$bf
 }
 .bay_nuisance_data <- function(y, id, cov) {
 	d <- data.frame(y = y)
-	if (!is.null(id)) d$id <- id
+	# id: the subject, or a data frame of random factors (subject, then subject x condition
+	# for replicated measures, D21), named id, id2, id3...
+	if (is.data.frame(id)) {
+		d$id <- id[[1L]]
+		for (j in seq_along(id)[-1L]) d[[paste0("id", j)]] <- id[[j]]
+	} else if (!is.null(id)) {
+		d$id <- id
+	}
 	if (!is.null(cov)) for (i in seq_along(cov)) d[[paste0("c", i)]] <- cov[[i]]
 	d
 }
 .bay_nuisance_rhs <- function(d) paste(setdiff(names(d), c("y", "h", "g")), collapse = " + ")
+# Random terms of a nuisance data frame (NULL when none).
+.bay_rand_names <- function(d) {
+	r <- grep("^id[0-9]*$", names(d), value = TRUE)
+	if (length(r)) r else NULL
+}
+# The subject factor itself.
+.bay_id1 <- function(id) if (is.data.frame(id)) id[[1L]] else id
 
 # Number of partitions of k items (Bell number), for the story.
 .bay_bell <- function(k) {
@@ -243,7 +257,7 @@
 	dd$g <- g
 	fo <- if (rm || !is.null(cov)) stats::as.formula(paste("y ~ g +", .bay_nuisance_rhs(dd))) else y ~ g
 	po <- .bay_with_seed(seed, BayesFactor::posterior(BayesFactor::lmBF(fo, data = dd, rscaleFixed = rscale,
-			rscaleCont = .bay_rcont(), whichRandom = if (rm) "id" else NULL, progress = FALSE),
+			rscaleCont = .bay_rcont(), whichRandom = .bay_rand_names(dd), progress = FALSE),
 		iterations = max(4000L, as.integer(draws)), progress = FALSE))
 	po <- as.matrix(po)
 	eff <- po[, paste0("g-", lev), drop = FALSE]
@@ -355,7 +369,7 @@
 	rhs <- .bay_nuisance_rhs(dd)
 	fo <- stats::as.formula(paste("y ~ g", if (nzchar(rhs)) paste("+", rhs) else ""))
 	po <- .bay_with_seed(seed, BayesFactor::posterior(BayesFactor::lmBF(fo, data = dd, rscaleFixed = rscale,
-			rscaleCont = .bay_rcont(), whichRandom = if (!is.null(id)) "id" else NULL, progress = FALSE),
+			rscaleCont = .bay_rcont(), whichRandom = .bay_rand_names(dd), progress = FALSE),
 		iterations = max(4000L, as.integer(draws)), progress = FALSE))
 	po <- as.matrix(po)
 	lev <- levels(cell)
@@ -416,7 +430,7 @@
 		if (!is.null(nuis)) ph$delta_unit <- if (!is.null(id)) "within" else "others"
 		# A factor between subjects: its gaps are not measured on the residual within subject,
 		# so no standardised gap is given.
-		if (!is.null(id) && all(tapply(as.integer(g), id, function(v) length(unique(v)) == 1L))) {
+		if (!is.null(id) && all(tapply(as.integer(g), .bay_id1(id), function(v) length(unique(v)) == 1L))) {
 			ph$pairs$delta <- ph$pairs$delta_low <- ph$pairs$delta_high <- NA_real_
 			ph$between <- TRUE
 			ph$obs_means <- as.numeric(tapply(y, g, mean))

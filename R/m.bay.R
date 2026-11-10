@@ -37,8 +37,9 @@
 #' and the size of the difference as dz with its credible interval. More levels, or factors
 #' between subjects too: [BayesFactor::lmBF()] with `whichRandom` (Rouder et al. 2012), each
 #' model against the subjects alone; one factor within subject gets the post-hoc on
-#' groupings. Normal law only; several measures of one subject in one condition (mixed
-#' models) are refused.
+#' groupings. Normal law only. Several measures of one subject in one condition (replicates,
+#' DECISIONS, D21): the subject and the subject crossed with the factors within subject are
+#' random, so that the replicates do not count as more subjects; random slopes are refused.
 #'
 #' Analysis of covariance (DECISIONS, D16), `y ~ g + x` or `y ~ g * x`: covariates centred on
 #' their mean, present in every model, each answer read against the covariates alone
@@ -236,11 +237,19 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 		.exit("A covariate alone (no factor) is a regression, not handled by m.bay() yet.",
 			"Une covariable seule (sans facteur) est une r\u00e9gression, pas encore trait\u00e9e par m.bay().")
 	}
-	if (input$plan %in% c("paired", "repeated") && length(input$covariates)) {
+	if (isTRUE(paired) && !identical(input$plan, "paired")) {
+		.exit("paired = TRUE, but the measures do not form pairs (several measures per subject and level, or a factor between subjects); remove paired = TRUE to treat them as repeated measures.",
+			"paired = TRUE, mais les mesures ne forment pas des paires (plusieurs mesures par sujet et niveau, ou un facteur entre sujets) ; retirer paired = TRUE pour les traiter en mesures r\u00e9p\u00e9t\u00e9es.")
+	}
+	if (identical(input$plan, "mixed") && length(input$slopes)) {
+		.exit("Random slopes are not handled by m.bay() (they need Stan, not available here).",
+			"Les pentes al\u00e9atoires ne sont pas trait\u00e9es par m.bay() (il faudrait Stan, indisponible ici).")
+	}
+	if (input$plan %in% c("paired", "repeated", "mixed") && length(input$covariates)) {
 		.exit("Covariates with subjects (paired ANCOVA) are not handled by m.bay() yet.",
 			"Des covariables avec des sujets (ANCOVA appari\u00e9e) ne sont pas encore trait\u00e9es par m.bay().")
 	}
-	if (!input$plan %in% c("oneway", "factorial", "paired", "repeated", "ancova")) {
+	if (!input$plan %in% c("oneway", "factorial", "paired", "repeated", "mixed", "ancova")) {
 		plan_en <- c(factorial = "several factors", ancova = "covariates", paired = "paired data",
 			repeated = "repeated measures", mixed = "mixed models", manova = "MANOVA")[input$plan]
 		plan_fr <- c(factorial = "plusieurs facteurs", ancova = "les covariables", paired = "les donn\u00e9es appari\u00e9es",
@@ -306,7 +315,7 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 			"La r\u00e9ponse semble discr\u00e8te : les lois normale et \u00e0 queues lourdes ne sont ici qu'une approximation.")
 	}
 
-	if (input$plan %in% c("factorial", "paired", "repeated", "ancova")) {
+	if (input$plan %in% c("factorial", "paired", "repeated", "mixed", "ancova")) {
 		return(.bay_m_factorial(input, call_expr, function() notes, note, prior_h1, rscale, laws, sensitivity,
 			draws, seed, detail, verbose, return, !("prior_h1" %in% names(call_expr)), !("laws" %in% names(call_expr)),
 			story, posthoc))
@@ -597,7 +606,7 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 		.bay_print_bilan_ord(x, detail = detail, narrated = told)
 	} else if (identical(x$plan, "counts")) {
 		.bay_print_bilan_counts(x, detail = detail, narrated = told)
-	} else if (x$plan %in% c("factorial", "paired", "repeated", "ancova")) {
+	} else if (x$plan %in% c("factorial", "paired", "repeated", "mixed", "ancova")) {
 		.bay_print_bilan_fact(x, detail = detail, narrated = told)
 	} else {
 		.bay_print_bilan(x, detail = detail, narrated = told)
@@ -609,8 +618,25 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 # (sys_bay_factorial.R). prior_h1 and laws do not apply and are said so when given.
 .bay_m_factorial <- function(input, call_expr, get_notes, note, prior_h1, rscale, laws, sensitivity,
                              draws, seed, detail, verbose, return, no_prior, no_laws, story = NULL, posthoc = TRUE) {
-	rm <- input$plan %in% c("paired", "repeated")
+	rm <- input$plan %in% c("paired", "repeated", "mixed")
 	paired <- identical(input$plan, "paired")
+	mixed <- identical(input$plan, "mixed")
+	if (mixed) {
+		# Replicated measures (D21): several measures of one subject in one condition. Random
+		# terms: the subject, and the subject crossed with each combination of factors within
+		# subject that is a term of the formula, so that the replicates are not counted as
+		# independent subjects (pseudo-replication). Rouder et al. (2012), section 7.
+		wi <- intersect(input$within, names(input$factors))
+		tk <- .bay_term_key(gsub("`", "", input$terms, fixed = TRUE))
+		rnd <- list(id = input$id)
+		for (k in tk) {
+			f <- strsplit(k, ":", fixed = TRUE)[[1]]
+			if (length(f) && all(f %in% wi)) {
+				rnd[[paste0("id:", k)]] <- interaction(c(list(input$id), as.list(input$factors[f])), drop = TRUE)
+			}
+		}
+		input$id_rand <- as.data.frame(rnd, check.names = FALSE)
+	}
 	n_dropped <- 0L
 	dropped_ids <- character(0)
 	if (paired) {
@@ -881,7 +907,7 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 	if (rm && single && isTRUE(posthoc)) {
 		g1 <- factors[[1L]]
 		ph <- if (paired) .bay_posthoc_paired(y, g1, input$id, rscale, draws, seed) else
-			.bay_posthoc_oneway(y, g1, rscale, prior_h1, draws, seed, id = input$id)
+			.bay_posthoc_oneway(y, g1, rscale, prior_h1, draws, seed, id = if (mixed) input$id_rand else input$id)
 		ph$caution <- FALSE
 		.bay_story_posthoc(story, ph, subjects = TRUE)
 	}
@@ -894,7 +920,7 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 			het_cells = exists("het_cells", inherits = FALSE) && isTRUE(het_cells)))
 		und <- .bay_term_key(fa$effects$term)[grepl(":", fa$effects$term, fixed = TRUE) & fa$effects$p_h1 < 0.5 &
 			(ta$open | fa$effects$p_h1 > 0.25)]
-		ph <- .bay_posthoc_factorial(y, factors, fa$effects, rscale, 0.5, draws, seed, id = if (rm) input$id else NULL, cov = covc,
+		ph <- .bay_posthoc_factorial(y, factors, fa$effects, rscale, 0.5, draws, seed, id = if (mixed) input$id_rand else if (rm) input$id else NULL, cov = covc,
 			undecided = und)
 		ph$caution <- isTRUE(fa$het_used) && isTRUE(fa$p_het >= 0.75)
 		ph$open_terms <- if (!is.null(fa$sensitivity)) fa$effects$term[fa$sensitivity$verdict_terms == "changes"] else character(0)
@@ -938,7 +964,7 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 			data.frame(cell = levels(cl), n = as.integer(table(cl)), mean = as.numeric(tapply(input$response, cl, mean)), stringsAsFactors = FALSE)
 		}), sd_within = fa$sd_within, sd_is_within = fa$sd_is_within, balanced = fa$balanced,
 		prob_effect = p_any,
-		method = if (anc) "Analysis of covariance, normal law, covariates centred (BayesFactor)" else if (paired) "Paired data, Bayesian paired t test (BayesFactor)" else if (rm) "Repeated measures, normal law, random subject effect (BayesFactor)" else "Several factors, normal law with a common variance (BayesFactor)", plan = input$plan,
+		method = if (anc) "Analysis of covariance, normal law, covariates centred (BayesFactor)" else if (paired) "Paired data, Bayesian paired t test (BayesFactor)" else if (mixed) "Replicated repeated measures, normal law, random subject and subject x condition effects (BayesFactor)" else if (rm) "Repeated measures, normal law, random subject effect (BayesFactor)" else "Several factors, normal law with a common variance (BayesFactor)", plan = input$plan,
 		label = input$label, n = length(input$response), notes = get_notes(), call = call_expr)
 	class(out) <- "mbay"
 	out$story <- .bay_story_lines(story)

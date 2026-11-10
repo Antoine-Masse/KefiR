@@ -91,12 +91,21 @@
 	# every model, "no difference" included; each Bayes factor is read against the model with
 	# the subjects only. Two levels of one factor and complete pairs: ttestBF on the
 	# differences, exact (no sampling), r on the standardised difference.
-	paired <- !is.null(id) && length(factors) == 1L && nlevels(factors[[1L]]) == 2L
+	paired <- !is.null(id) && !is.data.frame(id) && length(factors) == 1L && nlevels(factors[[1L]]) == 2L
 	safe <- paste0("f", seq_along(factors))
 	names(safe) <- names(factors)
 	dat <- data.frame(.y = y, factors, check.names = FALSE)
 	names(dat) <- c(".y", safe)
-	if (!is.null(id)) dat$.id <- id
+	# Random terms: the subject, and with replicated measures subject x condition (D21).
+	rand <- NULL
+	if (is.data.frame(id)) {
+		rand <- paste0(".id", c("", seq_along(id)[-1L]))
+		for (j in seq_along(id)) dat[[rand[j]]] <- id[[j]]
+	} else if (!is.null(id)) {
+		rand <- ".id"
+		dat$.id <- id
+	}
+	rand_txt <- paste(rand, collapse = " + ")
 	has_cov <- !is.null(cov) && ncol(cov) > 0L
 	cov_txt <- ""
 	if (has_cov) {
@@ -119,7 +128,7 @@
 				lb0 <- BayesFactor::extractBF(BayesFactor::lmBF(stats::as.formula(paste(".y ~", cov_txt)), data = dat,
 					rscaleCont = rconts[ir], iterations = iterations, progress = FALSE), logbf = TRUE)$bf
 			} else if (!is.null(id) && !paired) {
-				lb0 <- BayesFactor::extractBF(BayesFactor::lmBF(.y ~ .id, data = dat, whichRandom = ".id",
+				lb0 <- BayesFactor::extractBF(BayesFactor::lmBF(stats::as.formula(paste(".y ~", rand_txt)), data = dat, whichRandom = rand,
 					iterations = iterations, progress = FALSE), logbf = TRUE)$bf
 			}
 			for (j in seq_len(n_mod)[-1L]) {
@@ -138,9 +147,9 @@
 					lb[j, ir] <- .bay_bf_oneway_zs(y, factors[[sp$keys[m]]], rs[ir])
 					next
 				}
-				fo <- stats::as.formula(paste(".y ~", paste(c(if (has_cov) cov_txt, term_safe[m]), collapse = " + "), if (!is.null(id)) "+ .id" else ""))
+				fo <- stats::as.formula(paste(".y ~", paste(c(if (has_cov) cov_txt, term_safe[m]), collapse = " + "), if (!is.null(id)) paste("+", rand_txt) else ""))
 				x <- tryCatch(suppressMessages(BayesFactor::extractBF(BayesFactor::lmBF(fo, data = dat,
-					whichRandom = if (!is.null(id)) ".id" else NULL,
+					whichRandom = rand,
 					rscaleFixed = rs[ir], rscaleCont = rconts[ir], iterations = iterations, progress = FALSE), logbf = TRUE)),
 					error = function(e) list(bf = NA_real_, error = NA_real_))
 				lb[j, ir] <- x$bf - lb0
@@ -224,7 +233,8 @@
 .bay_factorial <- function(input, rscale, sensitivity, draws, seed, note, prior_h1 = 0.5, het = FALSE) {
 	y <- input$response
 	id <- input$id
-	paired <- !is.null(id) && length(input$factors) == 1L && nlevels(input$factors[[1L]]) == 2L
+	paired <- !is.null(id) && is.null(input$id_rand) && length(input$factors) == 1L && nlevels(input$factors[[1L]]) == 2L
+	idr <- if (!is.null(input$id_rand)) input$id_rand else id
 	factors <- input$factors
 	# Non-syntactic names come back from the formula with backticks (RELECTURE 2026-11-09, 1).
 	cov <- input$covariates
@@ -264,7 +274,7 @@
 	# Central r first, with the seed of the call; r/2 and 2r with their own seeds.
 	rs <- if (isTRUE(sensitivity)) c(rscale, rscale / 2, rscale * 2) else rscale
 	iterations <- max(10000L, as.integer(draws))
-	bf <- .bay_fact_logbf(y, factors, sp, rs, iterations, seed, seeds = seed + c(0L, 1L, 2L)[seq_along(rs)], id = id,
+	bf <- .bay_fact_logbf(y, factors, sp, rs, iterations, seed, seeds = seed + c(0L, 1L, 2L)[seq_along(rs)], id = idr,
 		cov = cov, rconts = .bay_rcont() * rs / rscale)
 	# One term alone: its prior is prior_h1, as with one factor between groups.
 	single <- length(sp$keys) == 1L
@@ -300,7 +310,7 @@
 	multi <- lengths(sp$models) >= 2L
 	spread <- 0
 	if (any(multi) || (!is.null(id) && !paired) || !is.null(cov)) {
-		bf2 <- .bay_fact_logbf(y, factors, sp, rscale, iterations, seed, seeds = seed + 7919L, id = id,
+		bf2 <- .bay_fact_logbf(y, factors, sp, rscale, iterations, seed, seeds = seed + 7919L, id = idr,
 			cov = cov, rconts = .bay_rcont())
 		if (het_used) bf2$log_bf <- .bay_fl_combine(bf2$log_bf, fl$eq0, fl$l_het[, 1L, drop = FALSE])$log_bf
 		e2 <- .bay_fact_terms(sp, bf2$log_bf[, 1L], lp)
@@ -505,7 +515,7 @@
 			emit("decide", "Support capped at weak: unequal variances per cell, which the common-variance model does not take into account.",
 				"Soutien plafonn\u00e9 \u00e0 faible : variances in\u00e9gales par case, que le mod\u00e8le \u00e0 variance commune ne prend pas en compte.")
 		}
-		rm_ <- obj$plan %in% c("paired", "repeated")
+		rm_ <- obj$plan %in% c("paired", "repeated", "mixed")
 		sd_en <- if (anc) "Residual standard deviation (covariates accounted for): " else if (rm_) "Residual standard deviation within subject: " else if (isTRUE(obj$sd_is_within)) "Within-cell standard deviation: " else "Residual standard deviation: "
 		sd_fr <- if (anc) "\u00c9cart-type r\u00e9siduel (covariables prises en compte) : " else if (rm_) "\u00c9cart-type r\u00e9siduel au sein des sujets : " else if (isTRUE(obj$sd_is_within)) "\u00c9cart-type au sein des cases : " else "\u00c9cart-type r\u00e9siduel : "
 		emit("fact", paste0(sd_en, .bay_fx(obj$sd_within, dg + 1L, "."), if (isTRUE(obj$het_used)) "; common variance or one per cell, averaged." else "; normal law with a common variance only."),

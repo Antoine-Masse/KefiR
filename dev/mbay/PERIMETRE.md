@@ -339,7 +339,7 @@ Légende :
 | Apparié, 2 niveaux | Couvert | `ttestBF(paired)`, D15 | Normale seule |
 | Mesures répétées, 1 facteur intra | Couvert | `lmBF(whichRandom)`, D15 | Symétrie composée supposée, non testée |
 | Plan en tranches (inter × intra) | Couvert | `lmBF(whichRandom)`, D15 | Post-hoc D20 ; pas d'écart standardisé pour le facteur inter |
-| Modèle mixte avec répliques par sujet et condition | Refusé | — | À faire : `lmBF` avec sujet et sujet × condition |
+| Modèle mixte avec répliques par sujet et condition | Couvert | `lmBF`, sujet et sujet × condition aléatoires, D21 | Puissance prudente ; pentes aléatoires refusées |
 | Pentes aléatoires | Refusé | — | Stan (rstanarm) seulement |
 | ANCOVA appariée, MANCOVA, MANOVA répétée | Refusé | — | Non couverts par `m.test()` non plus |
 | MANOVA, 1 ou plusieurs facteurs | Refusé | — | Formule Normale-Inverse-Wishart prévue (D1) |

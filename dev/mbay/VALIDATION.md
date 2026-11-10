@@ -844,3 +844,17 @@ Vérifié sur des cas construits (`test-bay-fact-laws.R`, `test-bay-repeated.R`,
 - ANCOVA à deux facteurs : les niveaux de A sont comparés à B et x égaux.
 
 Temps : 6 à 9 s pour un appel complet avec sensibilité (3 × 2, 2 × 2, split-plot 16 sujets × 3 temps, ANCOVA 3 × 2 à N = 60). **Non fait** : calibration par simulation du post-hoc à plusieurs facteurs (fausses différences de paires sous H0).
+
+## 18. Mesures répétées avec répliques (D21, `agent_67`), 10 novembre
+
+10 sujets × 3 conditions × 4 répliques. Écarts-types : sujet 1, sujet × condition 0,7, résiduel 1. N = 200 jeux par scénario. Résultats : `scripts/resultats/agent_67_*.txt`.
+
+| Scénario | m.bay P > 0,75 | m.bay P > 0,95 | Sujet seul (répliques indépendantes) P > 0,95 | ANOVA RM sur les moyennes, p < 0,05 |
+|---|---:|---:|---:|---:|
+| H0 | 1,0 % | 0 % | 7,0 % | 6,0 % |
+| Effet (0 ; 0,5 ; 0,6) | 17,0 % | 4,0 % | 33,0 % | 26,5 % |
+
+**Lecture.**
+- Le terme sujet × condition est nécessaire : sans lui, 7 % de faux « oui » forts sous H0.
+- Avec lui, aucun faux « oui » fort, au prix d'une puissance prudente, comme sur les autres voies.
+- Temps par appel (sans sensibilité, N = 120) : médiane 4,3 s, maximum 6,1 s ; environ 5 s avec la sensibilité.

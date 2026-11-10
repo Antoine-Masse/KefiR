@@ -176,8 +176,9 @@ t test on the differences, \code{\link[BayesFactor:ttestBF]{BayesFactor::ttestBF
 and the size of the difference as dz with its credible interval. More levels, or factors
 between subjects too: \code{\link[BayesFactor:lmBF]{BayesFactor::lmBF()}} with \code{whichRandom} (Rouder et al. 2012), each
 model against the subjects alone; one factor within subject gets the post-hoc on
-groupings. Normal law only; several measures of one subject in one condition (mixed
-models) are refused.
+groupings. Normal law only. Several measures of one subject in one condition (replicates,
+DECISIONS, D21): the subject and the subject crossed with the factors within subject are
+random, so that the replicates do not count as more subjects; random slopes are refused.
 
 Analysis of covariance (DECISIONS, D16), \code{y ~ g + x} or \code{y ~ g * x}: covariates centred on
 their mean, present in every model, each answer read against the covariates alone

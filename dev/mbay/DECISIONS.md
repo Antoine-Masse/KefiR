@@ -561,3 +561,17 @@ Demandé par la session parente dans l'ordre du PERIMETRE, avec trois points de 
 2. Une interaction non tranchée (ou dont la probabilité est entre 25 et 50 %) sur un facteur comparé comme effet principal donne une note, gardée parmi les deux notes de l'étape. Les écarts de ce facteur à chaque niveau de l'autre sont tirés du modèle des cases (`lmBF`, `posterior`, `hdi`) et sont dans `detail = TRUE` et `$posthoc$by`.
 3. Le repli d'un élément numéroté (« 1. … ») se fait sous son texte, après le numéro.
 4. Le titre de l'étape 6 donne la réponse : « A : a2 > a1 (2,72) », ou le regroupement en tête au-delà de deux niveaux.
+
+## D21. Mesures répétées avec répliques (modèle mixte) : DÉCIDÉ ET FAIT (10 novembre)
+
+**Demande** (PERIMETRE §7, priorité suivante). Plusieurs mesures d'un même sujet dans une même condition. C'est courant en TP, et la réponse était jusqu'ici un refus.
+
+**Choix.**
+- Les effets aléatoires sont le sujet, puis le sujet croisé avec chaque combinaison de facteurs intra-sujet présente dans la formule (sujet × temps ; avec deux facteurs intra, sujet × A, sujet × B et sujet × A × B). Ils figurent dans chaque modèle, « aucune différence » compris. Chaque facteur de Bayes se lit contre le modèle des seuls effets aléatoires.
+- Le calcul passe par `lmBF` avec `whichRandom` (Rouder et al. 2012, effets aléatoires d'échelle 1). Les termes sujet × condition y entrent comme facteurs aléatoires à part entière, ce qui équivaut au terme `cond:id` de BayesFactor. Contrôle : `test-bay-mixed.R`, contre `lmBF(y ~ cond + id + cond:id)` à 0,2 log près.
+- Le post-hoc (un facteur, ou D20 à plusieurs) porte les mêmes effets aléatoires en nuisance.
+- **Refusés.** Les pentes aléatoires (il faudrait Stan, qui ne compile pas ici) et les covariables avec des sujets.
+
+**Pourquoi le terme sujet × condition.** Sans lui, les répliques comptent comme autant de sujets indépendants (pseudo-réplication). Dans `agent_67`, le modèle à sujet seul dit « oui » à P > 0,95 dans 7 % des jeux sous H0, et m.bay dans 0 % (VALIDATION §18).
+
+**Limite.** La puissance est prudente : P > 0,95 dans 4 % des jeux pour un effet où l'ANOVA à mesures répétées sur les moyennes donne p < 0,05 dans 26,5 %. C'est le même écart que sur les autres voies entre P > 0,95 et p < 0,05.

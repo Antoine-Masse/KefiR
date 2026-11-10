@@ -350,7 +350,7 @@
 				paste(cv, collapse = ", "), " is accounted for?", if (length(slopes)) paste0(" And do the slopes differ (", paste(slopes, collapse = ", "), ")?") else ""),
 			paste0("Question : ", input$response_name, " diff\u00e8re-t-il selon ", paste(nm, collapse = ", "), " une fois ",
 				paste(cv, collapse = ", "), " pris en compte ?", if (length(slopes)) paste0(" Et les pentes diff\u00e8rent-elles (", paste(slopes, collapse = ", "), ") ?") else ""), "decide")
-	} else if (input$plan %in% c("paired", "repeated")) {
+	} else if (input$plan %in% c("paired", "repeated", "mixed")) {
 		ns <- nlevels(input$id)
 		lv <- vapply(fac, nlevels, integer(1))
 		wi <- intersect(input$within, names(fac)); bw <- setdiff(names(fac), wi)
@@ -360,8 +360,9 @@
 			.bay_tell(st, paste0("Plan recognised: paired data, ", nm[1L], " (", paste(levels(fac[[1L]]), collapse = ", "), ") measured on the same ", ns, " subjects; N = ", N, "."),
 				paste0("Plan reconnu : donn\u00e9es appari\u00e9es, ", nm[1L], " (", paste(levels(fac[[1L]]), collapse = ", "), ") mesur\u00e9 sur les m\u00eames ", ns, " sujets ; N = ", N, "."), "step")
 		} else {
-			.bay_tell(st, paste0("Plan recognised: repeated measures on ", ns, " subjects, ", desc_en, "; N = ", N, "."),
-				paste0("Plan reconnu : mesures r\u00e9p\u00e9t\u00e9es sur ", ns, " sujets, ", desc_fr, " ; N = ", N, "."), "step")
+			mx <- identical(input$plan, "mixed")
+			.bay_tell(st, paste0("Plan recognised: repeated measures", if (mx) " with replicates" else "", " on ", ns, " subjects, ", desc_en, "; N = ", N, "."),
+				paste0("Plan reconnu : mesures r\u00e9p\u00e9t\u00e9es", if (mx) " avec r\u00e9pliques" else "", " sur ", ns, " sujets, ", desc_fr, " ; N = ", N, "."), "step")
 		}
 		terms <- gsub("`", "", input$terms, fixed = TRUE)
 		if (length(terms) == 1L) {
@@ -692,6 +693,13 @@
 	} else {
 		.bay_tell(st, "Repeated measures: each subject keeps its own level.",
 			"Mesures r\u00e9p\u00e9t\u00e9es : chaque sujet garde son niveau propre.")
+		if (identical(input$plan, "mixed")) {
+			rep_n <- table(interaction(c(list(id), as.list(fac)), drop = TRUE))
+			.bay_tell(st, paste0("Replicates: ", min(rep_n), if (min(rep_n) == max(rep_n)) "" else paste0(" to ", max(rep_n)), " measures per subject and condition; each subject also keeps its own level in each condition, so the replicates do not count as more subjects."),
+				paste0("R\u00e9pliques : ", min(rep_n), if (min(rep_n) == max(rep_n)) "" else paste0(" \u00e0 ", max(rep_n)), " mesures par sujet et condition ; chaque sujet garde aussi son niveau propre dans chaque condition, donc les r\u00e9pliques ne comptent pas comme des sujets en plus."), "decide")
+			.bay_tell(st, "Random effects: subject, and subject x each combination of factors within subject in the formula (lmBF, whichRandom; Rouder et al. 2012). No random slopes.",
+				"Effets al\u00e9atoires : sujet, et sujet x chaque combinaison de facteurs intra-sujet de la formule (lmBF, whichRandom ; Rouder et al. 2012). Pas de pentes al\u00e9atoires.", "detail")
+		}
 		.bay_tell(st, "conditions assumed equally correlated within a subject (not tested; m.test() checks sphericity).",
 			"conditions suppos\u00e9es \u00e9galement corr\u00e9l\u00e9es au sein d'un sujet (non test\u00e9 ; m.test() contr\u00f4le la sph\u00e9ricit\u00e9).", "note")
 		.bay_tell(st, "Random subject effect: compound symmetry assumed, as in the uncorrected repeated-measures ANOVA (Mauchly's test in m.test()).",

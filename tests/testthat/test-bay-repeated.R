@@ -91,8 +91,10 @@ test_that("plan en tranches (sujets dans des groupes) : moteur commun, termes du
 	expect_identical(r$posthoc$method, "factorial")
 })
 
-test_that("mesures repetees : mixte avec repliques refuse clairement", {
+test_that("mesures repetees avec repliques : modele mixte (D21), plus de refus", {
 	d <- .rm_data(n = 8, k = 2, mu = c(0, 1), seed = 10)
-	d <- rbind(d, d)
-	expect_error(m.bay(y ~ temps | id, data = d, verbose = FALSE), "mixte|mixed")
+	d2 <- d
+	d2$y <- d2$y + stats::rnorm(nrow(d2), 0, 0.3)
+	r <- m.bay(y ~ temps | id, data = rbind(d, d2), verbose = FALSE, draws = 1000, sensitivity = FALSE)
+	expect_identical(r$plan, "mixed")
 })
