@@ -93,6 +93,10 @@
 #'   separate them, and each pair gets its difference and standardised difference with a 95 %
 #'   credible interval ([BayesFactor::posterior()], [bayestestR::hdi()]). Normal law with a
 #'   common variance; the story says so when the noise looks otherwise.
+#' @param response `"auto"` (default): a numeric response is continuous, a factor, text,
+#'   TRUE/FALSE or two values is categorical. `"counts"`: non-negative integer counts with one
+#'   factor, Poisson and negative binomial compared (overdispersion), Bayes factors by the
+#'   unit-information approximation (BIC), rate ratios (DECISIONS, D17).
 #' @param detail If `TRUE`, the bilan also shows the shapes of the noise, the priors that
 #'   are varied and how to read the numbers. Also `print(result, detail = TRUE)`.
 #'
@@ -136,7 +140,9 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
                   maxcat = 50, silent = NULL, code = FALSE, debug = FALSE,
                   prior_h1 = 1/2, rscale = 1/2, u = 1.5,
                   laws = c("normal_eq", "normal_het", "t_eq", "t_het"),
-                  sensitivity = TRUE, draws = 4000L, seed = 1L, detail = FALSE, posthoc = TRUE) {
+                  sensitivity = TRUE, draws = 4000L, seed = 1L, detail = FALSE, posthoc = TRUE,
+                  response = c("auto", "counts")) {
+	response <- match.arg(response)
 	call_expr <- match.call()
 	if (isFALSE(return) && !("verbose" %in% names(call_expr))) verbose <- FALSE
 
@@ -202,6 +208,7 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 			paste0(input$n_removed, " observation(s) avec valeurs manquantes retir\u00e9e(s)."))
 	}
 
+	input$counts <- identical(response, "counts")
 	# Step 1: the plan recognised, or refused and why.
 	.bay_story_plan(story, input)
 
@@ -239,6 +246,18 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	}
 	if (any(is.infinite(y))) {
 		.exit("y contains infinite values.", "y contient des valeurs infinies.")
+	}
+	if (isTRUE(input$counts)) {
+		if (!identical(input$plan, "oneway")) {
+			.exit("Counts with several factors, covariates or subjects: not handled by m.bay() yet (one factor only).",
+				"Comptages avec plusieurs facteurs, des covariables ou des sujets : pas encore trait\u00e9s par m.bay() (un facteur seulement).")
+		}
+		if (any(y < 0) || any(abs(y - round(y)) > 1e-8)) {
+			.exit("response = \"counts\" needs non-negative whole numbers.", "response = \"counts\" demande des nombres entiers positifs ou nuls.")
+		}
+		if (all(y == y[1L])) .exit("All the counts are equal: the probabilities are undetermined.", "Tous les comptages sont \u00e9gaux : les probabilit\u00e9s sont ind\u00e9termin\u00e9es.")
+		return(.bay_m_counts(input, input$factors[[1L]], round(y), call_expr, function() notes, note, prior_h1, sensitivity,
+			detail, verbose, return, story, posthoc))
 	}
 	y_values <- length(unique(y))
 	if (isTRUE(diff(range(y)) <= 8 * .Machine$double.eps * max(abs(y)))) {
@@ -541,6 +560,8 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 	if (told) .bay_story_replay(x$story)
 	if (identical(x$plan, "contingency")) {
 		.bay_print_bilan_cont(x, detail = detail, narrated = told)
+	} else if (identical(x$plan, "counts")) {
+		.bay_print_bilan_counts(x, detail = detail, narrated = told)
 	} else if (x$plan %in% c("factorial", "paired", "repeated", "ancova")) {
 		.bay_print_bilan_fact(x, detail = detail, narrated = told)
 	} else {

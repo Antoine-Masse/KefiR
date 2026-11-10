@@ -1,5 +1,18 @@
 # Journal de m.bay
 
+## Séance 11 : 10 novembre 2026, comptages (D17, voie 2)
+
+**Fait.**
+- `response = "counts"` : Poisson et binomiale négative comparées, approximation BIC, réponse moyennée sur les deux lois.
+- La surdispersion est dite en changement de stratégie.
+- Post-hoc par regroupements, avec les rapports des moyennes.
+- Même mise en forme que les autres plans.
+- Formulation de l'étape 6 corrigée : « ramené vers 0 par l'a priori, surtout quand les groupes sont petits ».
+
+**Vérifié.** `test-bay-counts.R` (5 tests) ; calibration `agent_60` (VALIDATION §13). Sous H0 surdispersé, Poisson seul dépasse 0,95 dans 33 % des jeux, m.bay dans 0 à 0,3 %.
+
+**Reste.** D17, voies 3 et 4 : l'ordinal et les rangs.
+
 ## Séance 10 : 10 novembre 2026, mise en forme commune (D18)
 
 **Cadre.** Consigne d'Antoine relayée par la session parente : des sorties « agréables à lire étape par étape comme m.test() ». J'ai appliqué les 12 recommandations de l'auditeur de lisibilité, avec la limite de 80 colonnes demandée par Antoine.

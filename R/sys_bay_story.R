@@ -295,6 +295,11 @@
 				paste0("R\u00e9ponse cat\u00e9gorielle, ", length(cats), " modalit\u00e9s : ", paste(cats, collapse = ", "), "."))
 			.bay_tell(st, paste0("One question: do the proportions differ according to ", nm[1L], "? (counterpart of the chi-squared test)"),
 				paste0("Une question : les proportions diff\u00e8rent-elles selon ", nm[1L], " ? (pendant du test du khi-deux)"), "decide")
+		} else if (isTRUE(input$counts)) {
+			.bay_tell(st, paste0("One question: do the counts of ", input$response_name, " differ according to ", nm[1L], "?"),
+				paste0("Une question : les comptages de ", input$response_name, " diff\u00e8rent-ils selon ", nm[1L], " ?"), "decide")
+			.bay_tell(st, "counts: the Poisson and negative binomial laws are compared, not chosen in advance.",
+				"comptages : les lois de Poisson et binomiale n\u00e9gative sont compar\u00e9es, non choisies d'avance.", "note")
 		} else {
 			.bay_tell(st, paste0("One question: does ", input$response_name, " differ according to ", nm[1L], "?"),
 				paste0("Une question : ", input$response_name, " diff\u00e8re-t-il selon ", nm[1L], " ?"), "decide")
@@ -408,7 +413,11 @@
 .bay_story_posthoc <- function(st, ph, caution = FALSE, subjects = FALSE) {
 	if (is.null(st) || is.null(ph)) return(invisible(NULL))
 	cont <- isTRUE(ph$delta_unit %in% c("logor", "tvd"))
-	if (cont) {
+	ratio <- identical(ph$delta_unit, "ratio")
+	if (ratio) {
+		.bay_tell(st, "Which groups differ, and by how much", "Quels groupes diff\u00e8rent, et de combien", "step",
+			fun = c("glm(), glm.nb() {stats, MASS}", "glm(), glm.nb() {stats, MASS}"))
+	} else if (cont) {
 		.bay_tell(st, "Which groups differ, and by how much", "Quels groupes diff\u00e8rent, et de combien", "step",
 			fun = c("Dirichlet-multinomial {KefiR}, hdi() {bayestestR}", "Dirichlet-multinomiale {KefiR}, hdi() {bayestestR}"))
 	} else if (identical(ph$method, "paired")) {
@@ -425,6 +434,10 @@
 	dg <- if (!is.null(ph$dg)) ph$dg else .bay_dg(c(pr$diff_low, pr$diff_high))
 	sep <- function(dc) if (dc == ",") " ; " else "; "
 	gap <- function(i, dc) {
+		if (ratio) {
+			f <- function(v) gsub(".", dc, formatC(v, format = "f", digits = 2), fixed = TRUE)
+			return(paste0(f(pr$diff[i]), " [", f(pr$diff_low[i]), sep(dc), f(pr$diff_high[i]), "]"))
+		}
 		if (cont) {
 			f <- function(v) gsub(".", dc, formatC(100 * v, format = "f", digits = 1), fixed = TRUE)
 			return(paste0(f(pr$diff[i]), " points [", f(pr$diff_low[i]), sep(dc), f(pr$diff_high[i]), "]"))
@@ -433,7 +446,8 @@
 		paste0(f(pr$diff[i]), " [", f(pr$diff_low[i]), sep(dc), f(pr$diff_high[i]), "]")
 	}
 	unit <- .bay_delta_unit(ph)
-	dl <- function(i, dc) if (is.na(pr$delta[i]) || cont) "" else paste0(if (dc == ",") ", soit " else ", i.e. ",
+	op <- if (ratio) "/" else " - "
+	dl <- function(i, dc) if (is.na(pr$delta[i]) || cont || ratio) "" else paste0(if (dc == ",") ", soit " else ", i.e. ",
 		gsub(".", dc, formatC(pr$delta[i], format = "f", digits = 2), fixed = TRUE), " ", if (dc == ",") unit$fr else unit$en)
 	big <- function(n) formatC(n, format = "d", big.mark = " ")
 	if (ph$k > 2L && identical(ph$method, "gibbs")) {
@@ -456,25 +470,28 @@
 				paste0("Si une diff\u00e9rence existe, regroupements en t\u00eate : ", paste0(pt$partition, " (", vapply(pc, .bay_pct, character(1), dec = ","), ")", collapse = " ; "), "."))
 		}
 	} else {
-		.bay_step_result(st, paste0(pr$group2[1L], " - ", pr$group1[1L], " = ", gap(1L, ".")), paste0(pr$group2[1L], " - ", pr$group1[1L], " = ", gap(1L, ",")))
+		.bay_step_result(st, paste0(pr$group2[1L], op, pr$group1[1L], " = ", gap(1L, ".")), paste0(pr$group2[1L], op, pr$group1[1L], " = ", gap(1L, ",")))
 	}
 	shown <- .bay_posthoc_shown(pr)
 	for (i in shown) {
 		if (ph$k > 2L) {
 			.bay_tell(st, paste0(pr$group1[i], "/", pr$group2[i], ": different at ", .bay_pct(pr$p_differ[i], "."), "; ",
-					pr$group2[i], " - ", pr$group1[i], " = ", gap(i, "."), dl(i, "."), "."),
+					pr$group2[i], op, pr$group1[i], " = ", gap(i, "."), dl(i, "."), "."),
 				paste0(pr$group1[i], "/", pr$group2[i], " : diff\u00e9rents \u00e0 ", .bay_pct(pr$p_differ[i], ","), " ; ",
-					pr$group2[i], " - ", pr$group1[i], " = ", gap(i, ","), dl(i, ","), "."))
+					pr$group2[i], op, pr$group1[i], " = ", gap(i, ","), dl(i, ","), "."))
 		} else {
-			.bay_tell(st, paste0("Estimated gap ", pr$group2[i], " - ", pr$group1[i], " = ", gap(i, "."), dl(i, "."), "."),
-				paste0("\u00c9cart estim\u00e9 ", pr$group2[i], " - ", pr$group1[i], " = ", gap(i, ","), dl(i, ","), "."))
+			.bay_tell(st, paste0(if (ratio) "Rate ratio " else "Estimated gap ", pr$group2[i], op, pr$group1[i], " = ", gap(i, "."), dl(i, "."), "."),
+				paste0(if (ratio) "Rapport des moyennes " else "\u00c9cart estim\u00e9 ", pr$group2[i], op, pr$group1[i], " = ", gap(i, ","), dl(i, ","), "."))
 		}
 	}
 	if (length(shown) < nrow(pr)) {
 		.bay_tell(st, paste0("The other ", nrow(pr) - length(shown), " pairs lean towards alike; all pairs in $posthoc$pairs."),
 			paste0("Les ", nrow(pr) - length(shown), " autres paires penchent vers semblables ; toutes dans $posthoc$pairs."), "note")
 	}
-	if (cont) {
+	if (ratio) {
+		.bay_tell(st, "ratio of the mean counts; [ ; ] = 95 % interval (Laplace approximation); 1 = no difference.",
+			"rapport des comptages moyens ; [ ; ] = intervalle \u00e0 95 % (approximation de Laplace) ; 1 = pas de diff\u00e9rence.", "note")
+	} else if (cont) {
 		.bay_tell(st, paste0(if (ph$delta_unit == "logor") paste0("gap of the share of ", ph$category) else "total gap of the proportions", ", in points; [ ; ] = 95 % credible interval."),
 			paste0(if (ph$delta_unit == "logor") paste0("\u00e9cart de la part de ", ph$category) else "\u00e9cart total des proportions", ", en points ; [ ; ] = intervalle de cr\u00e9dibilit\u00e9 \u00e0 95 %."), "note")
 		.bay_tell(st, "Gaps: posterior medians under a uniform Dirichlet prior; the log odds ratio is in $posthoc$pairs$delta.",
@@ -482,8 +499,8 @@
 	} else {
 		.bay_tell(st, "[ ; ] = 95 % credible interval (95 % chance that the gap lies there).",
 			"[ ; ] = intervalle de cr\u00e9dibilit\u00e9 \u00e0 95 % (95 % de chances d'y trouver l'\u00e9cart).", "note")
-		.bay_tell(st, "the estimated gap is a little smaller than the observed one, by caution with small samples.",
-			"l'\u00e9cart estim\u00e9 est un peu plus petit que l'\u00e9cart observ\u00e9, par prudence avec les petits \u00e9chantillons.", "note")
+		.bay_tell(st, "the estimated gap is pulled towards 0 by the prior, above all when the groups are small.",
+			"l'\u00e9cart estim\u00e9 est ramen\u00e9 vers 0 par l'a priori, surtout quand les groupes sont petits.", "note")
 		.bay_tell(st, "Estimated gap: posterior median of the model \"all groups may differ\", pulled slightly towards zero by the prior, hence a little smaller than the observed gap.",
 			"\u00c9cart estim\u00e9 : m\u00e9diane a posteriori du mod\u00e8le \u00ab tous les groupes peuvent diff\u00e9rer \u00bb, l\u00e9g\u00e8rement ramen\u00e9e vers z\u00e9ro par l'a priori, donc un peu plus petite que l'\u00e9cart observ\u00e9.", "detail")
 	}

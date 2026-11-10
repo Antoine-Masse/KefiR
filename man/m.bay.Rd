@@ -35,7 +35,8 @@ m.bay(
   draws = 4000L,
   seed = 1L,
   detail = FALSE,
-  posthoc = TRUE
+  posthoc = TRUE,
+  response = c("auto", "counts")
 )
 }
 \arguments{
@@ -105,6 +106,11 @@ grouping of the groups into blocks of equal means is compared through \code{\lin
 separate them, and each pair gets its difference and standardised difference with a 95 \%
 credible interval (\code{\link[BayesFactor:posterior]{BayesFactor::posterior()}}, \code{\link[bayestestR:hdi]{bayestestR::hdi()}}). Normal law with a
 common variance; the story says so when the noise looks otherwise.}
+
+\item{response}{\code{"auto"} (default): a numeric response is continuous, a factor, text,
+TRUE/FALSE or two values is categorical. \code{"counts"}: non-negative integer counts with one
+factor, Poisson and negative binomial compared (overdispersion), Bayes factors by the
+unit-information approximation (BIC), rate ratios (DECISIONS, D17).}
 }
 \value{
 With \code{return = TRUE}, a list of class \code{mbay}:

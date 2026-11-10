@@ -691,3 +691,31 @@ Comparaison avec le khi-deux, en p simulé quand un effectif attendu est inféri
 - Les intervalles couvrent la vraie valeur dans 95 à 97 % des cas.
 - À n = 10, le khi-deux simulé ne rejette presque jamais. m.bay dépasse 0,5 dans 17 % des jeux, mais jamais 0,95, et le bilan dit alors « non tranché ».
 
+## 13. Comptages à un facteur (D17, voie 2), 10 novembre
+
+### Concordance
+
+`test-bay-counts.R` :
+- **Probabilités.** P(différence) et P(binomiale négative) égalent le calcul à la main sur les −BIC/2 des quatre modèles, à 1e-8.
+- **Rapports des moyennes.** Ils égalent exp(coef) de `glm.nb` à 1e-6.
+- **Contre-vérification BAS.** Sur 3 jeux de Poisson, le signe du log-BF est le même qu'avec `bas.glm` (Poisson, a priori robuste).
+- **Surdispersion.** Elle est trouvée (binomiale négative > 90 %) et dite en changement de stratégie.
+- **Refus.** Ils sont vérifiés, et les lignes tiennent dans 80 colonnes.
+
+### Calibration (`agent_60`, N = 300 jeux par scénario, 3 groupes)
+
+Résultats : `scripts/resultats/agent_60.txt`.
+
+| Scénario | m.bay P>0,5 / P>0,75 / P>0,95 | Poisson seul P>0,5 / P>0,75 / P>0,95 | glm.nb, rapport de vraisemblance p<0,05 | Binomiale négative en tête |
+|---|---|---|---:|---:|
+| H0, Poisson, µ = 5, n = 20 | 0,010 / 0 / 0 | 0,013 / 0 / 0 | 0,067 | 0,027 |
+| H0, surdispersé (θ = 1), µ = 5, n = 20 | 0,020 / 0 / 0 | 0,500 / 0,450 / 0,333 | 0,070 | 1,000 |
+| H0, surdispersé (θ = 0,5), µ = 3, n = 15 | 0,030 / 0,010 / 0,003 | 0,557 / 0,460 / 0,330 | 0,060 | 1,000 |
+| H1, surdispersé (θ = 2), µ = 4, 4, 8 | 0,577 / 0,447 / 0,243 | 0,943 / 0,933 / 0,903 | 0,750 | 1,000 |
+| H1, Poisson, µ = 4, 4, 6 | 0,717 / 0,623 / 0,413 | 0,720 / 0,633 / 0,440 | 0,783 | 0,017 |
+
+**Lecture.**
+- **Sous H0 surdispersé, Poisson seul invente une différence.** Il dépasse P > 0,95 dans un tiers des jeux. La comparaison des lois ramène ce taux à 0 à 0,3 %, et la binomiale négative est reconnue dans 100 % des jeux.
+- **Sous Poisson vrai,** les deux voies se valent.
+- **À effet réel et surdispersé,** m.bay est prudent : 45 % au-delà de 0,75, contre 75 % de p < 0,05 pour le rapport de vraisemblance. C'est le prix de l'a priori d'information unitaire. Le chiffre de Poisson seul (93 %) n'est pas une puissance, puisqu'il invente aussi sous H0.
+

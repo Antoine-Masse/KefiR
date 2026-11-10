@@ -381,6 +381,26 @@ Demandé par la session parente dans l'ordre du PERIMETRE, avec trois points de 
   - Le récit dit que le calcul est exact, sans effectif minimum, contrairement au khi-deux.
   - Une réponse binaire avec plusieurs facteurs, covariables ou sujets est refusée en attendant la voie 2.
 
+## D17, voie 2 : comptages, FAITE le 10 novembre
+
+**Appel explicite.** `response = "counts"`, avec un facteur. Ce n'est pas automatique : une échelle de Likert de 1 à 5 est aussi faite d'entiers positifs, et basculer en silence changerait la réponse de l'existant. Les cas hors de ce cadre sont refusés : plusieurs facteurs, covariables, sujets, valeurs négatives ou non entières.
+
+**Calcul** (`R/sys_bay_counts.R`).
+- **Lois comparées, non choisies.** Deux lois, Poisson (`glm`) et binomiale négative (`MASS::glm.nb`, déjà en Imports), chacune avec et sans différence : quatre modèles.
+- **Vraisemblances marginales.** Elles sont approchées par −BIC/2, l'approximation d'information unitaire ([Schwarz1978], [Raftery1995], [Wagenmakers2007]) : sans compilateur, sans tirage, sans échelle d'a priori à choisir.
+- **Réponse.** Elle est moyennée sur les deux lois, comme à un facteur continu.
+- **Surdispersion.** C'est la part de la binomiale négative, annoncée en « Changement de stratégie » quand elle passe en tête, avec le rapport de Pearson à côté.
+- **Écartés.**
+  - BAS : il est de type Poisson ou binomial seulement, sans binomiale négative, et un passage de Poisson à la binomiale négative aurait changé d'a priori. Il sert ici de contre-vérification du sens du BF sous Poisson (test).
+  - rstanarm avec bridgesampling : précompilé, mais ses a priori par défaut écrasent le BF vers H0 (log BF −4,97 mesuré), ce qui imposait de choisir un a priori de test.
+  - brms : compilateur indisponible.
+- **Post-hoc.** Regroupements de D11, chacun ajusté sous les deux lois. Rapports des moyennes, avec un intervalle à 95 % par l'approximation de Laplace, sous la loi en tête.
+- **Sensibilité.** Seulement les chances de départ, de 1 contre 2 à 2 contre 1 : l'approximation BIC n'a pas d'échelle.
+
+**Coût annoncé.** L'a priori d'information unitaire est conservateur. À effet réel, la puissance est inférieure au test du rapport de vraisemblance (VALIDATION §13).
+
+**Restent** (D17, voies 3 et 4) : l'ordinal, `stan_polr` ou la contingence sans l'ordre, et la voie par rangs. Pour les rangs, van Doorn et al. (2020) n'existe dans aucun paquet CRAN, seulement en scripts OSF et dans JASP.
+
 ## D18. Mise en forme commune des sorties : DÉCIDÉE le 10 novembre
 
 **Origine.** Consigne d'Antoine : les sorties doivent être « dans un format agréable à lire étape par étape comme m.test() ». L'auditeur de lisibilité a rendu 12 recommandations (`relecture/lisibilite_2026-11-09/RAPPORT.md`). Antoine a ajouté une correction : 80 caractères au plus par ligne, car les consoles des développeurs sont souvent réduites. Aucune de ces décisions ne touche au calcul.
