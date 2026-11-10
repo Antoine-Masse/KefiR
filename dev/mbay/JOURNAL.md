@@ -8,7 +8,9 @@
 
 **Vérifié.** `agent_67` (VALIDATION §18) ; `test-bay-mixed.R` contre `lmBF` ; tous les tests bay.
 
-**Non fait.** Pentes aléatoires ; R CMD check sur ce lot.
+- `R CMD check --no-manual --ignore-vignettes` sur 8ffb16a (suite complète comprise) : Status OK.
+
+**Non fait.** Pentes aléatoires.
 
 ## Séance 13 : 10 novembre 2026, variances par case (D19) et post-hoc à plusieurs facteurs (D20)
 
