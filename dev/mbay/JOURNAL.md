@@ -1,5 +1,18 @@
 # Journal de m.bay
 
+## Séance 13 : 10 novembre 2026, variances par case (D19) et post-hoc à plusieurs facteurs (D20)
+
+**Fait.**
+- **D19, correction.** `R/sys_bay_fact_laws.R` : loi normale à une variance par case, moyennée avec la variance commune dans chaque facteur de Bayes. La prudence provisoire ne sert plus qu'en cas d'échec de l'échantillonnage.
+- **D20.** `.bay_posthoc_factorial` et `.bay_story_posthoc_fact` : une famille par terme probable du plus haut ordre ; le bilan donne les paires par famille.
+- **Retouches.** « -0,00 » s'écrit « 0,00 » (`.bay_fx`) ; accord « à B, x égaux ».
+
+**Vérifié.**
+- `agent_66` : sous H0, 0,9 % de faux « oui » à P > 0,95 (7/800, contre 12,5 % avant) ; puissance inchangée à variances égales ; 1,8 s médian à N = 40 (VALIDATION §16).
+- Tous les tests bay passent (dont `test-bay-fact-laws.R`, nouveau) ; deux tests qui attendaient l'absence de post-hoc sont mis à jour.
+
+**Non fait.** Lois t à plusieurs facteurs ; variances par case avec sujets ou covariables ; calibration par simulation du post-hoc D20 ; suite complète et R CMD check (à lancer pour ce lot).
+
 ## Séance 12 : 10 novembre 2026, réponse ordonnée et routage (D17, voies 3 et 4)
 
 **Fait.**

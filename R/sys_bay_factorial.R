@@ -221,7 +221,7 @@
 
 # Whole analysis with several factors. input: from .bay_parse_input; note: the notes
 # collector of m.bay.
-.bay_factorial <- function(input, rscale, sensitivity, draws, seed, note, prior_h1 = 0.5) {
+.bay_factorial <- function(input, rscale, sensitivity, draws, seed, note, prior_h1 = 0.5, het = FALSE) {
 	y <- input$response
 	id <- input$id
 	paired <- !is.null(id) && length(input$factors) == 1L && nlevels(input$factors[[1L]]) == 2L
@@ -269,6 +269,21 @@
 	# One term alone: its prior is prior_h1, as with one factor between groups.
 	single <- length(sp$keys) == 1L
 	lp <- if (single) log(c(1 - prior_h1, prior_h1)) else .bay_fact_prior(sp, "hop")
+	# Variances per cell (D19): the Bayes factors are averaged over the common variance and one
+	# variance per cell (sys_bay_fact_laws.R). If the importance sampling fails, the common
+	# variance is kept and the caller caps the support.
+	fl <- NULL
+	p_het <- NA_real_
+	if (isTRUE(het)) {
+		# At least 4000 draws, so that the central answer does not move with draws below that.
+		fl <- .bay_fl_het_all(y, factors, sp, rs, min(max(4000L, as.integer(draws)), 20000L), seed + 104729L)
+		if (!fl$failed) {
+			cb <- .bay_fl_combine(bf$log_bf, fl$eq0, fl$l_het)
+			p_het <- .bay_fl_p_het(cb$l_eq[, 1L], fl$l_het[, 1L], lp)
+			bf$log_bf <- cb$log_bf
+		}
+	}
+	het_used <- !is.null(fl) && !fl$failed
 	eff <- .bay_fact_terms(sp, bf$log_bf[, 1L], lp)
 	# Same order as the formula.
 	eff <- eff[match(.bay_term_key(terms), .bay_term_key(eff$term)), , drop = FALSE]
@@ -287,6 +302,7 @@
 	if (any(multi) || (!is.null(id) && !paired) || !is.null(cov)) {
 		bf2 <- .bay_fact_logbf(y, factors, sp, rscale, iterations, seed, seeds = seed + 7919L, id = id,
 			cov = cov, rconts = .bay_rcont())
+		if (het_used) bf2$log_bf <- .bay_fl_combine(bf2$log_bf, fl$eq0, fl$l_het[, 1L, drop = FALSE])$log_bf
 		e2 <- .bay_fact_terms(sp, bf2$log_bf[, 1L], lp)
 		p2 <- e2$p_h1[match(.bay_term_key(terms), .bay_term_key(e2$term))]
 		spread <- max(abs(p2 - eff$p_h1), abs(.bay_fact_null(bf2$log_bf[, 1L], lp) - p_null), na.rm = TRUE)
@@ -361,7 +377,9 @@
 		sd_within = sd_within, sd_is_within = within, spread = spread, single = single, paired = paired,
 		n_subjects = if (!is.null(id)) nlevels(id) else NA_integer_, terms = terms,
 		overlap = .bay_cov_overlap(input$covariates, interaction(factors, drop = TRUE)),
-		cov_centres = if (length(cov_names)) vapply(input$covariates, mean, numeric(1)) else NULL)
+		cov_centres = if (length(cov_names)) vapply(input$covariates, mean, numeric(1)) else NULL,
+		het_used = het_used, het_failed = !is.null(fl) && fl$failed, p_het = p_het,
+		het_ess = if (!is.null(fl)) min(fl$ess) else NA_real_)
 }
 
 # Bilan with several factors. Same order as with one factor: verdict on the global
@@ -409,7 +427,23 @@
 						", d'o\u00f9 ", .bay_pct(e$p_h1[i], ","), " seulement."))
 			}
 		}
-		if (!is.null(ph) && !identical(ph$method, "slopes")) {
+		if (identical(ph$method, "factorial")) {
+			for (j in seq_along(ph$families)) {
+				f <- ph$families[[j]]
+				lab_en <- if (f$cells) paste0("cells ", gsub(":", " x ", f$term, fixed = TRUE)) else f$term
+				lab_fr <- if (f$cells) paste0("cases ", gsub(":", " x ", f$term, fixed = TRUE)) else f$term
+				if (f$k > 2L) {
+					emit("fact", paste0("Pairs, ", lab_en, ":"), paste0("Paires, ", lab_fr, " :"))
+					.bay_pairs_short(f, emit, FALSE, narrated, note = j == length(ph$families))
+				} else {
+					pr <- f$pairs
+					dg <- if (!is.null(f$dg)) f$dg else .bay_dg(obj$descriptive_stats$mean)
+					ci <- function(dc) paste0(.bay_fx(pr$diff, dg, dc), " [", .bay_fx(pr$diff_low, dg, dc), if (dc == ",") " ; " else "; ", .bay_fx(pr$diff_high, dg, dc), "]")
+					emit("fact", paste0("Estimated gap ", pr$group2, " - ", pr$group1, " (", lab_en, "): ", ci("."), if (narrated) " (step 6)." else "."),
+						paste0("\u00c9cart estim\u00e9 ", pr$group2, " - ", pr$group1, " (", lab_fr, ") : ", ci(","), if (narrated) " (\u00e9tape 6)." else "."))
+				}
+			}
+		} else if (!is.null(ph) && !identical(ph$method, "slopes")) {
 			if (ph$k > 2L) .bay_pairs_short(ph, emit, li$h$posterior[1L] < 0.6 || li$open, narrated)
 			if (ph$k == 2L) {
 				pr <- ph$pairs
@@ -456,8 +490,8 @@
 		rm_ <- obj$plan %in% c("paired", "repeated")
 		sd_en <- if (anc) "Residual standard deviation (covariates accounted for): " else if (rm_) "Residual standard deviation within subject: " else if (isTRUE(obj$sd_is_within)) "Within-cell standard deviation: " else "Residual standard deviation: "
 		sd_fr <- if (anc) "\u00c9cart-type r\u00e9siduel (covariables prises en compte) : " else if (rm_) "\u00c9cart-type r\u00e9siduel au sein des sujets : " else if (isTRUE(obj$sd_is_within)) "\u00c9cart-type au sein des cases : " else "\u00c9cart-type r\u00e9siduel : "
-		emit("fact", paste0(sd_en, .bay_fx(obj$sd_within, dg + 1L, "."), "; normal law with a common variance only."),
-			paste0(sd_fr, .bay_fx(obj$sd_within, dg + 1L, ","), " ; loi normale \u00e0 variance commune seule."))
+		emit("fact", paste0(sd_en, .bay_fx(obj$sd_within, dg + 1L, "."), if (isTRUE(obj$het_used)) "; common variance or one per cell, averaged." else "; normal law with a common variance only."),
+			paste0(sd_fr, .bay_fx(obj$sd_within, dg + 1L, ","), if (isTRUE(obj$het_used)) " ; variance commune ou par case, moyenn\u00e9es." else " ; loi normale \u00e0 variance commune seule."))
 		if (!is.null(ph) && isTRUE(ph$caution_overlap)) {
 			emit("decide", "the adjusted gaps compare the groups where some have few values of the covariate.",
 				"les \u00e9carts ajust\u00e9s comparent les groupes l\u00e0 o\u00f9 certains ont peu de valeurs de la covariable.")

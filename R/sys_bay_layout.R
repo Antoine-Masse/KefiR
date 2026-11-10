@@ -13,7 +13,11 @@
 	m <- max(abs(x[is.finite(x)]), 1e-300)
 	min(6L, max(0L, 2L - floor(log10(m))))
 }
-.bay_fx <- function(x, dg, dc) gsub(".", dc, formatC(x, format = "f", digits = dg), fixed = TRUE)
+# A value that rounds to zero is written without its sign ("-0.00" read as negative).
+.bay_fx <- function(x, dg, dc) {
+	x[!is.na(x) & round(x, dg) == 0] <- 0
+	gsub(".", dc, formatC(x, format = "f", digits = dg), fixed = TRUE)
+}
 
 # Leading hypothesis: its label, probability, support and the Bayes factor in its favour.
 .bay_lead_info <- function(obj) {
@@ -141,7 +145,7 @@
 
 # Short list of the pairs, grouped by answer and support; "alike" only when the bilan
 # leans towards a difference somewhere, otherwise "not settled" (relecture D17, point 3).
-.bay_pairs_short <- function(ph, emit, undecided, narrated) {
+.bay_pairs_short <- function(ph, emit, undecided, narrated, note = TRUE) {
 	pr <- ph$pairs
 	if (is.null(pr) || anyNA(pr$p_differ)) return(invisible(NULL))
 	lab <- paste0(pr$group1, "/", pr$group2)
@@ -175,7 +179,7 @@
 		emit("fact", paste0("If a difference exists, most probable grouping: ", top$label, " (", .bay_pct(top$p, "."), ")."),
 			paste0("Si une diff\u00e9rence existe, regroupement le plus probable : ", top$label, " (", .bay_pct(top$p, ","), ")."))
 	}
-	emit("note", paste0("different from 75 % of probability, alike up to 25 %, otherwise not settled; gaps in figures ", if (narrated) "at step 6." else "in $posthoc$pairs."),
+	if (note) emit("note", paste0("different from 75 % of probability, alike up to 25 %, otherwise not settled; gaps in figures ", if (narrated) "at step 6." else "in $posthoc$pairs."),
 		paste0("diff\u00e9rents \u00e0 partir de 75 % de probabilit\u00e9, semblables jusqu'\u00e0 25 %, sinon non tranch\u00e9s ; \u00e9carts chiffr\u00e9s ", if (narrated) "\u00e0 l'\u00e9tape 6." else "dans $posthoc$pairs."))
 	invisible(NULL)
 }

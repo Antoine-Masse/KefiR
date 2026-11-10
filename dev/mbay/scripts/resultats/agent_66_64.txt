@@ -1,0 +1,3 @@
+R version 4.6.1 (2026-06-24 ucrt)
+agent_66/64 : 2 x 2, H0, n = (5,5,5,40), sd = (4,4,4,1), N = 200, lois moyennees (D19)
+un terme P>.95 : 0.015 | P>.75 : 0.115 | lois moyennees : 1.000 | plafond residuel : 0.000 | P(var. par case) mediane : 1.000 | temps median 1.83 s, max 4.14 s

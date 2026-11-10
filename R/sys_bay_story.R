@@ -410,11 +410,13 @@
 }
 
 # Step 6, one factor: which groups differ, and by how much.
-.bay_story_posthoc <- function(st, ph, caution = FALSE, subjects = FALSE) {
+.bay_story_posthoc <- function(st, ph, caution = FALSE, subjects = FALSE, head = TRUE, notes = TRUE) {
 	if (is.null(st) || is.null(ph)) return(invisible(NULL))
 	cont <- isTRUE(ph$delta_unit %in% c("logor", "tvd"))
 	ratio <- isTRUE(ph$delta_unit %in% c("ratio", "odds"))
-	if (identical(ph$delta_unit, "odds")) {
+	if (!head) {
+		# One family of a plan with several factors: the step is opened by the caller.
+	} else if (identical(ph$delta_unit, "odds")) {
 		.bay_tell(st, "Which groups differ, and by how much", "Quels groupes diff\u00e8rent, et de combien", "step", fun = "polr() {MASS}")
 	} else if (ratio) {
 		.bay_tell(st, "Which groups differ, and by how much", "Quels groupes diff\u00e8rent, et de combien", "step",
@@ -464,14 +466,18 @@
 	if (ph$k > 2L) {
 		top <- .bay_top_grouping(ph)
 		if (!is.null(top)) {
-			.bay_step_result(st, paste0(top$label, " ahead (", .bay_pct(top$p, "."), ")"), paste0(top$label, " en t\u00eate (", .bay_pct(top$p, ","), ")"))
+			if (head) {
+				.bay_step_result(st, paste0(top$label, " ahead (", .bay_pct(top$p, "."), ")"), paste0(top$label, " en t\u00eate (", .bay_pct(top$p, ","), ")"))
+			} else {
+				.bay_tell(st, paste0("Leading grouping: ", top$label, " (", .bay_pct(top$p, "."), ")."), paste0("Regroupement en t\u00eate : ", top$label, " (", .bay_pct(top$p, ","), ")."))
+			}
 			pt <- ph$partitions[grepl("[<>]", ph$partitions$partition), , drop = FALSE]
 			pt <- pt[seq_len(min(3L, nrow(pt))), , drop = FALSE]
 			pc <- pt$posterior / sum(ph$partitions$posterior[grepl("[<>]", ph$partitions$partition)])
 			.bay_tell(st, paste0("If a difference exists, leading groupings: ", paste0(pt$partition, " (", vapply(pc, .bay_pct, character(1), dec = "."), ")", collapse = "; "), "."),
 				paste0("Si une diff\u00e9rence existe, regroupements en t\u00eate : ", paste0(pt$partition, " (", vapply(pc, .bay_pct, character(1), dec = ","), ")", collapse = " ; "), "."))
 		}
-	} else {
+	} else if (head) {
 		.bay_step_result(st, paste0(pr$group2[1L], op, pr$group1[1L], " = ", gap(1L, ".")), paste0(pr$group2[1L], op, pr$group1[1L], " = ", gap(1L, ",")))
 	}
 	shown <- .bay_posthoc_shown(pr)
@@ -490,7 +496,9 @@
 		.bay_tell(st, paste0("The other ", nrow(pr) - length(shown), " pairs lean towards alike; all pairs in $posthoc$pairs."),
 			paste0("Les ", nrow(pr) - length(shown), " autres paires penchent vers semblables ; toutes dans $posthoc$pairs."), "note")
 	}
-	if (identical(ph$delta_unit, "odds")) {
+	if (!notes) {
+		# Said once, after the last family.
+	} else if (identical(ph$delta_unit, "odds")) {
 		.bay_tell(st, "cumulative odds ratio, above 1 for higher values in the second group; [ ; ] = 95 % interval; 1 = no difference.",
 			"rapport des cotes cumul\u00e9es, au-del\u00e0 de 1 pour des valeurs plus hautes dans le second groupe ; [ ; ] = intervalle \u00e0 95 % ; 1 = pas de diff\u00e9rence.", "note")
 	} else if (ratio) {
@@ -509,7 +517,7 @@
 		.bay_tell(st, "Estimated gap: posterior median of the model \"all groups may differ\", pulled slightly towards zero by the prior, hence a little smaller than the observed gap.",
 			"\u00c9cart estim\u00e9 : m\u00e9diane a posteriori du mod\u00e8le \u00ab tous les groupes peuvent diff\u00e9rer \u00bb, l\u00e9g\u00e8rement ramen\u00e9e vers z\u00e9ro par l'a priori, donc un peu plus petite que l'\u00e9cart observ\u00e9.", "detail")
 	}
-	if (ph$k > 2L) {
+	if (notes && ph$k > 2L) {
 		.bay_tell(st, "all pairs are judged together, without a Tukey-like correction, and cannot contradict each other.",
 			"toutes les paires sont jug\u00e9es ensemble, sans correction \u00e0 la Tukey, et ne peuvent pas se contredire.", "note")
 	}
@@ -525,6 +533,43 @@
 }
 
 # Step 6 when no pair is computed: the step is still shown (same skeleton for every plan).
+# Step 6 with several factors: one family per probable term (.bay_posthoc_factorial).
+.bay_story_posthoc_fact <- function(st, ph, caution = FALSE) {
+	if (is.null(st) || is.null(ph)) return(invisible(NULL))
+	.bay_tell(st, "Which levels differ, and by how much", "Quels niveaux diff\u00e8rent, et de combien", "step",
+		fun = "lmBF(), posterior() {BayesFactor}, hdi() {bayestestR}")
+	fams <- ph$families
+	if (!length(fams)) {
+		.bay_step_result(st, "no probable term, nothing to compare", "aucun terme probable, rien \u00e0 comparer")
+		.bay_tell(st, "No term reaches 50 %: the levels are not compared.",
+			"Aucun terme n'atteint 50 % : les niveaux ne sont pas compar\u00e9s.")
+		return(invisible(NULL))
+	}
+	lab <- function(ph, fr) if (ph$cells) paste0(if (fr) "cases " else "cells ", gsub(":", " x ", ph$term, fixed = TRUE)) else ph$term
+	.bay_step_result(st, paste(vapply(fams, lab, character(1), fr = FALSE), collapse = ", then "),
+		paste(vapply(fams, lab, character(1), fr = TRUE), collapse = ", puis "))
+	for (j in seq_along(fams)) {
+		f <- fams[[j]]
+		at_en <- if (length(f$adjusted_for)) paste0(", at equal ", paste(f$adjusted_for, collapse = ", ")) else ""
+		at_fr <- if (length(f$adjusted_for)) paste0(", \u00e0 ", paste(f$adjusted_for, collapse = ", "), if (length(f$adjusted_for) > 1L) " \u00e9gaux" else " \u00e9gal") else ""
+		if (f$cells) {
+			.bay_tell(st, paste0(f$term, " probable (", .bay_pct(f$p_term, "."), "): the gaps of one factor depend on the other, so the cells are compared", at_en, "."),
+				paste0(f$term, " probable (", .bay_pct(f$p_term, ","), ") : les \u00e9carts d'un facteur d\u00e9pendent de l'autre, donc les cases sont compar\u00e9es", at_fr, "."), "decide")
+		} else {
+			.bay_tell(st, paste0(f$term, " probable (", .bay_pct(f$p_term, "."), ") and in no probable interaction: its levels are compared", at_en, "."),
+				paste0(f$term, " probable (", .bay_pct(f$p_term, ","), ") et dans aucune interaction probable : ses niveaux sont compar\u00e9s", at_fr, "."), "decide")
+		}
+		.bay_story_posthoc(st, f, caution = caution && j == length(fams), head = FALSE, notes = j == length(fams))
+	}
+	if (nrow(ph$skipped)) {
+		.bay_tell(st, paste0("Not compared, not probable: ", paste0(ph$skipped$term, " (", vapply(ph$skipped$p_h1, .bay_pct, character(1), dec = "."), ")", collapse = ", "), "."),
+			paste0("Non compar\u00e9s, car non probables : ", paste0(ph$skipped$term, " (", vapply(ph$skipped$p_h1, .bay_pct, character(1), dec = ","), ")", collapse = ", "), "."), "note")
+	}
+	.bay_tell(st, "Several factors: the probable term of highest order is detailed (its cells for an interaction, its levels for a main effect); the other factors, covariates and subjects are in every grouping compared.",
+		"Plusieurs facteurs : le terme probable d'ordre le plus haut est d\u00e9taill\u00e9 (ses cases pour une interaction, ses niveaux pour un effet principal) ; les autres facteurs, covariables et sujets sont dans chaque regroupement compar\u00e9.", "detail")
+	invisible(NULL)
+}
+
 .bay_story_no_posthoc <- function(st, why = c("factors", "off")) {
 	why <- match.arg(why)
 	if (why == "factors") {
@@ -547,6 +592,7 @@
 	switch(if (is.null(ph$delta_unit)) "pooled" else ph$delta_unit,
 		within = list(en = "residual SD within subject", fr = "\u00e9cart-type r\u00e9siduel au sein des sujets"),
 		adjusted = list(en = "residual SD (covariates accounted for)", fr = "\u00e9cart-type r\u00e9siduel (covariables prises en compte)"),
+		others = list(en = "residual SD (other terms accounted for)", fr = "\u00e9cart-type r\u00e9siduel (autres termes pris en compte)"),
 		logor = list(en = "in log odds ratio", fr = "en log du rapport de cotes"),
 		tvd = list(en = "", fr = ""),
 		pooled = list(en = "SD", fr = "\u00e9cart-type"),

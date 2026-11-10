@@ -644,6 +644,7 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 	n_mod <- length(sp$models)
 	single <- length(terms) == 1L
 	overlap <- NULL
+	fa <- NULL
 
 	if (anc) {
 		overlap <- .bay_story_ancova(story, input, y)
@@ -672,44 +673,51 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 	.bay_tell(story, "No value is removed.", "Aucune valeur retir\u00e9e.", "decide")
 
 	# Step 3: one shape of the noise only.
-	.bay_tell(story, "Shape of the noise", "Forme du bruit", "step")
-	.bay_step_result(story, "normal with a common variance, only", "normale \u00e0 variance commune, seule")
-	.bay_tell(story, "Several factors: only the normal law with a common variance is computed.",
-		"Plusieurs facteurs : seule la loi normale \u00e0 variance commune est calcul\u00e9e.")
-	.bay_tell(story, "Heavy tails and unequal variances are not validated with several factors yet.",
-		"Queues lourdes et variances in\u00e9gales ne sont pas encore valid\u00e9es \u00e0 plusieurs facteurs.", "note")
-	# Variances per cell, compared by the one-factor engine with the cells as groups
-	# (sys_bay_laws.R, no second implementation). Until the laws are averaged with several
-	# factors, probable unequal variances cap the support at weak (VALIDATION 15, agent_64:
-	# 12.5 % of false "yes" at P > .95 under H0 otherwise).
+	# Variances per cell (D19): one variance per cell is a second law, averaged with the common
+	# variance in every Bayes factor (sys_bay_fact_laws.R). Needs 3 values per cell at least.
 	het_cells <- FALSE
 	cl <- interaction(factors, drop = TRUE)
-	if (!rm && !anc && nlevels(cl) >= 2L && min(table(cl)) >= 3L) {
+	use_het <- !single && nlevels(cl) >= 2L && min(table(cl)) >= 3L && (no_laws || "normal_het" %in% laws)
+	if (use_het) {
 		st_c <- .bay_laws_stats(y, cl)
-		lk <- .bay_laws_allowed(st_c, c("normal_eq", "normal_het"), 1.5)
-		if (length(lk) == 2L) {
-			tab_c <- .bay_laws_table(st_c, rscale, 1.5, min(as.integer(draws), 2000L), as.integer(seed), laws = lk)
-			p_het_c <- .bay_laws_average(tab_c, rscale)$p_law[["normal_het"]]
-			if (isTRUE(p_het_c >= 0.75)) {
-				het_cells <- TRUE
-				sds <- tapply(y, cl, stats::sd)
-				.bay_tell(story, paste0("Variances per cell: unequal probable (", .bay_pct(p_het_c, "."), "); standard deviations from ",
-						format(signif(min(sds), 2), trim = TRUE), " to ", format(signif(max(sds), 2), trim = TRUE), "."),
-					paste0("Variances par case : in\u00e9gales probables (", .bay_pct(p_het_c, ","), ") ; \u00e9carts-types de ",
-						gsub(".", ",", format(signif(min(sds), 2), trim = TRUE), fixed = TRUE), " \u00e0 ", gsub(".", ",", format(signif(max(sds), 2), trim = TRUE), fixed = TRUE), "."))
-				.bay_tell(story, "Caution added: the common-variance model can then say yes wrongly; support capped at weak.",
-					"Prudence ajout\u00e9e : le mod\u00e8le \u00e0 variance commune peut alors dire oui \u00e0 tort ; soutien plafonn\u00e9 \u00e0 faible.", "decide")
-				.bay_tell(story, "Unequal variances per cell with several factors: the laws are not yet averaged (VALIDATION 15); the support of every answer is capped at weak and the verdict stays cautious.",
-					"Variances in\u00e9gales par case \u00e0 plusieurs facteurs : les lois ne sont pas encore moyenn\u00e9es (VALIDATION 15) ; le soutien de chaque r\u00e9ponse est plafonn\u00e9 \u00e0 faible et le verdict reste prudent.", "detail")
-			} else {
-				.bay_tell(story, paste0("Variances per cell: ", if (p_het_c <= 0.25) "equal probable" else "not settled", " (unequal at ", .bay_pct(p_het_c, "."), ")."),
-					paste0("Variances par case : ", if (p_het_c <= 0.25) "\u00e9gales probables" else "non tranch\u00e9es", " (in\u00e9gales \u00e0 ", .bay_pct(p_het_c, ","), ")."))
-			}
+		use_het <- "normal_het" %in% .bay_laws_allowed(st_c, c("normal_eq", "normal_het"), 1.5)
+	}
+	fa <- .bay_factorial(input, rscale, sensitivity, as.integer(draws), as.integer(seed), note, prior_h1 = prior_h1, het = use_het)
+	.bay_tell(story, "Shape of the noise", "Forme du bruit", "step")
+	sds <- tapply(y, cl, stats::sd)
+	sd_rng <- function(dec) paste0(gsub(".", dec, format(signif(min(sds), 2), trim = TRUE), fixed = TRUE),
+		if (dec == ".") " to " else " \u00e0 ", gsub(".", dec, format(signif(max(sds), 2), trim = TRUE), fixed = TRUE))
+	if (isTRUE(fa$het_used)) {
+		ph <- fa$p_het
+		.bay_step_result(story, "normal, common variance or one per cell, averaged", "normale, variance commune ou par case, moyenn\u00e9es")
+		.bay_tell(story, paste0("Variances per cell: ", if (ph >= 0.75) "unequal probable" else if (ph <= 0.25) "equal probable" else "not settled",
+				" (", if (ph >= 0.75) .bay_pct(ph, ".") else if (ph <= 0.25) .bay_pct(1 - ph, ".") else paste("unequal at", .bay_pct(ph, ".")),
+				"); standard deviations from ", sd_rng("."), "."),
+			paste0("Variances par case : ", if (ph >= 0.75) "in\u00e9gales probables" else if (ph <= 0.25) "\u00e9gales probables" else "non tranch\u00e9es",
+				" (", if (ph >= 0.75) .bay_pct(ph, ",") else if (ph <= 0.25) .bay_pct(1 - ph, ",") else paste("in\u00e9gales \u00e0", .bay_pct(ph, ",")),
+				") ; \u00e9carts-types de ", sd_rng(","), "."))
+		.bay_tell(story, "Both are kept: each answer weighs the common variance and one variance per cell by their probability.",
+			"Les deux sont gard\u00e9es : chaque r\u00e9ponse p\u00e8se la variance commune et une variance par case selon leur probabilit\u00e9.", "decide")
+		.bay_tell(story, "heavy tails are not computed with several factors yet.",
+			"les queues lourdes ne sont pas encore calcul\u00e9es \u00e0 plusieurs facteurs.", "note")
+		.bay_tell(story, "One variance per cell: Dirichlet(1.5) on the proportions of precision of the cells (Dablander et al. 2024); effects on the scale of the harmonic mean of the cell variances; importance sampling (DECISIONS, D19).",
+			"Une variance par case : Dirichlet(1,5) sur les parts de pr\u00e9cision des cases (Dablander et al. 2024) ; effets \u00e0 l'\u00e9chelle de la moyenne harmonique des variances des cases ; \u00e9chantillonnage d'importance (DECISIONS, D19).", "detail")
+	} else {
+		.bay_step_result(story, "normal with a common variance, only", "normale \u00e0 variance commune, seule")
+		.bay_tell(story, if (isTRUE(fa$het_failed)) "Several factors: the law with one variance per cell could not be computed; the common variance is kept." else "Several factors: only the normal law with a common variance is computed (fewer than 3 values in a cell).",
+			if (isTRUE(fa$het_failed)) "Plusieurs facteurs : la loi \u00e0 une variance par case n'a pas pu \u00eatre calcul\u00e9e ; la variance commune est gard\u00e9e." else "Plusieurs facteurs : seule la loi normale \u00e0 variance commune est calcul\u00e9e (moins de 3 valeurs dans une case).")
+		if (isTRUE(fa$het_failed) && max(sds) / min(sds) >= 2) {
+			het_cells <- TRUE
+			.bay_tell(story, paste0("Standard deviations per cell from ", sd_rng("."), ": caution added, support capped at weak."),
+				paste0("\u00c9carts-types par case de ", sd_rng(","), " : prudence ajout\u00e9e, soutien plafonn\u00e9 \u00e0 faible."), "decide")
+		} else {
+			.bay_tell(story, "Heavy tails and unequal variances are not validated with several factors yet.",
+				"Queues lourdes et variances in\u00e9gales ne sont pas encore valid\u00e9es \u00e0 plusieurs facteurs.", "note")
 		}
 	}
-	if (!no_laws && !identical(laws, "normal_eq")) {
-		note("With several factors only the normal law with a common variance is computed; laws is ignored.",
-			"\u00c0 plusieurs facteurs, seule la loi normale \u00e0 variance commune est calcul\u00e9e ; laws est ignor\u00e9.")
+	if (!no_laws && any(c("t_eq", "t_het") %in% laws)) {
+		note("With several factors the Student t laws are not computed; only the normal ones.",
+			"\u00c0 plusieurs facteurs, les lois de Student ne sont pas calcul\u00e9es ; seulement les normales.")
 	}
 	far <- chk$extremes[["far"]]
 	if (far > 0L) {
@@ -771,7 +779,7 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 		.bay_tell(story, paste0(n_mod, " models, this can take a few minutes."),
 			paste0(n_mod, " mod\u00e8les, cela peut prendre quelques minutes."), "note")
 	}
-	fa <- .bay_factorial(input, rscale, sensitivity, as.integer(draws), as.integer(seed), note, prior_h1 = prior_h1)
+	if (is.null(fa)) fa <- .bay_factorial(input, rscale, sensitivity, as.integer(draws), as.integer(seed), note, prior_h1 = prior_h1)
 	if (single) {
 		lb1 <- fa$log_bf_models[2L, if (isTRUE(sensitivity)) 2L else 1L]
 		.bay_tell(story, paste0("Bayes factor: ", .bay_bf_txt(lb1, "."), if (lb1 >= 0) " (the data favour a difference)." else " (the data favour no difference)."),
@@ -869,6 +877,14 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 		ph$caution <- FALSE
 		.bay_story_posthoc(story, ph, subjects = TRUE)
 	}
+	# Several factors (PERIMETRE section 7): the probable term of highest order, its cells or its
+	# levels, the other factors, covariates and subjects as nuisance terms.
+	if (is.null(ph) && isTRUE(posthoc) && !single && !paired) {
+		covc <- if (anc) as.data.frame(lapply(input$covariates, function(v) v - mean(v)), check.names = FALSE) else NULL
+		ph <- .bay_posthoc_factorial(y, factors, fa$effects, rscale, 0.5, draws, seed, id = if (rm) input$id else NULL, cov = covc)
+		ph$caution <- isTRUE(fa$het_used) && isTRUE(fa$p_het >= 0.75)
+		.bay_story_posthoc_fact(story, ph, caution = ph$caution)
+	}
 	if (is.null(ph)) .bay_story_no_posthoc(story, if (isTRUE(posthoc)) "factors" else "off")
 
 	resp <- input$response_name
@@ -886,19 +902,21 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 	hyp <- hyp[order(-hyp$posterior), , drop = FALSE]
 	rownames(hyp) <- NULL
 	out <- list(
-		hypotheses = hyp, effects = fa$effects, laws = NULL,
+		hypotheses = hyp, effects = fa$effects,
+		laws = if (isTRUE(fa$het_used)) data.frame(law = c("normal_eq", "normal_het"), posterior = c(1 - fa$p_het, fa$p_het), stringsAsFactors = FALSE) else NULL,
 		models = data.frame(model = vapply(fa$space$models, function(m) {
 				if (length(m)) paste(fa$space$terms[m], collapse = " + ") else "(null)"
 			}, character(1)), log_bf = fa$log_bf_models[, if (isTRUE(sensitivity)) 2L else 1L],
 			log_prior = fa$log_prior, stringsAsFactors = FALSE),
 		n_models = length(fa$space$models),
 		sensitivity = fa$sensitivity,
-		priors = list(rscale = rscale, model_prior = if (single) "prior_h1" else "HOP(1,1)", law = "normal_eq", prior_h1 = if (single) prior_h1 else NULL),
+		priors = list(rscale = rscale, model_prior = if (single) "prior_h1" else "HOP(1,1)", law = if (isTRUE(fa$het_used)) c("normal_eq", "normal_het") else "normal_eq", prior_h1 = if (single) prior_h1 else NULL),
 		posthoc = ph, n_subjects = fa$n_subjects,
 		questions = .bay_fact_questions(fa$effects$term, resp, adj = cov_names),
 		overlap = fa$overlap, cov_centres = fa$cov_centres,
 		cov_by_group = if (anc) sapply(input$covariates, function(v) tapply(v, interaction(input$factors, drop = TRUE), mean)) else NULL,
 		het_cells = if (exists("het_cells", inherits = FALSE)) het_cells else FALSE,
+		het_used = isTRUE(fa$het_used),
 		contradiction = FALSE, heavy = FALSE, detail = isTRUE(detail),
 		descriptive_stats = fa$means, cell_means = local({
 			cl <- interaction(input$factors, sep = " x ", drop = TRUE)

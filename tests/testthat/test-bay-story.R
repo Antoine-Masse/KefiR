@@ -115,9 +115,9 @@ test_that("plusieurs facteurs : loi normale seule dite, meme squelette, un terme
 	expect_match(all, "lmBF() {BayesFactor}", fixed = TRUE)
 	expect_match(all, "variance commune|common variance")
 	expect_match(all, "Solidit")
-	# meme squelette : 6 etapes racontees, dont l'etape 6 sans paires, puis le bilan
+	# meme squelette : 6 etapes racontees, dont l'etape 6 par terme probable (D20), puis le bilan
 	expect_equal(sum(grepl("^[0-9]+\\) ", txt)), 7L)
-	expect_true(any(grepl("^6\\) .*(non disponible|not available)", txt)))
+	expect_true(any(grepl("^6\\) (Quels niveaux|Which levels)", txt)))
 	expect_false(any(grepl("Bilan de m.bay|Bilan of m.bay", txt)))
 	expect_equal(sum(grepl("^\t==> (A|B|A:B) \\(", txt)), nrow(r$effects))
 	det <- paste(capture.output(print(r, detail = TRUE)), collapse = "\n")

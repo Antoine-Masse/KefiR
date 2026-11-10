@@ -813,3 +813,34 @@ Les variances par case sont comparées par le moteur à un facteur, avec les cas
 
 **Lecture.** C'est une protection d'affichage, pas la correction. La probabilité de 12,5 % au-delà de 0,95 sous H0 demeure dans `$effects`. La correction attendue moyenne les lois à plusieurs facteurs, sur le critère de D6 : 0,7 % à P > 0,95, avec au plus un tiers de puissance perdue à variances égales.
 
+
+## 16. Variances par case moyennées à plusieurs facteurs (D19, `agent_66`), 10 novembre
+
+Correction de D19, option 1 (`R/sys_bay_fact_laws.R`), rejouée sur les plans de §15 avec les mêmes graines, **sans aucun plafond**. Résultats : `scripts/resultats/agent_66_*.txt`.
+
+| Plan | Mesure | Variance commune seule | Lois moyennées |
+|---|---|---:|---:|
+| 2 × 2, H0, n = (5, 5, 5, 40), écarts-types (4, 4, 4, 1) | un terme à P > 0,95 | 12,5 % (25/200) | **0,9 %** (7/800) |
+| idem | un terme à P > 0,75 | 33,5 % | 10,0 % (80/800) |
+| 2 × 2, variances égales, effet de A de 0,8, n = 10 par case | P(A) > 0,95 | 17,5 % | **17,5 %** |
+| idem | P(A) > 0,75 | 43,5 % | 45,0 % |
+| idem | B ou A:B à P > 0,95 | – | 0 % |
+
+Détail des 800 jeux sous H0 : 3/200 (graines d'agent_64), 1/300 et 3/300 (graines suivantes).
+
+**Lecture.**
+- Sous H0, le taux de faux « oui » à P > 0,95 passe de 12,5 % à 0,9 % (intervalle binomial à 95 % : 0,4 % à 1,8 %). C'est le niveau visé de 0,7 % (D6, un facteur), sans l'atteindre exactement ; l'écart reste dans l'intervalle.
+- À variances égales, aucune puissance n'est perdue. P(variance par case) médiane : 0,22.
+- La loi à variance par case est toujours calculée : 100 % des jeux, aucun échec d'échantillonnage, aucun plafond résiduel.
+- Temps par appel (sans sensibilité, N = 40 ou 55) : médiane 1,8 à 1,9 s, maximum 4,4 s.
+- Contrôle du noyau : avec w = 1, on retrouve `lmBF` et le calcul exact à un facteur à 0,05 log près (`test-bay-fact-laws.R`).
+
+## 17. Post-hoc à plusieurs facteurs (D20), 10 novembre
+
+Vérifié sur des cas construits (`test-bay-fact-laws.R`, `test-bay-repeated.R`, `test-bay-story.R`) :
+- 3 × 2 avec un effet de A seul : la famille détaillée est A ; a1/a2 sont différents (P > 0,9) et a2/a3 penchent vers semblables ; A:B est nommé comme non comparé.
+- 2 × 2 avec une seule case décalée : A:B probable, les 4 cases sont comparées.
+- Split-plot (groupe inter × temps intra) : temps puis groupe, sujets en nuisance ; pas d'écart standardisé pour le facteur inter-sujets.
+- ANCOVA à deux facteurs : les niveaux de A sont comparés à B et x égaux.
+
+Temps : 6 à 9 s pour un appel complet avec sensibilité (3 × 2, 2 × 2, split-plot 16 sujets × 3 temps, ANCOVA 3 × 2 à N = 60). **Non fait** : calibration par simulation du post-hoc à plusieurs facteurs (fausses différences de paires sous H0).

@@ -336,3 +336,52 @@
 		pairs = data.frame(group1 = lev[pairs[1L, ]], group2 = lev[pairs[2L, ]], stringsAsFactors = FALSE),
 		range = range(xo), draws = nrow(po), computed = TRUE)
 }
+
+# Several factors (PERIMETRE section 7): which levels differ, term by term. Rule:
+#   - an interaction whose probability is at least 1/2, and that is not inside a more probable
+#     higher-order one: its cells are compared (interaction of its factors);
+#   - a main effect at least 1/2 that is in no such interaction: its levels are compared;
+#   - the other factors, the covariates and the subjects are nuisance terms present in every
+#     grouping, so that each gap is read at equal other factors.
+# Each family is computed by .bay_posthoc_oneway (partitions of the levels, Ewens prior, same
+# rules as with one factor). Terms with a covariate (slopes) are not compared here.
+.bay_posthoc_factorial <- function(y, factors, effects, rscale, prior_h1, draws, seed, id = NULL, cov = NULL) {
+	keys <- .bay_term_key(effects$term)
+	fs <- strsplit(keys, ":", fixed = TRUE)
+	is_fac <- vapply(fs, function(f) all(f %in% names(factors)), logical(1))
+	p <- effects$p_h1
+	prob <- is_fac & !is.na(p) & p >= 0.5
+	ord <- lengths(fs)
+	chosen <- integer(0)
+	for (i in order(-ord, -p)) {
+		if (!prob[i]) next
+		# Inside an interaction already chosen: covered by its cells.
+		if (any(vapply(chosen, function(j) all(fs[[i]] %in% fs[[j]]), logical(1)))) next
+		chosen <- c(chosen, i)
+	}
+	fams <- lapply(chosen, function(i) {
+		f <- fs[[i]]
+		g <- if (length(f) == 1L) factors[[f]] else interaction(factors[f], sep = " x ", drop = TRUE)
+		other <- setdiff(names(factors), f)
+		nuis <- c(if (length(other)) as.list(factors[other]), if (!is.null(cov)) as.list(cov))
+		nuis <- if (length(nuis)) as.data.frame(nuis, check.names = FALSE) else NULL
+		ph <- .bay_posthoc_oneway(y, g, rscale, prior_h1, draws, seed + i, id = id, cov = nuis)
+		if (!is.null(nuis)) ph$delta_unit <- if (!is.null(id)) "within" else "others"
+		# A factor between subjects: its gaps are not measured on the residual within subject,
+		# so no standardised gap is given.
+		if (!is.null(id) && all(tapply(as.integer(g), id, function(v) length(unique(v)) == 1L))) {
+			ph$pairs$delta <- ph$pairs$delta_low <- ph$pairs$delta_high <- NA_real_
+			ph$between <- TRUE
+		}
+		ph$term <- effects$term[i]
+		ph$p_term <- p[i]
+		ph$cells <- length(f) > 1L
+		ph$adjusted_for <- c(other, names(cov))
+		ph
+	})
+	skipped <- which(is_fac & !(seq_along(keys) %in% chosen) &
+		!vapply(seq_along(keys), function(i) any(vapply(chosen, function(j) all(fs[[i]] %in% fs[[j]]), logical(1))), logical(1)))
+	list(method = "factorial", families = fams, k = if (length(fams)) max(vapply(fams, `[[`, numeric(1), "k")) else 0L,
+		skipped = data.frame(term = effects$term[skipped], p_h1 = p[skipped], stringsAsFactors = FALSE),
+		pairs = if (length(fams)) do.call(rbind, lapply(fams, function(ph) data.frame(term = ph$term, ph$pairs, stringsAsFactors = FALSE))) else NULL)
+}

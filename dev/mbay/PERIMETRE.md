@@ -334,11 +334,11 @@ Légende :
 |---|---|---|---|
 | 2 et k groupes, réponse continue | Couvert | 4 lois comparées (normale ou t, variances égales ou non), D6 | — |
 | Post-hoc à un facteur | Couvert | Regroupements, D11 ; Gibbs au-delà de 8 groupes | Calibration au-delà de 8 non simulée |
-| Plusieurs facteurs, interactions | Couvert | `lmBF`, HOP, D2 | **Loi normale à variance commune seule** ; pas de post-hoc |
-| ANCOVA, pentes parallèles ou différentes, plusieurs covariables | Couvert | `lmBF`, covariable centrée, D16 | Normale seule ; post-hoc à un facteur |
+| Plusieurs facteurs, interactions | Couvert | `lmBF`, HOP, D2 ; variance commune ou par case moyennées, D19 | Lois t non calculées ; post-hoc D20 non calibré par simulation |
+| ANCOVA, pentes parallèles ou différentes, plusieurs covariables | Couvert | `lmBF`, covariable centrée, D16 | Normale à variance commune seule ; post-hoc à plusieurs facteurs D20 |
 | Apparié, 2 niveaux | Couvert | `ttestBF(paired)`, D15 | Normale seule |
 | Mesures répétées, 1 facteur intra | Couvert | `lmBF(whichRandom)`, D15 | Symétrie composée supposée, non testée |
-| Plan en tranches (inter × intra) | Couvert | `lmBF(whichRandom)`, D15 | Pas de post-hoc |
+| Plan en tranches (inter × intra) | Couvert | `lmBF(whichRandom)`, D15 | Post-hoc D20 ; pas d'écart standardisé pour le facteur inter |
 | Modèle mixte avec répliques par sujet et condition | Refusé | — | À faire : `lmBF` avec sujet et sujet × condition |
 | Pentes aléatoires | Refusé | — | Stan (rstanarm) seulement |
 | ANCOVA appariée, MANCOVA, MANOVA répétée | Refusé | — | Non couverts par `m.test()` non plus |
@@ -348,7 +348,8 @@ Légende :
 | Réponse ordonnée (notation bornée), 1 facteur | Couvert | `polr`, BIC, D17 voie 3 | Cotes proportionnelles non testées ; plusieurs facteurs : refusé |
 | Tests de rangs (Wilcoxon, Kruskal) | Non couvert, raisons D17 | — | Leurs cas sont repris par les voies 3 et par les lois t |
 | Covariable seule (régression) | Refusé | — | Hors `m.test()` |
-| Lois t ou variances inégales à plusieurs facteurs | Non couvert (normale seule, annoncée) | — | **Priorité suivante** |
+| Variances inégales à plusieurs facteurs | Couvert (entre groupes) | Moyenne des lois par case, D19 | Pas avec sujets ou covariables |
+| Lois t à plusieurs facteurs | Non couvert (annoncé) | — | À faire |
 | Voie robuste ou Stan | Non couverte | — | rstanarm en Suggests (D1), non branché |
 
 **Temps typique sur un jeu de TP** (N ≈ 40, valeurs par défaut, `scripts/resultats/agent_63.txt`) :

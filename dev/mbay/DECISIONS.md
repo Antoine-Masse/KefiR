@@ -511,7 +511,7 @@ Demandé par la session parente dans l'ordre du PERIMETRE, avec trois points de 
 
 **Hors périmètre.** `m.test()` n'est pas touché. Ses défauts de forme relevés par l'auditeur (point décimal, tableaux R en anglais, lettres contradictoires) relèvent d'une correction à part.
 
-## D19. Variances inégales à plusieurs facteurs : PROTECTION PROVISOIRE DÉCIDÉE, correction PROPOSÉE (10 novembre)
+## D19. Variances inégales à plusieurs facteurs : CORRECTION DÉCIDÉE ET FAITE (10 novembre, option 1)
 
 **Constat** (VALIDATION §15, `agent_64`). Sous H0, en 2 × 2 avec des variances inégales, le moteur à variance commune dit « oui » à P > 0,95 dans 12,5 % des jeux.
 
@@ -528,3 +528,30 @@ Demandé par la session parente dans l'ordre du PERIMETRE, avec trois points de 
   3. Stan : écarté (D18, compilation).
 - **Décision à prendre** après un essai de l'option 1 sur `agent_64` et `agent_65`, avec le critère de D6. Le post-hoc à plusieurs facteurs (PERIMETRE §7, priorité 0) passe avant si l'essai dépasse une séance.
 
+**Correction faite (10 novembre au soir) : option 1.** `R/sys_bay_fact_laws.R`, sans toucher `sys_bay_laws.R` dont il réutilise les briques : statistiques par case, constante de mesure, proposition défensive en Dirichlet, ajustement en t multivariée, estimateur d'importance.
+- **Modèle.** y ~ N(μ + x_c'β, σ_c²), σ_c² = 1 / (w_c τ̄), w_c = K ϑ_c, ϑ ~ Dirichlet(1,5) sur les K cases ; β_t | g_t ~ N(0, g_t / τ̄ I), g_t ~ InvGamma(1/2, r²/2), un g par terme. Le codage x_c est celui de BayesFactor (contrastes orthonormés, produits pour une interaction). Avec w = 1, on retrouve exactement l'a priori de `lmBF` : contrôlé à 0,02 log près sur 2 × 2 et 3 × 2 (`test-bay-fact-laws.R`).
+- **Échelle commune.** 1/τ̄ est la moyenne harmonique des variances des cases. Un effet additif s'étend sur des cases de dispersions différentes ; il lui faut une seule échelle. Le prix est celui de B2 à un facteur : une case très dispersée déplace un peu cette échelle. Il est accepté ici, car les critères ci-dessous sont tenus.
+- **Calcul.** Pour chaque modèle héréditaire, μ, τ̄ et β s'intègrent en forme close. L'intégrale sur (ϑ, g) se fait par échantillonnage d'importance autour du mode : t multivariée à 4 ddl à 85 %, partie défensive à 15 %, au moins 4000 tirages, et un réajustement si l'ESS < tirages/5. Les mêmes tirages servent aux trois r de la sensibilité. La loi à variance commune garde `lmBF`. Les deux lois sont moyennées à poids a priori égaux dans le facteur de Bayes de chaque modèle contre le nul. L'espace des modèles et son a priori HOP ne changent pas.
+- **Conditions.** Au moins 3 valeurs par case, pas de sujets ni de covariables, et `normal_het` admis par `.bay_laws_allowed` (cases constantes exclues). Sinon, la loi commune est gardée et le récit le dit. Si l'échantillonnage échoue (ESS < 30), la prudence provisoire reprend, avec un plafond quand le rapport des écarts-types est ≥ 2.
+- **Résultats** (`agent_66`, VALIDATION §16). Sous H0, en 2 × 2 à variances inégales, P > 0,95 sur un terme passe de 12,5 % à 1,5 % sur 200 jeux, sans aucun plafond (total sur 800 jeux : voir VALIDATION §16). À variances égales, P(A) > 0,95 reste à 17,5 % : aucune puissance perdue. Temps médian 1,8 s, maximum 4,1 s, à N = 40.
+- **Non fait.** Lois t à plusieurs facteurs. Variances par case avec sujets ou covariables (plafond provisoire non appliqué non plus : seul le récit le signale).
+
+
+## D20. Post-hoc à plusieurs facteurs : DÉCIDÉ ET FAIT (10 novembre)
+
+**Demande** (PERIMETRE §7, priorité 0). En plan factoriel, ANCOVA à plusieurs facteurs ou split-plot : comparer les effets principaux quand aucune interaction n'est probable, et les cases quand A:B l'est.
+
+**Règle** (`.bay_posthoc_factorial`, `R/sys_bay_posthoc.R`).
+- On parcourt les termes de facteurs du plus haut ordre au plus bas. Un terme est détaillé si sa probabilité vaut au moins 1/2 et s'il n'est pas contenu dans un terme déjà détaillé.
+- Une interaction détaillée compare ses cases ; un effet principal détaillé compare ses niveaux.
+- Les autres facteurs (effets principaux), les covariables et les sujets entrent dans chaque regroupement comparé comme termes de nuisance. Chaque écart se lit donc « à autres facteurs égaux ».
+- Chaque famille passe par `.bay_posthoc_oneway` : regroupements des niveaux, a priori d'Ewens, mêmes règles qu'à un facteur. Calcul exact jusqu'à 5 groupes avec nuisance (option `KefiR.bay_exact_max_rm`), Gibbs au-delà.
+- Les termes non probables ne sont pas détaillés ; le récit les nomme. Les termes avec une covariable (pentes) ne sont pas comparés ici.
+
+**Écart standardisé.** Il est rapporté à l'écart-type résiduel, autres termes pris en compte. Avec des sujets, c'est le résiduel au sein des sujets. Pour un facteur inter-sujets d'un split-plot, ce résiduel ne mesure pas l'écart entre sujets : l'écart standardisé n'est pas donné, seul l'écart brut l'est.
+
+**Choix et limites.**
+- Le seuil de 1/2 suit la lecture du bilan (le terme est « plutôt oui »). Il ne s'appuie sur aucune source : c'est un choix KefiR.
+- Les a priori des familles sont indépendants de l'a priori HOP sur les modèles (prior_h1 = 1/2 par famille, comme à un facteur).
+- Pas d'effets simples (A à chaque niveau de B) : les cases donnent la même information en un seul regroupement.
+- Avec des variances inégales probables (D19), les paires supposent une variance commune et le récit le dit.

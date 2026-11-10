@@ -87,7 +87,8 @@ test_that("plan en tranches (sujets dans des groupes) : moteur commun, termes du
 	}, character(1))
 	mine <- r$models[-1L, ]
 	expect_lt(max(abs(mine$log_bf - ref$bf[match(key(mine$model), key(rownames(ref)))])), 0.1)
-	expect_null(r$posthoc)
+	# Post-hoc a plusieurs facteurs (D20) : familles des termes probables, sujets en nuisance.
+	expect_identical(r$posthoc$method, "factorial")
 })
 
 test_that("mesures repetees : mixte avec repliques refuse clairement", {
