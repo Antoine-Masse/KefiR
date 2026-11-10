@@ -322,3 +322,55 @@ Déduite des sections précédentes ; ce n'est pas une mesure.
 - **Sans équivalent à reproduire** : tests robustes de la branche non normale (Kruskal, Brunner-Munzel, medpb2, t1way, bootstrap, permutation) ; le remplacement est une vraisemblance robuste ou de rangs, à choisir.
 - **Étalon de comparaison** : `m.test` ne doit pas servir de référence pour le split-plot, ni pour `(1|id)` post-hocs, tant que les points §4.4 1 à 3 ne sont pas résolus.
 - **À signaler à Antoine indépendamment de m.bay** : §4.4 points 1 à 4, et `formula=` nommé (§2.3).
+
+## 7. Couverture de m.bay au 10 novembre 2026 (branche feat/m.bay)
+
+Légende :
+- **Couvert** : calculé, validé, raconté.
+- **Refusé** : arrêt avec un message qui nomme le plan et renvoie à `m.test()`.
+- **Non couvert** : ni calculé, ni refusé par un message propre à ce plan.
+
+| Plan de `m.test()` | m.bay | Moteur, décision | Limites ou reste à faire |
+|---|---|---|---|
+| 2 et k groupes, réponse continue | Couvert | 4 lois comparées (normale ou t, variances égales ou non), D6 | — |
+| Post-hoc à un facteur | Couvert | Regroupements, D11 ; Gibbs au-delà de 8 groupes | Calibration au-delà de 8 non simulée |
+| Plusieurs facteurs, interactions | Couvert | `lmBF`, HOP, D2 | **Loi normale à variance commune seule** ; pas de post-hoc |
+| ANCOVA, pentes parallèles ou différentes, plusieurs covariables | Couvert | `lmBF`, covariable centrée, D16 | Normale seule ; post-hoc à un facteur |
+| Apparié, 2 niveaux | Couvert | `ttestBF(paired)`, D15 | Normale seule |
+| Mesures répétées, 1 facteur intra | Couvert | `lmBF(whichRandom)`, D15 | Symétrie composée supposée, non testée |
+| Plan en tranches (inter × intra) | Couvert | `lmBF(whichRandom)`, D15 | Pas de post-hoc |
+| Modèle mixte avec répliques par sujet et condition | Refusé | — | À faire : `lmBF` avec sujet et sujet × condition |
+| Pentes aléatoires | Refusé | — | Stan (rstanarm) seulement |
+| ANCOVA appariée, MANCOVA, MANOVA répétée | Refusé | — | Non couverts par `m.test()` non plus |
+| MANOVA, 1 ou plusieurs facteurs | Refusé | — | Formule Normale-Inverse-Wishart prévue (D1) |
+| Réponse binaire ou catégorielle, 1 facteur | Couvert | `contingencyTableBF`, D17 voie 1 | Plusieurs facteurs : refusé |
+| Comptages, 1 facteur | Couvert | Poisson et binomiale négative, BIC, D17 voie 2 | Plusieurs facteurs : refusé ; puissance modeste |
+| Réponse ordonnée (notation bornée), 1 facteur | Couvert | `polr`, BIC, D17 voie 3 | Cotes proportionnelles non testées ; plusieurs facteurs : refusé |
+| Tests de rangs (Wilcoxon, Kruskal) | Non couvert, raisons D17 | — | Leurs cas sont repris par les voies 3 et par les lois t |
+| Covariable seule (régression) | Refusé | — | Hors `m.test()` |
+| Lois t ou variances inégales à plusieurs facteurs | Non couvert (normale seule, annoncée) | — | **Priorité suivante** |
+| Voie robuste ou Stan | Non couverte | — | rstanarm en Suggests (D1), non branché |
+
+**Temps typique sur un jeu de TP** (N ≈ 40, valeurs par défaut, `scripts/resultats/agent_63.txt`) :
+
+| Plan | Temps |
+|---|---:|
+| 2 groupes | 2,8 s |
+| 4 groupes | 9,1 s |
+| 2 × 2 facteurs | 1,1 s |
+| Apparié | 0,5 s |
+| Répété, 3 temps | 1,3 s |
+| ANCOVA | 1,6 s |
+| Oui/non | 0,1 s |
+| Comptages | 0,2 s |
+| Likert 1-5 | 0,3 s |
+
+Tous restent sous 30 s. Le récit s'imprime étape par étape, donc la première ligne paraît dès l'étape 1. Toute voie future au-delà de 30 s devra afficher une ligne d'attente, comme le fait déjà le cas des plus de 50 modèles.
+
+**Stan sur ce poste.** La compilation échoue : R 4.6 attend Rtools 4.5, et seul Rtools 4.4 est installé (`agent_62`). Un poste étudiant n'a en général pas Rtools. Les voies Stan (brms, rstanarm compilé) sont donc écartées pour l'usage en TP.
+
+**Priorités, pour un TP de BUT** (complétées le 10 novembre avec la session parente).
+0. **Post-hoc à plusieurs facteurs, en ANCOVA et en plan en tranches**, à priorité égale avec le point 1 : effets principaux quand l'interaction n'est pas probable, cases quand A:B l'est.
+1. **Lois t ou variances inégales à plusieurs facteurs.** Les plans à deux facteurs dont les variances diffèrent selon les cases sont fréquents en TP. Aujourd'hui, ils sont répondus en loi normale à variance commune, avec un simple avertissement. La mise en défaut de D6 (variances inégales, 20 % de faux « oui » à P > 0,95 en voie normale seule à un facteur) laisse craindre le même défaut à plusieurs facteurs.
+2. **Modèle mixte avec répliques**, plusieurs mesures par sujet et condition. C'est courant en TP de mesures répétées, et la réponse est aujourd'hui un refus.
+3. **MANOVA.** Plus rare en BUT.

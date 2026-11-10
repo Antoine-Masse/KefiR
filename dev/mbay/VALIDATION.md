@@ -755,5 +755,36 @@ Sous H0 Poisson : P > 0,75 dans 2 % des jeux, P > 0,95 dans 0 %. **Lecture.** L'
 - **Rapports des cotes.** Ils égalent exp(coef) de `polr` à 1e-6.
 - **Mise en forme.** Les lignes tiennent dans 80 colonnes.
 
-**Non simulé.** Calibration de la voie ordinale sous H0 et sous effet ; écart aux cotes proportionnelles.
+### Calibration (`agent_61`, N = 300 jeux par scénario, 3 groupes)
+
+Le Likert est tiré par seuils d'une variable latente normale. Résultats : `scripts/resultats/agent_61.txt`.
+
+| Scénario | m.bay P>0,5 / P>0,75 / P>0,95 | polr, rapport de vraisemblance p<0,05 | Kruskal p<0,05 | Voie ordinale choisie seule |
+|---|---|---:|---:|---:|
+| 5 niveaux, n = 10, H0 | 0,047 / 0,027 / 0,003 | 0,077 | 0,053 | 1,000 |
+| 5 niveaux, n = 30, H0 | 0,003 / 0 / 0 | 0,060 | 0,043 | 1,000 |
+| 7 niveaux, n = 10, H0 | 0,063 / 0,027 / 0,010 | 0,083 | 0,060 | 1,000 |
+| 7 niveaux, n = 30, H0 | 0,003 / 0 / 0 | 0,047 | 0,037 | 1,000 |
+| 5 niveaux, n = 10, décalage 0,8 | 0,337 / 0,190 / 0,073 | 0,407 | 0,327 | 1,000 |
+| 5 niveaux, n = 30, décalage 0,5 | 0,263 / 0,163 / 0,060 | 0,447 | 0,437 | 1,000 |
+| 7 niveaux, n = 30, décalage 0,5 | 0,253 / 0,153 / 0,060 | 0,443 | 0,420 | 1,000 |
+| 5 niveaux, n = 30, cotes non proportionnelles (même centre, dispersion × 2,5) | 0,007 / 0,003 / 0 | 0,080 | 0,053 | 1,000 |
+
+**Lecture.**
+- **Sous H0,** une différence est annoncée au-delà de « faible » dans 0 à 2,7 % des jeux.
+- **Avec un effet,** la méthode est prudente, comme la voie 2 : 15 à 19 % au-delà de 0,75, contre 33 à 45 % pour les tests fréquentistes. C'est l'a priori d'information unitaire.
+- **Cotes non proportionnelles** (même centre, dispersion différente) : ni m.bay, ni le rapport de vraisemblance, ni Kruskal ne trouvent de différence. Le récit ne l'invente pas ; il ne voit pas non plus l'écart de dispersion, puisque l'hypothèse n'est pas testée.
+
+### BIC contre Laplace sous a priori propre (`agent_62`)
+
+La référence exacte prévue, brms (`cumulative`) avec bridgesampling, n'a pas pu tourner : la compilation Stan échoue sur ce poste (R 4.6 attend Rtools 4.5). Elle est remplacée par l'approximation de Laplace sous l'a priori propre d'information unitaire, β ~ N(0, nV), que le BIC approche ([KassWasserman1995]).
+
+| Cas | BIC | Laplace, information unitaire | Écart |
+|---|---:|---:|---:|
+| H0, n = 20 | −3,62 | −3,65 | 0,02 |
+| décalage 0,6, n = 20 | −3,30 | −3,33 | 0,03 |
+| 0 ; 0,5 ; 1, n = 15 | 3,63 | 3,47 | 0,16 |
+| décalage 0,4, n = 40 | −3,97 | −3,99 | 0,02 |
+
+L'écart atteint 0,16 en log au plus, loin de log 3. **Limite** : ce n'est pas une vraisemblance marginale exacte par tirage, seulement une approximation plus fine, sous le même a priori.
 
