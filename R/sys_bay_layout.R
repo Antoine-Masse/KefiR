@@ -22,6 +22,7 @@
 	sup <- .bay_support_bf(h$posterior[1L], lb)
 	if (isTRUE(obj$contradiction)) sup <- .bay_support(min(h$posterior[1L], 0.6))
 	if (isTRUE(any(obj$overlap$poor)) && sup$level > 2L) sup <- .bay_support(0.7)
+	if (isTRUE(obj$het_cells) && !isTRUE(h$null[1L]) && sup$level > 2L) sup <- .bay_support(0.7)
 	open <- identical(obj$sensitivity$verdict, "changes")
 	if (open) sup <- list(en = "not settled", fr = "non tranch\u00e9", level = 1L)
 	list(h = h, lb = lb, sup = sup, open = open)

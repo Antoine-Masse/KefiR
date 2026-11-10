@@ -80,6 +80,14 @@
 
 # The sentence a reader looks for first. Never an equivalence, a size or a cause.
 .bay_verdict <- function(obj) {
+	if (isTRUE(obj$het_cells) || isTRUE(any(obj$overlap$poor))) {
+		# A capped support cannot make a firm verdict.
+		h <- obj$hypotheses
+		if (isTRUE(h$posterior[1L] > 0.74) && !isTRUE(h$null[1L])) {
+			obj$hypotheses$posterior[1L] <- 0.74
+			obj$hypotheses$posterior[2L] <- 0.26
+		}
+	}
 	v <- .bay_verdict_raw(obj)
 	if (!is.null(obj$posthoc) && (isTRUE(obj$posthoc$k > 2L) || identical(obj$posthoc$method, "slopes"))) {
 		v$en <- sub("neither that it matters, nor which groups differ, nor why.", "neither that it matters nor why; the pairs are below.", v$en, fixed = TRUE)

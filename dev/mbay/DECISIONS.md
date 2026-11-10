@@ -510,3 +510,21 @@ Demandé par la session parente dans l'ordre du PERIMETRE, avec trois points de 
 **Contrôle.** `test-bay-story.R` vérifie qu'aucune ligne ne dépasse 80 colonnes, sur 7 plans (les 6 de l'audit et le discret), en français et en anglais, avec `width` à 80 et à 120. Il vérifie aussi 60 colonnes avec `options(width = 60)`. Il contrôle enfin la marque de chaque ligne, le bilan après une ligne vide et le rejeu à l'identique. Les sorties avant et après sont dans `relecture/lisibilite_2026-11-09/`.
 
 **Hors périmètre.** `m.test()` n'est pas touché. Ses défauts de forme relevés par l'auditeur (point décimal, tableaux R en anglais, lettres contradictoires) relèvent d'une correction à part.
+
+## D19. Variances inégales à plusieurs facteurs : PROTECTION PROVISOIRE DÉCIDÉE, correction PROPOSÉE (10 novembre)
+
+**Constat** (VALIDATION §15, `agent_64`). Sous H0, en 2 × 2 avec des variances inégales, le moteur à variance commune dit « oui » à P > 0,95 dans 12,5 % des jeux.
+
+**Provisoire, fait.**
+- Le moteur à un facteur, sans deuxième implémentation, compare les variances par case.
+- Si les variances inégales sont probables, l'étape 3 dit « Prudence ajoutée ». Le soutien des réponses en faveur d'un effet est alors plafonné à faible et le verdict reste prudent.
+- Résultats : « oui fort » affiché sous H0 passé de 12,5 % à 0 % ; 5 % de déclenchement à tort à variances égales ; aucune puissance perdue.
+
+**Correction, à faire.** Moyenner {variance commune, variance par case} sur chaque modèle de l'espace héréditaire.
+- **Ce qui ne marche pas directement.** La reprise « presque telle quelle » de `sys_bay_laws` ne suffit pas. À un facteur, chaque moyenne de groupe a sa propre échelle (a_i ~ N(0, g σ_i²), correction du défaut B2). À plusieurs facteurs, un terme comme A s'étend sur des cases d'échelles différentes.
+- **Options.**
+  1. Matrice de plan pondérée par case, avec un a priori de Zellner-Siow sur chaque terme rapporté à une échelle commune des cases (moyenne harmonique des σ_c²), et un échantillonnage d'importance sur les proportions de précision (Dirichlet, comme à un facteur). Simple, mais il rouvre la question B2 : une case dispersée sans rapport change l'échelle des termes.
+  2. Modèles qui sont des partitions des cases (nul, A seul, B seul, plein), calculés exactement par le moteur à un facteur ; le modèle additif A + B, qui n'en est pas une, est approché.
+  3. Stan : écarté (D18, compilation).
+- **Décision à prendre** après un essai de l'option 1 sur `agent_64` et `agent_65`, avec le critère de D6. Le post-hoc à plusieurs facteurs (PERIMETRE §7, priorité 0) passe avant si l'essai dépasse une séance.
+

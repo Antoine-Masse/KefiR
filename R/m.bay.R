@@ -678,6 +678,35 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 		"Plusieurs facteurs : seule la loi normale \u00e0 variance commune est calcul\u00e9e.")
 	.bay_tell(story, "Heavy tails and unequal variances are not validated with several factors yet.",
 		"Queues lourdes et variances in\u00e9gales ne sont pas encore valid\u00e9es \u00e0 plusieurs facteurs.", "note")
+	# Variances per cell, compared by the one-factor engine with the cells as groups
+	# (sys_bay_laws.R, no second implementation). Until the laws are averaged with several
+	# factors, probable unequal variances cap the support at weak (VALIDATION 15, agent_64:
+	# 12.5 % of false "yes" at P > .95 under H0 otherwise).
+	het_cells <- FALSE
+	cl <- interaction(factors, drop = TRUE)
+	if (!rm && !anc && nlevels(cl) >= 2L && min(table(cl)) >= 3L) {
+		st_c <- .bay_laws_stats(y, cl)
+		lk <- .bay_laws_allowed(st_c, c("normal_eq", "normal_het"), 1.5)
+		if (length(lk) == 2L) {
+			tab_c <- .bay_laws_table(st_c, rscale, 1.5, min(as.integer(draws), 2000L), as.integer(seed), laws = lk)
+			p_het_c <- .bay_laws_average(tab_c, rscale)$p_law[["normal_het"]]
+			if (isTRUE(p_het_c >= 0.75)) {
+				het_cells <- TRUE
+				sds <- tapply(y, cl, stats::sd)
+				.bay_tell(story, paste0("Variances per cell: unequal probable (", .bay_pct(p_het_c, "."), "); standard deviations from ",
+						format(signif(min(sds), 2), trim = TRUE), " to ", format(signif(max(sds), 2), trim = TRUE), "."),
+					paste0("Variances par case : in\u00e9gales probables (", .bay_pct(p_het_c, ","), ") ; \u00e9carts-types de ",
+						gsub(".", ",", format(signif(min(sds), 2), trim = TRUE), fixed = TRUE), " \u00e0 ", gsub(".", ",", format(signif(max(sds), 2), trim = TRUE), fixed = TRUE), "."))
+				.bay_tell(story, "Caution added: the common-variance model can then say yes wrongly; support capped at weak.",
+					"Prudence ajout\u00e9e : le mod\u00e8le \u00e0 variance commune peut alors dire oui \u00e0 tort ; soutien plafonn\u00e9 \u00e0 faible.", "decide")
+				.bay_tell(story, "Unequal variances per cell with several factors: the laws are not yet averaged (VALIDATION 15); the support of every answer is capped at weak and the verdict stays cautious.",
+					"Variances in\u00e9gales par case \u00e0 plusieurs facteurs : les lois ne sont pas encore moyenn\u00e9es (VALIDATION 15) ; le soutien de chaque r\u00e9ponse est plafonn\u00e9 \u00e0 faible et le verdict reste prudent.", "detail")
+			} else {
+				.bay_tell(story, paste0("Variances per cell: ", if (p_het_c <= 0.25) "equal probable" else "not settled", " (unequal at ", .bay_pct(p_het_c, "."), ")."),
+					paste0("Variances par case : ", if (p_het_c <= 0.25) "\u00e9gales probables" else "non tranch\u00e9es", " (in\u00e9gales \u00e0 ", .bay_pct(p_het_c, ","), ")."))
+			}
+		}
+	}
 	if (!no_laws && !identical(laws, "normal_eq")) {
 		note("With several factors only the normal law with a common variance is computed; laws is ignored.",
 			"\u00c0 plusieurs facteurs, seule la loi normale \u00e0 variance commune est calcul\u00e9e ; laws est ignor\u00e9.")
@@ -869,6 +898,7 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 		questions = .bay_fact_questions(fa$effects$term, resp, adj = cov_names),
 		overlap = fa$overlap, cov_centres = fa$cov_centres,
 		cov_by_group = if (anc) sapply(input$covariates, function(v) tapply(v, interaction(input$factors, drop = TRUE), mean)) else NULL,
+		het_cells = if (exists("het_cells", inherits = FALSE)) het_cells else FALSE,
 		contradiction = FALSE, heavy = FALSE, detail = isTRUE(detail),
 		descriptive_stats = fa$means, cell_means = local({
 			cl <- interaction(input$factors, sep = " x ", drop = TRUE)

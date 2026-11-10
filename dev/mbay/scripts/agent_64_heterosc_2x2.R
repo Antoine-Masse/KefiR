@@ -15,10 +15,10 @@ r <- t(vapply(seq_len(N), function(i) {
 	d$y <- rnorm(length(cell), 0, sdv[cell])
 	rr <- suppressMessages(m.bay(y ~ A * B, data = d, verbose = FALSE, sensitivity = FALSE, draws = 2000))
 	av <- summary(aov(y ~ A * B, data = d))[[1]][1:3, "Pr(>F)"]
-	c(any95 = any(rr$effects$p_h1 > 0.95), any75 = any(rr$effects$p_h1 > 0.75), aov = any(av < 0.05),
+	c(any95 = any(rr$effects$p_h1 > 0.95), any75 = any(rr$effects$p_h1 > 0.75), aov = any(av < 0.05), strong = any(rr$effects$p_h1 > 0.95) && !isTRUE(rr$het_cells),
 		welch = oneway.test(y ~ interaction(A, B), data = d)$p.value < 0.05)
-}, numeric(4)))
+}, numeric(5)))
 out <- c(R.version.string, sprintf("agent_64 : 2 x 2, H0, n = (5,5,5,40), sd = (4,4,4,1), N = %d", N),
-	sprintf("m.bay un terme P>.95 : %.3f | P>.75 : %.3f | aov un terme p<.05 : %.3f | Welch sur les cases p<.05 : %.3f",
-		mean(r[, 1]), mean(r[, 2]), mean(r[, 3]), mean(r[, 4])))
+	sprintf("m.bay un terme P>.95 : %.3f | P>.75 : %.3f | aov un terme p<.05 : %.3f | Welch sur les cases p<.05 : %.3f | oui fort affiche (P>.95 sans plafond) : %.3f",
+		mean(r[, 1]), mean(r[, 2]), mean(r[, 3]), mean(r[, 5]), mean(r[, 4])))
 writeLines(out, file.path(BASE, "dev/mbay/scripts/resultats/agent_64.txt")); cat(out, sep = "\n")

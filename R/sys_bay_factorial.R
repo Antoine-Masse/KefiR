@@ -387,7 +387,7 @@
 			for (i in seq_len(nrow(e))) {
 				yes <- e$p_h1[i] >= 0.5
 				s <- .bay_support_bf(max(e$p_h1[i], e$p_h0[i]), e$log_bf[i] * if (yes) 1 else -1)
-				if (isTRUE(any(obj$overlap$poor)) && s$level > 2L) s <- .bay_support(0.7)
+				if ((isTRUE(any(obj$overlap$poor)) || (isTRUE(obj$het_cells) && yes)) && s$level > 2L) s <- .bay_support(0.7)
 				against <- !is.na(e$log_bf[i]) && ((e$log_bf[i] >= 0) != yes)
 				open <- s$level == 1L || against || (!is.null(sens) && identical(sens$verdict_terms[i], "changes"))
 				ans_en <- if (open) "not settled" else paste0(if (yes) "yes, " else "no, ", s$en)
@@ -448,6 +448,10 @@
 				emit("decide", "support capped at weak, since the groups hardly overlap on the covariate and the adjustment extrapolates.",
 					"soutien plafonn\u00e9 \u00e0 faible, car les groupes se recouvrent peu sur la covariable et l'ajustement extrapole.")
 			}
+		}
+		if (isTRUE(obj$het_cells)) {
+			emit("decide", "Support capped at weak: unequal variances per cell, which the common-variance model does not take into account.",
+				"Soutien plafonn\u00e9 \u00e0 faible : variances in\u00e9gales par case, que le mod\u00e8le \u00e0 variance commune ne prend pas en compte.")
 		}
 		rm_ <- obj$plan %in% c("paired", "repeated")
 		sd_en <- if (anc) "Residual standard deviation (covariates accounted for): " else if (rm_) "Residual standard deviation within subject: " else if (isTRUE(obj$sd_is_within)) "Within-cell standard deviation: " else "Residual standard deviation: "

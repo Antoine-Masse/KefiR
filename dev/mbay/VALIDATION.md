@@ -801,3 +801,15 @@ On rejoue la mise en défaut de D6 dans un plan 2 × 2 sous H0 (aucun effet), av
 
 **Lecture.** Le moteur à plusieurs facteurs, qui suppose une variance commune, se trompe ici comme le faisait la voie normale seule à un facteur avant D6 : 12,5 % de faux « oui » à P > 0,95. Le critère de réussite de la prochaine étape est de ramener ce taux au niveau d'un facteur avec variances par groupe, soit 0,7 % à P > 0,95 (D6).
 
+### Protection provisoire (10 novembre)
+
+Les variances par case sont comparées par le moteur à un facteur, avec les cases pour groupes (lois normales à variance commune ou par groupe). Quand les variances inégales sont probables (≥ 0,75), le soutien de toute réponse en faveur d'un effet est plafonné à « faible », et le verdict reste prudent. Les probabilités ne changent pas.
+
+| Plan | Mesure | Avant | Après |
+|---|---|---:|---:|
+| 2 × 2, H0, variances inégales (`agent_64`) | « oui fort » affiché, P > 0,95 sans plafond | 12,5 % | 0 % |
+| 2 × 2, variances égales, effet de A de 0,8 (`agent_65`) | prudence déclenchée à tort | – | 5 % |
+| 2 × 2, variances égales, effet de A de 0,8 (`agent_65`) | P(A) > 0,95 affiché « fort » | 17,5 % | 17,5 % |
+
+**Lecture.** C'est une protection d'affichage, pas la correction. La probabilité de 12,5 % au-delà de 0,95 sous H0 demeure dans `$effects`. La correction attendue moyenne les lois à plusieurs facteurs, sur le critère de D6 : 0,7 % à P > 0,95, avec au plus un tiers de puissance perdue à variances égales.
+
