@@ -696,8 +696,16 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 			paste0("Variances par case : ", if (ph >= 0.75) "in\u00e9gales probables" else if (ph <= 0.25) "\u00e9gales probables" else "non tranch\u00e9es",
 				" (", if (ph >= 0.75) .bay_pct(ph, ",") else if (ph <= 0.25) .bay_pct(1 - ph, ",") else paste("in\u00e9gales \u00e0", .bay_pct(ph, ",")),
 				") ; \u00e9carts-types de ", sd_rng(","), "."))
-		.bay_tell(story, "Both are kept: each answer weighs the common variance and one variance per cell by their probability.",
-			"Les deux sont gard\u00e9es : chaque r\u00e9ponse p\u00e8se la variance commune et une variance par case selon leur probabilit\u00e9.", "decide")
+		if (ph >= 0.75) {
+			.bay_tell(story, "So each answer is computed mostly with one variance per cell: a very dispersed cell no longer makes gaps look larger than they are.",
+				"Chaque r\u00e9ponse est donc calcul\u00e9e surtout avec une variance par case : une case tr\u00e8s dispers\u00e9e ne fait plus para\u00eetre les \u00e9carts plus grands qu'ils ne sont.", "decide")
+		} else if (ph <= 0.25) {
+			.bay_tell(story, "So each answer is computed mostly with a common variance, as usual; one variance per cell keeps its small weight.",
+				"Chaque r\u00e9ponse est donc calcul\u00e9e surtout avec une variance commune, comme d'habitude ; une variance par case garde son petit poids.", "decide")
+		} else {
+			.bay_tell(story, "Both are kept: each answer weighs the common variance and one variance per cell by their probability.",
+				"Les deux sont gard\u00e9es : chaque r\u00e9ponse p\u00e8se la variance commune et une variance par case selon leur probabilit\u00e9.", "decide")
+		}
 		.bay_tell(story, "heavy tails are not computed with several factors yet.",
 			"les queues lourdes ne sont pas encore calcul\u00e9es \u00e0 plusieurs facteurs.", "note")
 		.bay_tell(story, "One variance per cell: Dirichlet(1.5) on the proportions of precision of the cells (Dablander et al. 2024); effects on the scale of the harmonic mean of the cell variances; importance sampling (DECISIONS, D19).",
@@ -883,6 +891,7 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 		covc <- if (anc) as.data.frame(lapply(input$covariates, function(v) v - mean(v)), check.names = FALSE) else NULL
 		ph <- .bay_posthoc_factorial(y, factors, fa$effects, rscale, 0.5, draws, seed, id = if (rm) input$id else NULL, cov = covc)
 		ph$caution <- isTRUE(fa$het_used) && isTRUE(fa$p_het >= 0.75)
+		ph$open_terms <- if (!is.null(fa$sensitivity)) fa$effects$term[fa$sensitivity$verdict_terms == "changes"] else character(0)
 		.bay_story_posthoc_fact(story, ph, caution = ph$caution)
 	}
 	if (is.null(ph)) .bay_story_no_posthoc(story, if (isTRUE(posthoc)) "factors" else "off")

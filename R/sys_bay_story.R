@@ -552,18 +552,32 @@
 		f <- fams[[j]]
 		at_en <- if (length(f$adjusted_for)) paste0(", at equal ", paste(f$adjusted_for, collapse = ", ")) else ""
 		at_fr <- if (length(f$adjusted_for)) paste0(", \u00e0 ", paste(f$adjusted_for, collapse = ", "), if (length(f$adjusted_for) > 1L) " \u00e9gaux" else " \u00e9gal") else ""
-		if (f$cells) {
+		if (f$term %in% ph$open_terms) {
+			.bay_tell(st, paste0(f$term, " not settled (", .bay_pct(f$p_term, "."), ", step 5) but ahead: ", if (f$cells) "its cells" else "its levels", " are compared for information", at_en, "."),
+				paste0(f$term, " non tranch\u00e9 (", .bay_pct(f$p_term, ","), ", \u00e9tape 5) mais en t\u00eate : ", if (f$cells) "ses cases sont compar\u00e9es" else "ses niveaux sont compar\u00e9s", " \u00e0 titre indicatif", at_fr, "."), "decide")
+		} else if (f$cells) {
 			.bay_tell(st, paste0(f$term, " probable (", .bay_pct(f$p_term, "."), "): the gaps of one factor depend on the other, so the cells are compared", at_en, "."),
 				paste0(f$term, " probable (", .bay_pct(f$p_term, ","), ") : les \u00e9carts d'un facteur d\u00e9pendent de l'autre, donc les cases sont compar\u00e9es", at_fr, "."), "decide")
 		} else {
 			.bay_tell(st, paste0(f$term, " probable (", .bay_pct(f$p_term, "."), ") and in no probable interaction: its levels are compared", at_en, "."),
 				paste0(f$term, " probable (", .bay_pct(f$p_term, ","), ") et dans aucune interaction probable : ses niveaux sont compar\u00e9s", at_fr, "."), "decide")
 		}
+		if (isTRUE(f$between)) {
+			.bay_tell(st, paste0(f$term, " varies between subjects: its gap is strongly pulled towards 0, the prior being on the scale of the variation within subject; observed gap of the means: ",
+					paste(.bay_fx(diff(f$obs_means), f$dg, "."), collapse = ", "), "."),
+				paste0(f$term, " varie entre sujets : son \u00e9cart est fortement ramen\u00e9 vers 0, l'a priori \u00e9tant \u00e0 l'\u00e9chelle de la variation au sein des sujets ; \u00e9cart observ\u00e9 des moyennes : ",
+					paste(.bay_fx(diff(f$obs_means), f$dg, ","), collapse = ", "), "."), "decide")
+		}
 		.bay_story_posthoc(st, f, caution = caution && j == length(fams), head = FALSE, notes = j == length(fams))
 	}
 	if (nrow(ph$skipped)) {
 		.bay_tell(st, paste0("Not compared, not probable: ", paste0(ph$skipped$term, " (", vapply(ph$skipped$p_h1, .bay_pct, character(1), dec = "."), ")", collapse = ", "), "."),
 			paste0("Non compar\u00e9s, car non probables : ", paste0(ph$skipped$term, " (", vapply(ph$skipped$p_h1, .bay_pct, character(1), dec = ","), ")", collapse = ", "), "."), "note")
+	}
+	adj <- unique(unlist(lapply(fams, `[[`, "adjusted_for")))
+	if (length(adj)) {
+		.bay_tell(st, paste0("\"at equal ", adj[1L], "\": each gap is measured within a same level of ", adj[1L], ", then pooled."),
+			paste0("\u00ab \u00e0 ", adj[1L], " \u00e9gal \u00bb : chaque \u00e9cart est mesur\u00e9 dans un m\u00eame niveau de ", adj[1L], ", puis mis en commun."), "note")
 	}
 	.bay_tell(st, "Several factors: the probable term of highest order is detailed (its cells for an interaction, its levels for a main effect); the other factors, covariates and subjects are in every grouping compared.",
 		"Plusieurs facteurs : le terme probable d'ordre le plus haut est d\u00e9taill\u00e9 (ses cases pour une interaction, ses niveaux pour un effet principal) ; les autres facteurs, covariables et sujets sont dans chaque regroupement compar\u00e9.", "detail")

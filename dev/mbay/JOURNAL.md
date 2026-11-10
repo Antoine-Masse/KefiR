@@ -11,7 +11,10 @@
 - `agent_66` : sous H0, 0,9 % de faux « oui » à P > 0,95 (7/800, contre 12,5 % avant) ; puissance inchangée à variances égales ; 1,8 s médian à N = 40 (VALIDATION §16).
 - Tous les tests bay passent (dont `test-bay-fact-laws.R`, nouveau) ; deux tests qui attendaient l'absence de post-hoc sont mis à jour.
 
-**Non fait.** Lois t à plusieurs facteurs ; variances par case avec sujets ou covariables ; calibration par simulation du post-hoc D20 ; suite complète et R CMD check (à lancer pour ce lot).
+- `R CMD check --no-manual --ignore-vignettes` (suite complète comprise) : Status OK, une information de xref sur `ez`.
+- Relecture débutant (`relecture/lecteur_recit/RELECTURE_D19_D20.md`) : cinq retouches faites (terme non tranché détaillé « à titre indicatif », facteur entre sujets, « seul ou en interaction » dans le compte rendu, ordre des cases, phrase de l'étape 3 selon le résultat, note « à X égal »).
+
+**Non fait.** Lois t à plusieurs facteurs ; variances par case avec sujets ou covariables ; calibration par simulation du post-hoc D20.
 
 ## Séance 12 : 10 novembre 2026, réponse ordonnée et routage (D17, voies 3 et 4)
 

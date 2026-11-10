@@ -361,7 +361,10 @@
 	}
 	fams <- lapply(chosen, function(i) {
 		f <- fs[[i]]
-		g <- if (length(f) == 1L) factors[[f]] else interaction(factors[f], sep = " x ", drop = TRUE)
+		# Cells named in the order of the formula (the key sorts the factors).
+		fo <- strsplit(gsub("`", "", effects$term[i], fixed = TRUE), ":", fixed = TRUE)[[1]]
+		if (setequal(fo, f)) f <- fo
+		g <- if (length(f) == 1L) factors[[f]] else interaction(factors[f], sep = " x ", drop = TRUE, lex.order = TRUE)
 		other <- setdiff(names(factors), f)
 		nuis <- c(if (length(other)) as.list(factors[other]), if (!is.null(cov)) as.list(cov))
 		nuis <- if (length(nuis)) as.data.frame(nuis, check.names = FALSE) else NULL
@@ -372,6 +375,7 @@
 		if (!is.null(id) && all(tapply(as.integer(g), id, function(v) length(unique(v)) == 1L))) {
 			ph$pairs$delta <- ph$pairs$delta_low <- ph$pairs$delta_high <- NA_real_
 			ph$between <- TRUE
+			ph$obs_means <- as.numeric(tapply(y, g, mean))
 		}
 		ph$term <- effects$term[i]
 		ph$p_term <- p[i]
