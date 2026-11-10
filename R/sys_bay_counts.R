@@ -19,12 +19,36 @@
 #   Wagenmakers, E.-J. (2007). A practical solution to the pervasive problems of p values.
 #     Psychonomic Bulletin & Review, 14, 779-804.
 
+# Warnings of glm.nb (theta.ml, iteration limit) are counted, not printed: the console stays
+# clean and the story says when the fit was unstable (audit of de64470, point 3).
+.bay_cw <- new.env(parent = emptyenv())
+.bay_cw$n <- 0L
+.bay_quiet <- function(expr) {
+	withCallingHandlers(expr, warning = function(w) {
+		.bay_cw$n <- .bay_cw$n + 1L
+		invokeRestart("muffleWarning")
+	})
+}
+
+# Counts, chosen alone (DECISIONS, D17, way 2): non-negative whole numbers, at least 3
+# distinct values, a group mean under 10 (the normal approximation of the Poisson law is
+# poor below about 10), and zeros or more than 7 distinct values (which leaves out the
+# rating scales 1 to 5 or 1 to 7, without zero).
+.bay_is_counts <- function(y, g) {
+	if (!is.numeric(y) || any(!is.finite(y))) return(FALSE)
+	if (any(y < 0) || any(abs(y - round(y)) > 1e-8)) return(FALSE)
+	nu <- length(unique(y))
+	if (nu < 3L) return(FALSE)
+	if (min(tapply(y, g, mean)) >= 10) return(FALSE)
+	any(y == 0) || nu > 7L
+}
+
 .bay_counts_fit <- function(y, h) {
 	d <- data.frame(y = y, h = h)
 	one <- nlevels(droplevels(as.factor(h))) < 2L
 	fo <- if (one) y ~ 1 else y ~ h
-	p <- stats::glm(fo, data = d, family = stats::poisson())
-	nb <- tryCatch(suppressWarnings(MASS::glm.nb(fo, data = d)), error = function(e) NULL)
+	p <- .bay_quiet(stats::glm(fo, data = d, family = stats::poisson()))
+	nb <- tryCatch(.bay_quiet(MASS::glm.nb(fo, data = d)), error = function(e) NULL)
 	list(pois = p, nb = nb,
 		lm_pois = -stats::BIC(p) / 2,
 		lm_nb = if (is.null(nb) || !is.finite(nb$theta) || nb$theta > 1e6) NA_real_ else -stats::BIC(nb) / 2)
@@ -79,7 +103,7 @@
 	}
 	# Rate ratios under the leading law, Laplace approximation of the posterior.
 	d <- data.frame(y = y, g = g)
-	fit <- if (identical(law, "nb")) suppressWarnings(MASS::glm.nb(y ~ g - 1, data = d)) else stats::glm(y ~ g - 1, data = d, family = stats::poisson())
+	fit <- if (identical(law, "nb")) .bay_quiet(MASS::glm.nb(y ~ g - 1, data = d)) else stats::glm(y ~ g - 1, data = d, family = stats::poisson())
 	b <- stats::coef(fit); V <- stats::vcov(fit)
 	st <- t(vapply(seq_len(ncol(pairs)), function(j) {
 		i1 <- pairs[1L, j]; i2 <- pairs[2L, j]
@@ -93,7 +117,15 @@
 		max_exact = .bay_posthoc_max_groups(), delta_unit = "ratio", law = law, caution = FALSE)
 }
 
-.bay_m_counts <- function(input, g, y, call_expr, get_notes, note, prior_h1, sensitivity, detail, verbose, return, story, posthoc) {
+.bay_m_counts <- function(input, g, y, call_expr, get_notes, note, prior_h1, sensitivity, detail, verbose, return, story, posthoc,
+                          auto = FALSE) {
+	.bay_cw$n <- 0L
+	if (auto) {
+		.bay_tell(story, "Change of strategy: count response (whole numbers from 0, zeros or many values, group means under 10); Poisson and negative binomial laws instead of the continuous ones.",
+			"Changement de strat\u00e9gie : r\u00e9ponse de comptage (entiers \u00e0 partir de 0, z\u00e9ros ou valeurs nombreuses, moyennes sous 10) ; lois de Poisson et binomiale n\u00e9gative au lieu des lois continues.", "decide")
+		.bay_tell(story, "Count detection: whole numbers >= 0, at least 3 distinct values, a group mean under 10 (normal approximation of Poisson poor below 10), zeros or more than 7 values (rating scales left out); response = \"continuous\" forces the continuous route.",
+			"D\u00e9tection des comptages : entiers >= 0, au moins 3 valeurs distinctes, une moyenne de groupe sous 10 (approximation normale de Poisson m\u00e9diocre sous 10), des z\u00e9ros ou plus de 7 valeurs (\u00e9chelles de notation exclues) ; response = \u00ab continuous \u00bb force la voie continue.", "detail")
+	}
 	resp <- input$response_name
 	fac <- names(input$factors)[1L]
 	if (identical(fac, ".g")) fac <- "g"
@@ -113,6 +145,7 @@
 	f1 <- .bay_counts_fit(y, g)
 	po <- .bay_counts_post(f0, f1, prior_h1)
 	phi <- sum(stats::residuals(f1$pois, type = "pearson")^2) / f1$pois$df.residual
+	n_warn <- .bay_cw$n
 	lead_nb <- isTRUE(po$p_nb >= 0.5)
 	.bay_step_result(story, paste0(if (lead_nb) "negative binomial" else "Poisson", " ahead (", .bay_pct(if (lead_nb) po$p_nb else 1 - po$p_nb, "."), ")"),
 		paste0(if (lead_nb) "binomiale n\u00e9gative" else "Poisson", " en t\u00eate (", .bay_pct(if (lead_nb) po$p_nb else 1 - po$p_nb, ","), ")"))
@@ -126,6 +159,10 @@
 			"Changement de strat\u00e9gie : surdispersion, Poisson surestimerait les preuves ; la binomiale n\u00e9gative prend la t\u00eate.", "decide")
 	} else {
 		.bay_tell(story, "No overdispersion found: Poisson leads.", "Pas de surdispersion trouv\u00e9e : Poisson en t\u00eate.", "decide")
+	}
+	if (n_warn > 0L) {
+		.bay_tell(story, paste0("Caution added: the negative binomial fit was unstable (", n_warn, if (n_warn == 1L) " warning" else " warnings", " of glm.nb); read the answer with caution."),
+			paste0("Prudence ajout\u00e9e : l'ajustement de la binomiale n\u00e9gative a \u00e9t\u00e9 instable (", n_warn, if (n_warn == 1L) " avertissement" else " avertissements", " de glm.nb) ; lire la r\u00e9ponse avec r\u00e9serve."), "decide")
 	}
 	.bay_tell(story, "the answer is weighted over the two laws by their probability.",
 		"la r\u00e9ponse est pond\u00e9r\u00e9e sur les deux lois par leur probabilit\u00e9.", "note")
@@ -154,8 +191,8 @@
 		sens <- list(prior_h1 = phs, p = grid, range_lead = rng, verdict = verdict, verdict_terms = verdict, range_terms = matrix(range(grid), 1L))
 		stb <- .bay_stab_txt(verdict)
 		.bay_step_result(story, paste0("Bayes factor ", .bay_bf_txt(lb, "."), ", ", stb$en), paste0("facteur de Bayes ", .bay_bf_txt(lb, ","), ", ", stb$fr))
-		.bay_tell(story, paste0("Sensitivity: the leading answer goes from ", .bay_pct(rng[1L], "."), " to ", .bay_pct(rng[2L], "."), "."),
-			paste0("Sensibilit\u00e9 : la r\u00e9ponse en t\u00eate va de ", .bay_pct(rng[1L], ","), " \u00e0 ", .bay_pct(rng[2L], ","), "."))
+		.bay_tell(story, paste0("Sensitivity: the leading answer ", .bay_range_txt(rng)$en, "."),
+			paste0("Sensibilit\u00e9 : la r\u00e9ponse en t\u00eate ", .bay_range_txt(rng)$fr, "."))
 		.bay_tell(story, if (identical(verdict, "changes")) "Caution added: the answer can reverse; it will be called not settled." else "The order does not change.",
 			if (identical(verdict, "changes")) "Prudence ajout\u00e9e : la r\u00e9ponse peut s'inverser ; elle sera dite non tranch\u00e9e." else "L'ordre ne change pas.", "decide")
 		.bay_tell(story, "the starting chances go from 1 against 2 to 2 against 1.", "les chances de d\u00e9part vont de 1 contre 2 \u00e0 2 contre 1.", "note")
@@ -182,7 +219,7 @@
 		effects = data.frame(term = fac, bf10 = exp(lb), log_bf = lb, p_h1 = po$p_h1, p_h0 = 1 - po$p_h1, prior_h1 = prior_h1,
 			analogue = "Poisson / negative binomial GLM", stringsAsFactors = FALSE),
 		laws = data.frame(law = c("poisson", "negbin"), posterior = c(1 - po$p_nb, po$p_nb), stringsAsFactors = FALSE),
-		models = po$w, dispersion = phi, sensitivity = sens, posthoc = ph,
+		models = po$w, dispersion = phi, sensitivity = sens, posthoc = ph, nb_warnings = n_warn,
 		descriptive_stats = data.frame(group = levels(g), n = n, mean = mu, var = vv, stringsAsFactors = FALSE),
 		priors = list(prior_h1 = prior_h1, effects = "unit information (BIC)", laws = "Poisson 1/2, negative binomial 1/2"),
 		contradiction = FALSE, heavy = FALSE, detail = isTRUE(detail), prob_effect = po$p_h1,

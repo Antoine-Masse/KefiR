@@ -162,8 +162,8 @@
 			verdict_terms = verdict, range_terms = matrix(range(grid), 1L))
 		stb <- .bay_stab_txt(verdict)
 		.bay_step_result(story, paste0("Bayes factor ", .bay_bf_txt(lb, "."), ", ", stb$en), paste0("facteur de Bayes ", .bay_bf_txt(lb, ","), ", ", stb$fr))
-		.bay_tell(story, paste0("Sensitivity: the leading answer goes from ", .bay_pct(rng[1L], "."), " to ", .bay_pct(rng[2L], "."), "."),
-			paste0("Sensibilit\u00e9 : la r\u00e9ponse en t\u00eate va de ", .bay_pct(rng[1L], ","), " \u00e0 ", .bay_pct(rng[2L], ","), "."))
+		.bay_tell(story, paste0("Sensitivity: the leading answer ", .bay_range_txt(rng)$en, "."),
+			paste0("Sensibilit\u00e9 : la r\u00e9ponse en t\u00eate ", .bay_range_txt(rng)$fr, "."))
 		.bay_tell(story, "what varies is the expected spread of the proportions and the starting chances (1 against 2 to 2 against 1).",
 			"on fait varier l'\u00e9talement attendu des proportions et les chances de d\u00e9part (1 contre 2 \u00e0 2 contre 1).", "note")
 		.bay_tell(story, "Sensitivity: concentration a of the Dirichlet 1, 2 and 4, crossed with the prior odds 1:2, 1:1, 2:1.",

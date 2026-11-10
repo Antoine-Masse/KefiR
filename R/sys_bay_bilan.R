@@ -44,14 +44,25 @@
 }
 
 # Bayes factor as text, from its log.
+# One rule for the Bayes factor, the same at every step (audit of de64470, point 4): three
+# significant digits, thousands grouped ("12 000", "599 000"); beyond a billion, "> 10^9".
 .bay_bf_txt <- function(log_bf, dec = ".") {
 	if (is.na(log_bf)) return("NA")
-	txt <- if (abs(log_bf) > log(1e4)) {
-		paste0("10^", round(log_bf / log(10)))
-	} else {
-		format(signif(exp(log_bf), 3), trim = TRUE, scientific = FALSE)
-	}
+	if (log_bf > log(1e9)) return("> 10^9")
+	if (log_bf < -log(1e9)) return("< 10^-9")
+	b <- exp(log_bf)
+	txt <- if (b >= 1000) formatC(signif(b, 3), format = "d", big.mark = "\u00a0") else format(signif(b, 3), trim = TRUE, scientific = FALSE)
 	if (dec == ",") gsub(".", ",", txt, fixed = TRUE) else txt
+}
+
+# The range of the leading answer when the starting point varies, one wording everywhere.
+.bay_range_txt <- function(rg) {
+	if (rg[1L] > 0.999 || identical(.bay_pct(rg[1L], "."), .bay_pct(rg[2L], "."))) {
+		return(list(en = paste0("stays ", .bay_pct(rg[1L], "."), " whatever the starting point"),
+			fr = paste0("reste ", .bay_pct(rg[1L], ","), " quel que soit le point de d\u00e9part")))
+	}
+	list(en = paste0("goes from ", .bay_pct(rg[1L], "."), " to ", .bay_pct(rg[2L], ".")),
+		fr = paste0("va de ", .bay_pct(rg[1L], ","), " \u00e0 ", .bay_pct(rg[2L], ",")))
 }
 
 # What the sensitivity says about the conclusion, given the central probability of

@@ -36,7 +36,7 @@ m.bay(
   seed = 1L,
   detail = FALSE,
   posthoc = TRUE,
-  response = c("auto", "counts")
+  response = c("auto", "counts", "continuous")
 )
 }
 \arguments{
@@ -107,10 +107,12 @@ separate them, and each pair gets its difference and standardised difference wit
 credible interval (\code{\link[BayesFactor:posterior]{BayesFactor::posterior()}}, \code{\link[bayestestR:hdi]{bayestestR::hdi()}}). Normal law with a
 common variance; the story says so when the noise looks otherwise.}
 
-\item{response}{\code{"auto"} (default): a numeric response is continuous, a factor, text,
-TRUE/FALSE or two values is categorical. \code{"counts"}: non-negative integer counts with one
-factor, Poisson and negative binomial compared (overdispersion), Bayes factors by the
-unit-information approximation (BIC), rate ratios (DECISIONS, D17).}
+\item{response}{\code{"auto"} (default): the function chooses. A factor, text, TRUE/FALSE or
+two values is categorical; with one factor, whole numbers from 0 with a group mean under
+10 and zeros (or more than 7 values) are counts; anything else is continuous.
+\code{"counts"} forces the count route: Poisson and negative binomial compared
+(overdispersion), Bayes factors by the unit-information approximation (BIC), rate
+ratios. \code{"continuous"} forces the continuous route (DECISIONS, D17).}
 }
 \value{
 With \code{return = TRUE}, a list of class \code{mbay}:

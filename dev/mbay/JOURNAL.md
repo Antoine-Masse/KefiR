@@ -11,6 +11,15 @@
 
 **Vérifié.** `test-bay-counts.R` (5 tests) ; calibration `agent_60` (VALIDATION §13). Sous H0 surdispersé, Poisson seul dépasse 0,95 dans 33 % des jeux, m.bay dans 0 à 0,3 %.
 
+**Audit de de64470 traité.**
+- Les comptages sont choisis seuls, et la bascule est dite.
+- Le nom de la réponse vient de l'objet passé.
+- Les avertissements de `glm.nb` sont capturés.
+- Une seule règle pour les facteurs de Bayes, partout.
+- « reste > 99,9 % quel que soit le point de départ ».
+- Le BIC est vérifié contre BAS : 0,55 en log au plus, sous le seuil de log 3.
+- La puissance est documentée (VALIDATION §13).
+
 **Reste.** D17, voies 3 et 4 : l'ordinal et les rangs.
 
 ## Séance 10 : 10 novembre 2026, mise en forme commune (D18)

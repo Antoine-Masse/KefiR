@@ -719,3 +719,26 @@ Résultats : `scripts/resultats/agent_60.txt`.
 - **Sous Poisson vrai,** les deux voies se valent.
 - **À effet réel et surdispersé,** m.bay est prudent : 45 % au-delà de 0,75, contre 75 % de p < 0,05 pour le rapport de vraisemblance. C'est le prix de l'a priori d'information unitaire. Le chiffre de Poisson seul (93 %) n'est pas une puissance, puisqu'il invente aussi sous H0.
 
+### Approximation BIC contre BAS (10 novembre, audit de la session parente)
+
+Quatre jeux de Poisson à 3 groupes, log BF de « différence » contre « aucune » :
+
+| Cas | BIC (m.bay) | BAS g-prior (g = n, information unitaire) | BAS robust | BAS bic.prior |
+|---|---:|---:|---:|---:|
+| µ = 5, 5, 5, n = 20 | −4,04 | −4,06 | −4,06 | −4,04 |
+| µ = 4, 4, 6, n = 20 | 3,69 | 3,55 | 3,46 | 3,69 |
+| µ = 3, 5, 7, n = 15 | 11,46 | 11,13 | 10,91 | 11,46 |
+| µ = 2, 2, 4, n = 30 | 1,41 | 1,33 | 1,28 | 1,41 |
+
+L'écart à la vraisemblance marginale sous a priori g (BAS, approximation de Laplace) atteint 0,33 en log au plus, et 0,55 avec l'a priori robuste. On reste loin du seuil fixé, un facteur de Bayes de 3 (log 3 = 1,10). L'approximation est gardée. Script : `scratchpad/bicbas.R`, non versionné ; à reproduire avec `bas.glm(betaprior = g.prior(n))`.
+
+### Puissance comparée (audit de la session parente, 100 jeux par scénario)
+
+| Scénario | m.bay P>0,75 | m.bay P>0,95 | Test fréquentiste p<0,05 |
+|---|---:|---:|---:|
+| Poisson, rapport 1,5, n = 10 | 23 % | 10 % | 39 % (quasipoisson) |
+| Binomiale négative k = 2, n = 10 | 10 % | – | 23 % |
+| Binomiale négative k = 2, n = 20 | 12 % | – | 32 % |
+
+Sous H0 Poisson : P > 0,75 dans 2 % des jeux, P > 0,95 dans 0 %. **Lecture.** L'a priori d'information unitaire est connu pour être conservateur. Il protège des fausses différences, surtout sous surdispersion (§13, agent_60), au prix d'une puissance environ moitié moindre que les tests fréquentistes. Le récit et le bilan ne le disent pas encore. À décider : une note de puissance, ou un a priori moins large.
+

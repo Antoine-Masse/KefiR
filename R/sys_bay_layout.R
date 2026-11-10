@@ -83,8 +83,7 @@
 			emit("decide", paste0("Depending on the starting point: ", .bay_pct(rg[1L], "."), " to ", .bay_pct(rg[2L], "."), "; the order can reverse, not settled."),
 				paste0("Selon le point de d\u00e9part : ", .bay_pct(rg[1L], ","), " \u00e0 ", .bay_pct(rg[2L], ","), " ; l'ordre peut s'inverser, non tranch\u00e9."))
 		} else if (identical(.bay_pct(rg[1L], "."), .bay_pct(rg[2L], ".")) || rg[1L] > 0.999) {
-			emit("fact", paste0("Whatever the starting point: ", .bay_pct(rg[1L], "."), "; the order does not change."),
-				paste0("Quel que soit le point de d\u00e9part : ", .bay_pct(rg[1L], ","), " ; l'ordre ne change pas."))
+			emit("fact", paste0("The answer ", .bay_range_txt(rg)$en, "."), paste0("La r\u00e9ponse ", .bay_range_txt(rg)$fr, "."))
 		} else {
 			emit("fact", paste0("Depending on the starting point: ", .bay_pct(rg[1L], "."), " to ", .bay_pct(rg[2L], "."), "; the order does not change."),
 				paste0("Selon le point de d\u00e9part : ", .bay_pct(rg[1L], ","), " \u00e0 ", .bay_pct(rg[2L], ","), " ; l'ordre ne change pas."))

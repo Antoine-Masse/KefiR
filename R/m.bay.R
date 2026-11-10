@@ -93,10 +93,12 @@
 #'   separate them, and each pair gets its difference and standardised difference with a 95 %
 #'   credible interval ([BayesFactor::posterior()], [bayestestR::hdi()]). Normal law with a
 #'   common variance; the story says so when the noise looks otherwise.
-#' @param response `"auto"` (default): a numeric response is continuous, a factor, text,
-#'   TRUE/FALSE or two values is categorical. `"counts"`: non-negative integer counts with one
-#'   factor, Poisson and negative binomial compared (overdispersion), Bayes factors by the
-#'   unit-information approximation (BIC), rate ratios (DECISIONS, D17).
+#' @param response `"auto"` (default): the function chooses. A factor, text, TRUE/FALSE or
+#'   two values is categorical; with one factor, whole numbers from 0 with a group mean under
+#'   10 and zeros (or more than 7 values) are counts; anything else is continuous.
+#'   `"counts"` forces the count route: Poisson and negative binomial compared
+#'   (overdispersion), Bayes factors by the unit-information approximation (BIC), rate
+#'   ratios. `"continuous"` forces the continuous route (DECISIONS, D17).
 #' @param detail If `TRUE`, the bilan also shows the shapes of the noise, the priors that
 #'   are varied and how to read the numbers. Also `print(result, detail = TRUE)`.
 #'
@@ -141,8 +143,10 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
                   prior_h1 = 1/2, rscale = 1/2, u = 1.5,
                   laws = c("normal_eq", "normal_het", "t_eq", "t_het"),
                   sensitivity = TRUE, draws = 4000L, seed = 1L, detail = FALSE, posthoc = TRUE,
-                  response = c("auto", "counts")) {
+                  response = c("auto", "counts", "continuous")) {
 	response <- match.arg(response)
+	# Name of the response in the x, g form (audit of de64470, point 1).
+	x_name <- if (!missing(x) && !inherits(x, "formula") && !is.character(x)) tryCatch(deparse1(substitute(x)), error = function(e) NULL) else NULL
 	call_expr <- match.call()
 	if (isFALSE(return) && !("verbose" %in% names(call_expr))) verbose <- FALSE
 
@@ -208,7 +212,16 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 			paste0(input$n_removed, " observation(s) avec valeurs manquantes retir\u00e9e(s)."))
 	}
 
+	if (identical(input$response_name, "x") && length(x_name) == 1L && grepl("^[A-Za-z.][A-Za-z0-9._$]*$", x_name) && nchar(x_name) <= 30L) {
+		nm <- sub("^.*[$]", "", x_name)
+		input$response_name <- nm
+		input$label <- sub("^x ~", paste(nm, "~"), input$label)
+	}
 	input$counts <- identical(response, "counts")
+	# Counts chosen alone, before the plan is told (DECISIONS, D17, way 2).
+	input$counts_auto <- identical(response, "auto") && identical(input$plan, "oneway") && !isTRUE(input$categorical) &&
+		isTRUE(.bay_is_counts(input$response, input$factors[[1L]]))
+	if (input$counts_auto) input$counts <- TRUE
 	# Step 1: the plan recognised, or refused and why.
 	.bay_story_plan(story, input)
 
@@ -257,8 +270,9 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 		}
 		if (all(y == y[1L])) .exit("All the counts are equal: the probabilities are undetermined.", "Tous les comptages sont \u00e9gaux : les probabilit\u00e9s sont ind\u00e9termin\u00e9es.")
 		return(.bay_m_counts(input, input$factors[[1L]], round(y), call_expr, function() notes, note, prior_h1, sensitivity,
-			detail, verbose, return, story, posthoc))
+			detail, verbose, return, story, posthoc, auto = isTRUE(input$counts_auto)))
 	}
+
 	y_values <- length(unique(y))
 	if (isTRUE(diff(range(y)) <= 8 * .Machine$double.eps * max(abs(y)))) {
 		.exit("y is constant: the probabilities are undetermined.",
@@ -738,8 +752,8 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 			rg <- sens$range_lead
 			stb <- .bay_stab_txt(sens$verdict)
 			.bay_step_result(story, paste0("Bayes factor ", .bay_bf_txt(lb1, "."), ", ", stb$en), paste0("facteur de Bayes ", .bay_bf_txt(lb1, ","), ", ", stb$fr))
-			.bay_tell(story, paste0("Sensitivity: the leading answer goes from ", .bay_pct(rg[1L], "."), " to ", .bay_pct(rg[2L], "."), "."),
-				paste0("Sensibilit\u00e9 : la r\u00e9ponse en t\u00eate va de ", .bay_pct(rg[1L], ","), " \u00e0 ", .bay_pct(rg[2L], ","), "."))
+			.bay_tell(story, paste0("Sensitivity: the leading answer ", .bay_range_txt(rg)$en, "."),
+				paste0("Sensibilit\u00e9 : la r\u00e9ponse en t\u00eate ", .bay_range_txt(rg)$fr, "."))
 		} else if (length(moved)) {
 			.bay_step_result(story, paste0(paste(terms[moved], collapse = ", "), if (length(moved) == 1L) " changes side with the prior" else " change side with the prior"),
 				paste0(paste(terms[moved], collapse = ", "), if (length(moved) == 1L) " change de c\u00f4t\u00e9 selon l'a priori" else " changent de c\u00f4t\u00e9 selon l'a priori"))

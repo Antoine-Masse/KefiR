@@ -383,7 +383,21 @@ Demandé par la session parente dans l'ordre du PERIMETRE, avec trois points de 
 
 ## D17, voie 2 : comptages, FAITE le 10 novembre
 
-**Appel explicite.** `response = "counts"`, avec un facteur. Ce n'est pas automatique : une échelle de Likert de 1 à 5 est aussi faite d'entiers positifs, et basculer en silence changerait la réponse de l'existant. Les cas hors de ce cadre sont refusés : plusieurs facteurs, covariables, sujets, valeurs négatives ou non entières.
+**Choix automatique (révisé le 10 novembre, règle d'Antoine : la fonction choisit seule).** Avec `response = "auto"`, valeur par défaut, et un facteur, la voie des comptages est prise si toutes ces conditions sont réunies :
+1. des entiers positifs ou nuls ;
+2. au moins 3 valeurs distinctes (2 valeurs donnent la contingence) ;
+3. une moyenne de groupe inférieure à 10, car l'approximation normale de la loi de Poisson est médiocre en dessous ;
+4. des zéros, ou plus de 7 valeurs distinctes : cela écarte les échelles de notation de 1 à 5 ou de 1 à 7, sans zéro.
+
+**Annonce et options.**
+- La bascule est annoncée à l'étape 2, en « --> Changement de stratégie ».
+- `response = "counts"` force la voie des comptages, `response = "continuous"` la voie continue.
+- C'est une règle raisonnée, pas un critère publié unique. Elle est à surveiller sur des données réelles, en particulier des notes avec zéro, par exemple de 0 à 10.
+
+**Autres choix.**
+- **Nom de la réponse** : dans la forme x, g, la réponse prend le nom de l'objet passé, par exemple « nb_poissons » plutôt que « x ».
+- **Avertissements de `glm.nb`** : ils sont comptés et non imprimés. S'il y en a, le récit ajoute « Prudence ajoutée : ajustement instable ».
+- **Facteurs de Bayes** : une seule règle, à trois chiffres significatifs avec les milliers séparés (« 12 300 ») et « > 10^9 » au-delà. La sensibilité s'écrit « reste > 99,9 % quel que soit le point de départ ». Les cas hors de ce cadre sont refusés : plusieurs facteurs, covariables, sujets, valeurs négatives ou non entières.
 
 **Calcul** (`R/sys_bay_counts.R`).
 - **Lois comparées, non choisies.** Deux lois, Poisson (`glm`) et binomiale négative (`MASS::glm.nb`, déjà en Imports), chacune avec et sans différence : quatre modèles.

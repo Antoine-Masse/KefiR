@@ -42,6 +42,7 @@
 	txt <- gsub("(\\[[^] ]*) ([^] ]*\\])", paste0("\\1", nb, "\\2"), txt)
 	txt <- gsub("(\\[[^] ]*) ([^] ]*) ([^] ]*\\])", paste0("\\1", nb, "\\2", nb, "\\3"), txt)
 	txt <- gsub(" ([=<>x]) ", paste0(nb, "\\1", nb), txt)
+	txt <- gsub("([<>]) ([0-9])", paste0("\\1", nb, "\\2"), txt)
 	p <- strwrap(txt, width = avail + 1L)
 	p <- gsub(nb, " ", p, fixed = TRUE)
 	if (!length(p)) p <- ""
@@ -388,13 +389,8 @@
 	}
 	r1 <- .bay_num_txt(min(sens$r)); r2 <- .bay_num_txt(max(sens$r))
 	rg <- sens$range_lead
-	if (rg[1L] > 0.999) {
-		.bay_tell(st, paste0("Sensitivity: \"", hyp$label_en[1L], "\" stays above 99.9 %."),
-			paste0("Sensibilit\u00e9 : \u00ab ", hyp$label_fr[1L], " \u00bb reste au-dessus de 99,9 %."))
-	} else {
-		.bay_tell(st, paste0("Sensitivity: \"", hyp$label_en[1L], "\" goes from ", .bay_pct(rg[1L], "."), " to ", .bay_pct(rg[2L], "."), "."),
-			paste0("Sensibilit\u00e9 : \u00ab ", hyp$label_fr[1L], " \u00bb va de ", .bay_pct(rg[1L], ","), " \u00e0 ", .bay_pct(rg[2L], ","), "."))
-	}
+	.bay_tell(st, paste0("Sensitivity: \"", hyp$label_en[1L], "\" ", .bay_range_txt(rg)$en, "."),
+		paste0("Sensibilit\u00e9 : \u00ab ", hyp$label_fr[1L], " \u00bb ", .bay_range_txt(rg)$fr, "."))
 	.bay_tell(st, paste0("r goes from ", r1$en, " to ", r2$en, ", the starting chances from 1 against 2 to 2 against 1", if (het) ", the spread of the variances varies" else "", "."),
 		paste0("r va de ", r1$fr, " \u00e0 ", r2$fr, ", les chances de d\u00e9part de 1 contre 2 \u00e0 2 contre 1", if (het) ", la r\u00e9partition des variances varie" else "", "."), "note")
 	if (identical(sens$verdict, "changes")) {

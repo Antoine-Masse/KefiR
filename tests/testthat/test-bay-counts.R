@@ -67,3 +67,28 @@ test_that("comptages : refus clairs, 80 colonnes", {
 	expect_lte(max(nchar(gsub("\t", "        ", txt), type = "width")), 80)
 	expect_true(any(grepl("^7\\) Bilan", txt)))
 })
+
+test_that("comptages choisis seuls : bascule dite, nom de la reponse, echelles de notation exclues, console propre", {
+	set.seed(7)
+	g <- factor(rep(c("a", "b", "c"), each = 15)); nb_poissons <- rpois(45, c(1.5, 4, 9)[g])
+	expect_silent(r <- m.bay(nb_poissons, g, verbose = FALSE, sensitivity = FALSE, posthoc = FALSE))
+	expect_identical(r$plan, "counts")
+	fr <- gsub("\\s+", " ", paste(r$story$fr, collapse = " "))
+	expect_match(fr, "Changement de strat\u00e9gie : r\u00e9ponse de comptage")
+	expect_match(fr, "nb_poissons")
+	expect_false(grepl("comptages de x ", fr))
+	# echelle de notation 1 a 5 (pas de zero, 5 valeurs) : voie continue
+	note5 <- sample(1:5, 45, TRUE)
+	expect_false(identical(m.bay(note5, g, verbose = FALSE, sensitivity = FALSE, posthoc = FALSE, draws = 500)$plan, "counts"))
+	# moyennes au-dela de 10 : voie continue
+	big <- rpois(45, 30)
+	expect_false(identical(m.bay(big, g, verbose = FALSE, sensitivity = FALSE, posthoc = FALSE, draws = 500)$plan, "counts"))
+	# forcer la voie continue
+	expect_false(identical(m.bay(nb_poissons, g, response = "continuous", verbose = FALSE, sensitivity = FALSE, posthoc = FALSE, draws = 500)$plan, "counts"))
+})
+
+test_that("facteur de Bayes ecrit selon une seule regle", {
+	expect_identical(.bay_bf_txt(log(12345), ","), "12\u00a0300")
+	expect_identical(.bay_bf_txt(log(2e10), "."), "> 10^9")
+	expect_identical(.bay_bf_txt(log(2.5), ","), "2,5")
+})
