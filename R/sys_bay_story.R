@@ -31,7 +31,12 @@
 
 # Folds txt behind a lead ("\t==> "); the following lines get cont, of the same width.
 .bay_wrap <- function(txt, lead, cont = NULL) {
-	if (is.null(cont)) cont <- paste0(if (startsWith(lead, "\t")) "\t" else "", strrep(" ", .bay_vis(sub("^\t", "", lead))))
+	if (is.null(cont)) {
+		cont <- paste0(if (startsWith(lead, "\t")) "\t" else "", strrep(" ", .bay_vis(sub("^\t", "", lead))))
+		# A numbered item (hypotheses of the bilan): the folded lines go under its text.
+		num <- regmatches(txt, regexpr("^[0-9]+\\. ", txt))
+		if (length(num)) cont <- paste0(cont, strrep(" ", nchar(num)))
+	}
 	avail <- max(20L, .bay_width() - .bay_vis(lead))
 	# French spacing and intervals are not split: non-breaking space before % : ; ! ? and
 	# inside guillemets and brackets, turned back into a space once folded.
@@ -84,7 +89,10 @@
 		return(invisible(NULL))
 	}
 	if (!is.null(fun)) .bay_step_fun(st, fun)
-	st$cur$lines[[length(st$cur$lines) + 1L]] <- list(kind = kind, en = en, fr = fr)
+	# "note_first": a note that keeps its place among the two notes of a step.
+	pri <- identical(kind, "note_first")
+	if (pri) kind <- "note"
+	st$cur$lines[[length(st$cur$lines) + 1L]] <- list(kind = kind, en = en, fr = fr, priority = pri)
 	invisible(NULL)
 }
 
@@ -130,6 +138,8 @@
 .bay_notes_last <- function(lines, max_notes = 2L, spill = NULL) {
 	is_note <- vapply(lines, function(x) x$kind %in% c("note", "info"), logical(1))
 	notes <- lines[is_note]
+	pri <- vapply(notes, function(x) isTRUE(x$priority), logical(1))
+	notes <- c(notes[pri], notes[!pri])
 	if (length(notes) > max_notes && is.function(spill)) for (x in notes[-seq_len(max_notes)]) spill(x)
 	c(lines[!is_note], utils::head(notes, max_notes))
 }
@@ -546,8 +556,21 @@
 		return(invisible(NULL))
 	}
 	lab <- function(ph, fr) if (ph$cells) paste0(if (fr) "cases " else "cells ", gsub(":", " x ", ph$term, fixed = TRUE)) else ph$term
-	.bay_step_result(st, paste(vapply(fams, lab, character(1), fr = FALSE), collapse = ", then "),
-		paste(vapply(fams, lab, character(1), fr = TRUE), collapse = ", puis "))
+	# The title says the answer (audit of 23c941e, point 4): "A: a2 > a1 (2.41)", or the
+	# leading grouping beyond two levels.
+	res <- function(ph, fr) {
+		dc <- if (fr) "," else "."
+		if (ph$k == 2L) {
+			pr <- ph$pairs[1L, ]
+			hi <- pr$diff >= 0
+			return(paste0(lab(ph, fr), if (fr) " : " else ": ", if (hi) pr$group2 else pr$group1, " > ", if (hi) pr$group1 else pr$group2,
+				" (", .bay_fx(abs(pr$diff), ph$dg, dc), ")"))
+		}
+		top <- .bay_top_grouping(ph)
+		if (is.null(top)) lab(ph, fr) else paste0(lab(ph, fr), if (fr) " : " else ": ", top$label)
+	}
+	.bay_step_result(st, paste(vapply(fams, res, character(1), fr = FALSE), collapse = "; "),
+		paste(vapply(fams, res, character(1), fr = TRUE), collapse = " ; "))
 	for (j in seq_along(fams)) {
 		f <- fams[[j]]
 		at_en <- if (length(f$adjusted_for)) paste0(", at equal ", paste(f$adjusted_for, collapse = ", ")) else ""
@@ -569,6 +592,27 @@
 					paste(.bay_fx(diff(f$obs_means), f$dg, ","), collapse = ", "), "."), "decide")
 		}
 		.bay_story_posthoc(st, f, caution = caution && j == length(fams), head = FALSE, notes = j == length(fams))
+	}
+	if (!is.null(ph$by)) {
+		for (it in unique(ph$by$interaction)) {
+			b <- ph$by[ph$by$interaction == it, , drop = FALSE]
+			fct <- unique(b$factor)
+			trm <- strsplit(it, ":", fixed = TRUE)[[1]]
+			one <- length(fct) == 1L
+			oth <- paste(setdiff(trm, fct), collapse = " x ")
+			.bay_tell(st, paste0(it, " not settled (", .bay_pct(b$p_interaction[1L], "."), "): ",
+					if (one) paste0("the single gap of ", fct, " may hide gaps that differ with ", oth) else "each single gap above may hide gaps that differ with the level of the other factor",
+					"; gaps per level with detail = TRUE or in $posthoc$by."),
+				paste0(it, " non tranch\u00e9 (", .bay_pct(b$p_interaction[1L], ","), ") : ",
+					if (one) paste0("l'\u00e9cart unique de ", fct, " peut cacher des \u00e9carts diff\u00e9rents selon ", oth) else "chaque \u00e9cart unique ci-dessus peut cacher des \u00e9carts qui changent selon le niveau de l'autre facteur",
+					" ; \u00e9carts par niveau avec detail = TRUE ou dans $posthoc$by."), "note_first")
+			dg <- fams[[1L]]$dg
+			for (r in seq_len(nrow(b))) {
+				ci <- function(dc) paste0(.bay_fx(b$diff[r], dg, dc), " [", .bay_fx(b$diff_low[r], dg, dc), if (dc == ",") " ; " else "; ", .bay_fx(b$diff_high[r], dg, dc), "]")
+				.bay_tell(st, paste0("At ", b$at[r], ": ", b$group2[r], " - ", b$group1[r], " = ", ci("."), "."),
+					paste0("\u00c0 ", b$at[r], " : ", b$group2[r], " - ", b$group1[r], " = ", ci(","), "."), "detail")
+			}
+		}
 	}
 	if (nrow(ph$skipped)) {
 		.bay_tell(st, paste0("Not compared, not probable: ", paste0(ph$skipped$term, " (", vapply(ph$skipped$p_h1, .bay_pct, character(1), dec = "."), ")", collapse = ", "), "."),

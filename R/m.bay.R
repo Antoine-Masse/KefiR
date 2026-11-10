@@ -889,7 +889,13 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 	# levels, the other factors, covariates and subjects as nuisance terms.
 	if (is.null(ph) && isTRUE(posthoc) && !single && !paired) {
 		covc <- if (anc) as.data.frame(lapply(input$covariates, function(v) v - mean(v)), check.names = FALSE) else NULL
-		ph <- .bay_posthoc_factorial(y, factors, fa$effects, rscale, 0.5, draws, seed, id = if (rm) input$id else NULL, cov = covc)
+		# Undecided interactions, with the words of the bilan: their gaps per level are added.
+		ta <- .bay_term_answers(list(effects = fa$effects, sensitivity = fa$sensitivity, overlap = fa$overlap,
+			het_cells = exists("het_cells", inherits = FALSE) && isTRUE(het_cells)))
+		und <- .bay_term_key(fa$effects$term)[grepl(":", fa$effects$term, fixed = TRUE) & fa$effects$p_h1 < 0.5 &
+			(ta$open | fa$effects$p_h1 > 0.25)]
+		ph <- .bay_posthoc_factorial(y, factors, fa$effects, rscale, 0.5, draws, seed, id = if (rm) input$id else NULL, cov = covc,
+			undecided = und)
 		ph$caution <- isTRUE(fa$het_used) && isTRUE(fa$p_het >= 0.75)
 		ph$open_terms <- if (!is.null(fa$sensitivity)) fa$effects$term[fa$sensitivity$verdict_terms == "changes"] else character(0)
 		.bay_story_posthoc_fact(story, ph, caution = ph$caution)

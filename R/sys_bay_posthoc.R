@@ -345,7 +345,51 @@
 #     grouping, so that each gap is read at equal other factors.
 # Each family is computed by .bay_posthoc_oneway (partitions of the levels, Ewens prior, same
 # rules as with one factor). Terms with a covariate (slopes) are not compared here.
-.bay_posthoc_factorial <- function(y, factors, effects, rscale, prior_h1, draws, seed, id = NULL, cov = NULL) {
+# Gaps of each factor of a term at each level of its other factors, from the posterior of the
+# model of the cells (lmBF, posterior, hdi), the nuisance terms in it. Returns, per factor,
+# the pairs (group1, group2, diff, diff_low, diff_high) and the level of the others ("at").
+.bay_cell_gaps <- function(y, fl, nuis, id, rscale, draws, seed) {
+	cell <- interaction(fl, sep = " x ", drop = TRUE, lex.order = TRUE)
+	dd <- .bay_nuisance_data(y, id, nuis)
+	dd$g <- cell
+	rhs <- .bay_nuisance_rhs(dd)
+	fo <- stats::as.formula(paste("y ~ g", if (nzchar(rhs)) paste("+", rhs) else ""))
+	po <- .bay_with_seed(seed, BayesFactor::posterior(BayesFactor::lmBF(fo, data = dd, rscaleFixed = rscale,
+			rscaleCont = .bay_rcont(), whichRandom = if (!is.null(id)) "id" else NULL, progress = FALSE),
+		iterations = max(4000L, as.integer(draws)), progress = FALSE))
+	po <- as.matrix(po)
+	lev <- levels(cell)
+	m <- po[, paste0("g-", lev), drop = FALSE]
+	# Levels of each factor in each cell.
+	first <- match(lev, as.character(cell))
+	pairs <- list()
+	at <- list()
+	for (v in names(fl)) {
+		others <- setdiff(names(fl), v)
+		key <- do.call(paste, c(lapply(fl[others], function(f) as.character(f[first])), sep = " x "))
+		lv <- as.character(fl[[v]][first])
+		rows <- NULL
+		ats <- character(0)
+		for (k in unique(key)) {
+			ix <- which(key == k)
+			if (length(ix) < 2L) next
+			cb <- utils::combn(ix, 2L)
+			for (j in seq_len(ncol(cb))) {
+				d <- m[, cb[2L, j]] - m[, cb[1L, j]]
+				h <- bayestestR::hdi(as.numeric(d), ci = 0.95)
+				rows <- rbind(rows, data.frame(group1 = lv[cb[1L, j]], group2 = lv[cb[2L, j]], diff = stats::median(d),
+					diff_low = h$CI_low, diff_high = h$CI_high, stringsAsFactors = FALSE))
+				ats <- c(ats, k)
+			}
+		}
+		pairs[[v]] <- rows
+		at[[v]] <- ats
+	}
+	list(pairs = pairs, at = at)
+}
+
+.bay_posthoc_factorial <- function(y, factors, effects, rscale, prior_h1, draws, seed, id = NULL, cov = NULL,
+                                   undecided = character(0)) {
 	keys <- .bay_term_key(effects$term)
 	fs <- strsplit(keys, ":", fixed = TRUE)
 	is_fac <- vapply(fs, function(f) all(f %in% names(factors)), logical(1))
@@ -385,7 +429,32 @@
 	})
 	skipped <- which(is_fac & !(seq_along(keys) %in% chosen) &
 		!vapply(seq_along(keys), function(i) any(vapply(chosen, function(j) all(fs[[i]] %in% fs[[j]]), logical(1))), logical(1)))
-	list(method = "factorial", families = fams, k = if (length(fams)) max(vapply(fams, `[[`, numeric(1), "k")) else 0L,
+	# An undecided interaction over a factor whose levels were compared as a main effect: the
+	# gaps of that factor at each level of the others are given too (audit of 23c941e, point 2),
+	# from the model of the cells, so that a single gap does not hide an interaction.
+	by <- NULL
+	for (i in which(is_fac & ord > 1L & keys %in% undecided & !(seq_along(keys) %in% chosen))) {
+		fo <- strsplit(gsub("`", "", effects$term[i], fixed = TRUE), ":", fixed = TRUE)[[1]]
+		if (!setequal(fo, fs[[i]])) fo <- fs[[i]]
+		mains <- intersect(fo, vapply(fams, function(ph) if (ph$cells) "" else ph$term, character(1)))
+		if (!length(mains)) next
+		other <- setdiff(names(factors), fo)
+		nuis <- c(if (length(other)) as.list(factors[other]), if (!is.null(cov)) as.list(cov))
+		nuis <- if (length(nuis)) as.data.frame(nuis, check.names = FALSE) else NULL
+		gp <- .bay_cell_gaps(y, factors[fo], nuis, id, rscale, draws, seed + 100L + i)
+		for (v in mains) {
+			at <- setdiff(fo, v)
+			for (lv in unique(gp$at[[v]])) {
+				sel <- gp$at[[v]] == lv
+				if (!any(sel)) next
+				by <- rbind(by, data.frame(interaction = effects$term[i], p_interaction = p[i], factor = v,
+					at = paste0(paste(at, collapse = " x "), " = ", lv), gp$pairs[[v]][sel, , drop = FALSE],
+					stringsAsFactors = FALSE))
+			}
+		}
+	}
+	rownames(by) <- NULL
+	list(method = "factorial", families = fams, by = by, k = if (length(fams)) max(vapply(fams, `[[`, numeric(1), "k")) else 0L,
 		skipped = data.frame(term = effects$term[skipped], p_h1 = p[skipped], stringsAsFactors = FALSE),
 		pairs = if (length(fams)) do.call(rbind, lapply(fams, function(ph) data.frame(term = ph$term, ph$pairs, stringsAsFactors = FALSE))) else NULL)
 }

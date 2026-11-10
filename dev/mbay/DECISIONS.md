@@ -555,3 +555,9 @@ Demandé par la session parente dans l'ordre du PERIMETRE, avec trois points de 
 - Les a priori des familles sont indépendants de l'a priori HOP sur les modèles (prior_h1 = 1/2 par famille, comme à un facteur).
 - Pas d'effets simples (A à chaque niveau de B) : les cases donnent la même information en un seul regroupement.
 - Avec des variances inégales probables (D19), les paires supposent une variance commune et le récit le dit.
+
+**Audit de 23c941e par « KefiR officiel » (10 novembre), quatre retouches faites.**
+1. La phrase du compte rendu reprend les mots du bilan pour chaque terme (`.bay_term_answers`, une seule règle) : un terme « non tranché » au bilan l'est aussi dans le compte rendu.
+2. Une interaction non tranchée (ou dont la probabilité est entre 25 et 50 %) sur un facteur comparé comme effet principal donne une note, gardée parmi les deux notes de l'étape. Les écarts de ce facteur à chaque niveau de l'autre sont tirés du modèle des cases (`lmBF`, `posterior`, `hdi`) et sont dans `detail = TRUE` et `$posthoc$by`.
+3. Le repli d'un élément numéroté (« 1. … ») se fait sous son texte, après le numéro.
+4. Le titre de l'étape 6 donne la réponse : « A : a2 > a1 (2,72) », ou le regroupement en tête au-delà de deux niveaux.

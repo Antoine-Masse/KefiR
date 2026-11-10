@@ -68,3 +68,25 @@ test_that("several factors: main effect levels, or cells when the interaction is
 	txt <- capture.output(print(r2))
 	expect_true(any(grepl("cases A x B|cells A x B", txt)))
 })
+
+test_that("audit of 23c941e: report words, gaps per level, numbered folds, step 6 title", {
+	set.seed(1)
+	d <- expand.grid(rep = 1:10, A = factor(c("a1", "a2")), B = factor(c("b1", "b2")))
+	d$y <- 2 * (d$A == "a2") + 1.2 * (d$A == "a2" & d$B == "b2") + stats::rnorm(nrow(d))
+	old <- options(width = 80)
+	on.exit(options(old))
+	txt <- capture.output(r <- m.bay(y ~ A * B, data = d, draws = 2000))
+	# 1. The report sentence uses the words of the bilan.
+	ta <- .bay_term_answers(r)
+	rep_line <- paste(txt[grep("compte rendu|for a report", txt):length(txt)], collapse = " ")
+	for (i in seq_len(nrow(r$effects))) expect_match(gsub("[[:space:]]+", " ", rep_line), paste0(r$effects$term[i], " ", ta$short_fr[i]), fixed = TRUE)
+	# 2. Undecided A:B: gaps of A at each level of B, and a note that says so.
+	expect_false(is.null(r$posthoc$by))
+	expect_true(all(c("B = b1", "B = b2") %in% r$posthoc$by$at[r$posthoc$by$factor == "A"]))
+	expect_true(any(grepl("posthoc$by", txt, fixed = TRUE)))
+	# 3. A numbered item folds under its text.
+	i1 <- grep("^\t    1[.] ", txt)
+	if (length(i1) && !grepl("^\t    2[.] ", txt[i1[1L] + 1L])) expect_match(txt[i1[1L] + 1L], "^\t       [^ ]")
+	# 4. The title of step 6 gives the gap.
+	expect_true(any(grepl("- A : a2 > a1 (", paste(txt, c(txt[-1L], ""), sep = " "), fixed = TRUE)))
+})

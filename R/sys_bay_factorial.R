@@ -382,6 +382,28 @@
 		het_ess = if (!is.null(fl)) min(fl$ess) else NA_real_)
 }
 
+# Answer per term, one rule for the bilan and the report sentence (audit of 23c941e, point 1):
+# yes or no with its support, or "not settled" when the support is weak, the Bayes factor goes
+# against the leading side, or the sensitivity reverses it.
+.bay_term_answers <- function(obj) {
+	e <- obj$effects
+	sens <- obj$sensitivity
+	out <- lapply(seq_len(nrow(e)), function(i) {
+		yes <- e$p_h1[i] >= 0.5
+		s <- .bay_support_bf(max(e$p_h1[i], e$p_h0[i]), e$log_bf[i] * if (yes) 1 else -1)
+		if ((isTRUE(any(obj$overlap$poor)) || (isTRUE(obj$het_cells) && yes)) && s$level > 2L) s <- .bay_support(0.7)
+		against <- !is.na(e$log_bf[i]) && ((e$log_bf[i] >= 0) != yes)
+		open <- s$level == 1L || against || (!is.null(sens) && identical(sens$verdict_terms[i], "changes"))
+		data.frame(open = open, yes = yes,
+			short_en = if (open) "not settled" else if (yes) "yes" else "no",
+			short_fr = if (open) "non tranch\u00e9" else if (yes) "oui" else "non",
+			long_en = if (open) "not settled" else paste0(if (yes) "yes, " else "no, ", s$en),
+			long_fr = if (open) "non tranch\u00e9" else paste0(if (yes) "oui, " else "non, ", s$fr),
+			stringsAsFactors = FALSE)
+	})
+	do.call(rbind, out)
+}
+
 # Bilan with several factors. Same order as with one factor: verdict on the global
 # question, then each term, its sensitivity, what was compared, the starting point.
 .bay_print_bilan_fact <- function(obj, detail = FALSE, narrated = FALSE) {
@@ -402,14 +424,10 @@
 				if (narrated) paste0("\u00e9carts selon ", ph$xname, " : \u00e9tape 6.") else "\u00e9carts : $posthoc$gaps.")
 		}
 		if (nrow(e) > 1L) {
+			ta <- .bay_term_answers(obj)
 			for (i in seq_len(nrow(e))) {
-				yes <- e$p_h1[i] >= 0.5
-				s <- .bay_support_bf(max(e$p_h1[i], e$p_h0[i]), e$log_bf[i] * if (yes) 1 else -1)
-				if ((isTRUE(any(obj$overlap$poor)) || (isTRUE(obj$het_cells) && yes)) && s$level > 2L) s <- .bay_support(0.7)
-				against <- !is.na(e$log_bf[i]) && ((e$log_bf[i] >= 0) != yes)
-				open <- s$level == 1L || against || (!is.null(sens) && identical(sens$verdict_terms[i], "changes"))
-				ans_en <- if (open) "not settled" else paste0(if (yes) "yes, " else "no, ", s$en)
-				ans_fr <- if (open) "non tranch\u00e9" else paste0(if (yes) "oui, " else "non, ", s$fr)
+				ans_en <- ta$long_en[i]
+				ans_fr <- ta$long_fr[i]
 				q <- strsplit(e$term[i], ":", fixed = TRUE)[[1]]
 				q_en <- if (length(q) == 1L) paste0(e$term[i], " (alone or in interaction)") else paste0(e$term[i], " (the gaps along ", paste(q[-length(q)], collapse = ":"), " change with ", q[length(q)], ")")
 				q_fr <- if (length(q) == 1L) paste0(e$term[i], " (seul ou en interaction)") else paste0(e$term[i], " (les \u00e9carts selon ", paste(q[-length(q)], collapse = ":"), " changent avec ", q[length(q)], ")")

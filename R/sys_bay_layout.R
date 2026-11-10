@@ -106,15 +106,17 @@
 	terms_en <- terms_fr <- ""
 	e <- obj$effects
 	if (!is.null(e) && nrow(e) > 1L) {
-		st_en <- ifelse(e$p_h1 >= 0.75, "yes", ifelse(e$p_h1 <= 0.25, "no", "not settled"))
-		st_fr <- ifelse(e$p_h1 >= 0.75, "oui", ifelse(e$p_h1 <= 0.25, "non", "non tranch\u00e9"))
+		# Same words as the lines of the bilan (.bay_term_answers).
+		ta <- .bay_term_answers(obj)
+		st_en <- ta$short_en
+		st_fr <- ta$short_fr
 		# A main effect inside a probable interaction: its "yes" may come from the interaction
 		# alone (relecture D19-D20, point 2).
 		fs <- strsplit(.bay_term_key(e$term), ":", fixed = TRUE)
 		in_int <- vapply(seq_along(fs), function(i) length(fs[[i]]) == 1L && any(vapply(seq_along(fs), function(j) {
 			length(fs[[j]]) > 1L && fs[[i]] %in% fs[[j]] && isTRUE(e$p_h1[j] >= 0.5)
 		}, logical(1))), logical(1))
-		yes_in <- in_int & e$p_h1 >= 0.75
+		yes_in <- in_int & !ta$open & ta$yes
 		st_en[yes_in] <- "yes, alone or in interaction,"
 		st_fr[yes_in] <- "oui, seul ou en interaction,"
 		terms_en <- paste0("; ", paste0(e$term, " ", st_en, " (", vapply(e$p_h1, .bay_pct, character(1), dec = "."), ")", collapse = ", "))
