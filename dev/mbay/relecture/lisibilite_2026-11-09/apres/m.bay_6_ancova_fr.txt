@@ -6,19 +6,19 @@
 	==> Ex-aequo : aucun.
 	==> Valeurs éloignées de leur groupe : 6 au-delà de 1,5 écart
 	    interquartile, 1 au-delà de 3 (sur 45).
-	Note : valeurs éloignées cherchées sur ce que les covariables
-	       n'expliquent pas.
 	==> Covariable x : étendue commune 1,15 à 9,03, au moins 80,0 % de
 	    chaque groupe.
 	--> Covariable centrée sur sa moyenne (x = 4,71) : groupes comparés à
 	    cette valeur.
 	--> Aucune valeur retirée.
+	Note : valeurs éloignées cherchées sur ce que les covariables
+	       n'expliquent pas.
 3) Forme du bruit - normale à variance commune, seule.
 	==> La covariable agit en ligne droite (linéarité non testée).
-	Note : queues lourdes, variances inégales et courbure ne sont pas encore
-	       validées avec des covariables.
 	--> 1 valeur au-delà de 3 écarts interquartiles : lire la réponse avec
 	    réserve.
+	Note : queues lourdes, variances inégales et courbure ne sont pas encore
+	       validées avec des covariables.
 4) Point de départ (a priori) - 50,0 % de chances d'une différence.
 	==> Taille attendue r = 0,5.
 	==> x est dans tous les modèles ; chaque réponse se lit contre les
@@ -30,9 +30,9 @@
 	==> Facteur de Bayes : 10^6 (les données favorisent une différence).
 	==> Précision du calcul : < 0,1 point sur les probabilités, négligeable.
 	==> Sensibilité : la réponse en tête va de > 99,9 % à > 99,9 %.
-	Note : variés : r de 0,25 à 1 (rscaleCont avec lui), chances de départ
-	       de 1 contre 2 à 2 contre 1.
 	--> La réponse ne change pas de côté.
+	Note : r va de 0,25 à 1 (rscaleCont avec lui), les chances de départ de
+	       1 contre 2 à 2 contre 1.
 6) Quels groupes diffèrent, et de combien [lmBF(), posterior() {BayesFactor},
    hdi() {bayestestR}] - t1 < t2 = t3 en tête (69,6 %).
 	==> Si une différence existe, regroupements en tête : t1 < t2 = t3
@@ -45,37 +45,35 @@
 	    écart-type résiduel (covariables prises en compte).
 	Note : [ ; ] = intervalle de crédibilité à 95 % (95 % de chances d'y
 	       trouver l'écart).
-	Note : l'écart est un peu plus petit que l'écart observé : la méthode
-	       est prudente avec les petits échantillons.
-	Note : toutes les paires sont jugées ensemble (pas de correction à la
-	       Tukey) : elles ne peuvent pas se contredire.
+	Note : l'écart estimé est un peu plus petit que l'écart observé, par
+	       prudence avec les petits échantillons.
 
 7) Bilan - y diffère selon g, à même x : > 99,9 % (soutien très fort).
 	==> Verdict : une différence existe très probablement.
-	==> 1. y diffère selon g, à même x    : > 99,9 % (soutien très fort)
-	==> 2. Aucune différence de y selon g : < 0,1 %
-	Note : les données sont 10^6 fois plus probables sous l'hypothèse 1 que
-	       sous la 2 (facteur de Bayes 10^6).
-	Note : échelle du facteur de Bayes : 1 à 3 faible, 3 à 20 modéré, 20 à
-	       150 fort, au-delà très fort (Kass et Raftery 1995).
+	==> Probabilité de chaque hypothèse :
+	    1. y diffère selon g, à même x    : > 99,9 % (soutien très fort)
+	    2. Aucune différence de y selon g : < 0,1 %
 	==> Quel que soit le point de départ : > 99,9 % ; l'ordre ne change pas.
+	Note : les données sont 10^6 fois plus probables sous l'hypothèse 1 que
+	       sous la 2 (facteur de Bayes ; 1 à 3 faible, 3 à 20 modéré, 20 à
+	       150 fort, au-delà très fort).
+
 	==> Différents : t1/t2, t1/t3 (très fort).
 	==> Non tranchés : t2/t3.
 	==> Si une différence existe, regroupement le plus probable :
 	    t1 < t2 = t3 (69,6 %).
 	Note : différents à partir de 75 % de probabilité, semblables jusqu'à
-	       25 %, sinon non tranchés.
-	Note : écarts chiffrés : étape 6.
+	       25 %, sinon non tranchés ; écarts chiffrés à l'étape 6.
+
 	==> Moyennes brutes, g : t1 = 7,4 ; t2 = 11,0 ; t3 = 11,7 (n = 15).
 	==> x moyen par groupe : t1 = 4,34 ; t2 = 4,95 ; t3 = 4,83.
-	Note : x est dans tous les modèles : les groupes sont comparés
-	       à x égal ; son effet propre n'est pas la question posée.
-	Note : écart-type résiduel (covariables prises en compte) : 1,48 ; loi
-	       normale à variance commune seule.
-	Note : cela ne dit ni que la différence est importante, ni pourquoi : la
-	       cause dépend de la façon dont l'étude a été menée.
-	Note : pour un compte rendu : « y diffère selon g, à même x :
-	       probabilité a posteriori > 99,9 %, facteur de Bayes 10^6 (m.bay
-	       {KefiR}, BayesFactor, Rouder et al. 2012). »
-	Note : probabilités d'hypothèses, pas des p-values ; méthode en détail :
-	       print(resultat, detail = TRUE).
+	==> x est dans tous les modèles, donc les groupes sont comparés
+	    à x égal ; son effet propre n'est pas la question posée.
+	==> Écart-type résiduel (covariables prises en compte) : 1,48 ; loi
+	    normale à variance commune seule.
+	Note : pour un compte rendu : « y diffère selon g, à même x (probabilité
+	       a posteriori > 99,9 %), facteur de Bayes 10^6 (m.bay {KefiR},
+	       BayesFactor, Rouder et al. 2012). »
+	Note : probabilités d'hypothèses, pas des p-values ; ni l'importance, ni
+	       la cause d'une différence ; la méthode avec print(resultat,
+	       detail = TRUE).

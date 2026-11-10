@@ -28,7 +28,7 @@ test_that("verbose = TRUE : six etapes, bilan visible, une marque par ligne, rej
 	expect_length(i7, 1L)
 	expect_identical(txt[i7 - 1L], "")
 	expect_false(any(grepl("Bilan de m.bay|Bilan of m.bay", txt)))
-	expect_true(any(grepl("^\t==> 1\\. ", txt)) && any(grepl("^\t==> 2\\. ", txt)))
+	expect_true(any(grepl("^\t    1\\. ", txt)) && any(grepl("^\t    2\\. ", txt)))
 	# chaque ligne porte une marque : titre, ==>, -->, Note, ou suite d'une ligne repliee
 	body <- txt[nzchar(txt) & !grepl("^[0-9]+\\) |^   ", txt)]
 	expect_true(all(grepl("^\t(==> |--> |Note : |Note: | {4,})", body)))

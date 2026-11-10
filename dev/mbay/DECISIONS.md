@@ -419,6 +419,15 @@ Demandé par la session parente dans l'ordre du PERIMETRE, avec trois points de 
 - Une paire n'est dite « semblable » que si le bilan n'est pas indécis ; sinon, elle est « non tranchée » (relecture D17).
 - Les regroupements sont donnés « si une différence existe » (probabilités conditionnelles), pour qu'un seul chiffre porte « aucune différence » (relecture D17).
 
+**Retouches après l'audit de c50a311 par la session parente.**
+- Au plus deux « Note : » par étape, placées en fin d'étape ; les autres passent dans `detail = TRUE`.
+- Plus de doubles deux-points dans les notes.
+- Hypothèses listées sans flèche, en retrait sous « ==> Probabilité de chaque hypothèse : ».
+- Bilan en trois blocs séparés par une ligne vide :
+  - hypothèses ;
+  - termes, paires et regroupement ;
+  - observations et compte rendu.
+
 **Nombres, une seule règle.**
 - Probabilités : 1 décimale.
 - Facteur de Bayes : `.bay_bf_txt` partout.

@@ -302,8 +302,8 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 
 	# Step 3: the shapes of the noise, compared and not chosen.
 	.bay_tell(story, "Shapes of the noise", "Formes du bruit", "step", fun = "m.bay() {KefiR}")
-	.bay_tell(story, "shape of the noise: how the values scatter in their group; heavy tails: far values more frequent than under the normal law.",
-		"forme du bruit : la fa\u00e7on dont les valeurs s'\u00e9cartent dans leur groupe ; queues lourdes : valeurs \u00e9loign\u00e9es plus fr\u00e9quentes que sous la loi normale.", "note")
+	.bay_tell(story, "the shape of the noise is how the values scatter in their group; heavy tails mean far values more frequent than under the normal law.",
+		"la forme du bruit est la fa\u00e7on dont les valeurs s'\u00e9cartent dans leur groupe ; les queues lourdes, des valeurs \u00e9loign\u00e9es plus fr\u00e9quentes que sous la loi normale.", "note")
 	.bay_tell(story, "Shape of the noise: how the values scatter around the centre of their group (normal or heavy tails, equal variances or not). Computed by importance sampling, eight models.",
 		"Forme du bruit : la fa\u00e7on dont les valeurs s'\u00e9cartent du centre de leur groupe (normale ou \u00e0 queues lourdes, variances \u00e9gales ou non). Calcul par \u00e9chantillonnage d'importance, huit mod\u00e8les.", "detail")
 	rs <- if (isTRUE(sensitivity)) c(rscale / 2, rscale, rscale * 2) else rscale
@@ -384,16 +384,16 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	} else if (p_t > 0.5) {
 		.bay_tell(story, paste0("Heavy tails the more probable (", .bay_pct(p_t, "."), "), below ", .bay_pct(.bay_heavy_threshold(), "."), ": the answer mixes means and centres."),
 			paste0("Queues lourdes les plus probables (", .bay_pct(p_t, ","), "), sous ", .bay_pct(.bay_heavy_threshold(), ","), " : la r\u00e9ponse m\u00eale moyennes et centres."), "decide")
-		.bay_tell(story, "Centre: the typical value of a group, close to its median.", "Centre : la valeur typique d'un groupe, proche de sa m\u00e9diane.", "note")
+		.bay_tell(story, "The centre is the typical value of a group, close to its median.", "Le centre est la valeur typique d'un groupe, proche de sa m\u00e9diane.", "note")
 	} else if (length(normal_kept)) {
 		.bay_tell(story, paste0("The answer bears mainly on the means (normal shapes: ", .bay_pct(1 - p_t, "."), ")."),
 			paste0("La r\u00e9ponse porte surtout sur les moyennes (formes normales : ", .bay_pct(1 - p_t, ","), ")."), "decide")
 	}
 	if (length(pl) > 1L && pl[1L] > 0.95) {
-		.bay_tell(story, "One shape dominates: the answer is almost its own.", "Une forme domine : la r\u00e9ponse est presque la sienne.", "note")
+		.bay_tell(story, "One shape dominates, the answer is almost its own.", "Une forme domine, la r\u00e9ponse est presque la sienne.", "note")
 	} else if (length(pl) > 1L) {
-		.bay_tell(story, "No shape is chosen: each answer is weighted by its probability.",
-			"Aucune forme n'est choisie : chaque r\u00e9ponse est pond\u00e9r\u00e9e par sa probabilit\u00e9.", "note")
+		.bay_tell(story, "No shape is chosen; each answer is weighted by its probability.",
+			"Aucune forme n'est choisie ; chaque r\u00e9ponse est pond\u00e9r\u00e9e par sa probabilit\u00e9.", "note")
 	}
 
 	# Step 4: the priors, fixed before the computation.
@@ -421,8 +421,8 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	inv_fr <- if (ans$log_bf < 0) paste0(", soit ", .bay_bf_txt(-ans$log_bf, ","), " en faveur de l'absence de diff\u00e9rence") else ""
 	.bay_tell(story, paste0("Bayes factor: ", lb_txt$en, inv_en, if (abs(ans$log_bf) < log(3)) " (close to 1: the data hardly tell the two apart)." else if (ans$log_bf >= 0) " (the data favour a difference)." else " (the data favour no difference)."),
 		paste0("Facteur de Bayes : ", lb_txt$fr, inv_fr, if (abs(ans$log_bf) < log(3)) " (proche de 1 : les donn\u00e9es d\u00e9partagent \u00e0 peine les deux)." else if (ans$log_bf >= 0) " (les donn\u00e9es favorisent une diff\u00e9rence)." else " (les donn\u00e9es favorisent l'absence de diff\u00e9rence)."))
-	.bay_tell(story, "Bayes factor: how many times more probable the data are with a difference than without.",
-		"Facteur de Bayes : combien de fois les donn\u00e9es sont plus probables avec une diff\u00e9rence que sans.", "note")
+	.bay_tell(story, "The Bayes factor says how many times more probable the data are with a difference than without.",
+		"Le facteur de Bayes dit combien de fois les donn\u00e9es sont plus probables avec une diff\u00e9rence que sans.", "note")
 	low <- ans$models$ess[!is.na(ans$models$ess)] < 200
 	if (any(low) || isTRUE(ans$error_pct > 5)) {
 		note(paste0("Numerical precision is low: error on the Bayes factor about ",
@@ -683,8 +683,8 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 	.bay_tell(story, "Solidity of the answer", "Solidit\u00e9 de la r\u00e9ponse", "step",
 		fun = if (paired) "ttestBF(paired = TRUE) {BayesFactor}" else "lmBF() {BayesFactor}")
 	if (n_mod > 50L) {
-		.bay_tell(story, paste0(n_mod, " models: this can take a few minutes."),
-			paste0(n_mod, " mod\u00e8les : cela peut prendre quelques minutes."), "note")
+		.bay_tell(story, paste0(n_mod, " models, this can take a few minutes."),
+			paste0(n_mod, " mod\u00e8les, cela peut prendre quelques minutes."), "note")
 	}
 	fa <- .bay_factorial(input, rscale, sensitivity, as.integer(draws), as.integer(seed), note, prior_h1 = prior_h1)
 	if (single) {
@@ -725,8 +725,8 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 		} else {
 			.bay_step_result(story, "no term changes side", "aucun terme ne change de c\u00f4t\u00e9")
 		}
-		.bay_tell(story, paste0("Varied: r from ", r1$en, " to ", r2$en, if (anc) " (rscaleCont with it)" else "", if (single) ", starting chances from 1 against 2 to 2 against 1." else ", three priors on the models."),
-			paste0("Vari\u00e9s : r de ", r1$fr, " \u00e0 ", r2$fr, if (anc) " (rscaleCont avec lui)" else "", if (single) ", chances de d\u00e9part de 1 contre 2 \u00e0 2 contre 1." else ", trois lois sur les mod\u00e8les."), "note")
+		.bay_tell(story, paste0("r goes from ", r1$en, " to ", r2$en, if (anc) " (rscaleCont with it)" else "", if (single) ", the starting chances from 1 against 2 to 2 against 1." else ", with three priors on the models."),
+			paste0("r va de ", r1$fr, " \u00e0 ", r2$fr, if (anc) " (rscaleCont avec lui)" else "", if (single) ", les chances de d\u00e9part de 1 contre 2 \u00e0 2 contre 1." else ", avec trois lois sur les mod\u00e8les."), "note")
 		if (!single) {
 			.bay_tell(story, "Priors on the models in the sensitivity: HOP, 1/2 per term (Chipman 1996), uniform.",
 				"Lois sur les mod\u00e8les dans la sensibilit\u00e9 : HOP, 1/2 par terme (Chipman 1996), uniforme.", "detail")

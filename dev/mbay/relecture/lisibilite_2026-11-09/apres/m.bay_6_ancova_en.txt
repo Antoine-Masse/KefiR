@@ -6,18 +6,18 @@
 	==> Ties: none.
 	==> Values far from their group: 6 beyond 1.5 interquartile ranges, 1
 	    beyond 3 (of 45).
-	Note: far values sought on what the covariates do not explain.
 	==> Covariate x: common range 1.15 to 9.03, at least 80.0 % of each
 	    group.
 	--> Covariate centred on its mean (x = 4.71): groups compared at this
 	    value.
 	--> No value is removed.
+	Note: far values sought on what the covariates do not explain.
 3) Shape of the noise - normal with a common variance, only.
 	==> The covariate acts in a straight line (linearity not tested).
-	Note: heavy tails, unequal variances and curvature are not validated
-	      with covariates yet.
 	--> 1 value lies beyond 3 interquartile ranges: read the answer with
 	    caution.
+	Note: heavy tails, unequal variances and curvature are not validated
+	      with covariates yet.
 4) Starting point (priors) - 50.0 % chance of a difference.
 	==> Expected size r = 0.5.
 	==> x is in every model; each answer is read against the covariates
@@ -29,9 +29,9 @@
 	==> Precision of the computation: < 0.1 point on the probabilities,
 	    negligible.
 	==> Sensitivity: the leading answer goes from > 99.9 % to > 99.9 %.
-	Note: varied: r from 0.25 to 1 (rscaleCont with it), starting chances
-	      from 1 against 2 to 2 against 1.
 	--> The answer does not change side.
+	Note: r goes from 0.25 to 1 (rscaleCont with it), the starting chances
+	      from 1 against 2 to 2 against 1.
 6) Which groups differ, and by how much [lmBF(), posterior() {BayesFactor},
    hdi() {bayestestR}] - t1 < t2 = t3 ahead (69.6 %).
 	==> If a difference exists, leading groupings: t1 < t2 = t3 (69.6 %);
@@ -44,38 +44,36 @@
 	    residual SD (covariates accounted for).
 	Note: [ ; ] = 95 % credible interval (95 % chance that the gap lies
 	      there).
-	Note: the gap is a little smaller than the observed one: the method is
-	      cautious with small samples.
-	Note: all pairs are judged together (unlike Tukey, nothing to correct):
-	      they cannot contradict each other.
+	Note: the estimated gap is a little smaller than the observed one, by
+	      caution with small samples.
 
 7) Bilan - y differs according to g, at equal x: > 99.9 % (very strong support).
 	==> Verdict: a difference very probably exists.
-	==> 1. y differs according to g, at equal x : > 99.9 % (very strong
+	==> Probability of each hypothesis:
+	    1. y differs according to g, at equal x : > 99.9 % (very strong
 	    support)
-	==> 2. No difference in y according to g    : < 0.1 %
-	Note: the data are 10^6 times more probable under hypothesis 1 than
-	      under 2 (Bayes factor 10^6).
-	Note: Bayes factor scale: 1 to 3 weak, 3 to 20 moderate, 20 to 150
-	      strong, beyond very strong (Kass and Raftery 1995).
+	    2. No difference in y according to g    : < 0.1 %
 	==> Whatever the starting point: > 99.9 %; the order does not change.
+	Note: the data are 10^6 times more probable under hypothesis 1 than
+	      under 2 (Bayes factor; 1 to 3 weak, 3 to 20 moderate, 20 to 150
+	      strong, beyond very strong).
+
 	==> Different: t1/t2, t1/t3 (very strong).
 	==> Not settled: t2/t3.
 	==> If a difference exists, most probable grouping: t1 < t2 = t3
 	    (69.6 %).
 	Note: different from 75 % of probability, alike up to 25 %, otherwise
-	      not settled.
-	Note: gaps in figures: step 6.
+	      not settled; gaps in figures at step 6.
+
 	==> Raw means, g: t1 = 7.4; t2 = 11.0; t3 = 11.7 (n = 15).
 	==> Mean x per group: t1 = 4.34; t2 = 4.95; t3 = 4.83.
-	Note: x is in every model: the groups are compared at equal x; its own
-	      effect is not the question asked.
-	Note: residual standard deviation (covariates accounted for): 1.48;
-	      normal law with a common variance only.
-	Note: this says neither that the difference matters, nor why: a cause
-	      depends on how the study was run.
-	Note: for a report: "y differs according to g, at equal x: posterior
-	      probability > 99.9 %, Bayes factor 10^6 (m.bay {KefiR},
+	==> x is in every model, so the groups are compared at equal x; its own
+	    effect is not the question asked.
+	==> Residual standard deviation (covariates accounted for): 1.48; normal
+	    law with a common variance only.
+	Note: for a report: "y differs according to g, at equal x (posterior
+	      probability > 99.9 %), Bayes factor 10^6 (m.bay {KefiR},
 	      BayesFactor, Rouder et al. 2012)."
-	Note: probabilities of hypotheses, not p-values; method in detail:
-	      print(result, detail = TRUE).
+	Note: probabilities of hypotheses, not p-values; neither the size nor
+	      the cause of a difference; the method with print(result,
+	      detail = TRUE).

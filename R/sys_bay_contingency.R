@@ -145,8 +145,8 @@
 	inv_en <- if (lb < 0) paste0(", i.e. ", .bay_bf_txt(-lb, "."), " in favour of no difference") else ""
 	inv_fr <- if (lb < 0) paste0(", soit ", .bay_bf_txt(-lb, ","), " en faveur de l'absence de diff\u00e9rence") else ""
 	.bay_tell(story, paste0("Bayes factor: ", .bay_bf_txt(lb, "."), inv_en, "."), paste0("Facteur de Bayes : ", .bay_bf_txt(lb, ","), inv_fr, "."))
-	.bay_tell(story, "Bayes factor: how many times more probable the counts are with a difference than without.",
-		"Facteur de Bayes : combien de fois les effectifs sont plus probables avec une diff\u00e9rence que sans.", "note")
+	.bay_tell(story, "The Bayes factor says how many times more probable the counts are with a difference than without.",
+		"Le facteur de Bayes dit combien de fois les effectifs sont plus probables avec une diff\u00e9rence que sans.", "note")
 	.bay_tell(story, "Precision: exact computation, without draws.", "Pr\u00e9cision : calcul exact, sans tirage.")
 	sens <- NULL
 	if (isTRUE(sensitivity)) {
@@ -164,8 +164,8 @@
 		.bay_step_result(story, paste0("Bayes factor ", .bay_bf_txt(lb, "."), ", ", stb$en), paste0("facteur de Bayes ", .bay_bf_txt(lb, ","), ", ", stb$fr))
 		.bay_tell(story, paste0("Sensitivity: the leading answer goes from ", .bay_pct(rng[1L], "."), " to ", .bay_pct(rng[2L], "."), "."),
 			paste0("Sensibilit\u00e9 : la r\u00e9ponse en t\u00eate va de ", .bay_pct(rng[1L], ","), " \u00e0 ", .bay_pct(rng[2L], ","), "."))
-		.bay_tell(story, "varied: how spread the proportions are expected, and the starting chances (1 against 2 to 2 against 1).",
-			"vari\u00e9s : l'\u00e9talement attendu des proportions, et les chances de d\u00e9part (1 contre 2 \u00e0 2 contre 1).", "note")
+		.bay_tell(story, "what varies is the expected spread of the proportions and the starting chances (1 against 2 to 2 against 1).",
+			"on fait varier l'\u00e9talement attendu des proportions et les chances de d\u00e9part (1 contre 2 \u00e0 2 contre 1).", "note")
 		.bay_tell(story, "Sensitivity: concentration a of the Dirichlet 1, 2 and 4, crossed with the prior odds 1:2, 1:1, 2:1.",
 			"Sensibilit\u00e9 : concentration a de la Dirichlet 1, 2 et 4, crois\u00e9e avec les cotes a priori 1:2, 1:1, 2:1.", "detail")
 		if (identical(verdict, "changes")) {
@@ -243,6 +243,7 @@
 # Observed counts, the category of interest first ("18 yes, 12 no (of 30)"), and the
 # category that carries the largest gap (relecture D17, points 2 and 6).
 .bay_cont_observed <- function(obj, emit) {
+	emit("block", "", "")
 	tab <- obj$table
 	cats <- rev(colnames(tab))
 	for (i in seq_len(nrow(tab))) {

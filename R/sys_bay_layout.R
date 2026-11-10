@@ -37,7 +37,7 @@
 }
 
 .bay_bilan_common <- function(obj, narrated = FALSE, body = NULL) {
-	emit <- .bay_emitter()
+	emit <- .bay_block_emitter()
 	fr <- .bay_lang_fr(); dc <- if (fr) "," else "."
 	li <- .bay_lead_info(obj)
 	h <- li$h
@@ -67,15 +67,14 @@
 	# Aligned only if the line still fits; otherwise, no padding.
 	fit <- max(w_en, w_fr) + 32L <= .bay_width() - 12L
 	pad <- function(x, w) if (fit) paste0(x, strrep("\u00a0", w - nchar(x))) else x
+	emit("fact", "Probability of each hypothesis:", "Probabilit\u00e9 de chaque hypoth\u00e8se :")
 	for (i in seq_len(nrow(h))) {
-		emit("fact", paste0(i, ". ", pad(h$label_en[i], w_en), " : ", .bay_pct(h$posterior[i], "."), if (i == 1L) paste0(" (", li$sup$en, ")") else ""),
+		emit("sub", paste0(i, ". ", pad(h$label_en[i], w_en), " : ", .bay_pct(h$posterior[i], "."), if (i == 1L) paste0(" (", li$sup$en, ")") else ""),
 			paste0(i, ". ", pad(h$label_fr[i], w_fr), " : ", .bay_pct(h$posterior[i], ","), if (i == 1L) paste0(" (", li$sup$fr, ")") else ""))
 	}
 	bf_en <- .bay_bf_txt(abs(li$lb), "."); bf_fr <- .bay_bf_txt(abs(li$lb), ",")
-	emit("note", paste0("the data are ", bf_en, " times more probable under hypothesis 1 than under 2 (Bayes factor ", bf_en, ")."),
-		paste0("les donn\u00e9es sont ", bf_fr, " fois plus probables sous l'hypoth\u00e8se 1 que sous la 2 (facteur de Bayes ", bf_fr, ")."))
-	emit("note", "Bayes factor scale: 1 to 3 weak, 3 to 20 moderate, 20 to 150 strong, beyond very strong (Kass and Raftery 1995).",
-		"\u00e9chelle du facteur de Bayes : 1 \u00e0 3 faible, 3 \u00e0 20 mod\u00e9r\u00e9, 20 \u00e0 150 fort, au-del\u00e0 tr\u00e8s fort (Kass et Raftery 1995).")
+	emit("note", paste0("the data are ", bf_en, " times more probable under hypothesis 1 than under 2 (Bayes factor; 1 to 3 weak, 3 to 20 moderate, 20 to 150 strong, beyond very strong)."),
+		paste0("les donn\u00e9es sont ", bf_fr, " fois plus probables sous l'hypoth\u00e8se 1 que sous la 2 (facteur de Bayes ; 1 \u00e0 3 faible, 3 \u00e0 20 mod\u00e9r\u00e9, 20 \u00e0 150 fort, au-del\u00e0 tr\u00e8s fort)."))
 	sens <- obj$sensitivity
 	if (!is.null(sens$range_lead)) {
 		rg <- sens$range_lead
@@ -94,11 +93,8 @@
 		emit("note", "sensitivity to the priors not computed (sensitivity = FALSE).",
 			"sensibilit\u00e9 aux a priori non calcul\u00e9e (sensitivity = FALSE).")
 	}
+	emit("block", "", "")
 	if (is.function(body)) body(emit, li, narrated)
-	if (isTRUE(h$null[1L] == FALSE) && h$posterior[1L] >= 0.6) {
-		emit("note", "this says neither that the difference matters, nor why: a cause depends on how the study was run.",
-			"cela ne dit ni que la diff\u00e9rence est importante, ni pourquoi : la cause d\u00e9pend de la fa\u00e7on dont l'\u00e9tude a \u00e9t\u00e9 men\u00e9e.")
-	}
 	ct <- .bay_cite(obj)
 	h1 <- which(!h$null)[1L]
 	terms_en <- terms_fr <- ""
@@ -110,21 +106,24 @@
 		terms_fr <- paste0(" ; ", paste0(e$term, " ", st_fr, " (", vapply(e$p_h1, .bay_pct, character(1), dec = ","), ")", collapse = ", "))
 	}
 	if (undecided) {
-		emit("note", paste0("for a report: \"The data do not settle it: probability of a difference ", .bay_pct(h$posterior[h1], "."), ", Bayes factor ", bf_en,
-				if (h$null[1L]) " in favour of no difference" else "", terms_en, " (m.bay {KefiR}, ", ct$en, ").\""),
-			paste0("pour un compte rendu : \u00ab Les donn\u00e9es ne permettent pas de conclure : probabilit\u00e9 d'une diff\u00e9rence ", .bay_pct(h$posterior[h1], ","), ", facteur de Bayes ", bf_fr,
-				if (h$null[1L]) " en faveur de l'absence de diff\u00e9rence" else "", terms_fr, " (m.bay {KefiR}, ", ct$fr, "). \u00bb"))
+		emit("note", paste0("for a report: \"The data do not settle it (probability of a difference ", .bay_pct(h$posterior[h1], "."), ", Bayes factor ", bf_en,
+				if (h$null[1L]) " in favour of no difference" else "", terms_en, "); m.bay {KefiR}, ", ct$en, ".\""),
+			paste0("pour un compte rendu : \u00ab Les donn\u00e9es ne permettent pas de conclure (probabilit\u00e9 d'une diff\u00e9rence ", .bay_pct(h$posterior[h1], ","), ", facteur de Bayes ", bf_fr,
+				if (h$null[1L]) " en faveur de l'absence de diff\u00e9rence" else "", terms_fr, ") ; m.bay {KefiR}, ", ct$fr, ". \u00bb"))
 	} else {
-		emit("note", paste0("for a report: \"", h$label_en[1L], ": posterior probability ", .bay_pct(h$posterior[1L], "."), ", Bayes factor ", bf_en, terms_en,
+		emit("note", paste0("for a report: \"", h$label_en[1L], " (posterior probability ", .bay_pct(h$posterior[1L], "."), "), Bayes factor ", bf_en, terms_en,
 				" (m.bay {KefiR}, ", ct$en, ").\""),
-			paste0("pour un compte rendu : \u00ab ", h$label_fr[1L], " : probabilit\u00e9 a posteriori ", .bay_pct(h$posterior[1L], ","), ", facteur de Bayes ", bf_fr, terms_fr,
+			paste0("pour un compte rendu : \u00ab ", h$label_fr[1L], " (probabilit\u00e9 a posteriori ", .bay_pct(h$posterior[1L], ","), "), facteur de Bayes ", bf_fr, terms_fr,
 				" (m.bay {KefiR}, ", ct$fr, "). \u00bb"))
 	}
 	if (length(obj$notes$en) && !isTRUE(narrated)) {
-		for (i in seq_along(obj$notes$en)) emit("note", obj$notes$en[i], obj$notes$fr[i])
+		for (i in seq_along(obj$notes$en)) emit("fact", obj$notes$en[i], obj$notes$fr[i])
 	}
-	emit("note", "probabilities of hypotheses, not p-values; method in detail: print(result, detail = TRUE).",
-		"probabilit\u00e9s d'hypoth\u00e8ses, pas des p-values ; m\u00e9thode en d\u00e9tail : print(resultat, detail = TRUE).")
+	cause_en <- if (!h$null[1L] && !undecided) "; neither the size nor the cause of a difference" else ""
+	cause_fr <- if (!h$null[1L] && !undecided) " ; ni l'importance, ni la cause d'une diff\u00e9rence" else ""
+	emit("note", paste0("probabilities of hypotheses, not p-values", cause_en, "; the method with print(result, detail = TRUE)."),
+		paste0("probabilit\u00e9s d'hypoth\u00e8ses, pas des p-values", cause_fr, " ; la m\u00e9thode avec print(resultat, detail = TRUE)."))
+	emit("flush", "", "")
 	invisible(emit)
 }
 
@@ -174,10 +173,8 @@
 		emit("fact", paste0("If a difference exists, most probable grouping: ", top$label, " (", .bay_pct(top$p, "."), ")."),
 			paste0("Si une diff\u00e9rence existe, regroupement le plus probable : ", top$label, " (", .bay_pct(top$p, ","), ")."))
 	}
-	emit("note", "different from 75 % of probability, alike up to 25 %, otherwise not settled.",
-		"diff\u00e9rents \u00e0 partir de 75 % de probabilit\u00e9, semblables jusqu'\u00e0 25 %, sinon non tranch\u00e9s.")
-	emit("note", if (narrated) "gaps in figures: step 6." else "gaps in figures: $posthoc$pairs.",
-		if (narrated) "\u00e9carts chiffr\u00e9s : \u00e9tape 6." else "\u00e9carts chiffr\u00e9s : $posthoc$pairs.")
+	emit("note", paste0("different from 75 % of probability, alike up to 25 %, otherwise not settled; gaps in figures ", if (narrated) "at step 6." else "in $posthoc$pairs."),
+		paste0("diff\u00e9rents \u00e0 partir de 75 % de probabilit\u00e9, semblables jusqu'\u00e0 25 %, sinon non tranch\u00e9s ; \u00e9carts chiffr\u00e9s ", if (narrated) "\u00e0 l'\u00e9tape 6." else "dans $posthoc$pairs."))
 	invisible(NULL)
 }
 

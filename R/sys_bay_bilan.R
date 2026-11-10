@@ -144,6 +144,7 @@
 			emit("fact", paste0("Estimated gap ", pr$group2, " - ", pr$group1, ": ", ci("."), if (narrated) " (step 6)." else "."),
 				paste0("\u00c9cart estim\u00e9 ", pr$group2, " - ", pr$group1, " : ", ci(","), if (narrated) " (\u00e9tape 6)." else "."))
 		}
+		emit("block", "", "")
 		centres <- isTRUE(obj$heavy) || isTRUE(obj$contradiction) || isTRUE(obj$p_tails > 0.5)
 		val <- if (centres) d$median else d$mean
 		same_n <- length(unique(d$n)) == 1L
@@ -156,11 +157,11 @@
 				paste0("\u00c9carts-types : ", paste0(d$group, " = ", .bay_fx(d$SD, dg, ","), collapse = " ; "), "."))
 		}
 		if (isTRUE(obj$contradiction)) {
-			emit("note", "centres and means do not tell the same story (step 5): support capped at weak.",
+			emit("decide", "centres and means do not tell the same story (step 5): support capped at weak.",
 				"centres et moyennes ne racontent pas la m\u00eame chose (\u00e9tape 5) : soutien plafonn\u00e9 \u00e0 faible.")
 		}
 		if (!is.null(ph) && isTRUE(ph$caution)) {
-			emit("note", "the pairs assume a normal noise with a common variance, which step 3 did not find: read them with caution.",
+			emit("decide", "the pairs assume a normal noise with a common variance, which step 3 did not find: read them with caution.",
 				"les paires supposent un bruit normal \u00e0 variance commune, ce que l'\u00e9tape 3 n'a pas trouv\u00e9 : les lire avec r\u00e9serve.")
 		}
 	}

@@ -8,15 +8,15 @@
 	==> Ties: none.
 	==> Values far from their condition: 2 beyond 1.5 interquartile ranges,
 	    0 beyond 3 (of 45).
-	Note: far values sought once each subject's own level is removed.
 	--> No value is removed.
+	Note: far values sought once each subject's own level is removed.
 3) Shape of the noise - normal, only.
 	==> Repeated measures: each subject keeps its own level.
+	--> No far value puts the normal law in doubt at first sight.
 	Note: conditions assumed equally correlated within a subject (not
 	      tested; m.test() checks sphericity).
 	Note: heavy tails and unequal variances are not validated with subjects
 	      yet.
-	--> No far value puts the normal law in doubt at first sight.
 4) Starting point (priors) - 50.0 % chance of a difference.
 	==> Expected size r = 0.5.
 	==> Each subject keeps its own level, in every model, "no difference"
@@ -28,9 +28,9 @@
 	==> Precision of the computation: < 0.1 point on the probabilities,
 	    negligible.
 	==> Sensitivity: the leading answer goes from 99.9 % to > 99.9 %.
-	Note: varied: r from 0.25 to 1, starting chances from 1 against 2 to 2
-	      against 1.
 	--> The answer does not change side.
+	Note: r goes from 0.25 to 1, the starting chances from 1 against 2 to 2
+	      against 1.
 6) Which conditions differ, and by how much [lmBF(), posterior() {BayesFactor},
    hdi() {bayestestR}] - T1 < T2 < T3 ahead (76.6 %).
 	==> If a difference exists, leading groupings: T1 < T2 < T3 (76.6 %);
@@ -43,35 +43,33 @@
 	    residual SD within subject.
 	Note: [ ; ] = 95 % credible interval (95 % chance that the gap lies
 	      there).
-	Note: the gap is a little smaller than the observed one: the method is
-	      cautious with small samples.
-	Note: all pairs are judged together (unlike Tukey, nothing to correct):
-	      they cannot contradict each other.
+	Note: the estimated gap is a little smaller than the observed one, by
+	      caution with small samples.
 
 7) Bilan - y differs according to t: > 99.9 % (very strong support).
 	==> Verdict: a difference very probably exists.
-	==> 1. y differs according to t          : > 99.9 % (very strong
+	==> Probability of each hypothesis:
+	    1. y differs according to t          : > 99.9 % (very strong
 	    support)
-	==> 2. No difference in y according to t : < 0.1 %
-	Note: the data are 2270 times more probable under hypothesis 1 than
-	      under 2 (Bayes factor 2270).
-	Note: Bayes factor scale: 1 to 3 weak, 3 to 20 moderate, 20 to 150
-	      strong, beyond very strong (Kass and Raftery 1995).
+	    2. No difference in y according to t : < 0.1 %
 	==> Depending on the starting point: 99.9 % to > 99.9 %; the order does
 	    not change.
+	Note: the data are 2270 times more probable under hypothesis 1 than
+	      under 2 (Bayes factor; 1 to 3 weak, 3 to 20 moderate, 20 to 150
+	      strong, beyond very strong).
+
 	==> Different: T1/T2, T2/T3 (moderate); T1/T3 (very strong).
 	==> If a difference exists, most probable grouping: T1 < T2 < T3
 	    (76.6 %).
 	Note: different from 75 % of probability, alike up to 25 %, otherwise
-	      not settled.
-	Note: gaps in figures: step 6.
+	      not settled; gaps in figures at step 6.
+
 	==> Observed means, t: T1 = 20.1; T2 = 21.2; T3 = 22.5 (n = 15).
-	Note: residual standard deviation within subject: 1.05; normal law with
-	      a common variance only.
-	Note: this says neither that the difference matters, nor why: a cause
-	      depends on how the study was run.
-	Note: for a report: "y differs according to t: posterior
-	      probability > 99.9 %, Bayes factor 2270 (m.bay {KefiR},
+	==> Residual standard deviation within subject: 1.05; normal law with a
+	    common variance only.
+	Note: for a report: "y differs according to t (posterior
+	      probability > 99.9 %), Bayes factor 2270 (m.bay {KefiR},
 	      BayesFactor, Rouder et al. 2012)."
-	Note: probabilities of hypotheses, not p-values; method in detail:
-	      print(result, detail = TRUE).
+	Note: probabilities of hypotheses, not p-values; neither the size nor
+	      the cause of a difference; the method with print(result,
+	      detail = TRUE).

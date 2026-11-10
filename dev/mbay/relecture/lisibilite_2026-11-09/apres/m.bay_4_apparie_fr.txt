@@ -8,15 +8,15 @@
 	==> Ex-aequo : aucun.
 	==> Valeurs éloignées de leur condition : 0 au-delà de 1,5 écart
 	    interquartile, 0 au-delà de 3 (sur 30).
+	--> Aucune valeur retirée.
 	Note : valeurs éloignées cherchées une fois retiré le niveau propre de
 	       chaque sujet.
-	--> Aucune valeur retirée.
 3) Forme du bruit - normale, seule.
 	==> Données appariées : on compare la différence au sein de chaque
 	    sujet.
+	--> Aucune valeur éloignée ne met d'emblée la loi normale en doute.
 	Note : queues lourdes et variances inégales ne sont pas encore validées
 	       avec des sujets.
-	--> Aucune valeur éloignée ne met d'emblée la loi normale en doute.
 4) Point de départ (a priori) [ttestBF(paired = TRUE) {BayesFactor}] - 50,0 % de
    chances d'une différence.
 	==> Taille attendue r = 0,5 sur dz (écart au sein du sujet rapporté à
@@ -30,35 +30,36 @@
 	==> Facteur de Bayes : 75,4 (les données favorisent une différence).
 	==> Précision : calcul exact, sans tirage.
 	==> Sensibilité : la réponse en tête va de 95,9 % à 99,5 %.
-	Note : variés : r de 0,25 à 1, chances de départ de 1 contre 2 à 2
-	       contre 1.
 	--> La réponse ne change pas de côté.
+	Note : r va de 0,25 à 1, les chances de départ de 1 contre 2 à 2 contre
+	       1.
 6) De combien les deux niveaux diffèrent [posterior(ttestBF()) {BayesFactor},
    hdi() {bayestestR}] - apres - avant = 1,5 [0,6 ; 2,2].
 	==> Écart estimé apres - avant = 1,5 [0,6 ; 2,2], soit 1,04 écart-type
 	    des différences (dz).
 	Note : [ ; ] = intervalle de crédibilité à 95 % (95 % de chances d'y
 	       trouver l'écart).
-	Note : l'écart est un peu plus petit que l'écart observé : la méthode
-	       est prudente avec les petits échantillons.
+	Note : l'écart estimé est un peu plus petit que l'écart observé, par
+	       prudence avec les petits échantillons.
 
 7) Bilan - y diffère selon t : 98,7 % (soutien fort).
 	==> Verdict : une différence existe très probablement.
-	==> 1. y diffère selon t              : 98,7 % (soutien fort)
-	==> 2. Aucune différence de y selon t : 1,3 %
-	Note : les données sont 75,4 fois plus probables sous l'hypothèse 1 que
-	       sous la 2 (facteur de Bayes 75,4).
-	Note : échelle du facteur de Bayes : 1 à 3 faible, 3 à 20 modéré, 20 à
-	       150 fort, au-delà très fort (Kass et Raftery 1995).
+	==> Probabilité de chaque hypothèse :
+	    1. y diffère selon t              : 98,7 % (soutien fort)
+	    2. Aucune différence de y selon t : 1,3 %
 	==> Selon le point de départ : 95,9 % à 99,5 % ; l'ordre ne change pas.
+	Note : les données sont 75,4 fois plus probables sous l'hypothèse 1 que
+	       sous la 2 (facteur de Bayes ; 1 à 3 faible, 3 à 20 modéré, 20 à
+	       150 fort, au-delà très fort).
+
 	==> Écart estimé apres - avant : 1,5 [0,6 ; 2,2] (étape 6).
+
 	==> Moyennes observées, t : avant = 20,1 ; apres = 21,7 (n = 15).
-	Note : écart-type résiduel au sein des sujets : 0,95 ; loi normale à
-	       variance commune seule.
-	Note : cela ne dit ni que la différence est importante, ni pourquoi : la
-	       cause dépend de la façon dont l'étude a été menée.
-	Note : pour un compte rendu : « y diffère selon t : probabilité a
-	       posteriori 98,7 %, facteur de Bayes 75,4 (m.bay {KefiR}, test t
+	==> Écart-type résiduel au sein des sujets : 0,95 ; loi normale à
+	    variance commune seule.
+	Note : pour un compte rendu : « y diffère selon t (probabilité a
+	       posteriori 98,7 %), facteur de Bayes 75,4 (m.bay {KefiR}, test t
 	       apparié bayésien, Rouder et al. 2009). »
-	Note : probabilités d'hypothèses, pas des p-values ; méthode en détail :
-	       print(resultat, detail = TRUE).
+	Note : probabilités d'hypothèses, pas des p-values ; ni l'importance, ni
+	       la cause d'une différence ; la méthode avec print(resultat,
+	       detail = TRUE).

@@ -403,9 +403,9 @@
 			odd <- which(!is.na(e$log_bf) & e$log_bf > log(1.5) & e$p_h1 < 0.5)
 			if (length(odd)) {
 				i <- odd[1L]
-				emit("note", paste0(e$term[i], ": the data raise its odds (Bayes factor ", .bay_bf_txt(e$log_bf[i], "."), "), but it started at ", .bay_pct(e$prior_h1[i], "."),
+				emit("note", paste0("the data raise the odds of ", e$term[i], " (Bayes factor ", .bay_bf_txt(e$log_bf[i], "."), "), but it started at ", .bay_pct(e$prior_h1[i], "."),
 						", hence ", .bay_pct(e$p_h1[i], "."), " only."),
-					paste0(e$term[i], " : les donn\u00e9es augmentent ses chances (facteur de Bayes ", .bay_bf_txt(e$log_bf[i], ","), "), mais il partait \u00e0 ", .bay_pct(e$prior_h1[i], ","),
+					paste0("les donn\u00e9es augmentent les chances de ", e$term[i], " (facteur de Bayes ", .bay_bf_txt(e$log_bf[i], ","), "), mais ce terme partait \u00e0 ", .bay_pct(e$prior_h1[i], ","),
 						", d'o\u00f9 ", .bay_pct(e$p_h1[i], ","), " seulement."))
 			}
 		}
@@ -419,6 +419,7 @@
 					paste0("\u00c9cart estim\u00e9 ", pr$group2, " - ", pr$group1, " : ", ci(","), if (narrated) " (\u00e9tape 6)." else "."))
 			}
 		}
+		emit("block", "", "")
 		m <- obj$descriptive_stats
 		dg <- .bay_dg(m$mean)
 		for (f in unique(m$factor)) {
@@ -441,20 +442,20 @@
 					paste0(v, " moyen par groupe : ", paste0(rownames(cg), " = ", gsub(".", ",", format(signif(cg[, v], 3), trim = TRUE), fixed = TRUE), collapse = " ; "), "."))
 			}
 			cv <- paste(colnames(cg), collapse = ", ")
-			emit("note", paste0(cv, " is in every model: the groups are compared at equal ", cv, "; its own effect is not the question asked."),
-				paste0(cv, " est dans tous les mod\u00e8les : les groupes sont compar\u00e9s \u00e0 ", cv, " \u00e9gal ; son effet propre n'est pas la question pos\u00e9e."))
+			emit("fact", paste0(cv, " is in every model, so the groups are compared at equal ", cv, "; its own effect is not the question asked."),
+				paste0(cv, " est dans tous les mod\u00e8les, donc les groupes sont compar\u00e9s \u00e0 ", cv, " \u00e9gal ; son effet propre n'est pas la question pos\u00e9e."))
 			if (isTRUE(any(obj$overlap$poor))) {
-				emit("note", "support capped at weak: the groups hardly overlap on the covariate, the adjustment extrapolates.",
-					"soutien plafonn\u00e9 \u00e0 faible : les groupes se recouvrent peu sur la covariable, l'ajustement extrapole.")
+				emit("decide", "support capped at weak, since the groups hardly overlap on the covariate and the adjustment extrapolates.",
+					"soutien plafonn\u00e9 \u00e0 faible, car les groupes se recouvrent peu sur la covariable et l'ajustement extrapole.")
 			}
 		}
 		rm_ <- obj$plan %in% c("paired", "repeated")
-		sd_en <- if (anc) "residual standard deviation (covariates accounted for): " else if (rm_) "residual standard deviation within subject: " else if (isTRUE(obj$sd_is_within)) "within-cell standard deviation: " else "residual standard deviation: "
-		sd_fr <- if (anc) "\u00e9cart-type r\u00e9siduel (covariables prises en compte) : " else if (rm_) "\u00e9cart-type r\u00e9siduel au sein des sujets : " else if (isTRUE(obj$sd_is_within)) "\u00e9cart-type au sein des cases : " else "\u00e9cart-type r\u00e9siduel : "
-		emit("note", paste0(sd_en, .bay_fx(obj$sd_within, dg + 1L, "."), "; normal law with a common variance only."),
+		sd_en <- if (anc) "Residual standard deviation (covariates accounted for): " else if (rm_) "Residual standard deviation within subject: " else if (isTRUE(obj$sd_is_within)) "Within-cell standard deviation: " else "Residual standard deviation: "
+		sd_fr <- if (anc) "\u00c9cart-type r\u00e9siduel (covariables prises en compte) : " else if (rm_) "\u00c9cart-type r\u00e9siduel au sein des sujets : " else if (isTRUE(obj$sd_is_within)) "\u00c9cart-type au sein des cases : " else "\u00c9cart-type r\u00e9siduel : "
+		emit("fact", paste0(sd_en, .bay_fx(obj$sd_within, dg + 1L, "."), "; normal law with a common variance only."),
 			paste0(sd_fr, .bay_fx(obj$sd_within, dg + 1L, ","), " ; loi normale \u00e0 variance commune seule."))
 		if (!is.null(ph) && isTRUE(ph$caution_overlap)) {
-			emit("note", "the adjusted gaps compare the groups where some have few values of the covariate.",
+			emit("decide", "the adjusted gaps compare the groups where some have few values of the covariate.",
 				"les \u00e9carts ajust\u00e9s comparent les groupes l\u00e0 o\u00f9 certains ont peu de valeurs de la covariable.")
 		}
 	}

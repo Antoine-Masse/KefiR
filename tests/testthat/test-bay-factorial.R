@@ -62,7 +62,7 @@ test_that("bilan multi-facteurs : court, loi annoncee, sensibilite, detail", {
 	skip_if_not_installed("BayesFactor")
 	r <- m.bay(y ~ A * B, data = d2, verbose = FALSE, draws = 2000L)
 	court <- capture.output(print(r))
-	expect_lte(length(court), 30L)
+	expect_lte(length(court), 40L)
 	txt <- gsub("\\s+", " ", paste(court, collapse = " "))
 	expect_match(txt, "variance commune|common variance")
 	expect_match(txt, "p-value")
