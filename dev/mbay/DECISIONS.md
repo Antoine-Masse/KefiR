@@ -575,3 +575,7 @@ Demandé par la session parente dans l'ordre du PERIMETRE, avec trois points de 
 **Pourquoi le terme sujet × condition.** Sans lui, les répliques comptent comme autant de sujets indépendants (pseudo-réplication). Dans `agent_67`, le modèle à sujet seul dit « oui » à P > 0,95 dans 7 % des jeux sous H0, et m.bay dans 0 % (VALIDATION §18).
 
 **Limite.** La puissance est prudente : P > 0,95 dans 4 % des jeux pour un effet où l'ANOVA à mesures répétées sur les moyennes donne p < 0,05 dans 26,5 %. C'est le même écart que sur les autres voies entre P > 0,95 et p < 0,05.
+
+**Audit de 8ffb16a par « KefiR officiel » (10 novembre), deux retouches faites.**
+1. Les moyennes par niveau disent « 10 sujets x 3 répliques » (ou « x 3 mesures » pour un facteur entre sujets), au lieu de « n = 30 » qui faisait croire à 30 sujets.
+2. **Unité des écarts standardisés avec répliques : décidé.** C'est l'écart-type d'une mesure d'un sujet dans une condition, soit le résiduel (entre répliques) plus le terme sujet × condition : σ²(1 + Σ g_sujet×condition), tiré du postérieur de `lmBF`. C'est la variabilité qu'un expérimentateur attend d'une mesure une fois le sujet connu. Le résiduel seul la sous-estimerait et grossirait les écarts standardisés. Le bilan donne cet écart-type sous ce nom, et l'étape 6 y renvoie.

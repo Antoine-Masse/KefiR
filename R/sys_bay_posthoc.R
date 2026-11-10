@@ -262,7 +262,11 @@
 	po <- as.matrix(po)
 	eff <- po[, paste0("g-", lev), drop = FALSE]
 	m <- sweep(eff, 1L, po[, "mu"], "+")
-	sig <- sqrt(po[, "sig2"])
+	# With replicates (D21), the unit is the spread of one measure of a subject in a condition:
+	# residual plus subject x condition, sig2 (1 + sum of their g). This is what an
+	# experimenter calls the variability of a measure once the subject is known.
+	gx <- grep("^g_id[0-9]+$", colnames(po), value = TRUE)
+	sig <- sqrt(po[, "sig2"] * (1 + if (length(gx)) rowSums(po[, gx, drop = FALSE]) else 0))
 	hdi_of <- function(x) {
 		h <- bayestestR::hdi(as.numeric(x), ci = 0.95)
 		c(stats::median(x), h$CI_low, h$CI_high)
@@ -275,7 +279,7 @@
 	res$delta <- st[, 4L]; res$delta_low <- st[, 5L]; res$delta_high <- st[, 6L]
 	list(pairs = res, partitions = parts_tab, k = k, alphas = alphas, draws = nrow(po),
 		computed = TRUE, method = method, n_partitions = .bay_bell(k), sweeps = n_sweeps, mc_error = mc_error,
-		max_exact = .bay_posthoc_max_groups(rm || !is.null(cov)), delta_unit = if (rm) "within" else if (!is.null(cov)) "adjusted" else "pooled",
+		max_exact = .bay_posthoc_max_groups(rm || !is.null(cov)), delta_unit = if (is.data.frame(id) && ncol(id) > 1L) "measure" else if (rm) "within" else if (!is.null(cov)) "adjusted" else "pooled",
 		dg = dg0)
 }
 
@@ -427,7 +431,7 @@
 		nuis <- c(if (length(other)) as.list(factors[other]), if (!is.null(cov)) as.list(cov))
 		nuis <- if (length(nuis)) as.data.frame(nuis, check.names = FALSE) else NULL
 		ph <- .bay_posthoc_oneway(y, g, rscale, prior_h1, draws, seed + i, id = id, cov = nuis)
-		if (!is.null(nuis)) ph$delta_unit <- if (!is.null(id)) "within" else "others"
+		if (!is.null(nuis)) ph$delta_unit <- if (is.data.frame(id) && ncol(id) > 1L) "measure" else if (!is.null(id)) "within" else "others"
 		# A factor between subjects: its gaps are not measured on the residual within subject,
 		# so no standardised gap is given.
 		if (!is.null(id) && all(tapply(as.integer(g), .bay_id1(id), function(v) length(unique(v)) == 1L))) {

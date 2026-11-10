@@ -34,3 +34,12 @@ test_that("replicates with a factor between subjects, story and post-hoc", {
 	expect_true(any(grepl("R\u00e9pliques|Replicates", txt)))
 	expect_identical(r$posthoc$method, "factorial")
 })
+
+test_that("replicates: means said per subject, gaps on the SD of one measure (audit of 8ffb16a)", {
+	d <- .mixed_data(7, n_rep = 3L)
+	txt <- capture.output(r <- m.bay(y ~ cond | id, data = d, draws = 1000, sensitivity = FALSE))
+	all <- paste(txt, collapse = " ")
+	expect_match(gsub("[[:space:]]+", " ", all), "10 sujets x 3 r", fixed = TRUE)
+	expect_identical(r$posthoc$delta_unit, "measure")
+	expect_match(gsub("[[:space:]]+", " ", all), "une mesure d'un sujet dans une condition", fixed = TRUE)
+})

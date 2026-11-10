@@ -649,6 +649,7 @@
 # (subject's own level removed), or SD of the paired differences (dz).
 .bay_delta_unit <- function(ph) {
 	switch(if (is.null(ph$delta_unit)) "pooled" else ph$delta_unit,
+		measure = list(en = "SD of one measure (see the bilan)", fr = "\u00e9cart-type d'une mesure (voir le bilan)"),
 		within = list(en = "residual SD within subject", fr = "\u00e9cart-type r\u00e9siduel au sein des sujets"),
 		adjusted = list(en = "residual SD (covariates accounted for)", fr = "\u00e9cart-type r\u00e9siduel (covariables prises en compte)"),
 		others = list(en = "residual SD (other terms accounted for)", fr = "\u00e9cart-type r\u00e9siduel (autres termes pris en compte)"),

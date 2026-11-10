@@ -363,6 +363,8 @@
 	means <- lapply(names(factors), function(v) {
 		data.frame(factor = v, level = levels(factors[[v]]),
 			n = as.integer(table(factors[[v]])),
+			# Subjects per level (D21): n alone would read as n subjects with replicates.
+			n_subj = if (!is.null(id)) as.integer(tapply(id, factors[[v]], function(x) length(unique(x)))) else NA_integer_,
 			mean = as.numeric(tapply(y, factors[[v]], mean)), stringsAsFactors = FALSE)
 	})
 	# Within-cell standard deviation, from the cell means (RELECTURE 2026-11-09, 4). With one
@@ -487,8 +489,17 @@
 		for (f in unique(m$factor)) {
 			mf <- m[m$factor == f, , drop = FALSE]
 			same_n <- length(unique(mf$n)) == 1L
+			# With several measures per subject at a level, say subjects x measures (D21).
+			per <- mf$n / mf$n_subj
+			multi <- !anyNA(per) && any(per > 1) && length(unique(mf$n_subj)) == 1L && all(per == round(per)) && same_n
+			nt <- function(dc) {
+				if (!multi) return(paste0("n = ", mf$n[1L]))
+				rep_w <- identical(obj$plan, "mixed") && isTRUE(mf$n_subj[1L] == obj$n_subjects)
+				if (dc == ",") paste0(mf$n_subj[1L], " sujets x ", per[1L], if (rep_w) " r\u00e9pliques" else " mesures")
+				else paste0(mf$n_subj[1L], " subjects x ", per[1L], if (rep_w) " replicates" else " measures")
+			}
 			txt <- function(dc) paste0(paste0(mf$level, " = ", .bay_fx(mf$mean, dg, dc), if (!same_n) paste0(" (n = ", mf$n, ")") else "", collapse = if (dc == ",") " ; " else "; "),
-				if (same_n) paste0(" (n = ", mf$n[1L], ")") else "")
+				if (same_n) paste0(" (", nt(dc), ")") else "")
 			emit("fact", paste0(if (anc) "Raw means, " else "Observed means, ", f, ": ", txt("."), "."),
 				paste0(if (anc) "Moyennes brutes, " else "Moyennes observ\u00e9es, ", f, " : ", txt(","), "."))
 		}
@@ -516,8 +527,9 @@
 				"Soutien plafonn\u00e9 \u00e0 faible : variances in\u00e9gales par case, que le mod\u00e8le \u00e0 variance commune ne prend pas en compte.")
 		}
 		rm_ <- obj$plan %in% c("paired", "repeated", "mixed")
-		sd_en <- if (anc) "Residual standard deviation (covariates accounted for): " else if (rm_) "Residual standard deviation within subject: " else if (isTRUE(obj$sd_is_within)) "Within-cell standard deviation: " else "Residual standard deviation: "
-		sd_fr <- if (anc) "\u00c9cart-type r\u00e9siduel (covariables prises en compte) : " else if (rm_) "\u00c9cart-type r\u00e9siduel au sein des sujets : " else if (isTRUE(obj$sd_is_within)) "\u00c9cart-type au sein des cases : " else "\u00c9cart-type r\u00e9siduel : "
+		mx_ <- identical(obj$plan, "mixed")
+		sd_en <- if (anc) "Residual standard deviation (covariates accounted for): " else if (mx_) "Standard deviation of one measure of a subject in a condition (replicates and subject x condition): " else if (rm_) "Residual standard deviation within subject: " else if (isTRUE(obj$sd_is_within)) "Within-cell standard deviation: " else "Residual standard deviation: "
+		sd_fr <- if (anc) "\u00c9cart-type r\u00e9siduel (covariables prises en compte) : " else if (mx_) "\u00c9cart-type d'une mesure d'un sujet dans une condition (r\u00e9pliques et sujet x condition) : " else if (rm_) "\u00c9cart-type r\u00e9siduel au sein des sujets : " else if (isTRUE(obj$sd_is_within)) "\u00c9cart-type au sein des cases : " else "\u00c9cart-type r\u00e9siduel : "
 		emit("fact", paste0(sd_en, .bay_fx(obj$sd_within, dg + 1L, "."), if (isTRUE(obj$het_used)) "; common variance or one per cell, averaged." else "; normal law with a common variance only."),
 			paste0(sd_fr, .bay_fx(obj$sd_within, dg + 1L, ","), if (isTRUE(obj$het_used)) " ; variance commune ou par case, moyenn\u00e9es." else " ; loi normale \u00e0 variance commune seule."))
 		if (!is.null(ph) && isTRUE(ph$caution_overlap)) {
