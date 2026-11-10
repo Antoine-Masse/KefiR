@@ -296,6 +296,10 @@
 				paste0("R\u00e9ponse cat\u00e9gorielle, ", length(cats), " modalit\u00e9s : ", paste(cats, collapse = ", "), "."))
 			.bay_tell(st, paste0("One question: do the proportions differ according to ", nm[1L], "? (counterpart of the chi-squared test)"),
 				paste0("Une question : les proportions diff\u00e8rent-elles selon ", nm[1L], " ? (pendant du test du khi-deux)"), "decide")
+		} else if (isTRUE(input$ordinal)) {
+			.bay_tell(st, paste0("One question: do the values of ", input$response_name, " differ according to ", nm[1L], "?"),
+				paste0("Une question : les valeurs de ", input$response_name, " diff\u00e8rent-elles selon ", nm[1L], " ?"), "decide")
+			.bay_tell(st, "ordered values: only their order counts (ordinal model).", "valeurs ordonn\u00e9es : seul compte leur ordre (mod\u00e8le ordinal).", "note")
 		} else if (isTRUE(input$counts)) {
 			.bay_tell(st, paste0("One question: do the counts of ", input$response_name, " differ according to ", nm[1L], "?"),
 				paste0("Une question : les comptages de ", input$response_name, " diff\u00e8rent-ils selon ", nm[1L], " ?"), "decide")
@@ -409,8 +413,10 @@
 .bay_story_posthoc <- function(st, ph, caution = FALSE, subjects = FALSE) {
 	if (is.null(st) || is.null(ph)) return(invisible(NULL))
 	cont <- isTRUE(ph$delta_unit %in% c("logor", "tvd"))
-	ratio <- identical(ph$delta_unit, "ratio")
-	if (ratio) {
+	ratio <- isTRUE(ph$delta_unit %in% c("ratio", "odds"))
+	if (identical(ph$delta_unit, "odds")) {
+		.bay_tell(st, "Which groups differ, and by how much", "Quels groupes diff\u00e8rent, et de combien", "step", fun = "polr() {MASS}")
+	} else if (ratio) {
 		.bay_tell(st, "Which groups differ, and by how much", "Quels groupes diff\u00e8rent, et de combien", "step",
 			fun = c("glm(), glm.nb() {stats, MASS}", "glm(), glm.nb() {stats, MASS}"))
 	} else if (cont) {
@@ -476,15 +482,18 @@
 				paste0(pr$group1[i], "/", pr$group2[i], " : diff\u00e9rents \u00e0 ", .bay_pct(pr$p_differ[i], ","), " ; ",
 					pr$group2[i], op, pr$group1[i], " = ", gap(i, ","), dl(i, ","), "."))
 		} else {
-			.bay_tell(st, paste0(if (ratio) "Rate ratio " else "Estimated gap ", pr$group2[i], op, pr$group1[i], " = ", gap(i, "."), dl(i, "."), "."),
-				paste0(if (ratio) "Rapport des moyennes " else "\u00c9cart estim\u00e9 ", pr$group2[i], op, pr$group1[i], " = ", gap(i, ","), dl(i, ","), "."))
+			.bay_tell(st, paste0(if (identical(ph$delta_unit, "odds")) "Cumulative odds ratio " else if (ratio) "Rate ratio " else "Estimated gap ", pr$group2[i], op, pr$group1[i], " = ", gap(i, "."), dl(i, "."), "."),
+				paste0(if (identical(ph$delta_unit, "odds")) "Rapport des cotes cumul\u00e9es " else if (ratio) "Rapport des moyennes " else "\u00c9cart estim\u00e9 ", pr$group2[i], op, pr$group1[i], " = ", gap(i, ","), dl(i, ","), "."))
 		}
 	}
 	if (length(shown) < nrow(pr)) {
 		.bay_tell(st, paste0("The other ", nrow(pr) - length(shown), " pairs lean towards alike; all pairs in $posthoc$pairs."),
 			paste0("Les ", nrow(pr) - length(shown), " autres paires penchent vers semblables ; toutes dans $posthoc$pairs."), "note")
 	}
-	if (ratio) {
+	if (identical(ph$delta_unit, "odds")) {
+		.bay_tell(st, "cumulative odds ratio, above 1 for higher values in the second group; [ ; ] = 95 % interval; 1 = no difference.",
+			"rapport des cotes cumul\u00e9es, au-del\u00e0 de 1 pour des valeurs plus hautes dans le second groupe ; [ ; ] = intervalle \u00e0 95 % ; 1 = pas de diff\u00e9rence.", "note")
+	} else if (ratio) {
 		.bay_tell(st, "ratio of the mean counts; [ ; ] = 95 % interval (Laplace approximation); 1 = no difference.",
 			"rapport des comptages moyens ; [ ; ] = intervalle \u00e0 95 % (approximation de Laplace) ; 1 = pas de diff\u00e9rence.", "note")
 	} else if (cont) {

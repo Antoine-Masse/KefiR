@@ -1,0 +1,41 @@
+# m.bay : reponse ordonnee (D17, voie 3) et routage automatique des entiers (voies 2 et 3).
+
+test_that("routage automatique : comptages surdisperses, tailles entieres, notes /20, Likert 1-5", {
+	set.seed(51)
+	g <- factor(rep(c("a", "b", "c"), each = 20))
+	comptes <- MASS::rnegbin(60, mu = c(4, 4, 8)[g], theta = 2)
+	expect_identical(.bay_int_route(comptes, g), "counts")
+	tailles <- round(rnorm(60, 170, 8))
+	expect_identical(.bay_int_route(tailles, g), "continuous")
+	notes20 <- sample(0:20, 60, TRUE)
+	notes20[1] <- 20L
+	expect_identical(.bay_int_route(notes20, g), "bounded")
+	likert <- sample(1:5, 60, TRUE)
+	expect_identical(.bay_int_route(likert, g), "ordinal")
+	r <- m.bay(likert, g, verbose = FALSE, sensitivity = FALSE, posthoc = FALSE)
+	expect_identical(r$plan, "ordinal")
+	expect_match(gsub("\\s+", " ", paste(r$story$fr, collapse = " ")), "Changement de stratégie : échelle de notation bornée")
+	r2 <- m.bay(notes20, g, verbose = FALSE, sensitivity = FALSE, posthoc = FALSE, draws = 500)
+	expect_false(r2$plan %in% c("counts", "ordinal"))
+	expect_match(gsub("\\s+", " ", paste(r2$story$fr, collapse = " ")), "Score borné")
+	expect_identical(m.bay(notes20, g, response = "ordinal", verbose = FALSE, sensitivity = FALSE, posthoc = FALSE)$plan, "ordinal")
+	expect_false(identical(m.bay(likert, g, response = "continuous", verbose = FALSE, sensitivity = FALSE, posthoc = FALSE, draws = 500)$plan, "ordinal"))
+})
+
+test_that("ordinal : facteur de Bayes = -BIC/2 de polr, rapports des cotes cumulees de polr", {
+	set.seed(8)
+	g <- factor(rep(c("a", "b", "c"), each = 30))
+	y <- pmin(5, pmax(1, round(3 + c(-0.5, 0, 0.8)[g] + rnorm(90))))
+	r <- m.bay(y, g, verbose = FALSE, sensitivity = FALSE)
+	yo <- factor(y, ordered = TRUE)
+	m1 <- MASS::polr(yo ~ g, Hess = TRUE); m0 <- MASS::polr(yo ~ 1, Hess = TRUE)
+	lb <- (-BIC(m1) + BIC(m0)) / 2
+	expect_equal(r$effects$log_bf, lb, tolerance = 1e-8)
+	pr <- r$posthoc$pairs
+	expect_equal(pr$diff[pr$group1 == "a" & pr$group2 == "c"], unname(exp(coef(m1)["gc"])), tolerance = 1e-6)
+	expect_gt(pr$p_differ[pr$group1 == "a" & pr$group2 == "c"], 0.9)
+	old <- options(width = 80); on.exit(options(old))
+	txt <- capture.output(m.bay(y, g))
+	expect_lte(max(nchar(gsub("\t", "        ", txt), type = "width")), 80)
+	expect_true(any(grepl("^7\\) Bilan", txt)))
+})

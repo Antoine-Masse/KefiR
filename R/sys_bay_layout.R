@@ -33,6 +33,7 @@
 		oneway = list(en = "comparison of noise laws, Rouder et al. 2012", fr = "comparaison de lois du bruit, Rouder et al. 2012"),
 		paired = list(en = "Bayesian paired t test, Rouder et al. 2009", fr = "test t appari\u00e9 bay\u00e9sien, Rouder et al. 2009"),
 		contingency = list(en = "Gunel and Dickey 1974", fr = "Gunel et Dickey 1974"),
+		ordinal = list(en = "proportional odds, MASS::polr, BIC approximation", fr = "cotes proportionnelles, MASS::polr, approximation BIC"),
 		counts = list(en = "Poisson and negative binomial, BIC approximation, Raftery 1995", fr = "Poisson et binomiale n\u00e9gative, approximation BIC, Raftery 1995"),
 		list(en = "BayesFactor, Rouder et al. 2012", fr = "BayesFactor, Rouder et al. 2012"))
 }

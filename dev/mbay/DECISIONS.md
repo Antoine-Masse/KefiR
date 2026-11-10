@@ -415,6 +415,39 @@ Demandé par la session parente dans l'ordre du PERIMETRE, avec trois points de 
 
 **Restent** (D17, voies 3 et 4) : l'ordinal, `stan_polr` ou la contingence sans l'ordre, et la voie par rangs. Pour les rangs, van Doorn et al. (2020) n'existe dans aucun paquet CRAN, seulement en scripts OSF et dans JASP.
 
+## D17, voie 3 : réponse ordonnée, et routage des entiers, FAITS le 10 novembre
+
+**Défaut corrigé** (audit de 141d5ae). Des notes sur 20 partaient en comptages, alors qu'une note bornée n'est pas un comptage : Poisson et binomiale négative n'ont pas de borne haute.
+
+**Routage d'une réponse entière à un facteur**, avec `response = "auto"` (`.bay_int_route`) :
+1. **Échelle bornée probable.** Le maximum observé est un sommet d'échelle usuel : 4, 5, 6, 7, 9, 10, 20 ou 100.
+   - Avec au plus 10 valeurs distinctes, la réponse va en voie ordinale.
+   - Au-delà (notes sur 20, pourcentages entiers), elle reste continue. Le récit le dit en « --> Score borné… gardé continu » et nomme l'option `response = "ordinal"`. Une échelle à beaucoup de valeurs se traite couramment comme continue, comme le fait aussi `m.test()`.
+2. **Sinon, comptages** : les critères de la voie 2.
+3. **Sinon, voie continue.**
+
+**Annonce et options.**
+- Chaque bascule est dite en « --> Changement de stratégie » avec sa raison.
+- `response = "counts" | "ordinal" | "continuous"` force la voie.
+
+**Une règle raisonnée, pas un critère publié unique.**
+- Un comptage dont le maximum tombe sur 10 ou 20 serait pris pour une échelle. C'est une erreur peu grave : modèle ordinal ou continu, annoncée, et forçable.
+- Des notes de 0 à 10 sans maximum atteint seraient prises pour des comptages.
+
+**Calcul de la voie 3** (`R/sys_bay_ordinal.R`).
+- **Modèle.** Cotes proportionnelles, `MASS::polr` (McCullagh 1980), vraisemblances marginales par −BIC/2 comme la voie 2.
+- **Post-hoc.** Regroupements de D11, rapports des cotes cumulées avec intervalle de Laplace.
+- **Limite.** L'hypothèse des cotes proportionnelles n'est pas testée (test de Brant), et le récit le dit.
+- **Écarté.** `rstanarm::stan_polr` : précompilé, mais il refuse le modèle nul, et ses a priori ne sont pas faits pour le test.
+
+**Voie 4, rangs : non faite, décision motivée.**
+- La méthode de van Doorn et al. (2020) n'existe dans aucun paquet CRAN : seulement en scripts OSF, de licence non précisée, et dans le module JASP. Elle se limite à 2 groupes ou à des paires.
+- Les cas qu'elle viserait sont déjà couverts :
+  - données ordonnées : voie 3 ;
+  - mesures continues à valeurs éloignées : la comparaison des lois à queues lourdes de la voie à un facteur (D6) ;
+  - petits effectifs : calcul exact, sans approximation asymptotique.
+- Réécrire l'échantillonneur de Gibbs des rangs serait du code maison sans paquet de référence pour le contrôler. C'est contraire au principe d'Antoine. La voie reste ouverte si un paquet paraît.
+
 ## D18. Mise en forme commune des sorties : DÉCIDÉE le 10 novembre
 
 **Origine.** Consigne d'Antoine : les sorties doivent être « dans un format agréable à lire étape par étape comme m.test() ». L'auditeur de lisibilité a rendu 12 recommandations (`relecture/lisibilite_2026-11-09/RAPPORT.md`). Antoine a ajouté une correction : 80 caractères au plus par ligne, car les consoles des développeurs sont souvent réduites. Aucune de ces décisions ne touche au calcul.

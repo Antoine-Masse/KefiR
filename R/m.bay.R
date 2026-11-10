@@ -98,7 +98,9 @@
 #'   10 and zeros (or more than 7 values) are counts; anything else is continuous.
 #'   `"counts"` forces the count route: Poisson and negative binomial compared
 #'   (overdispersion), Bayes factors by the unit-information approximation (BIC), rate
-#'   ratios. `"continuous"` forces the continuous route (DECISIONS, D17).
+#'   ratios. A bounded rating scale (maximum at 4, 5, 6, 7, 9, 10, 20 or 100, at most 10
+#'   values) takes the ordinal route: proportional odds, [MASS::polr()], cumulative odds
+#'   ratios; `"ordinal"` forces it. `"continuous"` forces the continuous route (DECISIONS, D17).
 #' @param detail If `TRUE`, the bilan also shows the shapes of the noise, the priors that
 #'   are varied and how to read the numbers. Also `print(result, detail = TRUE)`.
 #'
@@ -143,7 +145,7 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
                   prior_h1 = 1/2, rscale = 1/2, u = 1.5,
                   laws = c("normal_eq", "normal_het", "t_eq", "t_het"),
                   sensitivity = TRUE, draws = 4000L, seed = 1L, detail = FALSE, posthoc = TRUE,
-                  response = c("auto", "counts", "continuous")) {
+                  response = c("auto", "counts", "ordinal", "continuous")) {
 	response <- match.arg(response)
 	# Name of the response in the x, g form (audit of de64470, point 1).
 	x_name <- if (!missing(x) && !inherits(x, "formula") && !is.character(x)) tryCatch(deparse1(substitute(x)), error = function(e) NULL) else NULL
@@ -219,9 +221,13 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	}
 	input$counts <- identical(response, "counts")
 	# Counts chosen alone, before the plan is told (DECISIONS, D17, way 2).
-	input$counts_auto <- identical(response, "auto") && identical(input$plan, "oneway") && !isTRUE(input$categorical) &&
-		isTRUE(.bay_is_counts(input$response, input$factors[[1L]]))
+	route <- if (identical(response, "auto") && identical(input$plan, "oneway") && !isTRUE(input$categorical))
+		.bay_int_route(input$response, input$factors[[1L]]) else "none"
+	input$counts_auto <- identical(route, "counts")
 	if (input$counts_auto) input$counts <- TRUE
+	input$ordinal <- identical(response, "ordinal") || identical(route, "ordinal")
+	input$ordinal_auto <- identical(route, "ordinal")
+	input$bounded <- identical(route, "bounded")
 	# Step 1: the plan recognised, or refused and why.
 	.bay_story_plan(story, input)
 
@@ -259,6 +265,19 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	}
 	if (any(is.infinite(y))) {
 		.exit("y contains infinite values.", "y contient des valeurs infinies.")
+	}
+	if (isTRUE(input$ordinal)) {
+		if (!identical(input$plan, "oneway")) {
+			.exit("Ordered response with several factors, covariates or subjects: not handled by m.bay() yet (one factor only).",
+				"R\u00e9ponse ordonn\u00e9e avec plusieurs facteurs, des covariables ou des sujets : pas encore trait\u00e9e par m.bay() (un facteur seulement).")
+		}
+		return(.bay_m_ordinal(input, input$factors[[1L]], y, call_expr, function() notes, note, prior_h1, sensitivity,
+			detail, verbose, return, story, posthoc, auto = isTRUE(input$ordinal_auto)))
+	}
+	if (isTRUE(input$bounded)) {
+		vals <- sort(unique(y))
+		.bay_tell(story, paste0("Bounded score (", length(vals), " values, from ", min(vals), " to ", max(vals), "): neither counts nor few ratings; kept continuous (response = \"ordinal\" for the ordinal route)."),
+			paste0("Score born\u00e9 (", length(vals), " valeurs, de ", min(vals), " \u00e0 ", max(vals), ") : ni comptage, ni notation \u00e0 peu de valeurs ; gard\u00e9 continu (response = \u00ab ordinal \u00bb pour la voie ordinale)."), "decide")
 	}
 	if (isTRUE(input$counts)) {
 		if (!identical(input$plan, "oneway")) {
@@ -574,6 +593,8 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 	if (told) .bay_story_replay(x$story)
 	if (identical(x$plan, "contingency")) {
 		.bay_print_bilan_cont(x, detail = detail, narrated = told)
+	} else if (identical(x$plan, "ordinal")) {
+		.bay_print_bilan_ord(x, detail = detail, narrated = told)
 	} else if (identical(x$plan, "counts")) {
 		.bay_print_bilan_counts(x, detail = detail, narrated = told)
 	} else if (x$plan %in% c("factorial", "paired", "repeated", "ancova")) {

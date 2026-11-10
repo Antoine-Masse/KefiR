@@ -742,3 +742,18 @@ L'écart à la vraisemblance marginale sous a priori g (BAS, approximation de La
 
 Sous H0 Poisson : P > 0,75 dans 2 % des jeux, P > 0,95 dans 0 %. **Lecture.** L'a priori d'information unitaire est connu pour être conservateur. Il protège des fausses différences, surtout sous surdispersion (§13, agent_60), au prix d'une puissance environ moitié moindre que les tests fréquentistes. Le récit et le bilan ne le disent pas encore. À décider : une note de puissance, ou un a priori moins large.
 
+## 14. Réponse ordonnée et routage des entiers (D17, voie 3), 10 novembre
+
+`test-bay-ordinal.R` :
+- **Routage** sur les 4 cas demandés par la session parente :
+  - comptages surdispersés : comptages ;
+  - tailles entières autour de 170 : continu ;
+  - notes sur 20 : continu, dit « score borné » ;
+  - Likert 1 à 5 : ordinal, annoncé.
+- **Options.** `response = "ordinal"` et `response = "continuous"` forcent la voie.
+- **Facteur de Bayes.** Il égale −BIC/2 de `MASS::polr` avec et sans le facteur, à 1e-8.
+- **Rapports des cotes.** Ils égalent exp(coef) de `polr` à 1e-6.
+- **Mise en forme.** Les lignes tiennent dans 80 colonnes.
+
+**Non simulé.** Calibration de la voie ordinale sous H0 et sous effet ; écart aux cotes proportionnelles.
+

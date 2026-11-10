@@ -1,5 +1,17 @@
 # Journal de m.bay
 
+## Séance 12 : 10 novembre 2026, réponse ordonnée et routage (D17, voies 3 et 4)
+
+**Fait.**
+- **Routage des entiers.** Une échelle bornée va en voie ordinale (au plus 10 valeurs) ou reste continue, et le récit le dit. Les comptages ne passent en voie 2 qu'en l'absence de borne apparente.
+- **Voie 3.** Cotes proportionnelles (`MASS::polr`, BIC), regroupements, rapports des cotes cumulées.
+- **Voie 4 (rangs).** Non faite, faute de paquet, avec ses motifs (DECISIONS).
+- **Tests.** Les tests du moteur continu dont les données ressemblaient à une échelle forcent désormais `response = "continuous"`.
+
+**Vérifié.** `test-bay-ordinal.R` (2 tests, 4 cas de routage) ; tous les tests bay passent.
+
+**Non vérifié.** La calibration de la voie ordinale n'est pas simulée.
+
 ## Séance 11 : 10 novembre 2026, comptages (D17, voie 2)
 
 **Fait.**

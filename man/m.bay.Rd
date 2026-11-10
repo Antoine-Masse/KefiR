@@ -36,7 +36,7 @@ m.bay(
   seed = 1L,
   detail = FALSE,
   posthoc = TRUE,
-  response = c("auto", "counts", "continuous")
+  response = c("auto", "counts", "ordinal", "continuous")
 )
 }
 \arguments{
@@ -112,7 +112,9 @@ two values is categorical; with one factor, whole numbers from 0 with a group me
 10 and zeros (or more than 7 values) are counts; anything else is continuous.
 \code{"counts"} forces the count route: Poisson and negative binomial compared
 (overdispersion), Bayes factors by the unit-information approximation (BIC), rate
-ratios. \code{"continuous"} forces the continuous route (DECISIONS, D17).}
+ratios. A bounded rating scale (maximum at 4, 5, 6, 7, 9, 10, 20 or 100, at most 10
+values) takes the ordinal route: proportional odds, \code{\link[MASS:polr]{MASS::polr()}}, cumulative odds
+ratios; \code{"ordinal"} forces it. \code{"continuous"} forces the continuous route (DECISIONS, D17).}
 }
 \value{
 With \code{return = TRUE}, a list of class \code{mbay}:

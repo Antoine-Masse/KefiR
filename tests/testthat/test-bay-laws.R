@@ -98,8 +98,8 @@ test_that("B2 : un groupe disperse sans rapport ne fait pas basculer la reponse"
 test_that("cas limites : refus explicites, jamais de NA silencieux", {
 	expect_error(m.bay(c(1, 1, 1, 1), c(1, 1, 2, 2), verbose = FALSE), "binaire|constant")
 	expect_error(m.bay(c(.3, .3, .3, .1 + .2, .1 + .2, .1 + .2), rep(1:2, each = 3), verbose = FALSE), "binaire|constant")
-	expect_error(m.bay(c(1, 1, 5, 5, 3, 3), c(1, 1, 2, 2, 3, 3), verbose = FALSE), "variation")
-	expect_error(m.bay(c(1, 2, 4), c("a", "b", "c"), verbose = FALSE), "libert")
+	expect_error(m.bay(c(1, 1, 5, 5, 3, 3), c(1, 1, 2, 2, 3, 3), verbose = FALSE, response = "continuous"), "variation")
+	expect_error(m.bay(c(1, 2, 4), c("a", "b", "c"), verbose = FALSE, response = "continuous"), "libert")
 	expect_error(m.bay(c(1, 2.5, 3), c(1, 1, 1), verbose = FALSE), "niveaux")
 	r <- m.bay(c(rnorm(10), 3), rep(1:2, c(10, 1)), verbose = FALSE, draws = 500L, sensitivity = FALSE)
 	expect_true(is.finite(r$prob_effect))
@@ -123,8 +123,8 @@ test_that("une valeur aberrante n'efface pas l'effet ni ne le cree", {
 test_that("B2 relecture : un groupe constant n'est ni un plantage ni un tirage au sort", {
 	y <- c(3, 3, 3, 3, 3, 1, 2, 3, 4, 5)
 	g <- rep(1:2, each = 5)
-	a <- m.bay(y, g, verbose = FALSE, draws = 500L, sensitivity = FALSE)
-	b <- m.bay(y, g, verbose = FALSE, draws = 500L, sensitivity = FALSE, seed = 2L)
+	a <- m.bay(y, g, verbose = FALSE, draws = 500L, sensitivity = FALSE, response = "continuous")
+	b <- m.bay(y, g, verbose = FALSE, draws = 500L, sensitivity = FALSE, seed = 2L, response = "continuous")
 	expect_identical(a$prob_effect, b$prob_effect)
 	expect_equal(a$laws$law, "normal_eq")
 	expect_true(any(grepl("Repeated values", a$notes$en)))
