@@ -151,6 +151,10 @@
 			if (same_n) paste0(" (n = ", d$n[1L], if (dc == ",") " par groupe)" else " per group)") else "")
 		emit("fact", paste0(if (centres) "Observed medians: " else "Observed means: ", obs("."), "."),
 			paste0(if (centres) "M\u00e9dianes observ\u00e9es : " else "Moyennes observ\u00e9es : ", obs(","), "."))
+		if (!is.null(d$SD) && any(is.finite(d$SD))) {
+			emit("fact", paste0("Standard deviations: ", paste0(d$group, " = ", .bay_fx(d$SD, dg, "."), collapse = "; "), "."),
+				paste0("\u00c9carts-types : ", paste0(d$group, " = ", .bay_fx(d$SD, dg, ","), collapse = " ; "), "."))
+		}
 		if (isTRUE(obj$contradiction)) {
 			emit("note", "centres and means do not tell the same story (step 5): support capped at weak.",
 				"centres et moyennes ne racontent pas la m\u00eame chose (\u00e9tape 5) : soutien plafonn\u00e9 \u00e0 faible.")

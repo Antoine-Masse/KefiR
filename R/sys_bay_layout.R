@@ -43,8 +43,12 @@
 	h <- li$h
 	pct <- function(p) .bay_pct(p, dc)
 	k <- if (!is.null(obj$story$k)) obj$story$k + 1L else 7L
-	lead_en <- paste0(h$label_en[1L], ": ", .bay_pct(h$posterior[1L], "."), " (", li$sup$en, ")")
-	lead_fr <- paste0(h$label_fr[1L], " : ", .bay_pct(h$posterior[1L], ","), " (", li$sup$fr, ")")
+	# Undecided: the title does not assert the leading hypothesis (relecture apres, point 1).
+	undecided <- li$open || li$sup$level <= 1L || h$posterior[1L] < 0.6
+	lead_en <- if (undecided) paste0("undecided (", h$label_en[1L], ": ", .bay_pct(h$posterior[1L], "."), ")") else
+		paste0(h$label_en[1L], ": ", .bay_pct(h$posterior[1L], "."), " (", li$sup$en, ")")
+	lead_fr <- if (undecided) paste0("ind\u00e9cis (", h$label_fr[1L], " : ", .bay_pct(h$posterior[1L], ","), ")") else
+		paste0(h$label_fr[1L], " : ", .bay_pct(h$posterior[1L], ","), " (", li$sup$fr, ")")
 	if (isTRUE(narrated)) {
 		cat("\n")
 		emit("title", paste0(k, ") Bilan - ", lead_en, "."), paste0(k, ") Bilan - ", lead_fr, "."))
@@ -70,15 +74,17 @@
 	bf_en <- .bay_bf_txt(abs(li$lb), "."); bf_fr <- .bay_bf_txt(abs(li$lb), ",")
 	emit("note", paste0("the data are ", bf_en, " times more probable under hypothesis 1 than under 2 (Bayes factor ", bf_en, ")."),
 		paste0("les donn\u00e9es sont ", bf_fr, " fois plus probables sous l'hypoth\u00e8se 1 que sous la 2 (facteur de Bayes ", bf_fr, ")."))
+	emit("note", "Bayes factor scale: 1 to 3 weak, 3 to 20 moderate, 20 to 150 strong, beyond very strong (Kass and Raftery 1995).",
+		"\u00e9chelle du facteur de Bayes : 1 \u00e0 3 faible, 3 \u00e0 20 mod\u00e9r\u00e9, 20 \u00e0 150 fort, au-del\u00e0 tr\u00e8s fort (Kass et Raftery 1995).")
 	sens <- obj$sensitivity
 	if (!is.null(sens$range_lead)) {
 		rg <- sens$range_lead
 		if (li$open) {
 			emit("decide", paste0("Depending on the starting point: ", .bay_pct(rg[1L], "."), " to ", .bay_pct(rg[2L], "."), "; the order can reverse, not settled."),
 				paste0("Selon le point de d\u00e9part : ", .bay_pct(rg[1L], ","), " \u00e0 ", .bay_pct(rg[2L], ","), " ; l'ordre peut s'inverser, non tranch\u00e9."))
-		} else if (identical(.bay_pct(rg[1L], "."), .bay_pct(rg[2L], "."))) {
-			emit("fact", paste0("Whatever the starting point: ", .bay_pct(rg[1L], "."), "."),
-				paste0("Quel que soit le point de d\u00e9part : ", .bay_pct(rg[1L], ","), "."))
+		} else if (identical(.bay_pct(rg[1L], "."), .bay_pct(rg[2L], ".")) || rg[1L] > 0.999) {
+			emit("fact", paste0("Whatever the starting point: ", .bay_pct(rg[1L], "."), "; the order does not change."),
+				paste0("Quel que soit le point de d\u00e9part : ", .bay_pct(rg[1L], ","), " ; l'ordre ne change pas."))
 		} else {
 			emit("fact", paste0("Depending on the starting point: ", .bay_pct(rg[1L], "."), " to ", .bay_pct(rg[2L], "."), "; the order does not change."),
 				paste0("Selon le point de d\u00e9part : ", .bay_pct(rg[1L], ","), " \u00e0 ", .bay_pct(rg[2L], ","), " ; l'ordre ne change pas."))
@@ -94,10 +100,26 @@
 			"cela ne dit ni que la diff\u00e9rence est importante, ni pourquoi : la cause d\u00e9pend de la fa\u00e7on dont l'\u00e9tude a \u00e9t\u00e9 men\u00e9e.")
 	}
 	ct <- .bay_cite(obj)
-	emit("note", paste0("for a report: \"", h$label_en[1L], ": posterior probability ", .bay_pct(h$posterior[1L], "."), ", Bayes factor ", bf_en,
-			" (m.bay {KefiR}, ", ct$en, ").\""),
-		paste0("pour un compte rendu : \u00ab ", h$label_fr[1L], " : probabilit\u00e9 a posteriori ", .bay_pct(h$posterior[1L], ","), ", facteur de Bayes ", bf_fr,
-			" (m.bay {KefiR}, ", ct$fr, "). \u00bb"))
+	h1 <- which(!h$null)[1L]
+	terms_en <- terms_fr <- ""
+	e <- obj$effects
+	if (!is.null(e) && nrow(e) > 1L) {
+		st_en <- ifelse(e$p_h1 >= 0.75, "yes", ifelse(e$p_h1 <= 0.25, "no", "not settled"))
+		st_fr <- ifelse(e$p_h1 >= 0.75, "oui", ifelse(e$p_h1 <= 0.25, "non", "non tranch\u00e9"))
+		terms_en <- paste0("; ", paste0(e$term, " ", st_en, " (", vapply(e$p_h1, .bay_pct, character(1), dec = "."), ")", collapse = ", "))
+		terms_fr <- paste0(" ; ", paste0(e$term, " ", st_fr, " (", vapply(e$p_h1, .bay_pct, character(1), dec = ","), ")", collapse = ", "))
+	}
+	if (undecided) {
+		emit("note", paste0("for a report: \"The data do not settle it: probability of a difference ", .bay_pct(h$posterior[h1], "."), ", Bayes factor ", bf_en,
+				if (h$null[1L]) " in favour of no difference" else "", terms_en, " (m.bay {KefiR}, ", ct$en, ").\""),
+			paste0("pour un compte rendu : \u00ab Les donn\u00e9es ne permettent pas de conclure : probabilit\u00e9 d'une diff\u00e9rence ", .bay_pct(h$posterior[h1], ","), ", facteur de Bayes ", bf_fr,
+				if (h$null[1L]) " en faveur de l'absence de diff\u00e9rence" else "", terms_fr, " (m.bay {KefiR}, ", ct$fr, "). \u00bb"))
+	} else {
+		emit("note", paste0("for a report: \"", h$label_en[1L], ": posterior probability ", .bay_pct(h$posterior[1L], "."), ", Bayes factor ", bf_en, terms_en,
+				" (m.bay {KefiR}, ", ct$en, ").\""),
+			paste0("pour un compte rendu : \u00ab ", h$label_fr[1L], " : probabilit\u00e9 a posteriori ", .bay_pct(h$posterior[1L], ","), ", facteur de Bayes ", bf_fr, terms_fr,
+				" (m.bay {KefiR}, ", ct$fr, "). \u00bb"))
+	}
 	if (length(obj$notes$en) && !isTRUE(narrated)) {
 		for (i in seq_along(obj$notes$en)) emit("note", obj$notes$en[i], obj$notes$fr[i])
 	}
@@ -127,7 +149,8 @@
 		p <- pr$p_differ[i]
 		s <- .bay_support(max(p, 1 - p))
 		open <- isTRUE(pr$p_min[i] < 0.5 && pr$p_max[i] > 0.5) || s$level == 1L
-		cls[i] <- if (open) "open" else if (p >= 0.5) "diff" else if (undecided && s$level <= 2L) "open" else "same"
+		# One fixed rule (relecture apres, point 6): different from 75 %, alike up to 25 %.
+		cls[i] <- if (isTRUE(pr$p_min[i] < 0.5 && pr$p_max[i] > 0.5)) "open" else if (p >= 0.75) "diff" else if (p <= 0.25) "same" else "open"
 		s_en[i] <- sub(" support", "", s$en); s_fr[i] <- sub("soutien ", "", s$fr)
 	}
 	grp <- function(sel, by_support) {
@@ -151,6 +174,8 @@
 		emit("fact", paste0("If a difference exists, most probable grouping: ", top$label, " (", .bay_pct(top$p, "."), ")."),
 			paste0("Si une diff\u00e9rence existe, regroupement le plus probable : ", top$label, " (", .bay_pct(top$p, ","), ")."))
 	}
+	emit("note", "different from 75 % of probability, alike up to 25 %, otherwise not settled.",
+		"diff\u00e9rents \u00e0 partir de 75 % de probabilit\u00e9, semblables jusqu'\u00e0 25 %, sinon non tranch\u00e9s.")
 	emit("note", if (narrated) "gaps in figures: step 6." else "gaps in figures: $posthoc$pairs.",
 		if (narrated) "\u00e9carts chiffr\u00e9s : \u00e9tape 6." else "\u00e9carts chiffr\u00e9s : $posthoc$pairs.")
 	invisible(NULL)

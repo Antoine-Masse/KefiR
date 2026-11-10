@@ -23,8 +23,8 @@
 	==> x is in every model; each answer is read against the covariates
 	    alone.
 	Note: these values are not tuned on the data; step 5 varies them.
-5) Solidity of the answer [lmBF() {BayesFactor}] - Bayes factor 10^6, stable
-   answer.
+5) Solidity of the answer [lmBF() {BayesFactor}] - Bayes factor 10^6, the order
+   does not change.
 	==> Bayes factor: 10^6 (the data favour a difference).
 	==> Precision of the computation: < 0.1 point on the probabilities,
 	    negligible.
@@ -43,9 +43,11 @@
 	==> t2/t3: different at 30.4 %; t3 - t2 = 0.8 [-0.3; 1.9], i.e. 0.51
 	    residual SD (covariates accounted for).
 	Note: [ ; ] = 95 % credible interval (95 % chance that the gap lies
-	      there); gap pulled a little towards 0.
-	Note: one law for all the pairs: no correction, the answers cannot
-	      contradict each other.
+	      there).
+	Note: the gap is a little smaller than the observed one: the method is
+	      cautious with small samples.
+	Note: all pairs are judged together (unlike Tukey, nothing to correct):
+	      they cannot contradict each other.
 
 7) Bilan - y differs according to g, at equal x: > 99.9 % (very strong support).
 	==> Verdict: a difference very probably exists.
@@ -54,11 +56,15 @@
 	==> 2. No difference in y according to g    : < 0.1 %
 	Note: the data are 10^6 times more probable under hypothesis 1 than
 	      under 2 (Bayes factor 10^6).
-	==> Whatever the starting point: > 99.9 %.
+	Note: Bayes factor scale: 1 to 3 weak, 3 to 20 moderate, 20 to 150
+	      strong, beyond very strong (Kass and Raftery 1995).
+	==> Whatever the starting point: > 99.9 %; the order does not change.
 	==> Different: t1/t2, t1/t3 (very strong).
-	==> Alike: t2/t3 (weak).
+	==> Not settled: t2/t3.
 	==> If a difference exists, most probable grouping: t1 < t2 = t3
 	    (69.6 %).
+	Note: different from 75 % of probability, alike up to 25 %, otherwise
+	      not settled.
 	Note: gaps in figures: step 6.
 	==> Raw means, g: t1 = 7.4; t2 = 11.0; t3 = 11.7 (n = 15).
 	==> Mean x per group: t1 = 4.34; t2 = 4.95; t3 = 4.83.

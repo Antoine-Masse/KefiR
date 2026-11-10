@@ -302,6 +302,8 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 
 	# Step 3: the shapes of the noise, compared and not chosen.
 	.bay_tell(story, "Shapes of the noise", "Formes du bruit", "step", fun = "m.bay() {KefiR}")
+	.bay_tell(story, "shape of the noise: how the values scatter in their group; heavy tails: far values more frequent than under the normal law.",
+		"forme du bruit : la fa\u00e7on dont les valeurs s'\u00e9cartent dans leur groupe ; queues lourdes : valeurs \u00e9loign\u00e9es plus fr\u00e9quentes que sous la loi normale.", "note")
 	.bay_tell(story, "Shape of the noise: how the values scatter around the centre of their group (normal or heavy tails, equal variances or not). Computed by importance sampling, eight models.",
 		"Forme du bruit : la fa\u00e7on dont les valeurs s'\u00e9cartent du centre de leur groupe (normale ou \u00e0 queues lourdes, variances \u00e9gales ou non). Calcul par \u00e9chantillonnage d'importance, huit mod\u00e8les.", "detail")
 	rs <- if (isTRUE(sensitivity)) c(rscale / 2, rscale, rscale * 2) else rscale

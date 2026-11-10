@@ -399,6 +399,16 @@
 					paste0(q_fr, " : ", ans_fr, " (", .bay_pct(e$p_h1[i], ","), " ; a priori ", .bay_pct(e$prior_h1[i], ","), " ; facteur de Bayes ", .bay_bf_txt(e$log_bf[i], ","), ")."))
 			}
 		}
+		if (nrow(e) > 1L) {
+			odd <- which(!is.na(e$log_bf) & e$log_bf > log(1.5) & e$p_h1 < 0.5)
+			if (length(odd)) {
+				i <- odd[1L]
+				emit("note", paste0(e$term[i], ": the data raise its odds (Bayes factor ", .bay_bf_txt(e$log_bf[i], "."), "), but it started at ", .bay_pct(e$prior_h1[i], "."),
+						", hence ", .bay_pct(e$p_h1[i], "."), " only."),
+					paste0(e$term[i], " : les donn\u00e9es augmentent ses chances (facteur de Bayes ", .bay_bf_txt(e$log_bf[i], ","), "), mais il partait \u00e0 ", .bay_pct(e$prior_h1[i], ","),
+						", d'o\u00f9 ", .bay_pct(e$p_h1[i], ","), " seulement."))
+			}
+		}
 		if (!is.null(ph) && !identical(ph$method, "slopes")) {
 			if (ph$k > 2L) .bay_pairs_short(ph, emit, li$h$posterior[1L] < 0.6 || li$open, narrated)
 			if (ph$k == 2L) {

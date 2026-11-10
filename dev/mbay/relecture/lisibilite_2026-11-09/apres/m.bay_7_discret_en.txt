@@ -17,7 +17,7 @@
 	==> In each group, every set of proportions equally likely in advance.
 	Note: these values are not tuned on the data; step 5 varies them.
 5) Solidity of the answer [contingencyTableBF() {BayesFactor}] - Bayes factor
-   0.463, the answer can reverse.
+   0.463, the order can reverse.
 	==> Bayes factor: 0.463, i.e. 2.16 in favour of no difference.
 	Note: Bayes factor: how many times more probable the counts are with a
 	      difference than without.
@@ -40,30 +40,34 @@
 	    [-3.7; 40.2].
 	Note: gap of the share of oui, in points; [ ; ] = 95 % credible
 	      interval.
-	Note: one law for all the pairs: no correction, the answers cannot
-	      contradict each other.
+	Note: all pairs are judged together (unlike Tukey, nothing to correct):
+	      they cannot contradict each other.
 
-7) Bilan - The proportions of germe do not differ according to traitement:
-   68.4 % (not settled).
+7) Bilan - undecided (The proportions of germe do not differ according to
+   traitement: 68.4 %).
 	==> Verdict: undecided.
 	==> 1. The proportions of germe do not differ according to traitement :
 	    68.4 % (not settled)
 	==> 2. The proportions of germe differ according to traitement : 31.6 %
 	Note: the data are 2.16 times more probable under hypothesis 1 than
 	      under 2 (Bayes factor 2.16).
+	Note: Bayes factor scale: 1 to 3 weak, 3 to 20 moderate, 20 to 150
+	      strong, beyond very strong (Kass and Raftery 1995).
 	--> Depending on the starting point: 37.6 % to 81.2 %; the order can
 	    reverse, not settled.
 	==> Alike: temoin/froid (moderate).
 	==> Not settled: temoin/chaud, froid/chaud.
 	==> If a difference exists, most probable grouping:
 	    temoin = froid < chaud (54.3 %).
+	Note: different from 75 % of probability, alike up to 25 %, otherwise
+	      not settled.
 	Note: gaps in figures: step 6.
-	==> temoin: 18 oui, 12 non (of 30).
-	==> froid: 18 oui, 12 non (of 30).
-	==> chaud: 24 oui, 6 non (of 30).
+	==> temoin: 18 oui (60.0 %), 12 non (40.0 %), of 30.
+	==> froid: 18 oui (60.0 %), 12 non (40.0 %), of 30.
+	==> chaud: 24 oui (80.0 %), 6 non (20.0 %), of 30.
 	==> Largest gap: oui, 60.0 % in temoin against 80.0 % in chaud.
-	Note: for a report: "The proportions of germe do not differ according to
-	      traitement: posterior probability 68.4 %, Bayes factor 2.16 (m.bay
-	      {KefiR}, Gunel and Dickey 1974)."
+	Note: for a report: "The data do not settle it: probability of a
+	      difference 31.6 %, Bayes factor 2.16 in favour of no difference
+	      (m.bay {KefiR}, Gunel and Dickey 1974)."
 	Note: probabilities of hypotheses, not p-values; method in detail:
 	      print(result, detail = TRUE).

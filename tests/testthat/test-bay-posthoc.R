@@ -85,7 +85,7 @@ test_that("ecart observe et ecart estime sont nommes", {
 	d <- data.frame(y = c(rnorm(10, 10), rnorm(10, 11.2), rnorm(10, 10.1)), g = factor(rep(c("a", "b", "c"), each = 10)))
 	r <- m.bay(y ~ g, data = d, verbose = FALSE, draws = 1000, sensitivity = FALSE)
 	# l'ecart estime est dit ramene vers 0 ; le bilan donne les moyennes observees
-	expect_match(paste(r$story$fr, collapse = " "), "ramen")
+	expect_match(gsub("\\s+", " ", paste(r$story$fr, collapse = " ")), "plus petit que l'écart observ")
 	court <- paste(capture.output(print(r)), collapse = "\n")
 	expect_match(gsub("\\s+", " ", court), "(Moyennes|Médianes) observ|Observed (means|medians)")
 })

@@ -40,6 +40,8 @@
 	==> 2. No difference in y according to A, B : 1.0 %
 	Note: the data are 49.7 times more probable under hypothesis 1 than
 	      under 2 (Bayes factor 49.7).
+	Note: Bayes factor scale: 1 to 3 weak, 3 to 20 moderate, 20 to 150
+	      strong, beyond very strong (Kass and Raftery 1995).
 	==> Depending on the starting point: 98.2 % to 99.5 %; the order does
 	    not change.
 	==> A (alone or in interaction): yes, strong support (98.8 %; prior
@@ -48,6 +50,8 @@
 	    Bayes factor 1.51).
 	==> A:B (the gaps along A change with B): not settled (39.3 %; prior
 	    16.7 %; Bayes factor 3.24).
+	Note: A:B: the data raise its odds (Bayes factor 3.24), but it started
+	      at 16.7 %, hence 39.3 % only.
 	==> Observed means, A: A1 = 9.8; A2 = 11.7 (n = 30).
 	==> Observed means, B: B1 = 10.8; B2 = 10.2; B3 = 11.3 (n = 20).
 	==> Per cell: A1 x B1 = 10.5; A2 x B1 = 11.1; A1 x B2 = 8.4;
@@ -57,7 +61,8 @@
 	Note: this says neither that the difference matters, nor why: a cause
 	      depends on how the study was run.
 	Note: for a report: "y differs according to at least one factor:
-	      posterior probability 99.0 %, Bayes factor 49.7 (m.bay {KefiR},
+	      posterior probability 99.0 %, Bayes factor 49.7; A yes (98.8 %), B
+	      not settled (60.1 %), A:B not settled (39.3 %) (m.bay {KefiR},
 	      BayesFactor, Rouder et al. 2012)."
 	Note: probabilities of hypotheses, not p-values; method in detail:
 	      print(result, detail = TRUE).

@@ -26,7 +26,7 @@
 	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
 	       fait varier.
 5) Solidité de la réponse [ttestBF(paired = TRUE) {BayesFactor}] - facteur de
-   Bayes 75,4, l'ordre tient.
+   Bayes 75,4, l'ordre ne change pas.
 	==> Facteur de Bayes : 75,4 (les données favorisent une différence).
 	==> Précision : calcul exact, sans tirage.
 	==> Sensibilité : la réponse en tête va de 95,9 % à 99,5 %.
@@ -38,7 +38,9 @@
 	==> Écart estimé apres - avant = 1,5 [0,6 ; 2,2], soit 1,04 écart-type
 	    des différences (dz).
 	Note : [ ; ] = intervalle de crédibilité à 95 % (95 % de chances d'y
-	       trouver l'écart) ; écart un peu ramené vers 0.
+	       trouver l'écart).
+	Note : l'écart est un peu plus petit que l'écart observé : la méthode
+	       est prudente avec les petits échantillons.
 
 7) Bilan - y diffère selon t : 98,7 % (soutien fort).
 	==> Verdict : une différence existe très probablement.
@@ -46,6 +48,8 @@
 	==> 2. Aucune différence de y selon t : 1,3 %
 	Note : les données sont 75,4 fois plus probables sous l'hypothèse 1 que
 	       sous la 2 (facteur de Bayes 75,4).
+	Note : échelle du facteur de Bayes : 1 à 3 faible, 3 à 20 modéré, 20 à
+	       150 fort, au-delà très fort (Kass et Raftery 1995).
 	==> Selon le point de départ : 95,9 % à 99,5 % ; l'ordre ne change pas.
 	==> Écart estimé apres - avant : 1,5 [0,6 ; 2,2] (étape 6).
 	==> Moyennes observées, t : avant = 20,1 ; apres = 21,7 (n = 15).

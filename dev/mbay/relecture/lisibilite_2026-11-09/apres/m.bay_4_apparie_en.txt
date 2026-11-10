@@ -23,7 +23,7 @@
 	    tested.
 	Note: these values are not tuned on the data; step 5 varies them.
 5) Solidity of the answer [ttestBF(paired = TRUE) {BayesFactor}] - Bayes factor
-   75.4, the order holds.
+   75.4, the order does not change.
 	==> Bayes factor: 75.4 (the data favour a difference).
 	==> Precision: exact computation, without draws.
 	==> Sensitivity: the leading answer goes from 95.9 % to 99.5 %.
@@ -35,7 +35,9 @@
 	==> Estimated gap apres - avant = 1.5 [0.6; 2.2], i.e. 1.04 SD of the
 	    differences (dz).
 	Note: [ ; ] = 95 % credible interval (95 % chance that the gap lies
-	      there); gap pulled a little towards 0.
+	      there).
+	Note: the gap is a little smaller than the observed one: the method is
+	      cautious with small samples.
 
 7) Bilan - y differs according to t: 98.7 % (strong support).
 	==> Verdict: a difference very probably exists.
@@ -43,6 +45,8 @@
 	==> 2. No difference in y according to t : 1.3 %
 	Note: the data are 75.4 times more probable under hypothesis 1 than
 	      under 2 (Bayes factor 75.4).
+	Note: Bayes factor scale: 1 to 3 weak, 3 to 20 moderate, 20 to 150
+	      strong, beyond very strong (Kass and Raftery 1995).
 	==> Depending on the starting point: 95.9 % to 99.5 %; the order does
 	    not change.
 	==> Estimated gap apres - avant: 1.5 [0.6; 2.2] (step 6).

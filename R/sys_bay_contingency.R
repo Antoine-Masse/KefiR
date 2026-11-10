@@ -247,8 +247,10 @@
 	cats <- rev(colnames(tab))
 	for (i in seq_len(nrow(tab))) {
 		cn <- tab[i, cats]
-		emit("fact", paste0(rownames(tab)[i], ": ", paste0(cn, " ", cats, collapse = ", "), " (of ", sum(cn), ")."),
-			paste0(rownames(tab)[i], " : ", paste0(cn, " ", cats, collapse = ", "), " (sur ", sum(cn), ")."))
+		pc <- vapply(cn / sum(cn), .bay_pct, character(1), dec = ".")
+		pf <- vapply(cn / sum(cn), .bay_pct, character(1), dec = ",")
+		emit("fact", paste0(rownames(tab)[i], ": ", paste0(cn, " ", cats, " (", pc, ")", collapse = ", "), ", of ", sum(cn), "."),
+			paste0(rownames(tab)[i], " : ", paste0(cn, " ", cats, " (", pf, ")", collapse = ", "), ", sur ", sum(cn), "."))
 	}
 	pr <- obj$proportions
 	if (nrow(pr) >= 2L && ncol(pr) >= 2L) {

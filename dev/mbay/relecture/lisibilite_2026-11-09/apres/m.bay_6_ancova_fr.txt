@@ -26,7 +26,7 @@
 	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
 	       fait varier.
 5) Solidité de la réponse [lmBF() {BayesFactor}] - facteur de Bayes 10^6,
-   réponse stable.
+   l'ordre ne change pas.
 	==> Facteur de Bayes : 10^6 (les données favorisent une différence).
 	==> Précision du calcul : < 0,1 point sur les probabilités, négligeable.
 	==> Sensibilité : la réponse en tête va de > 99,9 % à > 99,9 %.
@@ -44,9 +44,11 @@
 	==> t2/t3 : différents à 30,4 % ; t3 - t2 = 0,8 [-0,3 ; 1,9], soit 0,51
 	    écart-type résiduel (covariables prises en compte).
 	Note : [ ; ] = intervalle de crédibilité à 95 % (95 % de chances d'y
-	       trouver l'écart) ; écart un peu ramené vers 0.
-	Note : une seule loi pour toutes les paires : pas de correction, les
-	       réponses ne peuvent pas se contredire.
+	       trouver l'écart).
+	Note : l'écart est un peu plus petit que l'écart observé : la méthode
+	       est prudente avec les petits échantillons.
+	Note : toutes les paires sont jugées ensemble (pas de correction à la
+	       Tukey) : elles ne peuvent pas se contredire.
 
 7) Bilan - y diffère selon g, à même x : > 99,9 % (soutien très fort).
 	==> Verdict : une différence existe très probablement.
@@ -54,11 +56,15 @@
 	==> 2. Aucune différence de y selon g : < 0,1 %
 	Note : les données sont 10^6 fois plus probables sous l'hypothèse 1 que
 	       sous la 2 (facteur de Bayes 10^6).
-	==> Quel que soit le point de départ : > 99,9 %.
+	Note : échelle du facteur de Bayes : 1 à 3 faible, 3 à 20 modéré, 20 à
+	       150 fort, au-delà très fort (Kass et Raftery 1995).
+	==> Quel que soit le point de départ : > 99,9 % ; l'ordre ne change pas.
 	==> Différents : t1/t2, t1/t3 (très fort).
-	==> Semblables : t2/t3 (faible).
+	==> Non tranchés : t2/t3.
 	==> Si une différence existe, regroupement le plus probable :
 	    t1 < t2 = t3 (69,6 %).
+	Note : différents à partir de 75 % de probabilité, semblables jusqu'à
+	       25 %, sinon non tranchés.
 	Note : écarts chiffrés : étape 6.
 	==> Moyennes brutes, g : t1 = 7,4 ; t2 = 11,0 ; t3 = 11,7 (n = 15).
 	==> x moyen par groupe : t1 = 4,34 ; t2 = 4,95 ; t3 = 4,83.

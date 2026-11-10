@@ -11,6 +11,8 @@
 	    values.
 3) Shapes of the noise [m.bay() {KefiR}] - normal, equal variances ahead
    (67.2 %).
+	Note: shape of the noise: how the values scatter in their group; heavy
+	      tails: far values more frequent than under the normal law.
 	==> Probabilities: normal, equal variances 67.2 %; heavy tails, equal
 	    variances 23.1 %; normal, unequal variances 6.7 %; heavy tails,
 	    unequal variances 3.0 %.
@@ -20,7 +22,8 @@
 4) Starting point (priors) - 50.0 % chance of a difference (heads or tails).
 	==> Expected size r = 0.5; each shape of the noise starts at 25.0 %.
 	Note: these values are not tuned on the data; step 5 varies them.
-5) Solidity of the answer [m.bay() {KefiR}] - Bayes factor 623, stable answer.
+5) Solidity of the answer [m.bay() {KefiR}] - Bayes factor 623, the order does
+   not change.
 	==> Bayes factor: 623 (the data favour a difference).
 	Note: Bayes factor: how many times more probable the data are with a
 	      difference than without.
@@ -30,7 +33,7 @@
 	    to > 99.9 %.
 	Note: varied: r from 0.25 to 1, starting chances from 1 against 2 to 2
 	      against 1, spread of the variances.
-	--> The answer does not depend on these choices.
+	--> The order does not change.
 6) Which groups differ, and by how much [lmBF(), posterior() {BayesFactor},
    hdi() {bayestestR}] - a = c < b = d ahead (58.7 %).
 	==> If a difference exists, leading groupings: a = c < b = d (58.7 %);
@@ -42,9 +45,11 @@
 	==> b/d: different at 26.8 %; d - b = 0.5 [-0.6; 1.9], i.e. 0.29 SD.
 	==> c/d: different at 99.8 %; d - c = 2.5 [1.2; 3.9], i.e. 1.35 SD.
 	Note: [ ; ] = 95 % credible interval (95 % chance that the gap lies
-	      there); gap pulled a little towards 0.
-	Note: one law for all the pairs: no correction, the answers cannot
-	      contradict each other.
+	      there).
+	Note: the gap is a little smaller than the observed one: the method is
+	      cautious with small samples.
+	Note: all pairs are judged together (unlike Tukey, nothing to correct):
+	      they cannot contradict each other.
 
 7) Bilan - y differs according to g: 99.8 % (very strong support).
 	==> Verdict: a difference very probably exists.
@@ -52,15 +57,21 @@
 	==> 2. No difference in y according to g : 0.2 %
 	Note: the data are 623 times more probable under hypothesis 1 than under
 	      2 (Bayes factor 623).
+	Note: Bayes factor scale: 1 to 3 weak, 3 to 20 moderate, 20 to 150
+	      strong, beyond very strong (Kass and Raftery 1995).
 	==> Depending on the starting point: 99.5 % to > 99.9 %; the order does
 	    not change.
 	==> Different: a/b, a/d, b/c, c/d (very strong).
-	==> Alike: a/c (moderate); b/d (weak).
+	==> Alike: a/c (moderate).
+	==> Not settled: b/d.
 	==> If a difference exists, most probable grouping: a = c < b = d
 	    (58.7 %).
+	Note: different from 75 % of probability, alike up to 25 %, otherwise
+	      not settled.
 	Note: gaps in figures: step 6.
 	==> Observed means: a = 10.2; b = 12.5; c = 10.3; d = 13.1 (n = 15 per
 	    group).
+	==> Standard deviations: a = 1.7; b = 2.1; c = 1.6; d = 1.9.
 	Note: this says neither that the difference matters, nor why: a cause
 	      depends on how the study was run.
 	Note: for a report: "y differs according to g: posterior probability

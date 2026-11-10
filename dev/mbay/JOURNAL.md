@@ -31,7 +31,25 @@
 - Les 10 fichiers de tests de m.bay passent.
 - Nouveau test de largeur : 7 plans, en français et en anglais, aux largeurs 60, 80 et 120.
 
-**Non vérifié.** La relecture des sorties « après » par un lecteur débutant indépendant est en cours.
+**Relecture « après »** par un lecteur débutant indépendant (`relecture/lisibilite_2026-11-09/RELECTURE_APRES.md`).
+- **Temps pour trouver le bilan** : 5 à 20 s, contre 20 à 40 s avant.
+- **Notes avant → après** :
+  - lisibilité : 2 → 4 ;
+  - longueur : 2 → 4 ;
+  - repérage du bilan : 2 → 5 ;
+  - jargon : 2 → 3 ;
+  - cohérence entre les plans : 3 → 4.
+- **Corrigé à la suite**, sans toucher au calcul :
+  - cas indécis : le titre du bilan et la phrase de compte rendu ne donnent plus l'hypothèse en tête comme acquise (« indécis (…) », « Les données ne permettent pas de conclure… ») ;
+  - réponse par terme dans la phrase de compte rendu ;
+  - explication d'une interaction dont le facteur de Bayes est supérieur à 1 mais la probabilité inférieure à 50 % (a priori de départ) ;
+  - échelle du facteur de Bayes (Kass et Raftery 1995) ;
+  - un seul vocabulaire pour la stabilité (« l'ordre ne change pas / peut s'inverser ») ;
+  - règle fixe pour les paires : différents à partir de 75 %, semblables jusqu'à 25 % ;
+  - définitions courtes de « forme du bruit » et « queues lourdes » ;
+  - « pas de correction à la Tukey » ;
+  - écarts-types par groupe et pourcentages dans les effectifs du discret.
+- **Laissé** : moyennes ajustées en ANCOVA, lettres de groupes pour un graphique, moyenne des différences en apparié. Ce sont des sorties nouvelles, à décider plus tard.
 
 ## Séance 9 : 9 novembre 2026, réponse binaire ou catégorielle (D17, voie 1), relecture débutant
 

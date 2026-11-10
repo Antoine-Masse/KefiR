@@ -11,6 +11,9 @@
 	    genre de valeurs.
 3) Formes du bruit [m.bay() {KefiR}] - normale, variances égales en tête
    (67,2 %).
+	Note : forme du bruit : la façon dont les valeurs s'écartent dans leur
+	       groupe ; queues lourdes : valeurs éloignées plus fréquentes que
+	       sous la loi normale.
 	==> Probabilités : normale, variances égales 67,2 % ; queues lourdes,
 	    variances égales 23,1 % ; normale, variances inégales 6,7 % ; queues
 	    lourdes, variances inégales 3,0 %.
@@ -24,8 +27,8 @@
 	==> Taille attendue r = 0,5 ; chaque forme du bruit part à 25,0 %.
 	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
 	       fait varier.
-5) Solidité de la réponse [m.bay() {KefiR}] - facteur de Bayes 623, réponse
-   stable.
+5) Solidité de la réponse [m.bay() {KefiR}] - facteur de Bayes 623, l'ordre ne
+   change pas.
 	==> Facteur de Bayes : 623 (les données favorisent une différence).
 	Note : facteur de Bayes : combien de fois les données sont plus
 	       probables avec une différence que sans.
@@ -34,7 +37,7 @@
 	==> Sensibilité : « y diffère selon g » va de 99,5 % à > 99,9 %.
 	Note : variés : r de 0,25 à 1, chances de départ de 1 contre 2 à 2
 	       contre 1, répartition des variances.
-	--> La réponse ne dépend pas de ces choix.
+	--> L'ordre ne change pas.
 6) Quels groupes diffèrent, et de combien [lmBF(), posterior() {BayesFactor},
    hdi() {bayestestR}] - a = c < b = d en tête (58,7 %).
 	==> Si une différence existe, regroupements en tête : a = c < b = d
@@ -52,9 +55,11 @@
 	==> c/d : différents à 99,8 % ; d - c = 2,5 [1,2 ; 3,9], soit 1,35
 	    écart-type.
 	Note : [ ; ] = intervalle de crédibilité à 95 % (95 % de chances d'y
-	       trouver l'écart) ; écart un peu ramené vers 0.
-	Note : une seule loi pour toutes les paires : pas de correction, les
-	       réponses ne peuvent pas se contredire.
+	       trouver l'écart).
+	Note : l'écart est un peu plus petit que l'écart observé : la méthode
+	       est prudente avec les petits échantillons.
+	Note : toutes les paires sont jugées ensemble (pas de correction à la
+	       Tukey) : elles ne peuvent pas se contredire.
 
 7) Bilan - y diffère selon g : 99,8 % (soutien très fort).
 	==> Verdict : une différence existe très probablement.
@@ -62,15 +67,21 @@
 	==> 2. Aucune différence de y selon g : 0,2 %
 	Note : les données sont 623 fois plus probables sous l'hypothèse 1 que
 	       sous la 2 (facteur de Bayes 623).
+	Note : échelle du facteur de Bayes : 1 à 3 faible, 3 à 20 modéré, 20 à
+	       150 fort, au-delà très fort (Kass et Raftery 1995).
 	==> Selon le point de départ : 99,5 % à > 99,9 % ; l'ordre ne change
 	    pas.
 	==> Différents : a/b, a/d, b/c, c/d (très fort).
-	==> Semblables : a/c (modéré) ; b/d (faible).
+	==> Semblables : a/c (modéré).
+	==> Non tranchés : b/d.
 	==> Si une différence existe, regroupement le plus probable :
 	    a = c < b = d (58,7 %).
+	Note : différents à partir de 75 % de probabilité, semblables jusqu'à
+	       25 %, sinon non tranchés.
 	Note : écarts chiffrés : étape 6.
 	==> Moyennes observées : a = 10,2 ; b = 12,5 ; c = 10,3 ; d = 13,1
 	    (n = 15 par groupe).
+	==> Écarts-types : a = 1,7 ; b = 2,1 ; c = 1,6 ; d = 1,9.
 	Note : cela ne dit ni que la différence est importante, ni pourquoi : la
 	       cause dépend de la façon dont l'étude a été menée.
 	Note : pour un compte rendu : « y diffère selon g : probabilité a

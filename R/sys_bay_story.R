@@ -229,9 +229,9 @@
 # Words of the stability of the answer, for the title of step 5.
 .bay_stab_txt <- function(verdict) {
 	switch(if (is.null(verdict)) "none" else verdict,
-		changes = list(en = "the answer can reverse", fr = "la r\u00e9ponse peut s'inverser"),
-		crosses = list(en = "the order holds", fr = "l'ordre tient"),
-		stable = list(en = "stable answer", fr = "r\u00e9ponse stable"),
+		changes = list(en = "the order can reverse", fr = "l'ordre peut s'inverser"),
+		crosses = list(en = "the order does not change", fr = "l'ordre ne change pas"),
+		stable = list(en = "the order does not change", fr = "l'ordre ne change pas"),
 		list(en = "sensitivity not computed", fr = "sensibilit\u00e9 non calcul\u00e9e"))
 }
 
@@ -342,18 +342,23 @@
 	}
 	r1 <- .bay_num_txt(min(sens$r)); r2 <- .bay_num_txt(max(sens$r))
 	rg <- sens$range_lead
-	.bay_tell(st, paste0("Sensitivity: \"", hyp$label_en[1L], "\" goes from ", .bay_pct(rg[1L], "."), " to ", .bay_pct(rg[2L], "."), "."),
-		paste0("Sensibilit\u00e9 : \u00ab ", hyp$label_fr[1L], " \u00bb va de ", .bay_pct(rg[1L], ","), " \u00e0 ", .bay_pct(rg[2L], ","), "."))
+	if (rg[1L] > 0.999) {
+		.bay_tell(st, paste0("Sensitivity: \"", hyp$label_en[1L], "\" stays above 99.9 %."),
+			paste0("Sensibilit\u00e9 : \u00ab ", hyp$label_fr[1L], " \u00bb reste au-dessus de 99,9 %."))
+	} else {
+		.bay_tell(st, paste0("Sensitivity: \"", hyp$label_en[1L], "\" goes from ", .bay_pct(rg[1L], "."), " to ", .bay_pct(rg[2L], "."), "."),
+			paste0("Sensibilit\u00e9 : \u00ab ", hyp$label_fr[1L], " \u00bb va de ", .bay_pct(rg[1L], ","), " \u00e0 ", .bay_pct(rg[2L], ","), "."))
+	}
 	.bay_tell(st, paste0("Varied: r from ", r1$en, " to ", r2$en, ", starting chances from 1 against 2 to 2 against 1", if (het) ", spread of the variances" else "", "."),
 		paste0("Vari\u00e9s : r de ", r1$fr, " \u00e0 ", r2$fr, ", chances de d\u00e9part de 1 contre 2 \u00e0 2 contre 1", if (het) ", r\u00e9partition des variances" else "", "."), "note")
 	if (identical(sens$verdict, "changes")) {
 		.bay_tell(st, "Caution added: the leading hypothesis can reverse; the bilan will not assert it.",
 			"Prudence ajout\u00e9e : l'hypoth\u00e8se en t\u00eate peut s'inverser ; le bilan ne l'affirmera pas.", "decide")
 	} else if (identical(sens$verdict, "crosses")) {
-		.bay_tell(st, "The order holds; only the degree of support can change.",
-			"L'ordre tient ; seul le degr\u00e9 de soutien peut changer.", "decide")
+		.bay_tell(st, "The order does not change; only the degree of support can.",
+			"L'ordre ne change pas ; seul le degr\u00e9 de soutien peut changer.", "decide")
 	} else {
-		.bay_tell(st, "The answer does not depend on these choices.", "La r\u00e9ponse ne d\u00e9pend pas de ces choix.", "decide")
+		.bay_tell(st, "The order does not change.", "L'ordre ne change pas.", "decide")
 	}
 	invisible(NULL)
 }
@@ -434,14 +439,16 @@
 		.bay_tell(st, "Gaps: posterior medians under a uniform Dirichlet prior; the log odds ratio is in $posthoc$pairs$delta.",
 			"\u00c9carts : m\u00e9dianes a posteriori sous une Dirichlet uniforme ; le log du rapport de cotes est dans $posthoc$pairs$delta.", "detail")
 	} else {
-		.bay_tell(st, "[ ; ] = 95 % credible interval (95 % chance that the gap lies there); gap pulled a little towards 0.",
-			"[ ; ] = intervalle de cr\u00e9dibilit\u00e9 \u00e0 95 % (95 % de chances d'y trouver l'\u00e9cart) ; \u00e9cart un peu ramen\u00e9 vers 0.", "note")
+		.bay_tell(st, "[ ; ] = 95 % credible interval (95 % chance that the gap lies there).",
+			"[ ; ] = intervalle de cr\u00e9dibilit\u00e9 \u00e0 95 % (95 % de chances d'y trouver l'\u00e9cart).", "note")
+		.bay_tell(st, "the gap is a little smaller than the observed one: the method is cautious with small samples.",
+			"l'\u00e9cart est un peu plus petit que l'\u00e9cart observ\u00e9 : la m\u00e9thode est prudente avec les petits \u00e9chantillons.", "note")
 		.bay_tell(st, "Estimated gap: posterior median of the model \"all groups may differ\", pulled slightly towards zero by the prior, hence a little smaller than the observed gap.",
 			"\u00c9cart estim\u00e9 : m\u00e9diane a posteriori du mod\u00e8le \u00ab tous les groupes peuvent diff\u00e9rer \u00bb, l\u00e9g\u00e8rement ramen\u00e9e vers z\u00e9ro par l'a priori, donc un peu plus petite que l'\u00e9cart observ\u00e9.", "detail")
 	}
 	if (ph$k > 2L) {
-		.bay_tell(st, "One law for all the pairs: no correction, the answers cannot contradict each other.",
-			"Une seule loi pour toutes les paires : pas de correction, les r\u00e9ponses ne peuvent pas se contredire.", "note")
+		.bay_tell(st, "all pairs are judged together (unlike Tukey, nothing to correct): they cannot contradict each other.",
+			"toutes les paires sont jug\u00e9es ensemble (pas de correction \u00e0 la Tukey) : elles ne peuvent pas se contredire.", "note")
 	}
 	if (isTRUE(ph$caution_overlap)) {
 		.bay_tell(st, "These gaps compare the groups where some have few values of the covariate: with caution.",

@@ -10,6 +10,8 @@
 	--> Nothing to remove.
 3) Shapes of the noise [m.bay() {KefiR}] - normal, equal variances ahead
    (51.9 %).
+	Note: shape of the noise: how the values scatter in their group; heavy
+	      tails: far values more frequent than under the normal law.
 	==> Probabilities: normal, equal variances 51.9 %; normal, unequal
 	    variances 22.2 %; heavy tails, equal variances 17.7 %; heavy tails,
 	    unequal variances 8.2 %.
@@ -20,7 +22,7 @@
 4) Starting point (priors) - 50.0 % chance of a difference (heads or tails).
 	==> Expected size r = 0.5; each shape of the noise starts at 25.0 %.
 	Note: these values are not tuned on the data; step 5 varies them.
-5) Solidity of the answer [m.bay() {KefiR}] - Bayes factor 0.354, the answer can
+5) Solidity of the answer [m.bay() {KefiR}] - Bayes factor 0.354, the order can
    reverse.
 	==> Bayes factor: 0.354, i.e. 2.82 in favour of no difference (close to
 	    1: the data hardly tell the two apart).
@@ -38,20 +40,25 @@
    hdi() {bayestestR}] - B - A = 0.4 [-0.9; 1.8].
 	==> Estimated gap B - A = 0.4 [-0.9; 1.8], i.e. 0.18 SD.
 	Note: [ ; ] = 95 % credible interval (95 % chance that the gap lies
-	      there); gap pulled a little towards 0.
+	      there).
+	Note: the gap is a little smaller than the observed one: the method is
+	      cautious with small samples.
 
-7) Bilan - No difference in y according to g: 73.9 % (not settled).
+7) Bilan - undecided (No difference in y according to g: 73.9 %).
 	==> Verdict: undecided.
 	==> 1. No difference in y according to g : 73.9 % (not settled)
 	==> 2. y differs according to g          : 26.1 %
 	Note: the data are 2.82 times more probable under hypothesis 1 than
 	      under 2 (Bayes factor 2.82).
+	Note: Bayes factor scale: 1 to 3 weak, 3 to 20 moderate, 20 to 150
+	      strong, beyond very strong (Kass and Raftery 1995).
 	--> Depending on the starting point: 48.0 % to 90.9 %; the order can
 	    reverse, not settled.
 	==> Estimated gap B - A: 0.4 [-0.9; 1.8] (step 6).
 	==> Observed means: A = 10.4; B = 11.0 (n = 20 per group).
-	Note: for a report: "No difference in y according to g: posterior
-	      probability 73.9 %, Bayes factor 2.82 (m.bay {KefiR}, comparison
-	      of noise laws, Rouder et al. 2012)."
+	==> Standard deviations: A = 2.6; B = 2.2.
+	Note: for a report: "The data do not settle it: probability of a
+	      difference 26.1 %, Bayes factor 2.82 in favour of no difference
+	      (m.bay {KefiR}, comparison of noise laws, Rouder et al. 2012)."
 	Note: probabilities of hypotheses, not p-values; method in detail:
 	      print(result, detail = TRUE).

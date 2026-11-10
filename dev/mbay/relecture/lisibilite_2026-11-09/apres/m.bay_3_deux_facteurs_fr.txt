@@ -40,6 +40,8 @@
 	==> 2. Aucune différence de y selon A, B : 1,0 %
 	Note : les données sont 49,7 fois plus probables sous l'hypothèse 1 que
 	       sous la 2 (facteur de Bayes 49,7).
+	Note : échelle du facteur de Bayes : 1 à 3 faible, 3 à 20 modéré, 20 à
+	       150 fort, au-delà très fort (Kass et Raftery 1995).
 	==> Selon le point de départ : 98,2 % à 99,5 % ; l'ordre ne change pas.
 	==> A (seul ou en interaction) : oui, soutien fort (98,8 % ; a priori
 	    50,0 % ; facteur de Bayes 82,4).
@@ -47,6 +49,8 @@
 	    facteur de Bayes 1,51).
 	==> A:B (les écarts selon A changent avec B) : non tranché (39,3 % ; a
 	    priori 16,7 % ; facteur de Bayes 3,24).
+	Note : A:B : les données augmentent ses chances (facteur de Bayes 3,24),
+	       mais il partait à 16,7 %, d'où 39,3 % seulement.
 	==> Moyennes observées, A : A1 = 9,8 ; A2 = 11,7 (n = 30).
 	==> Moyennes observées, B : B1 = 10,8 ; B2 = 10,2 ; B3 = 11,3 (n = 20).
 	==> Par case : A1 x B1 = 10,5 ; A2 x B1 = 11,1 ; A1 x B2 = 8,4 ;
@@ -56,7 +60,8 @@
 	Note : cela ne dit ni que la différence est importante, ni pourquoi : la
 	       cause dépend de la façon dont l'étude a été menée.
 	Note : pour un compte rendu : « y diffère selon au moins un facteur :
-	       probabilité a posteriori 99,0 %, facteur de Bayes 49,7 (m.bay
+	       probabilité a posteriori 99,0 %, facteur de Bayes 49,7 ; A oui
+	       (98,8 %), B non tranché (60,1 %), A:B non tranché (39,3 %) (m.bay
 	       {KefiR}, BayesFactor, Rouder et al. 2012). »
 	Note : probabilités d'hypothèses, pas des p-values ; méthode en détail :
 	       print(resultat, detail = TRUE).

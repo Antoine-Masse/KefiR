@@ -25,7 +25,7 @@
 	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
 	       fait varier.
 5) Solidité de la réponse [lmBF() {BayesFactor}] - facteur de Bayes 2270,
-   réponse stable.
+   l'ordre ne change pas.
 	==> Facteur de Bayes : 2270 (les données favorisent une différence).
 	==> Précision du calcul : < 0,1 point sur les probabilités, négligeable.
 	==> Sensibilité : la réponse en tête va de 99,9 % à > 99,9 %.
@@ -43,9 +43,11 @@
 	==> T2/T3 : différents à 94,6 % ; T3 - T2 = 1,2 [0,3 ; 1,9], soit 1,07
 	    écart-type résiduel au sein des sujets.
 	Note : [ ; ] = intervalle de crédibilité à 95 % (95 % de chances d'y
-	       trouver l'écart) ; écart un peu ramené vers 0.
-	Note : une seule loi pour toutes les paires : pas de correction, les
-	       réponses ne peuvent pas se contredire.
+	       trouver l'écart).
+	Note : l'écart est un peu plus petit que l'écart observé : la méthode
+	       est prudente avec les petits échantillons.
+	Note : toutes les paires sont jugées ensemble (pas de correction à la
+	       Tukey) : elles ne peuvent pas se contredire.
 
 7) Bilan - y diffère selon t : > 99,9 % (soutien très fort).
 	==> Verdict : une différence existe très probablement.
@@ -53,11 +55,15 @@
 	==> 2. Aucune différence de y selon t : < 0,1 %
 	Note : les données sont 2270 fois plus probables sous l'hypothèse 1 que
 	       sous la 2 (facteur de Bayes 2270).
+	Note : échelle du facteur de Bayes : 1 à 3 faible, 3 à 20 modéré, 20 à
+	       150 fort, au-delà très fort (Kass et Raftery 1995).
 	==> Selon le point de départ : 99,9 % à > 99,9 % ; l'ordre ne change
 	    pas.
 	==> Différents : T1/T2, T2/T3 (modéré) ; T1/T3 (très fort).
 	==> Si une différence existe, regroupement le plus probable :
 	    T1 < T2 < T3 (76,6 %).
+	Note : différents à partir de 75 % de probabilité, semblables jusqu'à
+	       25 %, sinon non tranchés.
 	Note : écarts chiffrés : étape 6.
 	==> Moyennes observées, t : T1 = 20,1 ; T2 = 21,2 ; T3 = 22,5 (n = 15).
 	Note : écart-type résiduel au sein des sujets : 1,05 ; loi normale à
