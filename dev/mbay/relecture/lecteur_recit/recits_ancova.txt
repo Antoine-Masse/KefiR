@@ -79,6 +79,7 @@
 7) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
 	Verdict : une différence existe très probablement. Cela ne dit ni qu'elle est importante, ni pourquoi ; les paires sont plus bas.
 	  score diffère selon methode, à même note : > 99,9 % (soutien très fort) ; Aucune différence de score selon methode : < 0,1 %.
+	     L'écart entre groupes dépend de note : il change de sens selon sa valeur, aucun groupe n'est donc devant partout (écarts plus bas).
 	     Repose sur le terme le plus probable : methode (oui > 99,9 %).
 	Réponse par terme (oui, non ou non tranché ; probabilité du oui compte tenu des données et du point de départ, et son a priori) :
 	  Différence de score selon methode à même note, seul ou en interaction ? Oui, soutien très fort (probabilité du oui > 99,9 %, a priori 50,0 %).
@@ -131,7 +132,7 @@
 	Réponse (oui, non ou non tranché ; probabilité du oui compte tenu des données et du point de départ, et son a priori) :
 	  Différence de poids selon regime, à même age ? Oui, soutien faible (probabilité du oui 90,4 %, a priori 50,0 %).
 	     Repose sur les données, qui multiplient ses cotes (rapport oui/non) par 9,41 (facteur de Bayes).
-	  Soutien plafonné à faible : les étendues de la covariable se recouvrent peu entre groupes, l'ajustement extrapole.
+	  Soutien plafonné à faible : les groupes se recouvrent peu sur la covariable (age moyen : R1 26,8, R2 41,9), groupe et covariable sont donc presque confondus et l'ajustement extrapole.
 	Taille de l'écart, s'il existe (écart estimé : médiane a posteriori, et intervalle de crédibilité à 95 % ; delta en écart-type résiduel (covariables prises en compte)) :
 	  R2 - R1 = 4,5 [0,62 ; 8,2], delta = 1,8 [0,22 ; 3,4].
 	  À lire avec réserve : ces écarts comparent les groupes là où certains ont peu ou pas de valeurs de la covariable.

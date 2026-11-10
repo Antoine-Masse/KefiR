@@ -220,6 +220,19 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	}
 	y <- input$response
 	.bay_tell(story, "Checks on the data.", "Contr\u00f4les des donn\u00e9es.", "step")
+	# Binary or categorical response (DECISIONS, D17, way 1): a contingency table with one factor.
+	cat_resp <- isTRUE(input$categorical) || (is.numeric(y) && length(unique(y)) == 2L &&
+		!isTRUE(diff(range(y)) <= 8 * .Machine$double.eps * max(abs(y))))
+	if (cat_resp) {
+		if (!identical(input$plan, "oneway")) {
+			.exit("Binary or categorical response with several factors, covariates or subjects: not handled by m.bay() yet (one factor only).",
+				"R\u00e9ponse binaire ou cat\u00e9gorielle avec plusieurs facteurs, des covariables ou des sujets : pas encore trait\u00e9e par m.bay() (un facteur seulement).")
+		}
+		yc <- if (is.factor(y)) y else factor(y)
+		if (nlevels(yc) < 2L) .exit("The response has a single category.", "La r\u00e9ponse n'a qu'une seule modalit\u00e9.")
+		return(.bay_m_contingency(input, input$factors[[1L]], yc, call_expr, function() notes, note, prior_h1, sensitivity,
+			draws, seed, detail, verbose, return, story, posthoc, !("laws" %in% names(call_expr)), laws))
+	}
 	if (any(is.infinite(y))) {
 		.exit("y contains infinite values.", "y contient des valeurs infinies.")
 	}
@@ -525,7 +538,9 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 	told <- isTRUE(story) && length(x$story$en) > 0L
 	if (told) .bay_story_replay(x$story)
-	if (x$plan %in% c("factorial", "paired", "repeated", "ancova")) {
+	if (identical(x$plan, "contingency")) {
+		.bay_print_bilan_cont(x, detail = detail, narrated = told)
+	} else if (x$plan %in% c("factorial", "paired", "repeated", "ancova")) {
 		.bay_print_bilan_fact(x, detail = detail, narrated = told)
 	} else {
 		.bay_print_bilan(x, detail = detail, narrated = told)

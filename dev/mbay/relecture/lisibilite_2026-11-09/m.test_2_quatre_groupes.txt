@@ -1,0 +1,62 @@
+1) Plus de deux groupes.
+2) ASSOMPTION 1/3 : Contrôle de l'indépendance - vérifiez que les observations entre les groupes sont indépendantes.
+	Vérifiez que :
+	  • Pas de mesures répétées
+	  • Pas d'effet cluster
+	  • Pas d'effets report [influence sur l'ordre des mesures]
+3) Détection outliers [identify_outliers() {rstatix}]
+	Résultat : 6.7% outliers EXTRÊMES (maximum dans un groupe)
+	==> Valeurs extrêmes peuvent fortement influencer tests paramétriques.
+4) Ajustement du modèle ANOVA [aov()].
+5) ASSOMPTION 2/3 : Contrôle ACADÉMIQUE de la normalité des résidus du modèle ANOVA.
+	Jarque-Bera [jb.norm.test() {normtest}]
+	==> Les résidus sont non-normaux (p-value : 0.012).
+	--> Les contrôles de la variance devront être plus exigeants (Levene au lieu de Bartlett).
+6) ASSOMPTION 3/3 : Contrôle ACADÉMIQUE de l'homogénéité de la variance des groupes.
+	Test de Levene [car::leveneTest()] - Variance homogène (homoscédasticité).
+	p-value : 0.92.
+	Note : Le test de Levene peut avoir été faussé par une asymétrie des données ou des outliers.
+	--> L'homogénéité de la variance invite à un contrôle plus tolérant de la normalité.
+7) Contrôle plus tolérant de la normalité en cas d'homoscédasticité :
+	Contrôle de la normalité des résidus avec tolérance si n>15.
+	==> Skewness <=2 et Kurtosis <=7.
+	==> Les résidus présentent une normalité acceptable.
+	--> Conservation de l'ANOVA classique (situation paramétrique).
+8) DIAGNOSTIC optionnel pour garantir la fiabilité de la lecture de l'ANOVA :
+	a) Outliers détectés sur les résidus :
+		==> 1 outliers (1.7%), 0 extrêmes (0%).
+	b) Diagnostic d'influence (distance de Cook) :
+		==> 1 observations influentes détectées.
+		(1.7% dépassent seuil 4/n = 0.0667).
+	c) Normalité diagnostique par groupe :
+		Contrôle de la normalité avec tolérance variable selon la taille des groupes.
+		Skewness/Kurtosis ≤1/4.5 (n≥20) ; ≤1.5/5 (n≥30) ; ≤2/6.5 (n≥50).
+		==> Au moins un des groupes présente une non-normalité trop extrême.
+	--> Recommandation : Tenir compte de ces diagnostics lors de l'interprétation.
+		Les outliers et points influents peuvent affecter la fiabilité de l'analyse.
+9) ANOVA à un facteur [aov()].
+	Résultat : p = 2.2e-05 (< alpha).
+	==> Différences de moyennes significatives entre groupes.
+10) Posthoc - Tests post-hoc sur groupes normaux.
+	a) Posthoc - Analyse des différences de moyennes par bootstrap [pairwise.boot() de {KefiR}].
+	b) Posthoc - Test de Student [pairwise.t.test(pool.sd=TRUE)].
+		Attention ! Le bootstrap détecte des faiblesses dans la signification des résultats.
+	c) Posthoc - Test conservateur de Scheffé [scheffe.test() of {agricolae}].
+	d) Posthoc - Test conservateur de Tukey [HSD.test() of {agricolae}].
+	e) Posthoc - Test puissant de Newman-Keuls [SNK.test() of {agricolae}].
+	f) Posthoc - Test puissant de Waller-Duncan [waller.test() of {agricolae}].
+
+m.test() - version 02 bêta 2026 - envoyer ce bilan à antoine.masse@u-bordeaux.fr en cas d'anomalie.
+
+Comparaisons post-hoc par paires :
+  categories Bootstrap (mean) Student_Holm Scheffe Tukey SNK Waller-Duncan
+1          a                a            a       b     b   b             b
+2          b                b            b       a     a   a             a
+3          c                a            a       b     b   b             b
+4          d                b            b       a     a   a             a
+=== Bootstrap === 
+ categories Student_Holm_bootstrapped
+ "a"        "a"                      
+ "b"        "ab"                     
+ "c"        "a"                      
+ "d"        "b"                      

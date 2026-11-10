@@ -395,6 +395,15 @@
 			h$label_en[2L], ": ", .bay_pct(h$posterior[2L], "."), "."),
 		paste0("  ", h$label_fr[1L], " : ", .bay_pct(h$posterior[1L], ","), " (", sup$fr, ") ; ",
 			h$label_fr[2L], " : ", .bay_pct(h$posterior[2L], ","), "."))
+	ph_s <- obj$posthoc
+	if (identical(ph_s$method, "slopes")) {
+		# Slopes that differ: "differs according to g" must not read as "one group is ahead"
+		# (relecture D15-D16 du lecteur debutant, point 1).
+		gp <- ph_s$gaps
+		flips <- any(gp$diff_high < 0) && any(gp$diff_low > 0)
+		say(paste0("     The gap between groups depends on ", ph_s$xname, if (flips) ": it changes sign along it, so no group is ahead everywhere (gaps below)." else ": its size changes along it (gaps below)."),
+			paste0("     L'\u00e9cart entre groupes d\u00e9pend de ", ph_s$xname, if (flips) " : il change de sens selon sa valeur, aucun groupe n'est donc devant partout (\u00e9carts plus bas)." else " : son ampleur change selon sa valeur (\u00e9carts plus bas)."))
+	}
 	e <- obj$effects
 	single <- nrow(e) == 1L
 	top <- which.max(e$p_h1)
@@ -456,6 +465,11 @@
 						") leans the other way: not settled."),
 					paste0("     Les donn\u00e9es penchent vers le ", if (up) "oui" else "non", " (cotes ", if (up) "multipli\u00e9es" else "divis\u00e9es", " par ", bf_fr, ") ; l'a priori (", .bay_pct(e$prior_h1[i], ","),
 						") penche de l'autre c\u00f4t\u00e9 : non tranch\u00e9."))
+			} else if (abs(e$log_bf[i]) < log(3) && abs(e$prior_h1[i] - 0.5) < 1e-9) {
+				# A neutral prior makes nothing lean: the small lean comes from the data (relecture
+				# D15-D16 du lecteur debutant, point 2).
+				say(paste0("     The data make it lean only slightly towards ", w_en, " (odds ", if (up) "multiplied" else "divided", " by ", bf_en, ", from a starting point of 50 %): too little to settle it."),
+					paste0("     Les donn\u00e9es ne le font pencher que de peu vers le ", w_fr, " (cotes ", if (up) "multipli\u00e9es" else "divis\u00e9es", " par ", bf_fr, ", depuis un point de d\u00e9part \u00e0 50 %) : trop peu pour trancher."))
 			} else if (open && abs(e$log_bf[i]) < log(3)) {
 				say(paste0("     The data hardly move its odds (", v_en, " by ", bf_en, "); only the prior (", .bay_pct(e$prior_h1[i], "."), ") makes it lean towards ", w_en, "."),
 					paste0("     Les donn\u00e9es d\u00e9placent peu ses cotes (", v_fr, " par ", bf_fr, ") ; seul l'a priori (", .bay_pct(e$prior_h1[i], ","), ") le fait pencher vers le ", w_fr, "."))
@@ -484,8 +498,13 @@
 			"  Sensibilit\u00e9 aux a priori non calcul\u00e9e (sensitivity = FALSE).")
 	}
 
-	if (poor) say("  Support capped at weak: the covariate ranges of the groups hardly overlap, the adjustment extrapolates.",
-		"  Soutien plafonn\u00e9 \u00e0 faible : les \u00e9tendues de la covariable se recouvrent peu entre groupes, l'ajustement extrapole.")
+	if (poor) {
+		cg <- obj$cov_by_group
+		cg_en <- if (!is.null(cg)) paste0(" (mean ", colnames(cg)[1L], ": ", paste0(rownames(cg), " ", format(signif(cg[, 1L], 3), trim = TRUE), collapse = ", "), ")") else ""
+		cg_fr <- if (!is.null(cg)) paste0(" (", colnames(cg)[1L], " moyen : ", paste0(rownames(cg), " ", gsub(".", ",", format(signif(cg[, 1L], 3), trim = TRUE), fixed = TRUE), collapse = ", "), ")") else ""
+		say(paste0("  Support capped at weak: the groups hardly overlap on the covariate", cg_en, ", so group and covariate are nearly confounded and the adjustment extrapolates."),
+			paste0("  Soutien plafonn\u00e9 \u00e0 faible : les groupes se recouvrent peu sur la covariable", cg_fr, ", groupe et covariable sont donc presque confondus et l'ajustement extrapole."))
+	}
 	if (!is.null(obj$posthoc)) .bay_print_posthoc(obj$posthoc, say)
 	m <- obj$descriptive_stats
 	dg <- max(0L, 2L - floor(log10(max(abs(m$mean), 1e-300))))

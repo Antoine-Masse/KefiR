@@ -1,0 +1,71 @@
+1) Type de modèle détecté : ANOVA (facteurs catégoriques uniquement).
+2) ASSOMPTION DE BASE : Indépendance des observations (vérification de plan).
+	C'est une assomption de PLAN qui ne peut pas être testée statistiquement.
+	Vérifiez que :
+	  • Pas de mesures répétées (chaque observation d'un sujet différent)
+	  • Pas d'effets cluster (observations non groupées/emboîtées)
+	  • Pas d'effets report (ordre des mesures n'influence pas les résultats)
+3) Ajustement du modèle ANOVA [aov()].
+4) DIAGNOSTIC : Influence sur les résidus du modèle [cooks.distance() {stats}]
+	• Distance de Cook : mesure combinée (leverage × résidu²)
+	    Seuil : 4/n = 0.067 (critique si > 1)
+	    ==> 3.3% observations influençant le modèle (max = 0.218).
+	• DFBETAS [dfbetas()] : 25% affectant coefficients individuels (seuil : 2/√n).
+	--> Interpréter le modèle avec précaution.
+5) ASSOMPTION 2/3 : Contrôle de la normalité des résidus du modèle ANOVA.
+	Jarque-Bera [jb.norm.test() {normtest}]
+	==> Les résidus sont non-normaux (p-value : 0.023).
+	--> Les contrôles de la variance devront être plus exigeants (Levene au lieu de Bartlett).
+6) ASSOMPTION 3/3 : Contrôle ACADÉMIQUE de l'homogénéité de la variance des groupes.
+	Test de Levene [car::leveneTest()] - Variance homogène (homoscédasticité).
+	p-value : 0.96.
+	Note : Le test de Levene peut avoir été faussé par une asymétrie des données ou des outliers.
+	--> L'homogénéité de la variance invite à un contrôle plus tolérant de la normalité.
+7) Les variances sont homogènes malgré la non-normalité.
+	Skewness = 0.791, Kurtosis = 1.075
+	Non-normalité modérée (|Skewness| < 2 et |Kurtosis| < 7)
+	==> L'ANOVA reste valide.
+	--> Poursuite de l'approche paramétrique ANOVA
+8) ANOVA Sommes de Carrés Type I [anova() {stats}]
+	Raison : Plan ANOVA 2-way équilibré: Sommes des Carrés Type I (indépendant de l'ordre pour plans équilibrés)
+
+Analysis of Variance Table
+
+Response: y
+          Df  Sum Sq Mean Sq F value    Pr(>F)    
+A          1  51.661  51.661 16.2988 0.0001719 ***
+B          2  12.949   6.475  2.0427 0.1395763    
+A:B        2  22.008  11.004  3.4718 0.0381567 *  
+Residuals 54 171.159   3.170                      
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+	Effet(s) significatif(s) détecté(s) (α = 0.05) : A, A:B
+
+9) Posthoc - Tests post-hoc sur groupes normaux.
+	a) Posthoc - Analyse des différences de moyennes par bootstrap [pairwise.boot() de {KefiR}].
+	b) Posthoc - Test de Student [pairwise.t.test(pool.sd=TRUE)].
+		Attention ! Le bootstrap détecte des faiblesses dans la signification des résultats.
+	c) Posthoc - Test conservateur de Scheffé [scheffe.test() of {agricolae}].
+	d) Posthoc - Test conservateur de Tukey [HSD.test() of {agricolae}].
+	e) Posthoc - Test puissant de Newman-Keuls [SNK.test() of {agricolae}].
+	f) Posthoc - Test puissant de Waller-Duncan [waller.test() of {agricolae}].
+
+m.test() - version 02 bêta 2026 - envoyer ce bilan à antoine.masse@u-bordeaux.fr en cas d'anomalie.
+
+Comparaisons post-hoc par paires :
+  categories Bootstrap (mean) Student_Holm Scheffe Tukey SNK Waller-Duncan
+1      A1.B1                b           ab      ab    ab   a             a
+2      A2.B1               bc            b      ab     a   a             a
+3      A1.B2                a            a       b     b   b             b
+4      A2.B2               bc            b       a     a   a             a
+5      A1.B3                b           ab      ab    ab   a             a
+6      A2.B3                c            b       a     a   a             a
+=== Bootstrap === 
+ categories Student_Holm_bootstrapped
+ "A1.B1"    "ab"                     
+ "A2.B1"    "ab"                     
+ "A1.B2"    "a"                      
+ "A2.B2"    "b"                      
+ "A1.B3"    "ab"                     
+ "A2.B3"    "b"                      

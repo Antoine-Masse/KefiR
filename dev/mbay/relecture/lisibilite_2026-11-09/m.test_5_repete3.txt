@@ -1,0 +1,69 @@
+1) Type de modèle détecté : ANOVA (facteurs catégoriques uniquement).
+2) Effets aléatoires détectés dans la formule (terme Error) : y ~ t + Error(id)
+3) Plan apparié / mesures répétées détecté. Réalisation de contrôles spécifiques...
+	Facteur(s) intra-sujet auto-détecté(s) : t
+4) Vérification de la structure du plan à mesures répétées (équilibrage et unicité)...
+	Structure ATTENDUE du plan (vérification des réplicats) :
+	• Nombre de sujets : 15
+	• Conditions par sujet : 3 (toutes combinaisons facteurs intra-sujet)
+	• Total observations : 45
+	Structure du plan ÉQUILIBRÉE :
+	==> Les 15 sujets ont exactement 3 observations (une par condition).
+	--> Vers une ANOVA à mesures répétées.
+5) ASSOMPTION DE BASE : Indépendance des observations (contexte mesures répétées).
+	C'est une assomption de PLAN qui ne peut pas être testée statistiquement.
+	Vérifiez que :
+	  • Mesures répétées sur les mêmes sujets (attendu)
+	  • Pas de cluster supplémentaire au-delà du sujet
+	  • Effets d'ordre/report contrôlés
+	  • Pas d'abandon systématique
+6) ASSOMPTION 1/3 : Indépendance des observations (contexte mesures répétées).
+	C'est une assomption de PLAN qui ne peut pas être testée statistiquement.
+	Dans le contexte de mesures répétées, vérifiez que :
+	  • Mesures répétées SUR MÊMES SUJETS (normal pour plan intra-sujet)
+	  • Pas d'effets cluster supplémentaires (observations non emboîtées davantage)
+	  • Pas d'effets report/contamination (ordre mesures contrôlé/randomisé)
+	  • Période de sevrage suffisante (si applicable)
+	  • Pas d'abandon créant des patterns systématiques de données manquantes
+7) Ajustement du modèle ANOVA avec effets aléatoires / mesures répétées [aov() avec terme Error].
+8) ASSOMPTION 2/3 : Contrôle de la normalité des résidus du modèle ANOVA.
+	    Note : mesures répétées avec k >= 3 niveaux
+	==> la normalité est testée sur les résidus du modèle (pas les différences par paires).
+	Shapiro-Wilk [shapiro.test()]
+	==> Les résidus sont non-normaux (p-value : 0.0029).
+	--> Les contrôles de la variance devront être plus exigeants (Levene au lieu de Bartlett).
+9) ASSOMPTION 3/3 : Test de sphéricité (Test de Mauchly) [anova_test() {rstatix}].
+	Note : Les variances des différences entre toutes les paires de niveaux intra-sujets doivent être égales.
+	==> Hypothèse de sphéricité RESPECTÉE (test de Mauchly p = 0.63).
+	--> Aucune correction nécessaire. Les degrés de liberté standard du test F s'appliquent.
+	Note : Test d'homogénéité des variances (Levene) non effectué pour un plan intra-sujets pur.
+	La sphéricité (test de Mauchly) contrôle déjà l'homogénéité des variances des différences.
+10) Évaluation de la sévérité de la non-normalité :
+	Skewness = 0.019, Kurtosis = 3.009
+	Non-normalité modérée (|Skewness| < 2 et |Kurtosis| < 7)
+	==> L'ANOVA reste valide malgré la non-normalité.
+	--> Poursuite de l'approche paramétrique ANOVA
+11) Résultats de l'ANOVA avec terme Error (mesures répétées / effets aléatoires) :
+	Note : Le terme Error() contrôle la structure des mesures répétées.
+        Chaque strate représente une décomposition de la variance :
+            • 'Error: id' → Variance inter-sujets (différences individuelles)
+            • 'Error: Within' → Variance intra-sujets (effet du facteur répété)
+        Le test F dans la strate 'Within' teste si le facteur répété a un effet significatif.
+	==> Effet significatif de t (p=6.6e-06).
+12) Posthoc - Tests post-hoc sur groupes normaux appariés.
+	a) Posthoc - Analyse des différences de moyennes par bootstrap [pairwise.boot() de {KefiR}].
+	b) Posthoc - Test de Student [pairwise.t.test(paired=TRUE)].
+		Attention ! Le bootstrap détecte des faiblesses dans la signification des résultats.
+
+m.test() - version 02 bêta 2026 - envoyer ce bilan à antoine.masse@u-bordeaux.fr en cas d'anomalie.
+
+Comparaisons post-hoc par paires :
+  categories Bootstrap (mean) Student_Holm
+1         T1                a            a
+2         T2                b            b
+3         T3                b            c
+=== Bootstrap === 
+ categories Student_Holm_bootstrapped
+ "T1"       "a"                      
+ "T2"       "a"                      
+ "T3"       "a"                      

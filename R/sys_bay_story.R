@@ -138,7 +138,12 @@
 				paste(levels(f), collapse = ", "), "); N = ", N, "."),
 			paste0("Plan reconnu : un facteur, ", nm[1L], ", \u00e0 ", nlevels(f), " groupes (",
 				paste(levels(f), collapse = ", "), ") ; N = ", N, "."), "step")
-		.bay_tell(st, paste0("One question: is there a difference in ", input$response_name, " according to ", nm[1L],
+		yv <- input$response
+		if (isTRUE(input$categorical) || (is.numeric(yv) && length(unique(yv)) == 2L)) {
+			cats <- if (is.factor(yv)) levels(yv) else sort(unique(yv))
+			.bay_tell(st, paste0("Categorical response (", length(cats), " categories: ", paste(cats, collapse = ", "), "). One question: do the proportions differ according to ", nm[1L], "? Counterpart of the chi-squared test."),
+				paste0("R\u00e9ponse cat\u00e9gorielle (", length(cats), " modalit\u00e9s : ", paste(cats, collapse = ", "), "). Une seule question : les proportions diff\u00e8rent-elles selon ", nm[1L], " ? Pendant du test du khi-deux."), "decide")
+		} else .bay_tell(st, paste0("One question: is there a difference in ", input$response_name, " according to ", nm[1L],
 				"? No preliminary test chooses the method: the shapes of the noise will be compared, not chosen."),
 			paste0("Une seule question : y a-t-il une diff\u00e9rence de ", input$response_name, " selon ", nm[1L],
 				" ? Aucun test pr\u00e9alable ne choisit la m\u00e9thode : les formes du bruit seront compar\u00e9es, pas choisies."), "decide")
@@ -243,7 +248,11 @@
 # Step 6, one factor: which groups differ, and by how much.
 .bay_story_posthoc <- function(st, ph, caution = FALSE, subjects = FALSE) {
 	if (is.null(st) || is.null(ph)) return(invisible(NULL))
-	if (identical(ph$method, "paired")) {
+	if (isTRUE(ph$delta_unit %in% c("logor", "tvd"))) {
+		.bay_tell(st, "Which groups differ, and by how much.", "Quels groupes diff\u00e8rent, et de combien.", "step",
+			fun = c("Dirichlet-multinomial groupings {KefiR}, Dirichlet posterior, hdi() {bayestestR}",
+				"regroupements par Dirichlet-multinomiale {KefiR}, loi a posteriori de Dirichlet, hdi() {bayestestR}"))
+	} else if (identical(ph$method, "paired")) {
 		.bay_tell(st, "By how much the two levels differ.", "De combien les deux niveaux diff\u00e8rent.", "step",
 			fun = "posterior(ttestBF()) {BayesFactor}, hdi() {bayestestR}")
 	} else if (subjects) {
@@ -283,15 +292,20 @@
 		lead_en <- if (ph$k > 2L) paste0(pr$group1[i], " and ", pr$group2[i], ": different at ", .bay_pct(pr$p_differ[i], "."), "; estimated gap ") else "Estimated gap "
 		lead_fr <- if (ph$k > 2L) paste0(pr$group1[i], " et ", pr$group2[i], " : diff\u00e9rents \u00e0 ", .bay_pct(pr$p_differ[i], ","), " ; \u00e9cart estim\u00e9 ") else "\u00c9cart estim\u00e9 "
 		.bay_tell(st, paste0(lead_en, pr$group2[i], " - ", pr$group1[i], " = ", ci_txt(pr$diff[i], pr$diff_low[i], pr$diff_high[i], "."),
-				", i.e. ", ci_txt(pr$delta[i], pr$delta_low[i], pr$delta_high[i], "."), " ", unit$en, "."),
+				if (is.na(pr$delta[i])) "" else paste0(", i.e. ", ci_txt(pr$delta[i], pr$delta_low[i], pr$delta_high[i], "."), " ", unit$en), "."),
 			paste0(lead_fr, pr$group2[i], " - ", pr$group1[i], " = ", ci_txt(pr$diff[i], pr$diff_low[i], pr$diff_high[i], ","),
-				", soit ", ci_txt(pr$delta[i], pr$delta_low[i], pr$delta_high[i], ","), " ", unit$fr, "."))
+				if (is.na(pr$delta[i])) "" else paste0(", soit ", ci_txt(pr$delta[i], pr$delta_low[i], pr$delta_high[i], ","), " ", unit$fr), "."))
 	}
 	if (length(shown) < nrow(pr)) {
 		.bay_tell(st, paste0("The other ", nrow(pr) - length(shown), " pairs lean towards alike (different below 50 %); all pairs: $posthoc$pairs."),
 			paste0("Les ", nrow(pr) - length(shown), " autres paires penchent vers semblables (diff\u00e9rentes \u00e0 moins de 50 %) ; toutes les paires : $posthoc$pairs."), "info")
 	}
-	if (identical(ph$delta_unit %in% c("within", "adjusted", "diff"), TRUE)) {
+	if (isTRUE(ph$delta_unit %in% c("logor", "tvd"))) {
+		.bay_tell(st, paste0(if (ph$delta_unit == "logor") paste0("Estimated gap: difference of the proportions of ", ph$category, " (posterior median), then the log odds ratio") else "Estimated gap: total gap of the proportions over the categories (half the sum of the gaps, from 0 to 1; posterior median)",
+				". Brackets: 95 % credible interval (the value lies there with 95 % probability; not a confidence interval)."),
+			paste0(if (ph$delta_unit == "logor") paste0("\u00c9cart estim\u00e9 : diff\u00e9rence des proportions de ", ph$category, " (m\u00e9diane a posteriori), puis le log du rapport de cotes") else "\u00c9cart estim\u00e9 : \u00e9cart total des proportions sur les modalit\u00e9s (moiti\u00e9 de la somme des \u00e9carts, de 0 \u00e0 1 ; m\u00e9diane a posteriori)",
+				". Crochets : intervalle de cr\u00e9dibilit\u00e9 \u00e0 95 % (la valeur s'y trouve avec 95 % de probabilit\u00e9 ; ce n'est pas un intervalle de confiance)."), "info")
+	} else if (identical(ph$delta_unit %in% c("within", "adjusted", "diff"), TRUE)) {
 		.bay_tell(st, "Estimated gap: posterior median, pulled slightly towards zero by the prior. Brackets: 95 % credible interval, if a difference exists (the value lies there with 95 % probability; not a confidence interval).",
 			"\u00c9cart estim\u00e9 : m\u00e9diane a posteriori, l\u00e9g\u00e8rement ramen\u00e9e vers z\u00e9ro par l'a priori. Crochets : intervalle de cr\u00e9dibilit\u00e9 \u00e0 95 %, si une diff\u00e9rence existe (la valeur s'y trouve avec 95 % de probabilit\u00e9 ; ce n'est pas un intervalle de confiance).", "info")
 	} else .bay_tell(st, "Estimated gap: posterior median, pulled slightly towards zero by the prior, hence a little smaller than the observed gap of step 7. Brackets: 95 % credible interval, if a difference exists (the value lies there with 95 % probability; not a confidence interval).",
@@ -325,6 +339,8 @@
 	switch(if (is.null(ph$delta_unit)) "pooled" else ph$delta_unit,
 		within = list(en = "residual SD within subject", fr = "\u00e9cart-type r\u00e9siduel au sein des sujets"),
 		adjusted = list(en = "residual SD (covariates accounted for)", fr = "\u00e9cart-type r\u00e9siduel (covariables prises en compte)"),
+		logor = list(en = "in log odds ratio", fr = "en log du rapport de cotes"),
+		tvd = list(en = "", fr = ""),
 		diff = list(en = "SD of the differences (dz)", fr = "\u00e9cart-type des diff\u00e9rences (dz)"),
 		list(en = "SD", fr = "\u00e9cart-type"))
 }

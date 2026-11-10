@@ -1,5 +1,22 @@
 # Journal de m.bay
 
+## Séance 9 : 9 novembre 2026, réponse binaire ou catégorielle (D17, voie 1), relecture débutant
+
+**Fait.**
+- Tableau de contingence à un facteur (`R/sys_bay_contingency.R`) :
+  - `contingencyTableBF`, dont l'a priori a été retrouvé et testé ;
+  - sensibilité sur a = 1, 2, 4 ;
+  - post-hoc par regroupements, en forme close ;
+  - tailles d'effet : différence de proportions et log du rapport de cotes, ou écart total des proportions.
+- La réponse peut être un facteur, du texte ou TRUE/FALSE.
+- Relecture par un lecteur débutant des récits D15 et D16 (`relecture/lecteur_recit/RELECTURE_D15_D16.md`). Trois erreurs de sens sont corrigées :
+  - « seul l'a priori le fait pencher » quand l'a priori est à 50 % ;
+  - le cas H, où le groupe en tête change selon la covariable : la conclusion le dit ;
+  - le cas I, où la confusion entre groupe et covariable est nommée avec les moyennes.
+- Les autres remarques (jargon, échelle des qualificatifs, phrase modèle pour le compte rendu) attendent le rapport de l'auditeur de mise en forme, comme demandé par la session parente.
+
+**Vérifié.** `test-bay-contingency.R` (6 tests) ; calibration `agent_59` (VALIDATION §12).
+
 ## Séance 8 : 9 novembre 2026, analyse de covariance (D16)
 
 **Cadre.** Plan suivant du PERIMETRE. La session parente a validé le schéma et ajouté trois points : changer de stratégie quand les pentes diffèrent, centrer la covariable et dire son a priori, signaler le recouvrement. Contrôle demandé : `car::Anova` type II et `emmeans`.

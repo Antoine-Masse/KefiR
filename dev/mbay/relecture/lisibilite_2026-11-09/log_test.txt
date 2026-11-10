@@ -1,0 +1,6 @@
+1_deux_groupes fait en 0 s
+2_quatre_groupes fait en 7 s
+3_deux_facteurs fait en 1 s
+4_apparie fait en 4 s
+5_repete3 fait en 1 s
+6_ancova fait en 0 s

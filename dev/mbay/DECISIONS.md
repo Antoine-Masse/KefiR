@@ -367,3 +367,16 @@ Demandé par la session parente dans l'ordre du PERIMETRE, avec trois points de 
 5. **A priori des coefficients** des voies 3 et 4 : à décider après lecture (Gelman et al. 2008 ; [Bayarri2012] pour la cohérence avec BAS), puis à vérifier par la calibration sous H0.
 
 **Ordre de travail.** 1, puis 2, puis 3 ; 4 en dernier.
+
+**Voie 1 FAITE le 9 novembre** (`R/sys_bay_contingency.R`).
+- **Calcul**
+  - Réponse acceptée : facteur, texte, TRUE/FALSE ou 0/1, avec un seul facteur.
+  - BF : `contingencyTableBF(sampleType = "indepMulti", fixedMargin = "rows", priorConcentration = 1)`.
+  - Son a priori, retrouvé et testé à 1e-6 : Dirichlet(a) par groupe sous H1, Dirichlet(R(a−1)+1) commun sous H0. Il n'est donc défini que pour a ≥ 1.
+  - Sensibilité : a = 1, 2, 4, croisé avec les chances de départ 1 contre 2 à 2 contre 1.
+- **Post-hoc**
+  - Regroupements de D11. Le BF d'un regroupement est calculé en forme close (rapport de Dirichlet-multinomiales) ; à a = 1, il égale `contingencyTableBF` du tableau fusionné.
+  - Taille d'effet, à partir des lois a posteriori de Dirichlet : à 2 modalités, différence de proportions et log du rapport de cotes ; au-delà, écart total des proportions (de 0 à 1).
+- **Récit et refus**
+  - Le récit dit que le calcul est exact, sans effectif minimum, contrairement au khi-deux.
+  - Une réponse binaire avec plusieurs facteurs, covariables ou sujets est refusée en attendant la voie 2.

@@ -1,0 +1,47 @@
+1) Plan reconnu : mesures répétées sur 15 sujets, t (3 niveaux, intra-sujet) ; N = 45.
+	--> Une seule question : y a-t-il une différence de y selon t, chaque sujet comparé à lui-même ?
+2) Contrôles des données.
+	==> Sujets : 15 ; mesurés dans toutes les conditions intra-sujet : 15.
+	Les valeurs éloignées sont cherchées une fois retiré le niveau propre de chaque sujet.
+	==> Effectifs : 15 par condition (3 conditions, N = 45).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur condition : 2 sur 45 au-delà de 1,5 écart interquartile, 0 au-delà de 3. [Tukey, quantile() {stats}]
+	--> Aucune valeur n'est retirée.
+3) Forme du bruit.
+	==> Mesures répétées : chaque sujet garde son niveau propre (effet sujet aléatoire, présent dans tous les modèles comparés, « aucune différence » compris).
+	==> Un effet sujet aléatoire suppose que toutes les conditions sont également corrélées au sein d'un sujet (symétrie composée) ; ce n'est pas testé ici (m.test() contrôle la sphéricité par le test de Mauchly).
+	==> Seule la loi normale est calculée : queues lourdes et variances inégales entre conditions ne sont pas encore validées avec des sujets, elles ne sont donc pas comparées.
+	--> Aucune valeur n'est assez éloignée pour mettre d'emblée la loi normale en doute ; elle n'est pas mise à l'épreuve des autres.
+4) Point de départ (a priori), fixé par la méthode avant de voir les données.
+	==> 50 % de chances qu'une différence existe (pile ou face : la méthode ne prend pas parti) ; taille attendue r = 0,5 par terme (Zellner-Siow).
+	--> Sujets : effet aléatoire d'échelle 1 (Rouder et al. 2012), dans chaque modèle ; chaque réponse se lit contre le modèle avec les sujets seuls.
+	--> Ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les fait varier pour voir si la réponse tient.
+5) Facteurs de Bayes des 2 modèles. [lmBF(whichRandom = id) {BayesFactor}]
+	==> Facteur de Bayes, différence contre absence : 2270.
+	==> Précision : recalculées avec une autre graine, les probabilités bougent d'au plus 0,00045 point(s) de pourcentage, négligeable.
+	==> Sensibilité : r de 0,25 à 1, croisé avec des chances de départ d'une différence de 1 contre 2 à 2 contre 1. [m.bay() {KefiR}]
+	--> Aucun terme ne change de côté.
+6) Quelles conditions diffèrent, et de combien. [lmBF(whichRandom = id), posterior() {BayesFactor}, hdi() {bayestestR}]
+	==> Regroupements les plus probables (5 comparés) : T1 < T2 < T3 (76,5 %) ; T1 = T2 < T3 (18,1 %) ; T1 < T2 = T3 (5,3 %).
+	==> T1 et T2 : différents à 81,8 % ; écart estimé T2 - T1 = 0,97 [0,2 ; 1,8], soit 0,88 [0,14 ; 1,6] écart-type résiduel au sein des sujets.
+	==> T1 et T3 : différents à 99,9 % ; écart estimé T3 - T1 = 2,2 [1,3 ; 3], soit 2 [0,92 ; 2,9] écart-type résiduel au sein des sujets.
+	==> T2 et T3 : différents à 94,6 % ; écart estimé T3 - T2 = 1,2 [0,33 ; 1,9], soit 1,1 [0,24 ; 1,8] écart-type résiduel au sein des sujets.
+	Écart estimé : médiane a posteriori, légèrement ramenée vers zéro par l'a priori. Crochets : intervalle de crédibilité à 95 %, si une différence existe (la valeur s'y trouve avec 95 % de probabilité ; ce n'est pas un intervalle de confiance).
+	--> Toutes les paires viennent d'une seule loi sur les regroupements : aucune correction paire par paire n'est nécessaire, et les réponses ne peuvent pas se contredire.
+7) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
+	Verdict : une différence existe très probablement. Cela ne dit ni qu'elle est importante, ni pourquoi ; les paires sont plus bas.
+	  y diffère selon t : > 99,9 % (soutien très fort) ; Aucune différence de y selon t : < 0,1 %.
+	Réponse (oui, non ou non tranché ; probabilité du oui compte tenu des données et du point de départ, et son a priori) :
+	  Différence de y selon t ? Oui, soutien très fort (probabilité du oui > 99,9 %, a priori 50,0 %).
+	     Repose sur les données, qui multiplient ses cotes (rapport oui/non) par 2270 (facteur de Bayes).
+	  La réponse ne change pas de côté quand r ou les chances de départ changent.
+	Quelles conditions diffèrent (loi normale, effet sujet aléatoire ; probabilité, puis écart estimé et intervalle de crédibilité à 95 %) :
+	  T1 / T2 : différents, soutien modéré (différents à 81,8 %) ; écart estimé T2 - T1 = 0,97 [0,2 ; 1,8], delta = 0,88 [0,14 ; 1,6].
+	  T1 / T3 : différents, soutien très fort (différents à 99,9 %) ; écart estimé T3 - T1 = 2,2 [1,3 ; 3], delta = 2 [0,92 ; 2,9].
+	  T2 / T3 : différents, soutien modéré (différents à 94,6 %) ; écart estimé T3 - T2 = 1,2 [0,33 ; 1,9], delta = 1,1 [0,24 ; 1,8].
+	  Regroupement le plus probable : T1 < T2 < T3 (76,5 %).
+	Moyennes observées par facteur (description de l'échantillon) :
+	  t : T1 = 20,1 (n = 15) ; T2 = 21,2 (n = 15) ; T3 = 22,5 (n = 15)
+	  Écart-type résiduel au sein des sujets (niveau propre de chaque sujet retiré) : 1,1.
+	Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend de la façon dont l'étude a été menée (tirage au sort, ordre, opérateur).
+	Facteurs de Bayes, a priori en détail, mode de lecture : print(resultat, detail = TRUE).

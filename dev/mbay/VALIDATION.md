@@ -658,3 +658,36 @@ Il l'a comparée à `car::Anova` type II et à `emmeans`. Scripts et sortie : `r
 - avec des pentes différentes, les écarts aux quartiles concordent avec `emmeans(at = )` à 0,15 près, et la zone est trouvée ;
 - un faible recouvrement donne une prudence ajoutée et un soutien plafonné ;
 - la covariable seule et l'ANCOVA appariée sont refusées.
+
+## 12. Réponse binaire ou catégorielle à un facteur (D17, voie 1), 9 novembre
+
+### Concordance avec BayesFactor
+
+Dans `test-bay-contingency.R` :
+- **Forme close et package.** La forme close de `.bay_cont_lbf` égale `contingencyTableBF` à 1e-6 sur 4 tableaux (2×2 à 4×3), pour a = 1, 2 et 3.
+  - L'a priori de la fonction a été retrouvé : Dirichlet(R(a−1)+1) sous H0. Il explique pourquoi elle refuse a < 1.
+- **Regroupements.** Les probabilités de paires à k = 3 sont recalculées à la main, chaque regroupement passant par `contingencyTableBF` sur le tableau fusionné.
+- **Formats de la réponse.** 0/1, facteur, texte et TRUE/FALSE donnent le même BF.
+- **Tailles d'effet, à n = 2 000 par groupe.**
+  - Différence de proportions : à 0,005 de l'observé.
+  - Log du rapport de cotes : à 0,02 de `glm` binomial.
+
+### Calibration (`agent_59`, N = 500 jeux par scénario)
+
+Comparaison avec le khi-deux, en p simulé quand un effectif attendu est inférieur à 5. Résultats : `scripts/resultats/agent_59.txt`.
+
+| Scénario | « Différence » P>0,5 / P>0,75 / P>0,95 | Khi-deux p<0,05 | Couverture de la différence de proportions |
+|---|---|---:|---:|
+| k=2, n=20, H0 (p = 0,3) | 0,114 / 0,024 / 0 | 0,044 | 0,952 |
+| k=2, n=50, H0 (p = 0,5) | 0,074 / 0,016 / 0,002 | 0,042 | 0,960 |
+| k=3, n=30, H0 (p = 0,2) | 0,052 / 0,014 / 0,002 | 0,058 | 0,946 |
+| k=2, n=10, H0 (p = 0,2) | 0,166 / 0,026 / 0 | 0,004 | 0,966 |
+| k=2, n=40, 0,3 contre 0,5 | 0,494 / 0,300 / 0,106 | 0,378 | 0,966 |
+| k=3, n=30, un groupe à 0,8 | 0,776 / 0,610 / 0,370 | 0,700 | 0,945 |
+
+**Lecture.**
+- Sous H0, une différence est annoncée au-delà de « faible » dans 1,4 à 2,6 % des jeux, et au-delà de 0,95 dans 0,2 % au plus.
+- Avec un écart, la méthode est un peu plus prudente que le khi-deux : 30 à 61 % au-delà de 0,75, contre 38 à 70 %.
+- Les intervalles couvrent la vraie valeur dans 95 à 97 % des cas.
+- À n = 10, le khi-deux simulé ne rejette presque jamais. m.bay dépasse 0,5 dans 17 % des jeux, mais jamais 0,95, et le bilan dit alors « non tranché ».
+

@@ -1,0 +1,22 @@
+1) Deux groupes.
+2) ASSOMPTION 1/3 : Contrôle de l'indépendance - vérifiez que les observations entre les groupes sont indépendantes.
+	Vérifiez que :
+	  • Pas de mesures répétées
+	  • Pas d'effet cluster
+	  • Pas d'effets report [influence sur l'ordre des mesures]
+3) Contrôle de normalité - Sélection du test selon la taille des groupes.
+	Shapiro-Wilk (<=50), Jarque-Bera (<=500), ou skewness/kurtosis (>500).
+	Test utilisé : shapiro.test
+	Note : les p-value sont comparées à un alpha corrigé (Sidak) de 0.025.
+	==> Tous les groupes sont normaux. (p-value min : 0.29)
+4) Test de Fisher-Snedecor [var.test()] - Variances homogènes (p = 0.47).
+5) Test de Student [t.test()] - Différences non significatives entre les groupes. p-value : 0.46
+
+m.test() - version 02 bêta 2026 - envoyer ce bilan à antoine.masse@u-bordeaux.fr en cas d'anomalie.
+  categories Bootstrap (mean) Student_Holm
+1          A                a            a
+2          B                a            a
+=== Bootstrap === 
+  categories Student_bootstrapped
+1          A                    a
+2          B                    a

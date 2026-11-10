@@ -80,7 +80,7 @@ test_that("plans pas encore valides : refus explicite", {
 		function(f) go(f, data = e)$effects$log_bf, numeric(1))
 	expect_equal(lb[2:3], rep(lb[1], 2), tolerance = 1e-8)
 	expect_error(go(y ~ B, data = e, id = "id", paired = TRUE), "appari|mesures|mixte")
-	expect_error(go(b ~ variete, data = e), "binaire")
+	expect_identical(go(b ~ variete, data = e, posthoc = FALSE)$plan, "contingency")  # D17
 	expect_error(go(y ~ absent, data = e), "introuvable")
 	expect_error(go(y ~ 1, data = e), "Aucun facteur")
 	expect_error(go(y ~ variete, data = e, prior_h1 = 0), "prior_h1")

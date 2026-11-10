@@ -287,9 +287,12 @@
 
 	resp_is_matrix <- is.matrix(resp) && ncol(resp) > 1L
 	if (is.matrix(resp) && ncol(resp) == 1L) resp <- drop(resp)
-	if (!is.numeric(resp)) {
-		.exit("The response must be numeric. For a binary or categorical response, code it numerically.",
-			"La r\u00e9ponse doit \u00eatre num\u00e9rique. Pour une r\u00e9ponse binaire ou cat\u00e9gorielle, la coder en nombres.")
+	resp_categorical <- !is.matrix(resp) && (is.factor(resp) || is.character(resp) || is.logical(resp))
+	if (resp_categorical) {
+		resp <- droplevels(as.factor(resp))
+	} else if (!is.numeric(resp)) {
+		.exit("The response must be numeric, or categorical (factor, text, TRUE/FALSE).",
+			"La r\u00e9ponse doit \u00eatre num\u00e9rique, ou cat\u00e9gorielle (facteur, texte, TRUE/FALSE).")
 	}
 	if (NROW(resp) != nrow(data)) {
 		.exit("The response and the data do not have the same number of rows.",
@@ -400,7 +403,8 @@
 		factors = factors, covariates = covariates, id = id_out,
 		terms = terms_all, slopes = slopes,
 		within = within_names, between = between_names, plan = plan,
-		discrete = isTRUE(tryCatch(discret.test(y_for_disc), error = function(e) FALSE)),
+		discrete = !resp_categorical && isTRUE(tryCatch(discret.test(y_for_disc), error = function(e) FALSE)),
+		categorical = resp_categorical,
 		label = paste0(resp_label, " ~ ", label_pred),
 		n_removed = n_removed
 	)

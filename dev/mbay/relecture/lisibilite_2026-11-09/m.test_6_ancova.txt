@@ -1,0 +1,126 @@
+1) Structure du modèle : ANCOVA classique (pas d'interaction facteur×covariable)
+	Pentes parallèles assumées (homogénéité des pentes de régression)
+		Facteurs : g
+		Covariables : x
+	==> Vérifications complètes des assomptions (5 assomptions).
+2) ASSOMPTION 1/5 : Indépendance des observations
+	C'est une assomption de PLAN qui ne peut pas être testée statistiquement.
+	Vérifiez que :
+	  • Pas de mesures répétées (chaque observation d'un sujet différent)
+	  • Pas d'effets cluster (observations non groupées/emboîtées)
+	  • Pas d'effets report (ordre des mesures n'influence pas les résultats)
+3) Ajustement du modèle ANCOVA à 1 facteur(s) [lm()]
+	Formule : y ~ g + x
+	Contrastes : contr.sum (codage effets pour estimations non biaisées)
+	==> Modèle ajusté avec succès (n=45, résidus calculés)
+	    Type de Sommes de Carrés sélectionné : Type III [car::Anova(type='III')]
+	Note sur l'ordre des termes :
+		Le Type III ne dépend pas de l'ordre des termes : ce résultat reste valable tel quel.
+	(Facultatif, pour un test séquentiel de Type I : y ~ x + g.)
+4) DIAGNOSTIC : Test indépendance covariables-facteurs [approche robuste]
+	Teste si chaque covariable diffère selon niveaux facteurs
+	Méthode : Pour chaque combinaison covariable × facteur :
+	  1. Tester normalité covariable par groupes de chaque facteur
+	  2. Tester homogénéité variances [var.test() ou bartlett.test()]
+	  3. Sélectionner test approprié :
+	     • Normal + variances homogènes : ANOVA [aov() sur 1 facteur]
+	     • Normal + variances inégales : Welch ANOVA [oneway.test()]
+	     • Non-normal : Kruskal-Wallis [kruskal.test()]
+	==> Toutes covariables indépendantes des niveaux facteurs (tous p >= 0.05)
+	    Assomption d'indépendance des covariables RESPECTÉE
+5) DIAGNOSTIC : Influence sur le Modèle [Distance de Cook, Leverage, DFBETAS]
+	Détecte observations ayant impact fort sur coefficients de régression (β)
+	Seuils : Cook = 0.089 (critique si > 1), Leverage = 0.178
+	==> 8 observation(s) dépassent seuil(s) :
+	    DFBETAS seul: 4, Cook + DFBETAS: 4
+	    Toutes Cook < 1 (aucune préoccupation critique)
+	==> Modèle robuste aux observations individuelles
+6) ASSOMPTION 2/5 : Normalité des résidus (contrôle ACADÉMIQUE)
+	Sélection du test selon taille échantillon :
+	  • n ≤ 50 : Shapiro-Wilk [shapiro.test() {stats}]
+	  • 50 < n ≤ 500 : Jarque-Bera [jb.norm.test() {KefiR}]
+	  • n > 500 : Skewness/Kurtosis [{KefiR}]
+	Test utilisé : [shapiro.test() {stats}]
+	Shapiro-Wilk [shapiro.test()]
+	==> Les résidus sont non-normaux (p-value : 0.022).
+	--> Les contrôles de la variance devront être plus exigeants (Levene au lieu de Bartlett).
+7) ASSOMPTION 3/5 : Homoscédasticité (contrôle ACADÉMIQUE)
+	IMPORTANT : Test sur INTERACTION DES FACTEURS UNIQUEMENT (pas les covariables)
+	Justification : Les covariables sont continues => homogénéité testée sur groupes facteurs uniquement
+	Test utilisé : [leveneTest() {car}] (sélectionné selon résultat normalité)
+	  • Résidus normaux : Bartlett [bartlett.test() {stats}]
+	  • Résidus non-normaux : Levene [leveneTest() {car}]
+		==> Variances homogènes (p >= 0.05)
+	--> L'homoscédasticité invite à un contrôle plus tolérant de la normalité.
+8) RE-TEST NORMALITÉ : Application critères STRICTS
+	Contexte : Non-normalité détectée MAIS homoscédasticité confirmée
+	Seconde chance : Test avec seuils stricts skewness/kurtosis...
+	Contrôle de la normalité des résidus avec tolérance si n>15.
+	==> Skewness <=2 et Kurtosis <=7.
+	==> Les résidus présentent une normalité acceptable.
+9)   ==> Test normalité strict RÉUSSI
+	Résidus acceptables selon critères stricts.
+	Poursuite avec ANCOVA paramétrique.
+10) ASSOMPTION 4/5 : Linéarité de la relation Variable Dépendante ~ covariable
+	Test : Inclure terme quadratique I(covariable²) et vérifier significativité [lm() avec I(covariable^2)].
+	Si terme quadratique significatif => relation non-linéaire.
+	  'x' : p du terme quadratique = 0.58 (linéaire)
+	==> Relations linéaires confirmées
+11) ASSOMPTION 5/5 : Homogénéité des pentes de régression
+	Test : interaction facteur:covariable doit être NON-significative [lm() + anova()]
+	Si significative => pentes de régression différentes entre groupes (violation).
+	  g × x: p = 0.09 (homogène)
+	==> Pentes homogènes confirmées (droites régression parallèles)
+12) Poursuite avec ANCOVA paramétrique (assomptions respectées)
+	==> Affichage du bilan :
+
+Anova Table (Type III tests)
+
+Response: y
+            Sum Sq Df F value    Pr(>F)    
+(Intercept) 457.68  1  210.35 < 2.2e-16 ***
+g           126.89  2   29.16 1.327e-08 ***
+x           251.31  1  115.50 1.697e-13 ***
+Residuals    89.21 41                      
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+		Effets significatifs détectés :
+	  Facteurs : g
+	  Covariables : x
+13) COMPARAISONS POST-HOC POUR ANCOVA [{emmeans}]
+	Les post-hocs ANCOVA comparent les MOYENNES AJUSTÉES, pas les moyennes brutes.
+	Moyennes ajustées = réponse attendue quand les covariables sont à leur moyenne.
+	Cela contrôle les effets des covariables et fournit des comparaisons équitables.
+
+	Modèle : y ~ g + x
+	Facteur analysé : g (3 groupes)
+	Covariables : x
+	Méthode d'ajustement : tukey
+	Seuil de significativité : α = 0.05
+
+	Moyennes ajustées (aux moyennes des covariables) :
+ group adjusted_mean        SE  lower.CL upper.CL
+    t1      7.701097 0.3819200  6.929794  8.47240
+    t2     10.791564 0.3813167 10.021479 11.56165
+    t3     11.617124 0.3809809 10.847718 12.38653
+
+
+	Comparaisons par paires (ajustement tukey) :
+ contrast   estimate        SE df   t_ratio      p_value
+  t1 - t2 -3.0904666 0.5406782 41 -5.715907 3.242368e-06
+  t1 - t3 -3.9160275 0.5399675 41 -7.252340 2.167482e-08
+  t2 - t3 -0.8255609 0.5386868 41 -1.532543 2.865439e-01
+
+	=> Différences significatives détectées :
+	   t1 - t2 (p = 3.2e-06)
+	   t1 - t3 (p = 2.17e-08)
+
+
+m.test() - version 02 bêta 2026 - envoyer ce bilan à antoine.masse@u-bordeaux.fr en cas d'anomalie.
+
+Comparaisons post-hoc par paires :
+  categories ANCOVA
+1         t1      a
+2         t2      b
+3         t3      b

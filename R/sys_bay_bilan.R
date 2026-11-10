@@ -403,7 +403,10 @@
 	f <- function(v, dc) gsub(".", dc, format(signif(v, 2), trim = TRUE), fixed = TRUE)
 	ci <- function(i, dc, a, l, h) paste0(f(pr[[a]][i], dc), " [", f(pr[[l]][i], dc), if (dc == ",") " ; " else "; ", f(pr[[h]][i], dc), "]")
 	if (ph$k > 2L) {
-		if (identical(ph$delta_unit, "adjusted")) {
+		if (isTRUE(ph$delta_unit %in% c("logor", "tvd"))) {
+			say(paste0("Which groups differ in their proportions (probability, then estimated gap", if (ph$delta_unit == "logor") paste0(" of the proportion of ", ph$category, ", log odds ratio") else " over the categories, 0 to 1", ", 95 % credible intervals):"),
+				paste0("Quels groupes diff\u00e8rent par leurs proportions (probabilit\u00e9, puis \u00e9cart estim\u00e9", if (ph$delta_unit == "logor") paste0(" de la proportion de ", ph$category, ", log du rapport de cotes") else " sur les modalit\u00e9s, de 0 \u00e0 1", ", intervalles de cr\u00e9dibilit\u00e9 \u00e0 95 %) :"))
+		} else if (identical(ph$delta_unit, "adjusted")) {
 			say("Which groups differ at the mean of the covariates (normal law; probability, then adjusted gap and 95 % credible interval):",
 				"Quels groupes diff\u00e8rent \u00e0 la moyenne des covariables (loi normale ; probabilit\u00e9, puis \u00e9cart ajust\u00e9 et intervalle de cr\u00e9dibilit\u00e9 \u00e0 95 %) :")
 		} else if (identical(ph$delta_unit, "within")) {
@@ -419,9 +422,9 @@
 			side_en <- if (open || s$level == 1L) "not settled" else if (p >= 0.5) paste0("different, ", s$en) else paste0("alike, ", s$en)
 			side_fr <- if (open || s$level == 1L) "non tranch\u00e9" else if (p >= 0.5) paste0("diff\u00e9rents, ", s$fr) else paste0("semblables, ", s$fr)
 			say(paste0("  ", pr$group1[i], " / ", pr$group2[i], ": ", side_en, " (different at ", .bay_pct(p, "."), "); estimated gap ",
-					pr$group2[i], " - ", pr$group1[i], " = ", ci(i, ".", "diff", "diff_low", "diff_high"), ", delta = ", ci(i, ".", "delta", "delta_low", "delta_high"), "."),
+					pr$group2[i], " - ", pr$group1[i], " = ", ci(i, ".", "diff", "diff_low", "diff_high"), if (is.na(pr$delta[i])) "" else paste0(", delta = ", ci(i, ".", "delta", "delta_low", "delta_high")), "."),
 				paste0("  ", pr$group1[i], " / ", pr$group2[i], " : ", side_fr, " (diff\u00e9rents \u00e0 ", .bay_pct(p, ","), ") ; \u00e9cart estim\u00e9 ",
-					pr$group2[i], " - ", pr$group1[i], " = ", ci(i, ",", "diff", "diff_low", "diff_high"), ", delta = ", ci(i, ",", "delta", "delta_low", "delta_high"), "."))
+					pr$group2[i], " - ", pr$group1[i], " = ", ci(i, ",", "diff", "diff_low", "diff_high"), if (is.na(pr$delta[i])) "" else paste0(", delta = ", ci(i, ",", "delta", "delta_low", "delta_high")), "."))
 		}
 		if (length(shown) < nrow(pr)) say(paste0("  The other ", nrow(pr) - length(shown), " pairs lean towards alike; all pairs: $posthoc$pairs."),
 			paste0("  Les ", nrow(pr) - length(shown), " autres paires penchent vers semblables ; toutes les paires : $posthoc$pairs."))
@@ -431,11 +434,13 @@
 			paste0("  Regroupement le plus probable : ", ph$partitions$partition[1L], " (", .bay_pct(ph$partitions$posterior[1L], ","), ")."))
 	} else {
 		unit <- .bay_delta_unit(ph)
+		if (isTRUE(ph$delta_unit %in% c("logor", "tvd"))) say(paste0("Size of the difference (estimated gap", if (ph$delta_unit == "logor") paste0(" of the proportion of ", ph$category, ", then log odds ratio") else " over the categories, 0 to 1", "; 95 % credible intervals):"),
+			paste0("Taille de l'\u00e9cart (\u00e9cart estim\u00e9", if (ph$delta_unit == "logor") paste0(" de la proportion de ", ph$category, ", puis log du rapport de cotes") else " sur les modalit\u00e9s, de 0 \u00e0 1", " ; intervalles de cr\u00e9dibilit\u00e9 \u00e0 95 %) :")) else
 		say(paste0("Size of the difference, if it exists (estimated gap: posterior median, and 95 % credible interval; delta in ", unit$en, "):"),
 			paste0("Taille de l'\u00e9cart, s'il existe (\u00e9cart estim\u00e9 : m\u00e9diane a posteriori, et intervalle de cr\u00e9dibilit\u00e9 \u00e0 95 % ; delta en ", unit$fr, ") :"))
 		for (i in seq_len(nrow(pr))) {
-			say(paste0("  ", pr$group2[i], " - ", pr$group1[i], " = ", ci(i, ".", "diff", "diff_low", "diff_high"), ", delta = ", ci(i, ".", "delta", "delta_low", "delta_high"), "."),
-				paste0("  ", pr$group2[i], " - ", pr$group1[i], " = ", ci(i, ",", "diff", "diff_low", "diff_high"), ", delta = ", ci(i, ",", "delta", "delta_low", "delta_high"), "."))
+			say(paste0("  ", pr$group2[i], " - ", pr$group1[i], " = ", ci(i, ".", "diff", "diff_low", "diff_high"), if (is.na(pr$delta[i])) "" else paste0(", delta = ", ci(i, ".", "delta", "delta_low", "delta_high")), "."),
+				paste0("  ", pr$group2[i], " - ", pr$group1[i], " = ", ci(i, ",", "diff", "diff_low", "diff_high"), if (is.na(pr$delta[i])) "" else paste0(", delta = ", ci(i, ",", "delta", "delta_low", "delta_high")), "."))
 		}
 	}
 	if (isTRUE(ph$caution_overlap)) say("  To read with caution: these gaps compare the groups where some have few or no values of the covariate.",

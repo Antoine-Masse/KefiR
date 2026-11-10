@@ -1,0 +1,46 @@
+1) Plan reconnu : analyse de covariance, g (3 groupes), covariable(s) x ; N = 45.
+	--> Question : y diffère-t-il selon g une fois x pris en compte ?
+2) Contrôles des données.
+	Les valeurs éloignées sont cherchées sur ce que les covariables n'expliquent pas.
+	==> Effectifs : 15 par groupe (3 groupes, N = 45).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur groupe : 6 sur 45 au-delà de 1,5 écart interquartile, 1 au-delà de 3. [Tukey, quantile() {stats}]
+	==> Covariable x : étendue commune aux groupes de 1,15 à 9,03 ; elle contient au moins 80,0 % de chaque groupe (t2 le moins).
+	--> Covariable(s) centrée(s) sur leur moyenne (x = 4,71) : les groupes sont comparés à cette valeur, dans les données, et non à 0 (Aiken et West 1991).
+	--> Aucune valeur n'est retirée.
+3) Forme du bruit.
+	==> Seule la loi normale à variance commune est calculée, et la covariable agit en ligne droite (linéarité non testée) : queues lourdes, variances inégales et courbure ne sont pas encore validées avec des covariables.
+	--> 1 valeur(s) au-delà de 3 écarts interquartiles une fois les covariables prises en compte : lire la réponse avec réserve.
+4) Point de départ (a priori), fixé par la méthode avant de voir les données.
+	==> 50 % de chances qu'une différence existe (pile ou face : la méthode ne prend pas parti) ; taille attendue r = 0,5 par terme (Zellner-Siow).
+	--> Covariable(s) x : dans chaque modèle, « aucune différence » compris ; pente a priori de Cauchy d'échelle sqrt(2)/4 (rscaleCont, le « medium » de BayesFactor), partagée avec ses interactions avec un facteur ; chaque réponse se lit contre le modèle avec les covariables seules.
+	--> Ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les fait varier pour voir si la réponse tient.
+5) Facteurs de Bayes des 2 modèles. [lmBF() {BayesFactor}]
+	==> Facteur de Bayes, différence contre absence : 599000.
+	==> Précision : recalculées avec une autre graine, les probabilités bougent d'au plus 9,1e-08 point(s) de pourcentage, négligeable.
+	==> Sensibilité : r (et rscaleCont avec lui) de 0,25 à 1, croisé avec des chances de départ d'une différence de 1 contre 2 à 2 contre 1. [m.bay() {KefiR}]
+	--> Aucun terme ne change de côté.
+6) Quels groupes diffèrent, et de combien. [lmBF(), posterior() {BayesFactor}, hdi() {bayestestR}]
+	==> Regroupements les plus probables (5 comparés) : t1 < t2 = t3 (69,6 %) ; t1 < t2 < t3 (30,4 %) ; t1 = t2 < t3 (< 0,1 %).
+	==> t1 et t2 : différents à > 99,9 % ; écart estimé t2 - t1 = 2,9 [1,8 ; 4,1], soit 1,9 [1,1 ; 2,8] écart-type résiduel (covariables prises en compte).
+	==> t1 et t3 : différents à > 99,9 % ; écart estimé t3 - t1 = 3,7 [2,6 ; 4,9], soit 2,4 [1,5 ; 3,4] écart-type résiduel (covariables prises en compte).
+	==> t2 et t3 : différents à 30,4 % ; écart estimé t3 - t2 = 0,78 [-0,31 ; 1,9], soit 0,51 [-0,24 ; 1,2] écart-type résiduel (covariables prises en compte).
+	Écart estimé : médiane a posteriori, légèrement ramenée vers zéro par l'a priori. Crochets : intervalle de crédibilité à 95 %, si une différence existe (la valeur s'y trouve avec 95 % de probabilité ; ce n'est pas un intervalle de confiance).
+	--> Toutes les paires viennent d'une seule loi sur les regroupements : aucune correction paire par paire n'est nécessaire, et les réponses ne peuvent pas se contredire.
+7) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
+	Verdict : une différence existe très probablement. Cela ne dit ni qu'elle est importante, ni pourquoi ; les paires sont plus bas.
+	  y diffère selon g, à même x : > 99,9 % (soutien très fort) ; Aucune différence de y selon g : < 0,1 %.
+	Réponse (oui, non ou non tranché ; probabilité du oui compte tenu des données et du point de départ, et son a priori) :
+	  Différence de y selon g, à même x ? Oui, soutien très fort (probabilité du oui > 99,9 %, a priori 50,0 %).
+	     Repose sur les données, qui multiplient ses cotes (rapport oui/non) par 10^6 (facteur de Bayes).
+	  La réponse ne change pas de côté quand r ou les chances de départ changent.
+	Quels groupes diffèrent à la moyenne des covariables (loi normale ; probabilité, puis écart ajusté et intervalle de crédibilité à 95 %) :
+	  t1 / t2 : différents, soutien très fort (différents à > 99,9 %) ; écart estimé t2 - t1 = 2,9 [1,8 ; 4,1], delta = 1,9 [1,1 ; 2,8].
+	  t1 / t3 : différents, soutien très fort (différents à > 99,9 %) ; écart estimé t3 - t1 = 3,7 [2,6 ; 4,9], delta = 2,4 [1,5 ; 3,4].
+	  t2 / t3 : semblables, soutien faible (différents à 30,4 %) ; écart estimé t3 - t2 = 0,78 [-0,31 ; 1,9], delta = 0,51 [-0,24 ; 1,2].
+	  Regroupement le plus probable : t1 < t2 = t3 (69,6 %).
+	Moyennes observées par facteur (brutes, non ajustées ; covariable moyenne par groupe, x : t1 = 4,34 ; t2 = 4,95 ; t3 = 4,83) :
+	  g : t1 = 7,4 (n = 15) ; t2 = 11,0 (n = 15) ; t3 = 11,7 (n = 15)
+	  Écart-type résiduel (covariables prises en compte) : 1,5.
+	Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend de la façon dont l'étude a été menée (tirage au sort, ordre, opérateur).
+	Facteurs de Bayes, a priori en détail, mode de lecture : print(resultat, detail = TRUE).

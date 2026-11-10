@@ -33,7 +33,7 @@
 	  tension diffère selon moment : 63,4 % (non tranché par les données) ; Aucune différence de tension selon moment : 36,6 %.
 	Réponse (oui, non ou non tranché ; probabilité du oui compte tenu des données et du point de départ, et son a priori) :
 	  Différence de tension selon moment ? Non tranché (probabilité du oui 63,4 %, a priori 50,0 % ; selon le point de départ 40,7 % à 77,6 %).
-	     Les données déplacent peu ses cotes (multiplient par 1,73) ; seul l'a priori (50,0 %) le fait pencher vers le oui.
+	     Les données ne le font pencher que de peu vers le oui (cotes multipliées par 1,73, depuis un point de départ à 50 %) : trop peu pour trancher.
 	Taille de l'écart, s'il existe (écart estimé : médiane a posteriori, et intervalle de crédibilité à 95 % ; delta en écart-type des différences (dz)) :
 	  apres - avant = -3,4 [-7,5 ; 0,58], delta = -0,45 [-0,98 ; 0,11].
 	Moyennes observées par facteur (description de l'échantillon) :
@@ -131,9 +131,9 @@
 	     Repose sur l'ensemble des termes ; aucun n'est tranché seul (le plus probable : seance, 68,0 %).
 	Réponse par terme (oui, non ou non tranché ; probabilité du oui compte tenu des données et du point de départ, et son a priori) :
 	  Différence de score selon groupe, seul ou en interaction ? Non tranché (probabilité du oui 61,2 %, a priori 50,0 % ; selon le point de départ 42,6 % à 69,4 %).
-	     Les données déplacent peu ses cotes (multiplient par 1,58) ; seul l'a priori (50,0 %) le fait pencher vers le oui.
+	     Les données ne le font pencher que de peu vers le oui (cotes multipliées par 1,58, depuis un point de départ à 50 %) : trop peu pour trancher.
 	  Différence de score selon seance, seul ou en interaction ? Non tranché (probabilité du oui 68,0 %, a priori 50,0 % ; selon le point de départ 46,7 % à 78,6 %).
-	     Les données déplacent peu ses cotes (multiplient par 2,13) ; seul l'a priori (50,0 %) le fait pencher vers le oui.
+	     Les données ne le font pencher que de peu vers le oui (cotes multipliées par 2,13, depuis un point de départ à 50 %) : trop peu pour trancher.
 	  Les écarts selon groupe varient-ils avec seance (groupe:seance) ? Non tranché (probabilité du oui 41,8 %, a priori 16,7 %).
 	     Les données penchent vers le oui (cotes multipliées par 3,59) ; l'a priori (16,7 %) penche de l'autre côté : non tranché.
 	Moyennes observées par facteur (description ; ce bilan ne dit pas quels niveaux diffèrent) :
