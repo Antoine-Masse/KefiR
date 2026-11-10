@@ -1,0 +1,71 @@
+1) Plan recognised: repeated measures on 15 subjects, t (3 levels, within
+   subject); N = 45.
+	--> One question: does y differ according to t, each subject compared
+	    with itself?
+2) Checks on the data [quantile() {stats}] - nothing to remove.
+	==> Subjects: 15; complete: 15.
+	==> Sizes: 15 per condition (N = 45).
+	==> Ties: none.
+	==> Values far from their condition: 2 beyond 1.5 interquartile ranges,
+	    0 beyond 3 (of 45).
+	Note: far values sought once each subject's own level is removed.
+	--> No value is removed.
+3) Shape of the noise - normal, only.
+	==> Repeated measures: each subject keeps its own level.
+	Note: conditions assumed equally correlated within a subject (not
+	      tested; m.test() checks sphericity).
+	Note: heavy tails and unequal variances are not validated with subjects
+	      yet.
+	--> No far value puts the normal law in doubt at first sight.
+4) Starting point (priors) - 50.0 % chance of a difference.
+	==> Expected size r = 0.5.
+	==> Each subject keeps its own level, in every model, "no difference"
+	    included.
+	Note: these values are not tuned on the data; step 5 varies them.
+5) Solidity of the answer [lmBF() {BayesFactor}] - Bayes factor 2270, stable
+   answer.
+	==> Bayes factor: 2270 (the data favour a difference).
+	==> Precision of the computation: < 0.1 point on the probabilities,
+	    negligible.
+	==> Sensitivity: the leading answer goes from 99.9 % to > 99.9 %.
+	Note: varied: r from 0.25 to 1, starting chances from 1 against 2 to 2
+	      against 1.
+	--> The answer does not change side.
+6) Which conditions differ, and by how much [lmBF(), posterior() {BayesFactor},
+   hdi() {bayestestR}] - T1 < T2 < T3 ahead (76.6 %).
+	==> If a difference exists, leading groupings: T1 < T2 < T3 (76.6 %);
+	    T1 = T2 < T3 (18.1 %); T1 < T2 = T3 (5.3 %).
+	==> T1/T2: different at 81.8 %; T2 - T1 = 1.0 [0.2; 1.8], i.e. 0.88
+	    residual SD within subject.
+	==> T1/T3: different at 99.9 %; T3 - T1 = 2.2 [1.3; 3.0], i.e. 1.96
+	    residual SD within subject.
+	==> T2/T3: different at 94.6 %; T3 - T2 = 1.2 [0.3; 1.9], i.e. 1.07
+	    residual SD within subject.
+	Note: [ ; ] = 95 % credible interval (95 % chance that the gap lies
+	      there); gap pulled a little towards 0.
+	Note: one law for all the pairs: no correction, the answers cannot
+	      contradict each other.
+
+7) Bilan - y differs according to t: > 99.9 % (very strong support).
+	==> Verdict: a difference very probably exists.
+	==> 1. y differs according to t          : > 99.9 % (very strong
+	    support)
+	==> 2. No difference in y according to t : < 0.1 %
+	Note: the data are 2270 times more probable under hypothesis 1 than
+	      under 2 (Bayes factor 2270).
+	==> Depending on the starting point: 99.9 % to > 99.9 %; the order does
+	    not change.
+	==> Different: T1/T2, T2/T3 (moderate); T1/T3 (very strong).
+	==> If a difference exists, most probable grouping: T1 < T2 < T3
+	    (76.6 %).
+	Note: gaps in figures: step 6.
+	==> Observed means, t: T1 = 20.1; T2 = 21.2; T3 = 22.5 (n = 15).
+	Note: residual standard deviation within subject: 1.05; normal law with
+	      a common variance only.
+	Note: this says neither that the difference matters, nor why: a cause
+	      depends on how the study was run.
+	Note: for a report: "y differs according to t: posterior
+	      probability > 99.9 %, Bayes factor 2270 (m.bay {KefiR},
+	      BayesFactor, Rouder et al. 2012)."
+	Note: probabilities of hypotheses, not p-values; method in detail:
+	      print(result, detail = TRUE).

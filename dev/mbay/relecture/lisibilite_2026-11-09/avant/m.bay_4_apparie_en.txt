@@ -1,0 +1,39 @@
+1) Plan recognised: paired data, t (avant, apres) measured on the same 15 subjects; N = 30.
+	--> One question: is there a difference in y according to t, each subject compared with itself?
+2) Checks on the data.
+	==> Subjects: 15; measured in every condition within subject: 15.
+	Values far from their condition are sought once each subject's own level is removed.
+	==> Sizes: 15 per condition (2 conditions, N = 30).
+	==> Ties: none.
+	==> Values far from their condition: 0 of 30 beyond 1.5 interquartile ranges, 0 beyond 3. [Tukey, quantile() {stats}]
+	--> No value is removed.
+3) Shape of the noise.
+	==> Paired data: the comparison rests on the difference within each subject, which removes what varies from one subject to another.
+	==> Only the normal law is computed: heavy tails and unequal variances between conditions are not validated for subjects yet, so they are not compared.
+	--> No value lies far enough to put the normal law in doubt at first sight; it is not tested against the others.
+4) Starting point (priors), set by the method before seeing the data.
+	==> 50 % chance that a difference exists (heads or tails: the method takes no side); expected size r = 0.5 on the standardised difference within subject (dz).
+	--> Paired difference: the Bayesian paired t test of Rouder et al. (2009), with r = 0.5 as for a random subject effect (equal to lmBF(y ~ time + id) within 0.2 on the log scale).
+	--> These values are not fitted on the data; step 5 varies them to see whether the answer holds.
+5) Bayes factors of the 2 models. [ttestBF(paired = TRUE) {BayesFactor}]
+	==> Bayes factor, difference against none: 75.4.
+	==> Precision: ttestBF integrates numerically, without draws; no simulation error.
+	==> Sensitivity: r from 0.25 to 1, crossed with starting chances of a difference from 1 against 2 to 2 against 1. [m.bay() {KefiR}]
+	--> No term changes side.
+6) By how much the two levels differ. [posterior(ttestBF()) {BayesFactor}, hdi() {bayestestR}]
+	==> Estimated gap apres - avant = 1.5 [0.62; 2.2], i.e. 1 [0.31; 1.7] SD of the differences (dz).
+	Estimated gap: posterior median, pulled slightly towards zero by the prior. Brackets: 95 % credible interval, if a difference exists (the value lies there with 95 % probability; not a confidence interval).
+7) Conclusion: the hypotheses ranked, what each one rests on, its support.
+	Verdict: a difference very probably exists. This says neither that it matters, nor which groups differ, nor why.
+	  y differs according to t: 98.7 % (strong support); No difference in y according to t: 1.3 %.
+	Answer (yes, no or not settled; probability of a yes given the data and the starting point, and its prior):
+	  Difference in y according to t? Yes, strong support (probability of a yes 98.7 %, prior 50.0 %).
+	     Rests on the data, which multiply its odds (yes against no) by 75.4 (Bayes factor).
+	  The answer does not change side when r or the starting chances change.
+	Size of the difference, if it exists (estimated gap: posterior median, and 95 % credible interval; delta in SD of the differences (dz)):
+	  apres - avant = 1.5 [0.62; 2.2], delta = 1 [0.31; 1.7].
+	Observed means per factor (description of the sample):
+	  t: avant = 20.08 (n = 15); apres = 21.69 (n = 15)
+	  Residual standard deviation within subject (each subject's own level removed): 0.95.
+	These are probabilities of hypotheses, not p-values: no threshold of 5 % applies. Whether a difference has a cause depends on how the study was run (randomisation, order, operator).
+	Bayes factors, priors in detail, how to read: print(result, detail = TRUE).

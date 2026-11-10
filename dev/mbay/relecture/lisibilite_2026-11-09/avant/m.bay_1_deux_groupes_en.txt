@@ -1,0 +1,37 @@
+1) Plan recognised: one factor, g, with 2 groups (A, B); N = 40.
+	--> One question: is there a difference in y according to g? No preliminary test chooses the method: the shapes of the noise will be compared, not chosen.
+2) Checks on the data.
+	==> Sizes: 20 per group (2 groups, N = 40).
+	==> Ties: none.
+	==> Values far from their group: 0 of 40 beyond 1.5 interquartile ranges, 0 beyond 3. [Tukey, quantile() {stats}]
+	--> Nothing to remove: the 4 shapes of the noise stay in the running.
+3) Starting point (priors), set before seeing the data.
+	==> 50.0 % chance that a difference exists (even odds: the method takes no side); expected size r = 0.5 ("medium" scale of Rouder et al. 2012); each of the 4 shapes of the noise starts at 25.0 %.
+	--> These values are not tuned on the data; step 5 varies them to see whether the answer holds.
+4) Comparison of the shapes of the noise (how values scatter around the centre of their group: normal or heavy tails, equal variances or not). [m.bay() {KefiR}, importance sampling]
+	==> Posterior probabilities: normal, equal variances 51.9 %; normal, unequal variances 22.2 %; heavy tails, equal variances 17.7 %; heavy tails, unequal variances 8.2 %.
+	==> Variances: the data lean towards equal variances without settling it (unequal at 30.4 %; standard deviations A 2.63 against B 2.22).
+	--> The normal shapes are the more probable (74.1 %): the answer bears mainly on the means.
+	--> No shape is chosen: the answer of each one is weighted by its probability.
+5) Bayes factor and numerical precision. [m.bay() {KefiR}]
+	==> Bayes factor, difference against none: 0.354 (close to 1: the data hardly tell the two apart).
+	==> Imprecision of the computation by simulation: about 0.61 % on the Bayes factor, without effect on the conclusion (this is not a risk of error).
+	==> Sensitivity: expected size r from 0.25 to 1, starting chances of a difference from 1 against 2 to 2 against 1, spread of the variances between groups. "No difference in y according to g" then goes from 48.0 % to 90.9 %. [m.bay() {KefiR}]
+	--> Caution added: the leading hypothesis can reverse with the starting point; the conclusion will not assert it.
+6) Which groups differ, and by how much. [lmBF(), posterior() {BayesFactor}, hdi() {bayestestR}]
+	==> Estimated gap B - A = 0.42 [-0.91; 1.8], i.e. 0.18 [-0.36; 0.75] SD.
+	Estimated gap: posterior median, pulled slightly towards zero by the prior, hence a little smaller than the observed gap of step 7. Brackets: 95 % credible interval, if a difference exists (the value lies there with 95 % probability; not a confidence interval).
+7) Conclusion: the hypotheses ranked, what each one rests on, its support.
+	Verdict: undecided. The data allow no conclusion, neither a difference nor its absence.
+	Probability of each hypothesis, given the data and the starting point:
+	  1. No difference in y according to g : 73.9 % (not settled by the data)
+	     Rests on the smallness of the gap between means (observed: B - A = 0.6, i.e. 0.24 pooled within-group SD): the data are hardly more probable (2.82 times) without a difference than with one of the size expected (r = 0.5).
+	  2. y differs according to g          : 26.1 %
+	     Against it: these data are hardly more probable (2.82 times) without a difference; it rests mainly on its prior (50.0 %), lowered by the data.
+	  Depending on the starting point, the probability of hypothesis 1 goes from 48.0 % to 90.9 %: the order can reverse.
+	Size of the difference, if it exists (estimated gap: posterior median, and 95 % credible interval; delta in SD):
+	  B - A = 0.42 [-0.91; 1.8], delta = 0.18 [-0.36; 0.75].
+	Observed means (description of the sample, not a test of which groups differ):
+	  A = 10.4 (n = 20); B = 11.0 (n = 20).
+	These are probabilities of hypotheses, not p-values: no threshold of 5 % applies. Whether a difference has a cause depends on how the study was run (randomisation, order, operator).
+	Shapes of the noise, priors in detail, how to read: print(result, detail = TRUE).

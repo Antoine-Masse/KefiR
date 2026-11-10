@@ -104,8 +104,8 @@ test_that("bilan : annonce a priori et sensibilite, ne laisse pas croire a une p
 	expect_match(paste(capture.output(print(r0)), collapse = "\n"), "sensitivity = FALSE")
 	# Par defaut, court ; le detail est sur demande.
 	court <- capture.output(print(r))
-	# 16 lignes avant le post-hoc ; les paires en ajoutent k(k-1)/2 + 2 (D11).
-	expect_lte(length(court), 16L + nrow(r$posthoc$pairs) + 2L)
+	# bilan court : les paires en liste breve, leur detail est a l'etape 6
+	expect_lte(length(court), 30L)
 	expect_false(any(grepl("Dirichlet", court)))
 	expect_match(paste(court, collapse = " "), "p-value")
 })

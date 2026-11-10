@@ -1,0 +1,62 @@
+1) Plan reconnu : 2 facteurs croisés, A (2 niveaux), B (3 niveaux) ; 6 cases,
+   N = 60.
+	==> Termes : A, B, A:B. 5 combinaisons de termes sont possibles (une
+	    interaction n'entre qu'avec ses facteurs : hérédité).
+	--> Une réponse par terme, obtenue en pesant ensemble ces 5
+	    combinaisons.
+2) Contrôles des données [quantile() {stats}] - 1 valeur éloignée, gardée.
+	==> Effectifs : 10 par case (N = 60).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur case : 6 au-delà de 1,5 écart
+	    interquartile, 1 au-delà de 3 (sur 60).
+	--> Aucune valeur retirée.
+3) Forme du bruit - normale à variance commune, seule.
+	==> Plusieurs facteurs : seule la loi normale à variance commune est
+	    calculée.
+	Note : queues lourdes et variances inégales ne sont pas encore validées
+	       à plusieurs facteurs.
+	--> 1 valeur au-delà de 3 écarts interquartiles (étape 2) : lire la
+	    réponse avec réserve.
+4) Point de départ (a priori) - aucune différence du tout : 33,3 %.
+	==> Chance de chaque terme d'avance : A 50,0 %, B 50,0 %, A:B 16,7 %.
+	==> Taille attendue r = 0,5 par terme.
+	Note : ces chances ne s'additionnent pas ; plus il y a de termes, moins
+	       chacun est probable, ce qui protège des fausses interactions.
+	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
+	       fait varier.
+5) Solidité de la réponse [lmBF() {BayesFactor}] - B change de côté selon l'a
+   priori.
+	==> 5 modèles comparés (combinaisons de termes).
+	==> Précision du calcul : environ 0,3 point sur les probabilités,
+	    négligeable.
+	Note : variés : r de 0,25 à 1, trois lois sur les modèles.
+	==> B change de côté : 21,4 % à 70,6 %.
+	--> Prudence ajoutée : B sera dit non tranché.
+6) Quels groupes diffèrent - non disponible à plusieurs facteurs.
+
+7) Bilan - y diffère selon au moins un facteur : 99,0 % (soutien fort).
+	==> Verdict : une différence existe très probablement.
+	==> 1. y diffère selon au moins un facteur : 99,0 % (soutien fort)
+	==> 2. Aucune différence de y selon A, B : 1,0 %
+	Note : les données sont 49,7 fois plus probables sous l'hypothèse 1 que
+	       sous la 2 (facteur de Bayes 49,7).
+	==> Selon le point de départ : 98,2 % à 99,5 % ; l'ordre ne change pas.
+	==> A (seul ou en interaction) : oui, soutien fort (98,8 % ; a priori
+	    50,0 % ; facteur de Bayes 82,4).
+	==> B (seul ou en interaction) : non tranché (60,1 % ; a priori 50,0 % ;
+	    facteur de Bayes 1,51).
+	==> A:B (les écarts selon A changent avec B) : non tranché (39,3 % ; a
+	    priori 16,7 % ; facteur de Bayes 3,24).
+	==> Moyennes observées, A : A1 = 9,8 ; A2 = 11,7 (n = 30).
+	==> Moyennes observées, B : B1 = 10,8 ; B2 = 10,2 ; B3 = 11,3 (n = 20).
+	==> Par case : A1 x B1 = 10,5 ; A2 x B1 = 11,1 ; A1 x B2 = 8,4 ;
+	    A2 x B2 = 11,9 ; A1 x B3 = 10,6 ; A2 x B3 = 12,0.
+	Note : écart-type au sein des cases : 1,78 ; loi normale à variance
+	       commune seule.
+	Note : cela ne dit ni que la différence est importante, ni pourquoi : la
+	       cause dépend de la façon dont l'étude a été menée.
+	Note : pour un compte rendu : « y diffère selon au moins un facteur :
+	       probabilité a posteriori 99,0 %, facteur de Bayes 49,7 (m.bay
+	       {KefiR}, BayesFactor, Rouder et al. 2012). »
+	Note : probabilités d'hypothèses, pas des p-values ; méthode en détail :
+	       print(resultat, detail = TRUE).

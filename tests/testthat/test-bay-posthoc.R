@@ -75,19 +75,19 @@ test_that("au-dela du calcul exact : tirage de Gibbs, accord avec l'enumeration,
 	expect_lt(max(abs(gb$pairs$p_max - ex$pairs$p_max)), 0.04)
 	expect_lt(gb$mc_error, 0.02)
 	r <- m.bay(y ~ g, data = d, verbose = FALSE, draws = 1000, sensitivity = FALSE)
-	expect_true(any(grepl("chantillonneur de Gibbs", r$story$fr)))
-	expect_true(any(grepl("Gibbs sampler", r$story$en)))
+	expect_match(paste(r$story$fr, collapse = " "), "par tirage")
+	expect_match(paste(r$story$en, collapse = " "), "by draws")
+	expect_true(any(grepl("Gibbs", r$story$detail_fr)))
 })
 
 test_that("ecart observe et ecart estime sont nommes", {
 	set.seed(4)
 	d <- data.frame(y = c(rnorm(10, 10), rnorm(10, 11.2), rnorm(10, 10.1)), g = factor(rep(c("a", "b", "c"), each = 10)))
 	r <- m.bay(y ~ g, data = d, verbose = FALSE, draws = 1000, sensitivity = FALSE)
-	expect_true(any(grepl("cart estim", r$story$fr)))
-	court <- paste(capture.output(print(r)), collapse = "
-")
-	expect_match(court, "observé :|observed:")
-	expect_match(court, "estimé|estimated gap")
+	# l'ecart estime est dit ramene vers 0 ; le bilan donne les moyennes observees
+	expect_match(paste(r$story$fr, collapse = " "), "ramen")
+	court <- paste(capture.output(print(r)), collapse = "\n")
+	expect_match(gsub("\\s+", " ", court), "(Moyennes|Médianes) observ|Observed (means|medians)")
 })
 
 test_that("m.bay : posthoc = FALSE retire l'etape, le resultat garde les paires sinon", {
@@ -98,9 +98,9 @@ test_that("m.bay : posthoc = FALSE retire l'etape, le resultat garde les paires 
 	expect_true(any(grepl("Quels groupes", r$story$fr)))
 	r0 <- m.bay(y ~ g, data = d, verbose = FALSE, draws = 1000, sensitivity = FALSE, posthoc = FALSE)
 	expect_null(r0$posthoc)
-	expect_false(any(grepl("Quels groupes", r0$story$fr)))
+	expect_true(any(grepl("^6\\) .*non demand", r0$story$fr)))
 	court <- paste(capture.output(print(r)), collapse = "\n")
-	expect_match(court, "Quels groupes|Which groups")
+	expect_match(court, "Différents :|Semblables :|Non tranchés :|Different:|Alike:|Not settled:")
 	expect_false(grepl("ni quels groupes", court))
 })
 
@@ -109,9 +109,9 @@ test_that("variances inegales : le recit et la conclusion disent de lire les pai
 	d <- data.frame(dosage = c(rnorm(15, 20, 1), rnorm(15, 21.5, 1), rnorm(15, 20.5, 3)), labo = factor(rep(c("L1", "L2", "L3"), each = 15)))
 	r <- m.bay(dosage ~ labo, data = d, verbose = FALSE, draws = 2000, sensitivity = FALSE)
 	expect_true(isTRUE(r$posthoc$caution))
-	expect_true(any(grepl("lire avec r\u00e9serve", r$story$fr)))
-	court <- paste(capture.output(print(r)), collapse = "\n")
-	expect_match(court, "lire avec r\u00e9serve|read with caution")
+	expect_match(paste(r$story$fr, collapse = " "), "avec r\u00e9serve")
+	court <- paste(capture.output(print(r)), collapse = " ")
+	expect_match(gsub("\\s+", " ", court), "lire avec r\u00e9serve|read them with caution")
 })
 
 test_that("echelle extreme : les intervalles restent finis et suivent l'unite de y", {

@@ -1,0 +1,75 @@
+1) Plan reconnu : analyse de covariance, g (3 groupes), covariable(s) x ;
+   N = 45.
+	--> Question : y diffère-t-il selon g une fois x pris en compte ?
+2) Contrôles des données [quantile() {stats}] - 1 valeur éloignée, gardée.
+	==> Effectifs : 15 par groupe (N = 45).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur groupe : 6 au-delà de 1,5 écart
+	    interquartile, 1 au-delà de 3 (sur 45).
+	Note : valeurs éloignées cherchées sur ce que les covariables
+	       n'expliquent pas.
+	==> Covariable x : étendue commune 1,15 à 9,03, au moins 80,0 % de
+	    chaque groupe.
+	--> Covariable centrée sur sa moyenne (x = 4,71) : groupes comparés à
+	    cette valeur.
+	--> Aucune valeur retirée.
+3) Forme du bruit - normale à variance commune, seule.
+	==> La covariable agit en ligne droite (linéarité non testée).
+	Note : queues lourdes, variances inégales et courbure ne sont pas encore
+	       validées avec des covariables.
+	--> 1 valeur au-delà de 3 écarts interquartiles : lire la réponse avec
+	    réserve.
+4) Point de départ (a priori) - 50,0 % de chances d'une différence.
+	==> Taille attendue r = 0,5.
+	==> x est dans tous les modèles ; chaque réponse se lit contre les
+	    covariables seules.
+	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
+	       fait varier.
+5) Solidité de la réponse [lmBF() {BayesFactor}] - facteur de Bayes 10^6,
+   réponse stable.
+	==> Facteur de Bayes : 10^6 (les données favorisent une différence).
+	==> Précision du calcul : < 0,1 point sur les probabilités, négligeable.
+	==> Sensibilité : la réponse en tête va de > 99,9 % à > 99,9 %.
+	Note : variés : r de 0,25 à 1 (rscaleCont avec lui), chances de départ
+	       de 1 contre 2 à 2 contre 1.
+	--> La réponse ne change pas de côté.
+6) Quels groupes diffèrent, et de combien [lmBF(), posterior() {BayesFactor},
+   hdi() {bayestestR}] - t1 < t2 = t3 en tête (69,6 %).
+	==> Si une différence existe, regroupements en tête : t1 < t2 = t3
+	    (69,6 %) ; t1 < t2 < t3 (30,4 %) ; t1 = t2 < t3 (< 0,1 %).
+	==> t1/t2 : différents à > 99,9 % ; t2 - t1 = 2,9 [1,8 ; 4,1], soit 1,93
+	    écart-type résiduel (covariables prises en compte).
+	==> t1/t3 : différents à > 99,9 % ; t3 - t1 = 3,7 [2,6 ; 4,9], soit 2,43
+	    écart-type résiduel (covariables prises en compte).
+	==> t2/t3 : différents à 30,4 % ; t3 - t2 = 0,8 [-0,3 ; 1,9], soit 0,51
+	    écart-type résiduel (covariables prises en compte).
+	Note : [ ; ] = intervalle de crédibilité à 95 % (95 % de chances d'y
+	       trouver l'écart) ; écart un peu ramené vers 0.
+	Note : une seule loi pour toutes les paires : pas de correction, les
+	       réponses ne peuvent pas se contredire.
+
+7) Bilan - y diffère selon g, à même x : > 99,9 % (soutien très fort).
+	==> Verdict : une différence existe très probablement.
+	==> 1. y diffère selon g, à même x    : > 99,9 % (soutien très fort)
+	==> 2. Aucune différence de y selon g : < 0,1 %
+	Note : les données sont 10^6 fois plus probables sous l'hypothèse 1 que
+	       sous la 2 (facteur de Bayes 10^6).
+	==> Quel que soit le point de départ : > 99,9 %.
+	==> Différents : t1/t2, t1/t3 (très fort).
+	==> Semblables : t2/t3 (faible).
+	==> Si une différence existe, regroupement le plus probable :
+	    t1 < t2 = t3 (69,6 %).
+	Note : écarts chiffrés : étape 6.
+	==> Moyennes brutes, g : t1 = 7,4 ; t2 = 11,0 ; t3 = 11,7 (n = 15).
+	==> x moyen par groupe : t1 = 4,34 ; t2 = 4,95 ; t3 = 4,83.
+	Note : x est dans tous les modèles : les groupes sont comparés
+	       à x égal ; son effet propre n'est pas la question posée.
+	Note : écart-type résiduel (covariables prises en compte) : 1,48 ; loi
+	       normale à variance commune seule.
+	Note : cela ne dit ni que la différence est importante, ni pourquoi : la
+	       cause dépend de la façon dont l'étude a été menée.
+	Note : pour un compte rendu : « y diffère selon g, à même x :
+	       probabilité a posteriori > 99,9 %, facteur de Bayes 10^6 (m.bay
+	       {KefiR}, BayesFactor, Rouder et al. 2012). »
+	Note : probabilités d'hypothèses, pas des p-values ; méthode en détail :
+	       print(resultat, detail = TRUE).

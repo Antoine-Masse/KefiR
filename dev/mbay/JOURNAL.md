@@ -1,5 +1,38 @@
 # Journal de m.bay
 
+## Séance 10 : 10 novembre 2026, mise en forme commune (D18)
+
+**Cadre.** Consigne d'Antoine relayée par la session parente : des sorties « agréables à lire étape par étape comme m.test() ». J'ai appliqué les 12 recommandations de l'auditeur de lisibilité, avec la limite de 80 colonnes demandée par Antoine.
+
+**Fait.**
+- Récit :
+  - lignes repliées à 80 colonnes ;
+  - résultat dans le titre ;
+  - « ==> », « --> » et « Note : » ;
+  - jargon dans `detail = TRUE`.
+- Même squelette de 7 étapes pour les 7 plans.
+- Bilan commun visible d'emblée ; plus de doublon des paires ; une phrase prête pour un compte rendu.
+- Les remarques du lecteur D17 sont appliquées :
+  - effectifs en clair ;
+  - « semblables » évité quand le bilan est indécis ;
+  - un seul chiffre pour « aucune différence » ;
+  - modalité qui porte l'écart ;
+  - facteur de Bayes en faveur de l'absence.
+- Bug corrigé : sur un refus de plan, l'étape 1 n'était plus imprimée, car elle restait dans le tampon.
+
+**Mesures** (`relecture/lisibilite_2026-11-09/avant` et `apres`, `mesures.txt`) :
+- lignes au-delà de 80 colonnes : de 24 à 38 par plan, à 0 ;
+- longueur moyenne : de 104 à 122 caractères, à 55 à 61 ;
+- ligne la plus longue : 308 caractères, à 80 ;
+- mots : 8 à 28 % de moins ;
+- lignes affichées : 37-51 à 60-80, car le repli à 80 colonnes allonge la sortie de lignes plus courtes.
+
+**Vérifié.**
+- Les 10 fichiers de tests de m.bay passent.
+- Nouveau test de largeur : 7 plans, en français et en anglais, aux largeurs 60, 80 et 120.
+
+**Non vérifié.** La relecture des sorties « après » par un lecteur débutant indépendant est en cours.
+
 ## Séance 9 : 9 novembre 2026, réponse binaire ou catégorielle (D17, voie 1), relecture débutant
 
 **Fait.**

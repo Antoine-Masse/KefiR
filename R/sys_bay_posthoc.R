@@ -163,6 +163,7 @@
 	# scale), the gaps put back in the units of y: no overflow at extreme scales (1e200).
 	sc <- max(abs(y - stats::median(y)))
 	if (!is.finite(sc) || sc <= 0) sc <- 1
+	dg0 <- .bay_dg(tapply(y, g, mean))
 	y <- (y - mean(y)) / sc
 	g <- droplevels(as.factor(g))
 	lev <- levels(g)
@@ -260,7 +261,8 @@
 	res$delta <- st[, 4L]; res$delta_low <- st[, 5L]; res$delta_high <- st[, 6L]
 	list(pairs = res, partitions = parts_tab, k = k, alphas = alphas, draws = nrow(po),
 		computed = TRUE, method = method, n_partitions = .bay_bell(k), sweeps = n_sweeps, mc_error = mc_error,
-		max_exact = .bay_posthoc_max_groups(rm || !is.null(cov)), delta_unit = if (rm) "within" else if (!is.null(cov)) "adjusted" else "pooled")
+		max_exact = .bay_posthoc_max_groups(rm || !is.null(cov)), delta_unit = if (rm) "within" else if (!is.null(cov)) "adjusted" else "pooled",
+		dg = dg0)
 }
 
 # Paired data, two levels (D15): size of the difference from the posterior of ttestBF on the
@@ -284,7 +286,8 @@
 		diff = sc * a[1L], diff_low = sc * a[2L], diff_high = sc * a[3L], delta = b[1L], delta_low = b[2L], delta_high = b[3L],
 		stringsAsFactors = FALSE)
 	list(pairs = res, partitions = NULL, k = 2L, draws = nrow(po), computed = TRUE, method = "paired",
-		n_partitions = 2, sweeps = NA_integer_, mc_error = 0, delta_unit = "diff", n_pairs = length(pr$id))
+		n_partitions = 2, sweeps = NA_integer_, mc_error = 0, delta_unit = "diff", n_pairs = length(pr$id),
+		dg = .bay_dg(tapply(y, g, mean)))
 }
 
 # Slopes that differ between groups (D16): one adjusted gap no longer has a meaning, it

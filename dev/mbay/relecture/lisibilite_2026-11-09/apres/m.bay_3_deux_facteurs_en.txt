@@ -1,0 +1,63 @@
+1) Plan recognised: 2 crossed factors, A (2 levels), B (3 levels); 6 cells,
+   N = 60.
+	==> Terms: A, B, A:B. 5 combinations of terms are possible (an
+	    interaction enters only with its factors: heredity).
+	--> One answer per term, obtained by weighing these 5 combinations
+	    together.
+2) Checks on the data [quantile() {stats}] - 1 far value, kept.
+	==> Sizes: 10 per cell (N = 60).
+	==> Ties: none.
+	==> Values far from their cell: 6 beyond 1.5 interquartile ranges, 1
+	    beyond 3 (of 60).
+	--> No value is removed.
+3) Shape of the noise - normal with a common variance, only.
+	==> Several factors: only the normal law with a common variance is
+	    computed.
+	Note: heavy tails and unequal variances are not validated with several
+	      factors yet.
+	--> 1 value lies beyond 3 interquartile ranges (step 2): read the answer
+	    with caution.
+4) Starting point (priors) - no difference at all: 33.3 %.
+	==> Chance of each term in advance: A 50.0 %, B 50.0 %, A:B 16.7 %.
+	==> Expected size r = 0.5 per term.
+	Note: these chances do not add up; the more terms, the less likely each
+	      one, which guards against false interactions.
+	Note: these values are not tuned on the data; step 5 varies them.
+5) Solidity of the answer [lmBF() {BayesFactor}] - B changes side with the
+   prior.
+	==> 5 models compared (combinations of terms).
+	==> Precision of the computation: about 0.3 point on the probabilities,
+	    negligible.
+	Note: varied: r from 0.25 to 1, three priors on the models.
+	==> B changes side: 21.4 % to 70.6 %.
+	--> Caution added: B will be called not settled.
+6) Which groups differ - not available with several factors.
+
+7) Bilan - y differs according to at least one factor: 99.0 % (strong support).
+	==> Verdict: a difference very probably exists.
+	==> 1. y differs according to at least one factor : 99.0 % (strong
+	    support)
+	==> 2. No difference in y according to A, B : 1.0 %
+	Note: the data are 49.7 times more probable under hypothesis 1 than
+	      under 2 (Bayes factor 49.7).
+	==> Depending on the starting point: 98.2 % to 99.5 %; the order does
+	    not change.
+	==> A (alone or in interaction): yes, strong support (98.8 %; prior
+	    50.0 %; Bayes factor 82.4).
+	==> B (alone or in interaction): not settled (60.1 %; prior 50.0 %;
+	    Bayes factor 1.51).
+	==> A:B (the gaps along A change with B): not settled (39.3 %; prior
+	    16.7 %; Bayes factor 3.24).
+	==> Observed means, A: A1 = 9.8; A2 = 11.7 (n = 30).
+	==> Observed means, B: B1 = 10.8; B2 = 10.2; B3 = 11.3 (n = 20).
+	==> Per cell: A1 x B1 = 10.5; A2 x B1 = 11.1; A1 x B2 = 8.4;
+	    A2 x B2 = 11.9; A1 x B3 = 10.6; A2 x B3 = 12.0.
+	Note: within-cell standard deviation: 1.78; normal law with a common
+	      variance only.
+	Note: this says neither that the difference matters, nor why: a cause
+	      depends on how the study was run.
+	Note: for a report: "y differs according to at least one factor:
+	      posterior probability 99.0 %, Bayes factor 49.7 (m.bay {KefiR},
+	      BayesFactor, Rouder et al. 2012)."
+	Note: probabilities of hypotheses, not p-values; method in detail:
+	      print(result, detail = TRUE).

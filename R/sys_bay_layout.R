@@ -1,0 +1,167 @@
+# sys_bay_layout.R
+# The bilan of m.bay, one skeleton for every plan (relecture/lisibilite_2026-11-09): the
+# last step of the story, visible at once ("7) Bilan - <leading hypothesis>: xx % (support)."),
+# then the verdict, the hypotheses numbered and aligned, what the answer rests on, its
+# stability, the answers of the plan (terms, pairs, slopes), what was observed, and short
+# notes. The pairs are given in detail at step 6 only; here, their short list. Every line
+# is folded within 80 columns by the emitter of sys_bay_story.R.
+
+.bay_lang_fr <- function() identical(.msg("en", "fr"), "fr")
+
+# Number of decimals of the response: that of the means (3 significant digits).
+.bay_dg <- function(x) {
+	m <- max(abs(x[is.finite(x)]), 1e-300)
+	min(6L, max(0L, 2L - floor(log10(m))))
+}
+.bay_fx <- function(x, dg, dc) gsub(".", dc, formatC(x, format = "f", digits = dg), fixed = TRUE)
+
+# Leading hypothesis: its label, probability, support and the Bayes factor in its favour.
+.bay_lead_info <- function(obj) {
+	h <- obj$hypotheses
+	lb <- log(h$posterior[1L] / h$posterior[2L]) - log(h$prior[1L] / h$prior[2L])
+	sup <- .bay_support_bf(h$posterior[1L], lb)
+	if (isTRUE(obj$contradiction)) sup <- .bay_support(min(h$posterior[1L], 0.6))
+	if (isTRUE(any(obj$overlap$poor)) && sup$level > 2L) sup <- .bay_support(0.7)
+	open <- identical(obj$sensitivity$verdict, "changes")
+	if (open) sup <- list(en = "not settled", fr = "non tranch\u00e9", level = 1L)
+	list(h = h, lb = lb, sup = sup, open = open)
+}
+
+# How to cite the method, per plan.
+.bay_cite <- function(obj) {
+	switch(obj$plan,
+		oneway = list(en = "comparison of noise laws, Rouder et al. 2012", fr = "comparaison de lois du bruit, Rouder et al. 2012"),
+		paired = list(en = "Bayesian paired t test, Rouder et al. 2009", fr = "test t appari\u00e9 bay\u00e9sien, Rouder et al. 2009"),
+		contingency = list(en = "Gunel and Dickey 1974", fr = "Gunel et Dickey 1974"),
+		list(en = "BayesFactor, Rouder et al. 2012", fr = "BayesFactor, Rouder et al. 2012"))
+}
+
+.bay_bilan_common <- function(obj, narrated = FALSE, body = NULL) {
+	emit <- .bay_emitter()
+	fr <- .bay_lang_fr(); dc <- if (fr) "," else "."
+	li <- .bay_lead_info(obj)
+	h <- li$h
+	pct <- function(p) .bay_pct(p, dc)
+	k <- if (!is.null(obj$story$k)) obj$story$k + 1L else 7L
+	lead_en <- paste0(h$label_en[1L], ": ", .bay_pct(h$posterior[1L], "."), " (", li$sup$en, ")")
+	lead_fr <- paste0(h$label_fr[1L], " : ", .bay_pct(h$posterior[1L], ","), " (", li$sup$fr, ")")
+	if (isTRUE(narrated)) {
+		cat("\n")
+		emit("title", paste0(k, ") Bilan - ", lead_en, "."), paste0(k, ") Bilan - ", lead_fr, "."))
+	} else {
+		ns <- obj$n_subjects
+		sub_en <- if (!is.null(ns) && !is.na(ns)) paste0(", ", ns, " subjects") else ""
+		sub_fr <- if (!is.null(ns) && !is.na(ns)) paste0(", ", ns, " sujets") else ""
+		emit("title", paste0("Bilan of m.bay (", obj$label, ", N = ", obj$n, sub_en, ") - ", lead_en, "."),
+			paste0("Bilan de m.bay (", obj$label, ", N = ", obj$n, sub_fr, ") - ", lead_fr, "."))
+	}
+	v <- .bay_verdict(obj)
+	first <- function(x) sub("^([^.]*\\.).*$", "\\1", x)
+	emit("fact", first(v$en), first(v$fr))
+	w_en <- max(nchar(h$label_en)); w_fr <- max(nchar(h$label_fr))
+	# Padding in non-breaking spaces, which the folding keeps.
+	# Aligned only if the line still fits; otherwise, no padding.
+	fit <- max(w_en, w_fr) + 32L <= .bay_width() - 12L
+	pad <- function(x, w) if (fit) paste0(x, strrep("\u00a0", w - nchar(x))) else x
+	for (i in seq_len(nrow(h))) {
+		emit("fact", paste0(i, ". ", pad(h$label_en[i], w_en), " : ", .bay_pct(h$posterior[i], "."), if (i == 1L) paste0(" (", li$sup$en, ")") else ""),
+			paste0(i, ". ", pad(h$label_fr[i], w_fr), " : ", .bay_pct(h$posterior[i], ","), if (i == 1L) paste0(" (", li$sup$fr, ")") else ""))
+	}
+	bf_en <- .bay_bf_txt(abs(li$lb), "."); bf_fr <- .bay_bf_txt(abs(li$lb), ",")
+	emit("note", paste0("the data are ", bf_en, " times more probable under hypothesis 1 than under 2 (Bayes factor ", bf_en, ")."),
+		paste0("les donn\u00e9es sont ", bf_fr, " fois plus probables sous l'hypoth\u00e8se 1 que sous la 2 (facteur de Bayes ", bf_fr, ")."))
+	sens <- obj$sensitivity
+	if (!is.null(sens$range_lead)) {
+		rg <- sens$range_lead
+		if (li$open) {
+			emit("decide", paste0("Depending on the starting point: ", .bay_pct(rg[1L], "."), " to ", .bay_pct(rg[2L], "."), "; the order can reverse, not settled."),
+				paste0("Selon le point de d\u00e9part : ", .bay_pct(rg[1L], ","), " \u00e0 ", .bay_pct(rg[2L], ","), " ; l'ordre peut s'inverser, non tranch\u00e9."))
+		} else if (identical(.bay_pct(rg[1L], "."), .bay_pct(rg[2L], "."))) {
+			emit("fact", paste0("Whatever the starting point: ", .bay_pct(rg[1L], "."), "."),
+				paste0("Quel que soit le point de d\u00e9part : ", .bay_pct(rg[1L], ","), "."))
+		} else {
+			emit("fact", paste0("Depending on the starting point: ", .bay_pct(rg[1L], "."), " to ", .bay_pct(rg[2L], "."), "; the order does not change."),
+				paste0("Selon le point de d\u00e9part : ", .bay_pct(rg[1L], ","), " \u00e0 ", .bay_pct(rg[2L], ","), " ; l'ordre ne change pas."))
+		}
+	}
+	if (is.null(sens) && !isTRUE(narrated)) {
+		emit("note", "sensitivity to the priors not computed (sensitivity = FALSE).",
+			"sensibilit\u00e9 aux a priori non calcul\u00e9e (sensitivity = FALSE).")
+	}
+	if (is.function(body)) body(emit, li, narrated)
+	if (isTRUE(h$null[1L] == FALSE) && h$posterior[1L] >= 0.6) {
+		emit("note", "this says neither that the difference matters, nor why: a cause depends on how the study was run.",
+			"cela ne dit ni que la diff\u00e9rence est importante, ni pourquoi : la cause d\u00e9pend de la fa\u00e7on dont l'\u00e9tude a \u00e9t\u00e9 men\u00e9e.")
+	}
+	ct <- .bay_cite(obj)
+	emit("note", paste0("for a report: \"", h$label_en[1L], ": posterior probability ", .bay_pct(h$posterior[1L], "."), ", Bayes factor ", bf_en,
+			" (m.bay {KefiR}, ", ct$en, ").\""),
+		paste0("pour un compte rendu : \u00ab ", h$label_fr[1L], " : probabilit\u00e9 a posteriori ", .bay_pct(h$posterior[1L], ","), ", facteur de Bayes ", bf_fr,
+			" (m.bay {KefiR}, ", ct$fr, "). \u00bb"))
+	if (length(obj$notes$en) && !isTRUE(narrated)) {
+		for (i in seq_along(obj$notes$en)) emit("note", obj$notes$en[i], obj$notes$fr[i])
+	}
+	emit("note", "probabilities of hypotheses, not p-values; method in detail: print(result, detail = TRUE).",
+		"probabilit\u00e9s d'hypoth\u00e8ses, pas des p-values ; m\u00e9thode en d\u00e9tail : print(resultat, detail = TRUE).")
+	invisible(emit)
+}
+
+# The details kept by the story (method, references), then those of the printer.
+.bay_detail_head <- function(obj) {
+	emit <- .bay_emitter()
+	cat("\n")
+	emit("title", "Method in detail:", "M\u00e9thode en d\u00e9tail :")
+	d_en <- obj$story$detail_en; d_fr <- obj$story$detail_fr
+	for (i in seq_along(d_en)) emit("note", d_en[i], d_fr[i])
+	function(en, fr) emit("note", sub("^ +", "", en), sub("^ +", "", fr))
+}
+
+# Short list of the pairs, grouped by answer and support; "alike" only when the bilan
+# leans towards a difference somewhere, otherwise "not settled" (relecture D17, point 3).
+.bay_pairs_short <- function(ph, emit, undecided, narrated) {
+	pr <- ph$pairs
+	if (is.null(pr) || anyNA(pr$p_differ)) return(invisible(NULL))
+	lab <- paste0(pr$group1, "/", pr$group2)
+	cls <- character(nrow(pr)); s_en <- s_fr <- character(nrow(pr))
+	for (i in seq_len(nrow(pr))) {
+		p <- pr$p_differ[i]
+		s <- .bay_support(max(p, 1 - p))
+		open <- isTRUE(pr$p_min[i] < 0.5 && pr$p_max[i] > 0.5) || s$level == 1L
+		cls[i] <- if (open) "open" else if (p >= 0.5) "diff" else if (undecided && s$level <= 2L) "open" else "same"
+		s_en[i] <- sub(" support", "", s$en); s_fr[i] <- sub("soutien ", "", s$fr)
+	}
+	grp <- function(sel, by_support) {
+		if (!any(sel)) return(NULL)
+		key <- if (by_support) s_en[sel] else rep("", sum(sel))
+		pe <- pf <- character(0)
+		for (kk in unique(key)) {
+			lb <- paste(lab[sel][key == kk], collapse = ", ")
+			kf <- unique(s_fr[sel][key == kk])[1L]
+			pe <- c(pe, paste0(lb, if (nzchar(kk)) paste0(" (", kk, ")") else ""))
+			pf <- c(pf, paste0(lb, if (nzchar(kk)) paste0(" (", kf, ")") else ""))
+		}
+		list(en = paste(pe, collapse = "; "), fr = paste(pf, collapse = " ; "))
+	}
+	a <- grp(cls == "diff", TRUE); b <- grp(cls == "same", TRUE); c0 <- grp(cls == "open", FALSE)
+	if (!is.null(a)) emit("fact", paste0("Different: ", a$en, "."), paste0("Diff\u00e9rents : ", a$fr, "."))
+	if (!is.null(b)) emit("fact", paste0("Alike: ", b$en, "."), paste0("Semblables : ", b$fr, "."))
+	if (!is.null(c0)) emit("fact", paste0("Not settled: ", c0$en, "."), paste0("Non tranch\u00e9s : ", c0$fr, "."))
+	top <- .bay_top_grouping(ph)
+	if (!is.null(top)) {
+		emit("fact", paste0("If a difference exists, most probable grouping: ", top$label, " (", .bay_pct(top$p, "."), ")."),
+			paste0("Si une diff\u00e9rence existe, regroupement le plus probable : ", top$label, " (", .bay_pct(top$p, ","), ")."))
+	}
+	emit("note", if (narrated) "gaps in figures: step 6." else "gaps in figures: $posthoc$pairs.",
+		if (narrated) "\u00e9carts chiffr\u00e9s : \u00e9tape 6." else "\u00e9carts chiffr\u00e9s : $posthoc$pairs.")
+	invisible(NULL)
+}
+
+# Leading grouping among those with a difference, its probability given a difference.
+.bay_top_grouping <- function(ph) {
+	pt <- ph$partitions
+	if (is.null(pt) || !nrow(pt)) return(NULL)
+	null <- !grepl("[<>]", pt$partition)
+	if (all(null)) return(NULL)
+	nn <- pt[!null, , drop = FALSE]
+	list(label = nn$partition[1L], p = nn$posterior[1L] / sum(nn$posterior))
+}

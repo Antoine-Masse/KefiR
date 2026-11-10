@@ -1,0 +1,57 @@
+1) Plan recognised: one factor, g, with 2 groups (A, B); N = 40.
+	--> One question: does y differ according to g?
+	Note: no preliminary test chooses the method: the shapes of the noise
+	      are compared.
+2) Checks on the data [quantile() {stats}] - nothing to remove.
+	==> Sizes: 20 per group (N = 40).
+	==> Ties: none.
+	==> Values far from their group: 0 beyond 1.5 interquartile ranges, 0
+	    beyond 3 (of 40).
+	--> Nothing to remove.
+3) Shapes of the noise [m.bay() {KefiR}] - normal, equal variances ahead
+   (51.9 %).
+	==> Probabilities: normal, equal variances 51.9 %; normal, unequal
+	    variances 22.2 %; heavy tails, equal variances 17.7 %; heavy tails,
+	    unequal variances 8.2 %.
+	==> Variances: the data lean towards equal variances without settling it
+	    (unequal at 30.4 %).
+	--> The answer bears mainly on the means (normal shapes: 74.1 %).
+	Note: no shape is chosen: each answer is weighted by its probability.
+4) Starting point (priors) - 50.0 % chance of a difference (heads or tails).
+	==> Expected size r = 0.5; each shape of the noise starts at 25.0 %.
+	Note: these values are not tuned on the data; step 5 varies them.
+5) Solidity of the answer [m.bay() {KefiR}] - Bayes factor 0.354, the answer can
+   reverse.
+	==> Bayes factor: 0.354, i.e. 2.82 in favour of no difference (close to
+	    1: the data hardly tell the two apart).
+	Note: Bayes factor: how many times more probable the data are with a
+	      difference than without.
+	==> Precision of the computation: about 0.6 % on the Bayes factor,
+	    negligible.
+	==> Sensitivity: "No difference in y according to g" goes from 48.0 % to
+	    90.9 %.
+	Note: varied: r from 0.25 to 1, starting chances from 1 against 2 to 2
+	      against 1, spread of the variances.
+	--> Caution added: the leading hypothesis can reverse; the bilan will
+	    not assert it.
+6) Which groups differ, and by how much [lmBF(), posterior() {BayesFactor},
+   hdi() {bayestestR}] - B - A = 0.4 [-0.9; 1.8].
+	==> Estimated gap B - A = 0.4 [-0.9; 1.8], i.e. 0.18 SD.
+	Note: [ ; ] = 95 % credible interval (95 % chance that the gap lies
+	      there); gap pulled a little towards 0.
+
+7) Bilan - No difference in y according to g: 73.9 % (not settled).
+	==> Verdict: undecided.
+	==> 1. No difference in y according to g : 73.9 % (not settled)
+	==> 2. y differs according to g          : 26.1 %
+	Note: the data are 2.82 times more probable under hypothesis 1 than
+	      under 2 (Bayes factor 2.82).
+	--> Depending on the starting point: 48.0 % to 90.9 %; the order can
+	    reverse, not settled.
+	==> Estimated gap B - A: 0.4 [-0.9; 1.8] (step 6).
+	==> Observed means: A = 10.4; B = 11.0 (n = 20 per group).
+	Note: for a report: "No difference in y according to g: posterior
+	      probability 73.9 %, Bayes factor 2.82 (m.bay {KefiR}, comparison
+	      of noise laws, Rouder et al. 2012)."
+	Note: probabilities of hypotheses, not p-values; method in detail:
+	      print(result, detail = TRUE).

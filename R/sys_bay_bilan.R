@@ -128,123 +128,41 @@
 # short enough for a student or an engineer; detail = TRUE adds the shapes of the noise,
 # the varied priors and how to read the numbers.
 .bay_print_bilan <- function(obj, detail = FALSE, narrated = FALSE) {
-	lang_fr <- identical(.msg("en", "fr"), "fr")
-	dec <- if (lang_fr) "," else "."
-	# As the last step of the story, the conclusion is indented under its title and leaves
-	# out what the steps already said (title, starting point, warnings).
-	pre <- if (isTRUE(narrated)) "\t" else ""
-	say <- function(en, fr) cat(pre, .msg(en, fr), "\n", sep = "")
-	num <- function(x) gsub(".", dec, format(signif(x, 3), trim = TRUE), fixed = TRUE)
-	if (!isTRUE(narrated)) {
-		say(paste0("Bilan of m.bay: ", obj$label, " (N = ", obj$n, ")"),
-			paste0("Bilan de m.bay : ", obj$label, " (N = ", obj$n, ")"))
-	}
-
-	v <- .bay_verdict(obj)
-	say(v$en, v$fr)
-
-	# Hypotheses. A contradiction between the normal and the heavy-tailed laws caps the
-	# qualifier and is said right after.
-	say("Probability of each hypothesis, given the data and the starting point:",
-		"Probabilit\u00e9 de chaque hypoth\u00e8se, compte tenu des donn\u00e9es et du point de d\u00e9part :")
-	h <- obj$hypotheses
-	lb_lead <- obj$effects$log_bf[1L] * if (isTRUE(h$null[1L])) -1 else 1
-	sup <- .bay_support_bf(h$posterior[1L], lb_lead)
-	if (isTRUE(obj$contradiction)) sup <- .bay_support(min(h$posterior[1L], 0.6))
-	width_en <- max(nchar(h$label_en))
-	width_fr <- max(nchar(h$label_fr))
-	args <- .bay_hyp_args_oneway(obj)
-	for (i in seq_len(nrow(h))) {
-		tail_en <- if (i == 1L) paste0(" (", sup$en, ")") else ""
-		tail_fr <- if (i == 1L) paste0(" (", sup$fr, ")") else ""
-		say(paste0("  ", i, ". ", formatC(h$label_en[i], width = -width_en), " : ",
-				.bay_pct(h$posterior[i], "."), tail_en),
-			paste0("  ", i, ". ", formatC(h$label_fr[i], width = -width_fr), " : ",
-				.bay_pct(h$posterior[i], ","), tail_fr))
-		if (!is.null(args)) say(paste0("     ", args$en[i]), paste0("     ", args$fr[i]))
-	}
-	if (isTRUE(obj$contradiction)) {
-		say("  Read with caution: the normal law (means) and the heavy-tailed laws (centres) contradict each other. The comparison then bears on the centres of the groups, not on their means; the support is capped at weak.",
-			"  \u00c0 lire avec r\u00e9serve : la loi normale (moyennes) et les queues lourdes (centres) se contredisent. La comparaison porte alors sur les centres des groupes, pas sur leurs moyennes ; le soutien est plafonn\u00e9 \u00e0 faible.")
-	}
-
-	# Verdict of the sensitivity, next to what it qualifies.
 	sens <- obj$sensitivity
-	if (!is.null(sens)) {
-		rng <- sens$range_lead
-		rng_en <- paste0(.bay_pct(rng[1L], "."), " to ", .bay_pct(rng[2L], "."))
-		rng_fr <- paste0(.bay_pct(rng[1L], ","), " \u00e0 ", .bay_pct(rng[2L], ","))
-		if (identical(sens$verdict, "changes")) {
-			say(paste0("  Depending on the starting point, the probability of hypothesis 1 goes from ", rng_en, ": the order can reverse."),
-				paste0("  Selon le point de d\u00e9part, la probabilit\u00e9 de l'hypoth\u00e8se 1 va de ", rng_fr, " : l'ordre peut s'inverser."))
-		} else if (identical(sens$verdict, "crosses")) {
-			say(paste0("  Depending on the starting point, the probability of hypothesis 1 goes from ", rng_en, "; the order does not change."),
-				paste0("  Selon le point de d\u00e9part, la probabilit\u00e9 de l'hypoth\u00e8se 1 va de ", rng_fr, " ; l'ordre ne change pas."))
-		} else {
-			if (identical(.bay_pct(rng[1L], "."), .bay_pct(rng[2L], "."))) {
-				say(paste0("  Unchanged whatever the starting point (always ", .bay_pct(rng[1L], "."), ")."),
-					paste0("  Inchang\u00e9 quel que soit le point de d\u00e9part (toujours ", .bay_pct(rng[1L], ","), ")."))
-			} else {
-				say(paste0("  Depending on the starting point: ", rng_en, "; the order does not change."),
-					paste0("  Selon le point de d\u00e9part : ", rng_fr, " ; l'ordre ne change pas."))
-			}
-		}
-	} else if (!isTRUE(narrated)) {
-		say("  Sensitivity to the priors not computed (sensitivity = FALSE).",
-			"  Sensibilit\u00e9 aux a priori non calcul\u00e9e (sensitivity = FALSE).")
-	}
-
-	# Per term; with one term, the lines above already answer it, and only the strength of
-	# the evidence is added, said in the direction of the favoured hypothesis.
-	e <- obj$effects
-	if (nrow(e) > 1L) {
-		say("Answer per term:", "R\u00e9ponse par terme :")
-		for (i in seq_len(nrow(e))) {
-			say(paste0("  ", obj$questions$en[i], " Yes ", .bay_pct(e$p_h1[i], "."), ", no ", .bay_pct(e$p_h0[i], "."),
-					" (Bayes factor ", .bay_bf_txt(e$log_bf[i], "."), ")."),
-				paste0("  ", obj$questions$fr[i], " Oui ", .bay_pct(e$p_h1[i], ","), ", non ", .bay_pct(e$p_h0[i], ","),
-					" (facteur de Bayes ", .bay_bf_txt(e$log_bf[i], ","), ")."))
-		}
-	}
-
-	# Size, descriptive.
-	d <- obj$descriptive_stats
-	dg <- max(0L, 2L - floor(log10(max(abs(d$mean), 1e-300))))
-	fmt <- function(x, dc) gsub(".", dc, formatC(x, format = "f", digits = dg), fixed = TRUE)
-	hi <- which.max(d$mean)
-	lo <- which.min(d$mean)
-	gap <- d$mean[hi] - d$mean[lo]
-	ph <- obj$posthoc
-	if (!is.null(ph)) .bay_print_posthoc(ph, say)
-	if (!is.null(ph) && isTRUE(ph$k > 2L)) {
-		say("Observed means (description of the sample):", "Moyennes observ\u00e9es (description de l'\u00e9chantillon) :")
-	} else say("Observed means (description of the sample, not a test of which groups differ):",
-		"Moyennes observ\u00e9es (description de l'\u00e9chantillon ; ce bilan ne dit pas quels groupes diff\u00e8rent) :")
-	say(paste0("  ", paste0(d$group, " = ", fmt(d$mean, "."), " (n = ", d$n, ")", collapse = "; "), "."),
-		paste0("  ", paste0(d$group, " = ", fmt(d$mean, ","), " (n = ", d$n, ")", collapse = " ; "), "."))
-	if (isTRUE(obj$contradiction) || isTRUE(obj$heavy)) {
-		say(paste0("  Medians, closer to the centres compared: ", paste0(d$group, " = ", fmt(d$median, "."), collapse = "; "), "."),
-			paste0("  M\u00e9dianes, plus proches des centres compar\u00e9s : ", paste0(d$group, " = ", fmt(d$median, ","), collapse = " ; "), "."))
-	}
-
-	# Priors, one line (said at step 3 of the story).
 	p <- obj$priors
-	if (!isTRUE(narrated)) say(paste0("Starting point, set by the method before seeing the data: ", .bay_pct(p$prior_h1, "."), " chance that a difference exists, expected size r = ",
-			format(signif(p$rscale, 3), trim = TRUE), "."),
-		paste0("Point de d\u00e9part, fix\u00e9 par la m\u00e9thode avant de voir les donn\u00e9es : ", .bay_pct(p$prior_h1, ","), " de chances qu'une diff\u00e9rence existe, taille attendue r = ",
-			num(p$rscale), "."))
-	say("These are probabilities of hypotheses, not p-values: no threshold of 5 % applies. Whether a difference has a cause depends on how the study was run (randomisation, order, operator).",
-		"Ce sont des probabilit\u00e9s d'hypoth\u00e8ses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une diff\u00e9rence d\u00e9pend de la fa\u00e7on dont l'\u00e9tude a \u00e9t\u00e9 men\u00e9e (tirage au sort, ordre, op\u00e9rateur).")
-
-	if (length(obj$notes$en) && !isTRUE(narrated)) {
-		say("Warnings:", "Avertissements :")
-		for (i in seq_along(obj$notes$en)) say(paste0("  ", obj$notes$en[i]), paste0("  ", obj$notes$fr[i]))
+	dec <- if (.bay_lang_fr()) "," else "."
+	num <- function(x) gsub(".", dec, format(signif(x, 3), trim = TRUE), fixed = TRUE)
+	body <- function(emit, li, narrated) {
+		d <- obj$descriptive_stats
+		dg <- .bay_dg(d$mean)
+		ph <- obj$posthoc
+		undecided <- li$h$posterior[1L] < 0.6 || li$open
+		if (!is.null(ph) && ph$k > 2L) .bay_pairs_short(ph, emit, undecided, narrated)
+		if (!is.null(ph) && ph$k == 2L) {
+			pr <- ph$pairs
+			ci <- function(dc) paste0(.bay_fx(pr$diff, dg, dc), " [", .bay_fx(pr$diff_low, dg, dc), if (dc == ",") " ; " else "; ", .bay_fx(pr$diff_high, dg, dc), "]")
+			emit("fact", paste0("Estimated gap ", pr$group2, " - ", pr$group1, ": ", ci("."), if (narrated) " (step 6)." else "."),
+				paste0("\u00c9cart estim\u00e9 ", pr$group2, " - ", pr$group1, " : ", ci(","), if (narrated) " (\u00e9tape 6)." else "."))
+		}
+		centres <- isTRUE(obj$heavy) || isTRUE(obj$contradiction) || isTRUE(obj$p_tails > 0.5)
+		val <- if (centres) d$median else d$mean
+		same_n <- length(unique(d$n)) == 1L
+		obs <- function(dc) paste0(paste0(d$group, " = ", .bay_fx(val, dg, dc), if (!same_n) paste0(" (n = ", d$n, ")") else "", collapse = if (dc == ",") " ; " else "; "),
+			if (same_n) paste0(" (n = ", d$n[1L], if (dc == ",") " par groupe)" else " per group)") else "")
+		emit("fact", paste0(if (centres) "Observed medians: " else "Observed means: ", obs("."), "."),
+			paste0(if (centres) "M\u00e9dianes observ\u00e9es : " else "Moyennes observ\u00e9es : ", obs(","), "."))
+		if (isTRUE(obj$contradiction)) {
+			emit("note", "centres and means do not tell the same story (step 5): support capped at weak.",
+				"centres et moyennes ne racontent pas la m\u00eame chose (\u00e9tape 5) : soutien plafonn\u00e9 \u00e0 faible.")
+		}
+		if (!is.null(ph) && isTRUE(ph$caution)) {
+			emit("note", "the pairs assume a normal noise with a common variance, which step 3 did not find: read them with caution.",
+				"les paires supposent un bruit normal \u00e0 variance commune, ce que l'\u00e9tape 3 n'a pas trouv\u00e9 : les lire avec r\u00e9serve.")
+		}
 	}
-	if (!isTRUE(detail)) {
-		say("Shapes of the noise, priors in detail, how to read: print(result, detail = TRUE).",
-			"Formes du bruit, a priori en d\u00e9tail, mode de lecture : print(resultat, detail = TRUE).")
-		return(invisible(obj))
-	}
+	.bay_bilan_common(obj, narrated, body)
+	if (!isTRUE(detail)) return(invisible(obj))
+	say <- .bay_detail_head(obj)
 
 	# Detail.
 	if (!is.null(sens)) {
@@ -448,4 +366,12 @@
 	if (isTRUE(ph$caution)) say("  To read with caution: these pairs assume a normal noise with a common variance, which the comparison of noise forms did not find.",
 		"  \u00c0 lire avec r\u00e9serve : ces paires supposent un bruit normal \u00e0 variance commune, ce que la comparaison des formes du bruit n'a pas trouv\u00e9.")
 	invisible(NULL)
+}
+
+# Precision of a computation, one rule: below 0.1, "< 0.1".
+.bay_prec_txt <- function(x, unit = "%") {
+	if (!is.finite(x)) return(list(en = "unknown", fr = "inconnue"))
+	if (x < 0.1) return(list(en = paste0("< 0.1 ", unit), fr = paste0("< 0,1 ", unit)))
+	v <- format(round(x, 1), nsmall = 1, trim = TRUE)
+	list(en = paste0("about ", v, " ", unit), fr = paste0("environ ", gsub(".", ",", v, fixed = TRUE), " ", unit))
 }

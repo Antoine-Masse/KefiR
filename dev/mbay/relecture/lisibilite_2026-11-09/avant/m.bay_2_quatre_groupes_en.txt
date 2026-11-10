@@ -1,0 +1,51 @@
+1) Plan recognised: one factor, g, with 4 groups (a, b, c, d); N = 60.
+	--> One question: is there a difference in y according to g? No preliminary test chooses the method: the shapes of the noise will be compared, not chosen.
+2) Checks on the data.
+	==> Sizes: 15 per group (4 groups, N = 60).
+	==> Ties: none.
+	==> Values far from their group: 1 of 60 beyond 1.5 interquartile ranges, 1 beyond 3. [Tukey, quantile() {stats}]
+	--> No value is removed: the 4 shapes of the noise stay in the running, and the heavy-tailed ones are there for such values.
+3) Starting point (priors), set before seeing the data.
+	==> 50.0 % chance that a difference exists (even odds: the method takes no side); expected size r = 0.5 ("medium" scale of Rouder et al. 2012); each of the 4 shapes of the noise starts at 25.0 %.
+	==> With more than 2 groups, two forms of a difference start equal: all groups may differ, or one group alone stands apart.
+	--> These values are not tuned on the data; step 5 varies them to see whether the answer holds.
+4) Comparison of the shapes of the noise (how values scatter around the centre of their group: normal or heavy tails, equal variances or not). [m.bay() {KefiR}, importance sampling]
+	==> Posterior probabilities: normal, equal variances 67.2 %; heavy tails, equal variances 23.1 %; normal, unequal variances 6.7 %; heavy tails, unequal variances 3.0 %.
+	==> Equal variances probable (90.3 %).
+	--> The normal shapes are the more probable (73.9 %): the answer bears mainly on the means.
+	--> No shape is chosen: the answer of each one is weighted by its probability.
+5) Bayes factor and numerical precision. [m.bay() {KefiR}]
+	==> Bayes factor, difference against none: 623 (the data favour a difference).
+	==> Imprecision of the computation by simulation: about 0.66 % on the Bayes factor, without effect on the conclusion (this is not a risk of error).
+	==> Sensitivity: expected size r from 0.25 to 1, starting chances of a difference from 1 against 2 to 2 against 1, spread of the variances between groups. "y differs according to g" then goes from 99.5 % to > 99.9 %. [m.bay() {KefiR}]
+	--> The answer does not depend on these choices.
+6) Which groups differ, and by how much. [lmBF(), posterior() {BayesFactor}, hdi() {bayestestR}]
+	==> Most probable groupings (15 compared): a = c < b = d (58.6 %); a = c < b < d (21.4 %); a < c < b = d (14.3 %).
+	==> a and b: different at 99.4 %; estimated gap b - a = 2 [0.64; 3.3], i.e. 1.1 [0.29; 1.8] SD.
+	==> a and c: different at 19.5 %; estimated gap c - a = 0.03 [-1.2; 1.3], i.e. 0.016 [-0.63; 0.68] SD.
+	==> a and d: different at 99.8 %; estimated gap d - a = 2.5 [1.2; 3.8], i.e. 1.4 [0.58; 2.1] SD.
+	==> b and c: different at 99.3 %; estimated gap c - b = -2 [-3.2; -0.54], i.e. -1.1 [-1.8; -0.3] SD.
+	==> b and d: different at 26.8 %; estimated gap d - b = 0.54 [-0.6; 1.9], i.e. 0.29 [-0.33; 0.98] SD.
+	==> c and d: different at 99.8 %; estimated gap d - c = 2.5 [1.2; 3.9], i.e. 1.3 [0.58; 2.1] SD.
+	Estimated gap: posterior median, pulled slightly towards zero by the prior, hence a little smaller than the observed gap of step 7. Brackets: 95 % credible interval, if a difference exists (the value lies there with 95 % probability; not a confidence interval).
+	--> All pairs come from one single law over the groupings: no correction pair by pair is needed, and the answers cannot contradict each other.
+7) Conclusion: the hypotheses ranked, what each one rests on, its support.
+	Verdict: a difference very probably exists. This says neither that it matters nor why; the pairs are below.
+	Probability of each hypothesis, given the data and the starting point:
+	  1. y differs according to g          : 99.8 % (very strong support)
+	     Rests on all the gaps between groups, the largest between means (observed: d - a = 2.9, i.e. 1.58 pooled within-group SD): the data are 623 times more probable with a difference than without.
+	  2. No difference in y according to g : 0.2 %
+	     Against it: these data are 623 times more probable with a difference.
+	  Depending on the starting point: 99.5 % to > 99.9 %; the order does not change.
+	Which groups differ (normal law with a common variance; probability, then estimated gap and 95 % credible interval):
+	  a / b: different, very strong support (different at 99.4 %); estimated gap b - a = 2 [0.64; 3.3], delta = 1.1 [0.29; 1.8].
+	  a / c: alike, moderate support (different at 19.5 %); estimated gap c - a = 0.03 [-1.2; 1.3], delta = 0.016 [-0.63; 0.68].
+	  a / d: different, very strong support (different at 99.8 %); estimated gap d - a = 2.5 [1.2; 3.8], delta = 1.4 [0.58; 2.1].
+	  b / c: different, very strong support (different at 99.3 %); estimated gap c - b = -2 [-3.2; -0.54], delta = -1.1 [-1.8; -0.3].
+	  b / d: alike, weak support (different at 26.8 %); estimated gap d - b = 0.54 [-0.6; 1.9], delta = 0.29 [-0.33; 0.98].
+	  c / d: different, very strong support (different at 99.8 %); estimated gap d - c = 2.5 [1.2; 3.9], delta = 1.3 [0.58; 2.1].
+	  Most probable grouping: a = c < b = d (58.6 %).
+	Observed means (description of the sample):
+	  a = 10.2 (n = 15); b = 12.5 (n = 15); c = 10.3 (n = 15); d = 13.1 (n = 15).
+	These are probabilities of hypotheses, not p-values: no threshold of 5 % applies. Whether a difference has a cause depends on how the study was run (randomisation, order, operator).
+	Shapes of the noise, priors in detail, how to read: print(result, detail = TRUE).

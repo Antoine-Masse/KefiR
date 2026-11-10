@@ -1,0 +1,37 @@
+1) Plan recognised: 2 crossed factors, A (2 levels), B (3 levels); 6 cells, N = 60.
+	==> Terms: A, B, A:B. 5 combinations of terms are possible (an interaction enters only with its factors: heredity).
+	--> One answer per term, obtained by weighing these 5 combinations together.
+2) Checks on the data.
+	==> Sizes: 10 per cell (6 cells, N = 60).
+	==> Ties: none.
+	==> Values far from their cell: 6 of 60 beyond 1.5 interquartile ranges, 1 beyond 3. [Tukey, quantile() {stats}]
+	--> No value is removed.
+3) Shape of the noise.
+	==> With several factors, only the normal law with a common variance is computed: heavy tails and unequal variances are not validated there yet, so they are not compared.
+	--> 1 value(s) lie beyond 3 interquartile ranges of their cell (step 2): the answer assumes a normal noise, read it with caution.
+4) Starting point (priors), set by the method before seeing the data.
+	==> Size of an effect: r = 0.5 per term (Zellner-Siow). Chance of each term, taken alone (these chances do not add up): A 50.0 %, B 50.0 %, A:B 16.7 %; no difference at all 33.3 %.
+	--> Why: one proportion ~ Beta(1,1) per order of interaction (HOP, Taylor-Rodriguez et al. 2016): the more terms, the less likely each one in advance, which guards against false interactions; an interaction enters only with its factors.
+5) Bayes factors of the 5 models. [lmBF() {BayesFactor}]
+	==> Precision: computed again with another seed, the probabilities move by at most 0.28 percentage point(s), negligible.
+	==> Sensitivity: r from 0.25 to 1, crossed with three priors on the models (HOP, 1/2 per term, uniform). [m.bay() {KefiR}]
+	==> Term(s) that change side: B (21.4 % to 70.6 %).
+	--> Caution added: B will be called not settled, whatever its displayed probability.
+6) Conclusion: the hypotheses ranked, what each one rests on, its support.
+	Verdict: a difference very probably exists. This says neither that it matters, nor which groups differ, nor why.
+	  y differs according to at least one factor: 99.0 % (strong support); No difference in y according to A, B: 1.0 %.
+	     Rests on the most probable term: A (yes 98.8 %).
+	Answer per term (yes, no or not settled; probability of a yes given the data and the starting point, and its prior):
+	  Difference in y according to A, alone or in interaction? Yes, strong support (probability of a yes 98.8 %, prior 50.0 %).
+	     Rests on the data, which multiply its odds (yes against no) by 82.4 (Bayes factor).
+	  Difference in y according to B, alone or in interaction? Not settled (probability of a yes 60.1 %, prior 50.0 %; depending on the starting point 21.4 % to 70.6 %).
+	     The data make it lean only slightly towards yes (odds multiplied by 1.51, from a starting point of 50 %): too little to settle it.
+	  Do the differences according to A vary with B (A:B)? Not settled (probability of a yes 39.3 %, prior 16.7 %).
+	     The data lean towards yes (odds multiplied by 3.24); the prior (16.7 %) leans the other way: not settled.
+	Observed means per factor (description, not a test of which levels differ):
+	  A: A1 = 9.8 (n = 30); A2 = 11.7 (n = 30)
+	  B: B1 = 10.8 (n = 20); B2 = 10.2 (n = 20); B3 = 11.3 (n = 20)
+	  Per cell: A1 x B1 = 10.5; A2 x B1 = 11.1; A1 x B2 = 8.4; A2 x B2 = 11.9; A1 x B3 = 10.6; A2 x B3 = 12.0.
+	  Within-cell standard deviation: 1.8.
+	These are probabilities of hypotheses, not p-values: no threshold of 5 % applies. Whether a difference has a cause depends on how the study was run (randomisation, order, operator).
+	Bayes factors, priors in detail, how to read: print(result, detail = TRUE).

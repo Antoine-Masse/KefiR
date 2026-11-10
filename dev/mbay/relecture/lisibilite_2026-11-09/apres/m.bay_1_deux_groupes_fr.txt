@@ -1,0 +1,61 @@
+1) Plan reconnu : un facteur, g, à 2 groupes (A, B) ; N = 40.
+	--> Une question : y diffère-t-il selon g ?
+	Note : aucun test préalable ne choisit la méthode : les formes du bruit
+	       sont comparées.
+2) Contrôles des données [quantile() {stats}] - rien à retirer.
+	==> Effectifs : 20 par groupe (N = 40).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur groupe : 0 au-delà de 1,5 écart
+	    interquartile, 0 au-delà de 3 (sur 40).
+	--> Rien à retirer.
+3) Formes du bruit [m.bay() {KefiR}] - normale, variances égales en tête
+   (51,9 %).
+	==> Probabilités : normale, variances égales 51,9 % ; normale, variances
+	    inégales 22,2 % ; queues lourdes, variances égales 17,7 % ; queues
+	    lourdes, variances inégales 8,2 %.
+	==> Variances : les données penchent vers des variances égales sans
+	    trancher (inégales à 30,4 %).
+	--> La réponse porte surtout sur les moyennes (formes normales :
+	    74,1 %).
+	Note : aucune forme n'est choisie : chaque réponse est pondérée par sa
+	       probabilité.
+4) Point de départ (a priori) - 50,0 % de chances d'une différence (pile ou
+   face).
+	==> Taille attendue r = 0,5 ; chaque forme du bruit part à 25,0 %.
+	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
+	       fait varier.
+5) Solidité de la réponse [m.bay() {KefiR}] - facteur de Bayes 0,354, la réponse
+   peut s'inverser.
+	==> Facteur de Bayes : 0,354, soit 2,82 en faveur de l'absence de
+	    différence (proche de 1 : les données départagent à peine les deux).
+	Note : facteur de Bayes : combien de fois les données sont plus
+	       probables avec une différence que sans.
+	==> Précision du calcul : environ 0,6 % sur le facteur de Bayes,
+	    négligeable.
+	==> Sensibilité : « Aucune différence de y selon g » va de 48,0 % à
+	    90,9 %.
+	Note : variés : r de 0,25 à 1, chances de départ de 1 contre 2 à 2
+	       contre 1, répartition des variances.
+	--> Prudence ajoutée : l'hypothèse en tête peut s'inverser ; le bilan ne
+	    l'affirmera pas.
+6) Quels groupes diffèrent, et de combien [lmBF(), posterior() {BayesFactor},
+   hdi() {bayestestR}] - B - A = 0,4 [-0,9 ; 1,8].
+	==> Écart estimé B - A = 0,4 [-0,9 ; 1,8], soit 0,18 écart-type.
+	Note : [ ; ] = intervalle de crédibilité à 95 % (95 % de chances d'y
+	       trouver l'écart) ; écart un peu ramené vers 0.
+
+7) Bilan - Aucune différence de y selon g : 73,9 % (non tranché).
+	==> Verdict : indécis.
+	==> 1. Aucune différence de y selon g : 73,9 % (non tranché)
+	==> 2. y diffère selon g              : 26,1 %
+	Note : les données sont 2,82 fois plus probables sous l'hypothèse 1 que
+	       sous la 2 (facteur de Bayes 2,82).
+	--> Selon le point de départ : 48,0 % à 90,9 % ; l'ordre peut
+	    s'inverser, non tranché.
+	==> Écart estimé B - A : 0,4 [-0,9 ; 1,8] (étape 6).
+	==> Moyennes observées : A = 10,4 ; B = 11,0 (n = 20 par groupe).
+	Note : pour un compte rendu : « Aucune différence de y selon g :
+	       probabilité a posteriori 73,9 %, facteur de Bayes 2,82 (m.bay
+	       {KefiR}, comparaison de lois du bruit, Rouder et al. 2012). »
+	Note : probabilités d'hypothèses, pas des p-values ; méthode en détail :
+	       print(resultat, detail = TRUE).

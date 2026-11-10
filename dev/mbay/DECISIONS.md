@@ -380,3 +380,57 @@ Demandé par la session parente dans l'ordre du PERIMETRE, avec trois points de 
 - **Récit et refus**
   - Le récit dit que le calcul est exact, sans effectif minimum, contrairement au khi-deux.
   - Une réponse binaire avec plusieurs facteurs, covariables ou sujets est refusée en attendant la voie 2.
+
+## D18. Mise en forme commune des sorties : DÉCIDÉE le 10 novembre
+
+**Origine.** Consigne d'Antoine : les sorties doivent être « dans un format agréable à lire étape par étape comme m.test() ». L'auditeur de lisibilité a rendu 12 recommandations (`relecture/lisibilite_2026-11-09/RAPPORT.md`). Antoine a ajouté une correction : 80 caractères au plus par ligne, car les consoles des développeurs sont souvent réduites. Aucune de ces décisions ne touche au calcul.
+
+**Moteur** (`R/sys_bay_story.R`, `R/sys_bay_layout.R`).
+- Chaque ligne tient dans min(getOption("width"), 80) colonnes, retrait compris, une tabulation comptant pour 8. Le texte se replie avec `strwrap` et un retrait suspendu, titres compris. Les espaces insécables protègent les intervalles, « % », « : », « ; », les guillemets, « = » et « < ».
+- Les lignes d'une étape sont gardées jusqu'à l'étape suivante, ce qui permet de mettre le résultat dans le titre, comme m.test : « 3) Formes du bruit [m.bay() {KefiR}] - normale, variances égales en tête (51,9 %). »
+- Chaque marque a un seul rôle :
+  - « ==> » pour un constat ;
+  - « --> » pour une décision ;
+  - « Note : » pour le reste.
+- Aucune ligne n'est sans marque. Les crochets n'apparaissent que sur la ligne-titre.
+- Le jargon de méthode passe en lignes « detail », gardées dans `$story` et montrées par `print(x, detail = TRUE)` : Zellner-Siow, HOP, Beta(1,1), rscaleCont, échantillonnage d'importance, symétrie composée, Gibbs, références.
+- Si une erreur ou un refus interrompt l'analyse, l'étape en cours s'imprime quand même (`on.exit`).
+
+**Squelette identique pour tous les plans.**
+1. Plan
+2. Contrôles
+3. Forme du bruit, ou loi des données
+4. Point de départ
+5. Solidité de la réponse : facteur de Bayes, précision, sensibilité
+6. Paires, ou « non disponible » / « non demandé »
+7. Bilan
+
+**Bilan.**
+- Il est séparé par une ligne vide et porte un titre au bord gauche : « 7) Bilan - <hypothèse en tête> : xx % (soutien). »
+- Viennent ensuite :
+  - le verdict ;
+  - les hypothèses numérotées et alignées ;
+  - le facteur de Bayes, dit en clair (« N fois plus probables sous l'hypothèse 1 que sous la 2 ») ;
+  - la stabilité ;
+  - les réponses du plan (termes, pentes, liste brève des paires) ;
+  - les observations ;
+  - une phrase prête pour un compte rendu, avec la méthode à citer.
+- Les paires sont détaillées à l'étape 6 seulement : pas de doublon.
+- Une paire n'est dite « semblable » que si le bilan n'est pas indécis ; sinon, elle est « non tranchée » (relecture D17).
+- Les regroupements sont donnés « si une différence existe » (probabilités conditionnelles), pour qu'un seul chiffre porte « aucune différence » (relecture D17).
+
+**Nombres, une seule règle.**
+- Probabilités : 1 décimale.
+- Facteur de Bayes : `.bay_bf_txt` partout.
+- Précision : « < 0,1 » en dessous de 0,1.
+- Écarts : les décimales des moyennes ; δ et dz : 2 décimales ; proportions : en points.
+- Pluriels accordés.
+
+**Discret (relecture D17).**
+- Les effectifs s'écrivent « 18 oui, 12 non (sur 30) », la modalité d'intérêt en premier.
+- Le bilan dit quelle modalité porte l'écart le plus marqué.
+- Le facteur de Bayes inférieur à 1 est dit aussi en faveur de l'absence (« soit 2,16 en faveur de l'absence de différence »).
+
+**Contrôle.** `test-bay-story.R` vérifie qu'aucune ligne ne dépasse 80 colonnes, sur 7 plans (les 6 de l'audit et le discret), en français et en anglais, avec `width` à 80 et à 120. Il vérifie aussi 60 colonnes avec `options(width = 60)`. Il contrôle enfin la marque de chaque ligne, le bilan après une ligne vide et le rejeu à l'identique. Les sorties avant et après sont dans `relecture/lisibilite_2026-11-09/`.
+
+**Hors périmètre.** `m.test()` n'est pas touché. Ses défauts de forme relevés par l'auditeur (point décimal, tableaux R en anglais, lettres contradictoires) relèvent d'une correction à part.

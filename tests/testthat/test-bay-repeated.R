@@ -58,7 +58,7 @@ test_that("mesures repetees : BF contre lmBF(y ~ temps + id, whichRandom) / lmBF
 	expect_true(any(grepl("sujets", r$story$fr)))
 	court <- paste(capture.output(print(r)), collapse = "\n")
 	expect_match(court, "sujets|subjects")
-	expect_match(court, "Quelles conditions|Which conditions")
+	expect_match(court, "Différents :|Different:")
 })
 
 test_that("mesures repetees : l'effet sujet change la reponse par rapport aux groupes independants", {

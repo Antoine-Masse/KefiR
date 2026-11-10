@@ -1,0 +1,72 @@
+1) Plan reconnu : un facteur, traitement, à 3 groupes (temoin, froid, chaud) ;
+   N = 90.
+	==> Réponse catégorielle, 2 modalités : non, oui.
+	--> Une question : les proportions diffèrent-elles selon traitement ?
+	    (pendant du test du khi-deux)
+2) Contrôles des données - calcul exact, sans effectif minimum.
+	==> temoin : 18 oui, 12 non (sur 30).
+	==> froid : 18 oui, 12 non (sur 30).
+	==> chaud : 24 oui, 6 non (sur 30).
+	Note : les petits effectifs ne faussent pas la réponse, ils la rendent
+	       moins tranchée (contrairement au khi-deux).
+3) Loi des données - binomiale.
+	==> Chaque groupe a ses propres proportions des 2 modalités.
+	==> Aucune différence : les mêmes proportions dans tous les groupes.
+	Note : pas de forme du bruit à comparer avec des effectifs.
+4) Point de départ (a priori) - 50,0 % de chances d'une différence.
+	==> Dans chaque groupe, toutes les proportions sont également possibles
+	    d'avance.
+	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
+	       fait varier.
+5) Solidité de la réponse [contingencyTableBF() {BayesFactor}] - facteur de
+   Bayes 0,463, la réponse peut s'inverser.
+	==> Facteur de Bayes : 0,463, soit 2,16 en faveur de l'absence de
+	    différence.
+	Note : facteur de Bayes : combien de fois les effectifs sont plus
+	       probables avec une différence que sans.
+	==> Précision : calcul exact, sans tirage.
+	==> Sensibilité : la réponse en tête va de 37,6 % à 81,2 %.
+	Note : variés : l'étalement attendu des proportions, et les chances de
+	       départ (1 contre 2 à 2 contre 1).
+	--> Prudence ajoutée : la réponse peut s'inverser ; elle sera dite non
+	    tranchée.
+6) Quels groupes diffèrent, et de combien [Dirichlet-multinomiale {KefiR}, hdi()
+   {bayestestR}] - temoin = froid < chaud en tête (54,3 %).
+	==> Si une différence existe, regroupements en tête :
+	    temoin = froid < chaud (54,3 %) ; temoin < froid < chaud (16,6 %) ;
+	    froid < temoin = chaud (14,5 %).
+	==> temoin/froid : différents à 18,8 % ; froid - temoin = 0,2 points
+	    [-23,6 ; 22,1].
+	==> temoin/chaud : différents à 35,1 % ; chaud - temoin = 18,5 points
+	    [-2,5 ; 40,3].
+	==> froid/chaud : différents à 35,1 % ; chaud - froid = 19,0 points
+	    [-3,7 ; 40,2].
+	Note : écart de la part de oui, en points ; [ ; ] = intervalle de
+	       crédibilité à 95 %.
+	Note : une seule loi pour toutes les paires : pas de correction, les
+	       réponses ne peuvent pas se contredire.
+
+7) Bilan - Les proportions de germe ne diffèrent pas selon traitement : 68,4 %
+   (non tranché).
+	==> Verdict : indécis.
+	==> 1. Les proportions de germe ne diffèrent pas selon traitement :
+	    68,4 % (non tranché)
+	==> 2. Les proportions de germe diffèrent selon traitement : 31,6 %
+	Note : les données sont 2,16 fois plus probables sous l'hypothèse 1 que
+	       sous la 2 (facteur de Bayes 2,16).
+	--> Selon le point de départ : 37,6 % à 81,2 % ; l'ordre peut
+	    s'inverser, non tranché.
+	==> Semblables : temoin/froid (modéré).
+	==> Non tranchés : temoin/chaud, froid/chaud.
+	==> Si une différence existe, regroupement le plus probable :
+	    temoin = froid < chaud (54,3 %).
+	Note : écarts chiffrés : étape 6.
+	==> temoin : 18 oui, 12 non (sur 30).
+	==> froid : 18 oui, 12 non (sur 30).
+	==> chaud : 24 oui, 6 non (sur 30).
+	==> Écart le plus marqué : oui, 60,0 % en temoin contre 80,0 % en chaud.
+	Note : pour un compte rendu : « Les proportions de germe ne diffèrent
+	       pas selon traitement : probabilité a posteriori 68,4 %, facteur
+	       de Bayes 2,16 (m.bay {KefiR}, Gunel et Dickey 1974). »
+	Note : probabilités d'hypothèses, pas des p-values ; méthode en détail :
+	       print(resultat, detail = TRUE).

@@ -104,42 +104,50 @@
 	resp <- input$response_name
 	fac <- names(input$factors)[1L]
 	if (identical(fac, ".g")) fac <- "g"
-	.bay_tell(story, paste0("Counts per group and category (", k, " groups x ", m, " categories): ",
-			paste0(rownames(tab), " ", apply(tab, 1L, paste, collapse = "/"), collapse = "; "), " (", paste(colnames(tab), collapse = "/"), ")."),
-		paste0("Effectifs par groupe et modalit\u00e9 (", k, " groupes x ", m, " modalit\u00e9s) : ",
-			paste0(rownames(tab), " ", apply(tab, 1L, paste, collapse = "/"), collapse = " ; "), " (", paste(colnames(tab), collapse = "/"), ")."))
-	if (any(tab == 0L)) {
-		.bay_tell(story, paste0(sum(tab == 0L), " empty cell(s): no problem for this computation, which needs no minimum count."),
-			paste0(sum(tab == 0L), " case(s) vide(s) : sans probl\u00e8me pour ce calcul, qui ne demande aucun effectif minimum."))
+	cats <- rev(colnames(tab))
+	for (i in seq_len(k)) {
+		cn <- tab[i, cats]
+		.bay_tell(story, paste0(rownames(tab)[i], ": ", paste0(cn, " ", cats, collapse = ", "), " (of ", sum(cn), ")."),
+			paste0(rownames(tab)[i], " : ", paste0(cn, " ", cats, collapse = ", "), " (sur ", sum(cn), ")."))
 	}
-	.bay_tell(story, "No approximation is made: the computation is exact, small counts do not make it wrong, only less decisive (unlike the chi-squared, which needs expected counts of 5).",
-		"Aucune approximation : le calcul est exact, les petits effectifs ne le faussent pas, ils le rendent seulement moins tranch\u00e9 (contrairement au khi-deux, qui demande des effectifs attendus de 5).", "decide")
-	.bay_tell(story, "Law of the data.", "Loi des donn\u00e9es.", "step")
-	.bay_tell(story, paste0("Each group has its own proportions of the ", m, " categories (", if (m == 2L) "binomial" else "multinomial", " law); \"no difference\": the same proportions in every group. There is no shape of the noise to compare."),
-		paste0("Chaque groupe a ses propres proportions des ", m, " modalit\u00e9s (loi ", if (m == 2L) "binomiale" else "multinomiale", ") ; \u00ab aucune diff\u00e9rence \u00bb : les m\u00eames proportions dans tous les groupes. Il n'y a pas de forme du bruit \u00e0 comparer."))
+	if (any(tab == 0L)) {
+		ne <- sum(tab == 0L)
+		.bay_tell(story, paste0(ne, if (ne == 1L) " empty cell: no problem, no minimum count is needed." else " empty cells: no problem, no minimum count is needed."),
+			paste0(ne, if (ne == 1L) " case vide : sans probl\u00e8me, aucun effectif minimum n'est demand\u00e9." else " cases vides : sans probl\u00e8me, aucun effectif minimum n'est demand\u00e9."))
+	}
+	.bay_step_result(story, "exact computation, no minimum count", "calcul exact, sans effectif minimum")
+	.bay_tell(story, "small counts do not make the answer wrong, only less decisive (unlike the chi-squared).",
+		"les petits effectifs ne faussent pas la r\u00e9ponse, ils la rendent moins tranch\u00e9e (contrairement au khi-deux).", "note")
+	.bay_tell(story, "Law of the data", "Loi des donn\u00e9es", "step")
+	.bay_step_result(story, if (m == 2L) "binomial" else "multinomial", if (m == 2L) "binomiale" else "multinomiale")
+	.bay_tell(story, paste0("Each group has its own proportions of the ", m, " categories."),
+		paste0("Chaque groupe a ses propres proportions des ", m, " modalit\u00e9s."))
+	.bay_tell(story, "No difference: the same proportions in every group.",
+		"Aucune diff\u00e9rence : les m\u00eames proportions dans tous les groupes.")
+	.bay_tell(story, "no shape of the noise to compare with counts.", "pas de forme du bruit \u00e0 comparer avec des effectifs.", "note")
 	if (!no_laws) {
 		note("For a categorical response the laws of the noise do not apply; laws is ignored.",
 			"Pour une r\u00e9ponse cat\u00e9gorielle, les lois du bruit ne s'appliquent pas ; laws est ignor\u00e9.")
 	}
 
-	.bay_tell(story, "Starting point (priors), set before seeing the data.", "Point de d\u00e9part (a priori), fix\u00e9 avant de voir les donn\u00e9es.", "step")
-	ph <- .bay_num_txt(100 * prior_h1)
-	.bay_tell(story, paste0(ph$en, " % chance that a difference exists", if (prior_h1 == 0.5) " (heads or tails: the method takes no side)" else "",
-			"; in each group, every set of proportions equally likely in advance (uniform Dirichlet, Gunel and Dickey 1974)."),
-		paste0(ph$fr, " % de chances qu'une diff\u00e9rence existe", if (prior_h1 == 0.5) " (pile ou face : la m\u00e9thode ne prend pas parti)" else "",
-			" ; dans chaque groupe, toutes les proportions sont \u00e9galement possibles d'avance (Dirichlet uniforme, Gunel et Dickey 1974)."))
-	.bay_tell(story, "These values are not fitted on the data; step 5 varies them to see whether the answer holds.",
-		"Ces valeurs ne sont pas ajust\u00e9es sur les donn\u00e9es ; l'\u00e9tape 5 les fait varier pour voir si la r\u00e9ponse tient.", "decide")
+	.bay_tell(story, "Starting point (priors)", "Point de d\u00e9part (a priori)", "step")
+	.bay_step_result(story, paste0(.bay_pct(prior_h1, "."), " chance of a difference"), paste0(.bay_pct(prior_h1, ","), " de chances d'une diff\u00e9rence"))
+	.bay_tell(story, "In each group, every set of proportions equally likely in advance.",
+		"Dans chaque groupe, toutes les proportions sont \u00e9galement possibles d'avance.")
+	.bay_tell(story, "these values are not tuned on the data; step 5 varies them.",
+		"ces valeurs ne sont pas ajust\u00e9es sur les donn\u00e9es ; l'\u00e9tape 5 les fait varier.", "note")
+	.bay_tell(story, "Prior: uniform Dirichlet on the proportions of each group (Gunel and Dickey 1974, independent multinomials, group sizes fixed).",
+		"A priori : Dirichlet uniforme sur les proportions de chaque groupe (Gunel et Dickey 1974, multinomiales ind\u00e9pendantes, effectifs des groupes fix\u00e9s).", "detail")
 
-	.bay_tell(story, "Bayes factor and sensitivity to the priors.", "Facteur de Bayes et sensibilit\u00e9 aux a priori.", "step",
-		fun = "contingencyTableBF() {BayesFactor}")
+	.bay_tell(story, "Solidity of the answer", "Solidit\u00e9 de la r\u00e9ponse", "step", fun = "contingencyTableBF() {BayesFactor}")
 	lb <- .bay_cont_bf_pkg(tab, 1)
 	p_h1 <- .bay_cont_prob(lb, prior_h1)
-	b1 <- .bay_num_txt(exp(lb))
-	.bay_tell(story, paste0("Bayes factor, difference against none: ", .bay_bf_txt(lb, "."), "."),
-		paste0("Facteur de Bayes, diff\u00e9rence contre absence : ", .bay_bf_txt(lb, ","), "."))
-	.bay_tell(story, "Precision: closed-form computation, no draws; no simulation error.",
-		"Pr\u00e9cision : calcul en forme close, sans tirage ; aucune erreur de simulation.")
+	inv_en <- if (lb < 0) paste0(", i.e. ", .bay_bf_txt(-lb, "."), " in favour of no difference") else ""
+	inv_fr <- if (lb < 0) paste0(", soit ", .bay_bf_txt(-lb, ","), " en faveur de l'absence de diff\u00e9rence") else ""
+	.bay_tell(story, paste0("Bayes factor: ", .bay_bf_txt(lb, "."), inv_en, "."), paste0("Facteur de Bayes : ", .bay_bf_txt(lb, ","), inv_fr, "."))
+	.bay_tell(story, "Bayes factor: how many times more probable the counts are with a difference than without.",
+		"Facteur de Bayes : combien de fois les effectifs sont plus probables avec une diff\u00e9rence que sans.", "note")
+	.bay_tell(story, "Precision: exact computation, without draws.", "Pr\u00e9cision : calcul exact, sans tirage.")
 	sens <- NULL
 	if (isTRUE(sensitivity)) {
 		# Concentration of the prior: 1 (uniform), 2 and 4 (proportions expected less extreme);
@@ -152,17 +160,22 @@
 		verdict <- .bay_sensitivity_verdict(max(p_h1, 1 - p_h1), rng)
 		sens <- list(conc = concs, prior_h1 = phs, p = grid, range_lead = rng, verdict = verdict,
 			verdict_terms = verdict, range_terms = matrix(range(grid), 1L))
-		.bay_tell(story, paste0("Sensitivity: concentration of the prior from 1 to 4, crossed with starting chances of a difference from 1 against 2 to 2 against 1. The leading answer then goes from ",
-				.bay_pct(rng[1L], "."), " to ", .bay_pct(rng[2L], "."), "."),
-			paste0("Sensibilit\u00e9 : concentration de l'a priori de 1 \u00e0 4, crois\u00e9e avec des chances de d\u00e9part d'une diff\u00e9rence de 1 contre 2 \u00e0 2 contre 1. La r\u00e9ponse en t\u00eate va alors de ",
-				.bay_pct(rng[1L], ","), " \u00e0 ", .bay_pct(rng[2L], ","), "."))
+		stb <- .bay_stab_txt(verdict)
+		.bay_step_result(story, paste0("Bayes factor ", .bay_bf_txt(lb, "."), ", ", stb$en), paste0("facteur de Bayes ", .bay_bf_txt(lb, ","), ", ", stb$fr))
+		.bay_tell(story, paste0("Sensitivity: the leading answer goes from ", .bay_pct(rng[1L], "."), " to ", .bay_pct(rng[2L], "."), "."),
+			paste0("Sensibilit\u00e9 : la r\u00e9ponse en t\u00eate va de ", .bay_pct(rng[1L], ","), " \u00e0 ", .bay_pct(rng[2L], ","), "."))
+		.bay_tell(story, "varied: how spread the proportions are expected, and the starting chances (1 against 2 to 2 against 1).",
+			"vari\u00e9s : l'\u00e9talement attendu des proportions, et les chances de d\u00e9part (1 contre 2 \u00e0 2 contre 1).", "note")
+		.bay_tell(story, "Sensitivity: concentration a of the Dirichlet 1, 2 and 4, crossed with the prior odds 1:2, 1:1, 2:1.",
+			"Sensibilit\u00e9 : concentration a de la Dirichlet 1, 2 et 4, crois\u00e9e avec les cotes a priori 1:2, 1:1, 2:1.", "detail")
 		if (identical(verdict, "changes")) {
-			.bay_tell(story, "Caution added: the answer can reverse with the starting point; it will be called not settled.",
-				"Prudence ajout\u00e9e : la r\u00e9ponse peut s'inverser selon le point de d\u00e9part ; elle sera dite non tranch\u00e9e.", "decide")
+			.bay_tell(story, "Caution added: the answer can reverse; it will be called not settled.",
+				"Prudence ajout\u00e9e : la r\u00e9ponse peut s'inverser ; elle sera dite non tranch\u00e9e.", "decide")
 		} else {
 			.bay_tell(story, "The answer does not change side.", "La r\u00e9ponse ne change pas de c\u00f4t\u00e9.", "decide")
 		}
 	} else {
+		.bay_step_result(story, paste0("Bayes factor ", .bay_bf_txt(lb, "."), ", sensitivity not computed"), paste0("facteur de Bayes ", .bay_bf_txt(lb, ","), ", sensibilit\u00e9 non calcul\u00e9e"))
 		.bay_tell(story, "Sensitivity to the priors not computed (sensitivity = FALSE).",
 			"Sensibilit\u00e9 aux a priori non calcul\u00e9e (sensitivity = FALSE).")
 	}
@@ -171,6 +184,8 @@
 	if (isTRUE(posthoc)) {
 		ph_obj <- .bay_cont_posthoc(tab, 1, prior_h1, draws, seed)
 		.bay_story_posthoc(story, ph_obj)
+	} else {
+		.bay_story_no_posthoc(story, "off")
 	}
 
 	hyp <- data.frame(
@@ -188,8 +203,6 @@
 		method = "Contingency table, independent multinomials (BayesFactor, Gunel and Dickey 1974)", plan = "contingency",
 		label = input$label, n = sum(tab), notes = get_notes(), call = call_expr)
 	class(out) <- "mbay"
-	.bay_tell(story, "Conclusion: the hypotheses ranked, what each one rests on, its support.",
-		"Conclusion : les hypoth\u00e8ses class\u00e9es, ce sur quoi chacune repose, son soutien.", "step")
 	out$story <- .bay_story_lines(story)
 	if (isTRUE(verbose)) .bay_print_bilan_cont(out, detail = detail, narrated = TRUE)
 	if (isFALSE(return)) return(p_h1)
@@ -199,58 +212,51 @@
 .bay_cont_prob <- function(lb, prior_h1) 1 / (1 + exp(-lb) * (1 - prior_h1) / prior_h1)
 
 .bay_print_bilan_cont <- function(obj, detail = FALSE, narrated = FALSE) {
-	lang_fr <- identical(.msg("en", "fr"), "fr")
-	pre <- if (isTRUE(narrated)) "\t" else ""
-	say <- function(en, fr) cat(pre, .msg(en, fr), "\n", sep = "")
-	if (!isTRUE(narrated)) {
-		say(paste0("Bilan of m.bay: ", obj$label, " (N = ", obj$n, ", contingency table)"),
-			paste0("Bilan de m.bay : ", obj$label, " (N = ", obj$n, ", tableau de contingence)"))
-	}
-	v <- .bay_verdict(obj)
-	say(v$en, v$fr)
-	h <- obj$hypotheses
-	e <- obj$effects
-	lb_lead <- if (h$null[1L]) -e$log_bf else e$log_bf
-	sup <- .bay_support_bf(h$posterior[1L], lb_lead)
-	open <- identical(obj$sensitivity$verdict, "changes")
-	say("Probability of each hypothesis, given the data and the starting point:",
-		"Probabilit\u00e9 de chaque hypoth\u00e8se, compte tenu des donn\u00e9es et du point de d\u00e9part :")
-	for (i in 1:2) {
-		q <- if (i == 1L) paste0(" (", if (open) "not settled" else sup$en, ")") else ""
-		qf <- if (i == 1L) paste0(" (", if (open) "non tranch\u00e9" else sup$fr, ")") else ""
-		say(paste0("  ", i, ". ", h$label_en[i], ": ", .bay_pct(h$posterior[i], "."), q),
-			paste0("  ", i, ". ", h$label_fr[i], " : ", .bay_pct(h$posterior[i], ","), qf))
-	}
-	bf_en <- .bay_bf_txt(abs(e$log_bf), "."); bf_fr <- .bay_bf_txt(abs(e$log_bf), ",")
-	if (e$log_bf >= 0) {
-		say(paste0("     Rests on the counts: they are ", bf_en, " times more probable if the proportions differ than if they are the same."),
-			paste0("     Repose sur les effectifs : ils sont ", bf_fr, " fois plus probables si les proportions diff\u00e8rent que si elles sont les m\u00eames."))
-	} else {
-		say(paste0("     Rests on the counts: they are ", bf_en, " times more probable if the proportions are the same than if they differ."),
-			paste0("     Repose sur les effectifs : ils sont ", bf_fr, " fois plus probables si les proportions sont les m\u00eames que si elles diff\u00e8rent."))
-	}
-	if (!is.null(obj$sensitivity)) {
-		rg <- obj$sensitivity$range_lead
-		if (open) {
-			say(paste0("  Depending on the starting point, the first answer goes from ", .bay_pct(rg[1L], "."), " to ", .bay_pct(rg[2L], "."), ": the order can reverse."),
-				paste0("  Selon le point de d\u00e9part, la premi\u00e8re r\u00e9ponse va de ", .bay_pct(rg[1L], ","), " \u00e0 ", .bay_pct(rg[2L], ","), " : l'ordre peut s'inverser."))
-		} else {
-			say(paste0("  Depending on the starting point: ", .bay_pct(rg[1L], "."), " to ", .bay_pct(rg[2L], "."), "; the order does not change."),
-				paste0("  Selon le point de d\u00e9part : ", .bay_pct(rg[1L], ","), " \u00e0 ", .bay_pct(rg[2L], ","), " ; l'ordre ne change pas."))
+	body <- function(emit, li, narrated) {
+		ph <- obj$posthoc
+		if (!is.null(ph) && ph$k > 2L) .bay_pairs_short(ph, emit, li$h$posterior[1L] < 0.6 || li$open, narrated)
+		if (!is.null(ph) && ph$k == 2L) {
+			pr <- ph$pairs
+			pt <- function(v, dc) gsub(".", dc, formatC(100 * v, format = "f", digits = 1), fixed = TRUE)
+			if (identical(ph$delta_unit, "logor")) {
+				emit("fact", paste0("Estimated gap of the share of ", ph$category, ", ", pr$group2, " - ", pr$group1, ": ", pt(pr$diff, "."), " points [", pt(pr$diff_low, "."), "; ", pt(pr$diff_high, "."), "]."),
+					paste0("\u00c9cart estim\u00e9 de la part de ", ph$category, ", ", pr$group2, " - ", pr$group1, " : ", pt(pr$diff, ","), " points [", pt(pr$diff_low, ","), " ; ", pt(pr$diff_high, ","), "]."))
+			} else {
+				emit("fact", paste0("Estimated total gap of the proportions: ", pt(pr$diff, "."), " points [", pt(pr$diff_low, "."), "; ", pt(pr$diff_high, "."), "]."),
+					paste0("\u00c9cart total estim\u00e9 des proportions : ", pt(pr$diff, ","), " points [", pt(pr$diff_low, ","), " ; ", pt(pr$diff_high, ","), "]."))
+			}
 		}
+		.bay_cont_observed(obj, emit)
 	}
-	if (!is.null(obj$posthoc)) .bay_print_posthoc(obj$posthoc, say)
-	pr <- obj$proportions
-	say("Observed proportions per group (description of the sample):", "Proportions observ\u00e9es par groupe (description de l'\u00e9chantillon) :")
-	for (i in seq_len(nrow(pr))) {
-		say(paste0("  ", rownames(pr)[i], ": ", paste0(colnames(pr), " ", vapply(pr[i, ], .bay_pct, character(1), dec = "."), collapse = ", "), " (n = ", sum(obj$table[i, ]), ")"),
-			paste0("  ", rownames(pr)[i], " : ", paste0(colnames(pr), " ", vapply(pr[i, ], .bay_pct, character(1), dec = ","), collapse = ", "), " (n = ", sum(obj$table[i, ]), ")"))
-	}
-	say("These are probabilities of hypotheses, not p-values: no threshold of 5 % applies. Whether a difference has a cause depends on how the study was run (randomisation, order, operator).",
-		"Ce sont des probabilit\u00e9s d'hypoth\u00e8ses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une diff\u00e9rence d\u00e9pend de la fa\u00e7on dont l'\u00e9tude a \u00e9t\u00e9 men\u00e9e (tirage au sort, ordre, op\u00e9rateur).")
-	if (length(obj$notes$en) && !isTRUE(narrated)) {
-		say("Warnings:", "Avertissements :")
-		for (i in seq_along(obj$notes$en)) say(paste0("  ", obj$notes$en[i]), paste0("  ", obj$notes$fr[i]))
-	}
+	.bay_bilan_common(obj, narrated, body)
+	if (!isTRUE(detail)) return(invisible(obj))
+	say <- .bay_detail_head(obj)
+	say("Prior: in each group, uniform Dirichlet(1) on the proportions under a difference; under none, common proportions Dirichlet(R (a - 1) + 1) (contingencyTableBF, Gunel and Dickey 1974; Jamil et al. 2017).",
+		"A priori : dans chaque groupe, Dirichlet(1) uniforme sur les proportions s'il y a une diff\u00e9rence ; sinon proportions communes Dirichlet(R (a - 1) + 1) (contingencyTableBF, Gunel et Dickey 1974 ; Jamil et al. 2017).")
+	say("Sensitivity: concentration a of the Dirichlet from 1 to 4, crossed with the starting chances.",
+		"Sensibilit\u00e9 : concentration a de la Dirichlet de 1 \u00e0 4, crois\u00e9e avec les chances de d\u00e9part.")
+	say("Gaps: difference of the proportions (log odds ratio in $posthoc$pairs$delta) or total gap of the proportions; groupings in closed form (Dirichlet-multinomial).",
+		"\u00c9carts : diff\u00e9rence des proportions (log du rapport de cotes dans $posthoc$pairs$delta) ou \u00e9cart total des proportions ; regroupements en forme close (Dirichlet-multinomiale).")
 	invisible(obj)
+}
+
+# Observed counts, the category of interest first ("18 yes, 12 no (of 30)"), and the
+# category that carries the largest gap (relecture D17, points 2 and 6).
+.bay_cont_observed <- function(obj, emit) {
+	tab <- obj$table
+	cats <- rev(colnames(tab))
+	for (i in seq_len(nrow(tab))) {
+		cn <- tab[i, cats]
+		emit("fact", paste0(rownames(tab)[i], ": ", paste0(cn, " ", cats, collapse = ", "), " (of ", sum(cn), ")."),
+			paste0(rownames(tab)[i], " : ", paste0(cn, " ", cats, collapse = ", "), " (sur ", sum(cn), ")."))
+	}
+	pr <- obj$proportions
+	if (nrow(pr) >= 2L && ncol(pr) >= 2L) {
+		rg <- apply(pr, 2L, function(v) diff(range(v)))
+		cc <- names(which.max(rg))
+		lo <- rownames(pr)[which.min(pr[, cc])]; hi <- rownames(pr)[which.max(pr[, cc])]
+		emit("fact", paste0("Largest gap: ", cc, ", ", .bay_pct(min(pr[, cc]), "."), " in ", lo, " against ", .bay_pct(max(pr[, cc]), "."), " in ", hi, "."),
+			paste0("\u00c9cart le plus marqu\u00e9 : ", cc, ", ", .bay_pct(min(pr[, cc]), ","), " en ", lo, " contre ", .bay_pct(max(pr[, cc]), ","), " en ", hi, "."))
+	}
+	invisible(NULL)
 }

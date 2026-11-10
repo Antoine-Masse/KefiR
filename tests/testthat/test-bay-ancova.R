@@ -15,7 +15,7 @@ test_that("ANCOVA : BF du facteur = lmBF(y ~ g + xc) / lmBF(y ~ xc), rscaleCont 
 	ref <- BayesFactor::lmBF(y ~ g + xc, data = d, rscaleFixed = 0.5, rscaleCont = sqrt(2) / 4, iterations = 50000, progress = FALSE) /
 		BayesFactor::lmBF(y ~ xc, data = d, rscaleCont = sqrt(2) / 4, progress = FALSE)
 	expect_lt(abs(r$effects$log_bf - BayesFactor::extractBF(ref, logbf = TRUE)$bf), 0.05)
-	expect_true(any(grepl("rscaleCont", r$story$fr)))
+	expect_true(any(grepl("rscaleCont", r$story$detail_fr)))
 	expect_true(any(grepl("centr", r$story$fr)))
 })
 
@@ -52,7 +52,7 @@ test_that("ANCOVA : pentes differentes, ecarts aux quartiles comme emmeans(at = 
 	expect_gt(nrow(z), 0L)
 	expect_true(any(z$from <= min(d$x) + 0.5 | z$to >= max(d$x) - 0.5))
 	court <- paste(capture.output(print(r)), collapse = "\n")
-	expect_match(court, "quartiles")
+	expect_match(gsub("\\s+", " ", court), "dépend de x|depends on x")
 })
 
 test_that("ANCOVA : groupes qui se recouvrent peu sur la covariable, prudence et soutien plafonne", {

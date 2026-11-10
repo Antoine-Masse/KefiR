@@ -56,11 +56,13 @@ a data.frame of factors.}
 
 \item{control}{Reference level. Not used yet.}
 
-\item{verbose}{If \code{TRUE}, tells the analysis step by step as \code{\link[=m.test]{m.test()}} does: numbered
-steps printed as the computation goes, "==>" for what was found, "-->" for what the
-function decides from it (a law left out, a lead that the priors can reverse), the
-function and package in brackets; the last step is the bilan. If \code{FALSE}, nothing.
-\code{print(result, story = TRUE)} replays the steps; \code{print(result)} gives the bilan alone.}
+\item{verbose}{If \code{TRUE}, tells the analysis step by step as \code{\link[=m.test]{m.test()}} does, in the same
+seven steps for every plan (plan, checks, shape of the noise, starting point, solidity,
+pairs, bilan): the result of each step in its title, the function and package in
+brackets, "==>" for a finding, "-->" for a decision, "Note:" for anything else; every
+line within 80 columns (or \code{getOption("width")} if smaller). If \code{FALSE}, nothing.
+\code{print(result, story = TRUE)} replays the steps; \code{print(result)} gives the bilan alone;
+\code{print(result, detail = TRUE)} adds the method in detail (priors, references).}
 
 \item{plot}{Not used yet.}
 
