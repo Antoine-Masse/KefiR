@@ -261,6 +261,15 @@
         })
       })
 
+      # Interaction (G:T) : plusieurs colonnes de facteurs avant emmean. Seule la
+      # premiere etait affichee (\u00ab A, A, A, B... \u00bb) : nommer la cellule entiere.
+      emm_pos <- if (!is.null(cld_df)) match("emmean", colnames(cld_df)) else NA
+      if (!is.na(emm_pos) && emm_pos > 2) {
+        cell <- apply(cld_df[, seq_len(emm_pos - 1), drop = FALSE], 1,
+                      function(r) paste(trimws(as.character(r)), collapse = " "))
+        cld_df <- cbind(level = cell, cld_df, stringsAsFactors = FALSE)
+      }
+
       if (!is.null(cld_df) && nrow(cld_df) > 0) {
         k <- .vbse(
           paste0("\tCompact letter display (groups not sharing a letter differ at alpha = ", alpha, "):"),

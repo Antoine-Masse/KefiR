@@ -149,3 +149,9 @@ test_that("i. split-plot : post-hocs par emmeans, sans apparier des sujets diffe
   expect_length(ligne, 1)
   expect_match(ligne, paste0("p = ", .format_pval(p_ref)), fixed = TRUE)
 })
+
+test_that("j. lettres d'une interaction en modele mixte : la cellule entiere est nommee", {
+  d <- make_split_plot()
+  res <- audit_quiet(m.test(y ~ G * T + Error(id / T), data = d, plot = FALSE, boot = FALSE))
+  expect_true(any(grepl("B t3 : EMM = ", res$output, fixed = TRUE)))
+})
