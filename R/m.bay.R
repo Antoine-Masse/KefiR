@@ -373,6 +373,16 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	.bay_tell(story, "Shape of the noise: how the values scatter around the centre of their group (normal or heavy tails, equal variances or not). Computed by importance sampling, eight models.",
 		"Forme du bruit : la fa\u00e7on dont les valeurs s'\u00e9cartent du centre de leur groupe (normale ou \u00e0 queues lourdes, variances \u00e9gales ou non). Calcul par \u00e9chantillonnage d'importance, huit mod\u00e8les.", "detail")
 	rs <- if (isTRUE(sensitivity)) c(rscale / 2, rscale, rscale * 2) else rscale
+	# A waiting line beyond about 25 s (PERIMETRE section 7). Times measured at n = 10 per
+	# group: laws with the sensitivity about 0.55 k^2 + 4 s, half without; post-hoc by draws
+	# beyond 8 groups about 1.1 k s (audit of 8c0523a).
+	k_g <- st$k
+	est <- (0.55 * k_g^2 + 4) * (if (isTRUE(sensitivity)) 1 else 0.5) * max(1, st$N / (10 * k_g)) +
+		(if (isTRUE(posthoc) && k_g > .bay_posthoc_max_groups()) 1.1 * k_g else 0)
+	if (isTRUE(verbose) && est > 25) {
+		message(.msg(paste0("Computing the laws of the noise for ", k_g, " groups", if (isTRUE(posthoc) && k_g > .bay_posthoc_max_groups()) " and the groupings by draws" else "", ", about ", 10 * ceiling(est / 10), " s..."),
+			paste0("Calcul des lois du bruit pour ", k_g, " groupes", if (isTRUE(posthoc) && k_g > .bay_posthoc_max_groups()) " et des regroupements par tirage" else "", ", environ ", 10 * ceiling(est / 10), " s...")))
+	}
 	tab <- .bay_laws_table(st, rs, u, draws, seed, laws = laws)
 	ans <- .bay_laws_average(tab, rscale, prior_h1 = prior_h1)
 	if (length(ans$laws_dropped)) {

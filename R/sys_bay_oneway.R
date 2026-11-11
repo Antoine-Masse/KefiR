@@ -103,7 +103,13 @@
 # n = k (no residual df) is refused too: the "perfect fit" there is not evidence.
 .bay_bf_oneway_zs <- function(y, g, r = 1/2) {
 	r <- .bay_check_rscale(r)
-	st <- .bay_oneway_prep(y, g)
+	.bay_bf_zs_stats(.bay_oneway_prep(y, g), r)
+}
+
+# The same from the statistics per group (k, n, centred means m, ss, N), so that the Gibbs
+# sampler of the post-hoc merges the groups of a grouping without going back to the data
+# (calibration beyond 8 groups, agent_71: the Bayes factors took 65 % of the time).
+.bay_bf_zs_stats <- function(st, r) {
 	k <- st$k
 	n <- st$n
 	N <- st$N

@@ -917,3 +917,10 @@ n = 8 par groupe, 30 jeux par partie. Résultats : `scripts/resultats/agent_71_*
 - Son écart au calcul exact reste sous l'erreur annoncée pour une paire typique. Le pire écart d'un jeu, pris sur 28 paires, peut atteindre 6 points.
 - À deux paquets, les paires d'un même paquet restent surtout « non tranchées » : 8 % seulement sont dites « semblables » pour 8 valeurs par groupe. La puissance sur les paires est modeste (38 %), comme attendu sans correction ni gain de multiplicité.
 - **Décision.** Pas de changement de méthode. Le récit annonce une erreur de tirage d'environ 2 × l'erreur Monte-Carlo ; elle couvre la paire typique, et la note de VALIDATION dit qu'un écart de 6 points reste possible sur la pire paire d'un jeu.
+
+**Temps au-delà de 8 groupes (audit de 8c0523a, 11 novembre).** L'appel complet prend environ 73 s à 10 groupes de n = 10.
+- Le post-hoc par tirage n'en prend que 7 à 13 s. Le gros vient de la comparaison des 4 lois avec la sensibilité, environ 0,55 k² + 4 s, mesurée de k = 3 à 12.
+- **Tours de Gibbs adaptés à l'erreur visée : mesuré, non retenu.** L'erreur Monte-Carlo vaut 0,037 à 250 tours, 0,019 à 1000 et 0,017 à 2000. Viser 2 points demanderait environ 5000 tours, donc plus de temps. S'arrêter plus tôt gagnerait au mieux 5 s sur plus d'une minute, au prix d'une erreur plus grande.
+- **Retenu.**
+  - Une ligne d'attente avant le calcul, avec une durée estimée (« environ 70 s » pour 73 s mesurées à k = 10).
+  - Le facteur de Bayes d'un regroupement est désormais tiré des statistiques fusionnées des groupes (`.bay_bf_zs_stats`) : même valeur qu'à partir des données, gain faible (23 s → 21 s), car le coût est dans l'intégrale.

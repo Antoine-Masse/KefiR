@@ -100,11 +100,21 @@
 	cache <- new.env(hash = TRUE)
 	canon <- function(p) match(p, unique(p))
 	lz <- .bay_ewens_lz(k, alpha)
+	# Without subjects or covariates, a grouping's Bayes factor comes from the merged statistics
+	# of its groups (same value as from the data, much faster).
+	fast <- is.null(id) && is.null(cov)
+	if (fast) st0 <- .bay_oneway_prep(y, g)
+	bf_fast <- function(p) {
+		nb <- as.numeric(tapply(st0$n, p, sum))
+		mb <- as.numeric(tapply(st0$n * st0$m, p, sum)) / nb
+		ssb <- as.numeric(tapply(st0$ss + st0$n * (st0$m - mb[p])^2, p, sum))
+		.bay_bf_zs_stats(list(k = length(nb), n = nb, m = mb, ss = ssb, N = st0$N), rscale)
+	}
 	target <- function(p) {
 		key <- paste(p, collapse = ".")
 		lb <- cache[[key]]
 		if (is.null(lb)) {
-			lb <- if (max(p) == 1L) 0 else .bay_partition_bf(y, factor(p[gi]), rscale, id, lb0, cov = cov)
+			lb <- if (max(p) == 1L) 0 else if (fast) bf_fast(p) else .bay_partition_bf(y, factor(p[gi]), rscale, id, lb0, cov = cov)
 			assign(key, lb, envir = cache)
 		}
 		lp <- if (max(p) == 1L) log(1 - prior_h1) else {
