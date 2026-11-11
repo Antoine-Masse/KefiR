@@ -725,10 +725,10 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 		.bay_step_result(story, if (is.na(fa$p_t)) "normal, common variance or one per cell, averaged" else "normal (common variance or one per cell) and Student t, averaged",
 			if (is.na(fa$p_t)) "normale, variance commune ou par case, moyenn\u00e9es" else "normale (variance commune ou par case) et Student, moyenn\u00e9es")
 		.bay_tell(story, paste0("Variances per cell: ", if (ph >= 0.75) "unequal probable" else if (ph <= 0.25) "equal probable" else "not settled",
-				" (", if (ph >= 0.75) .bay_pct(ph, ".") else if (ph <= 0.25) .bay_pct(1 - ph, ".") else paste("unequal at", .bay_pct(ph, ".")),
+				" (", if (ph >= 0.75) .bay_pct(ph, ".") else paste("unequal at", .bay_pct(ph, ".")),
 				"); standard deviations from ", sd_rng("."), "."),
 			paste0("Variances par case : ", if (ph >= 0.75) "in\u00e9gales probables" else if (ph <= 0.25) "\u00e9gales probables" else "non tranch\u00e9es",
-				" (", if (ph >= 0.75) .bay_pct(ph, ",") else if (ph <= 0.25) .bay_pct(1 - ph, ",") else paste("in\u00e9gales \u00e0", .bay_pct(ph, ",")),
+				" (", if (ph >= 0.75) .bay_pct(ph, ",") else paste("in\u00e9gales \u00e0", .bay_pct(ph, ",")),
 				") ; \u00e9carts-types de ", sd_rng(","), "."))
 		if (ph >= 0.75) {
 			.bay_tell(story, "So each answer is computed mostly with one variance per cell: a very dispersed cell no longer makes gaps look larger than they are.",
@@ -940,7 +940,7 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 		und <- .bay_term_key(fa$effects$term)[grepl(":", fa$effects$term, fixed = TRUE) & fa$effects$p_h1 < 0.5 &
 			(ta$open | fa$effects$p_h1 > 0.25)]
 		ph <- .bay_posthoc_factorial(y, factors, fa$effects, rscale, 0.5, draws, seed, id = if (mixed) input$id_rand else if (rm) input$id else NULL, cov = covc,
-			undecided = und)
+			undecided = und, t_weight = if (isTRUE(fa$p_t > 0)) fa$p_t else 0)
 		ph$caution <- isTRUE(fa$het_used) && isTRUE(fa$p_het >= 0.75)
 		ph$open_terms <- if (!is.null(fa$sensitivity)) fa$effects$term[fa$sensitivity$verdict_terms == "changes"] else character(0)
 		.bay_story_posthoc_fact(story, ph, caution = ph$caution)

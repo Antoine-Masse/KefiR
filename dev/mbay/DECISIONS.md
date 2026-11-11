@@ -658,3 +658,14 @@ Demandé par la session parente dans l'ordre du PERIMETRE, avec trois points de 
 - Une case à valeurs extrêmes peut aussi être lue comme « variance par case » : les deux lois se partagent alors les queues lourdes, sans changer la réponse.
 
 **Non fait.** Student avec une échelle par case ; queues lourdes avec sujets ou covariables, et en MANOVA.
+
+**Audit de aed2319 et a206ba5 par « KefiR officiel » (11 novembre), quatre retouches faites.**
+1. **Écarts de l'étape 6 avec les queues lourdes : décidé.** Ils sont tirés du même mélange de lois que la réponse.
+   - Les tirages du postérieur normal (`lmBF`) sont complétés par ceux du postérieur de Student (rééchantillonnage d'importance, `.bay_ft_gaps`), en proportion de P(Student) à l'étape 3.
+   - La loi à variance par case est représentée par la normale commune ; c'est une approximation, que le récit ne détaille pas.
+   - Quand Student l'emporte (P ≥ 0,5), l'écart standardisé est rapporté à l'échelle de la loi de Student, c'est-à-dire à la dispersion sans les queues. L'écart-type, lui, est gonflé par les queues.
+   - Sur le jeu de l'audit, l'intervalle passe d'un [-0,13 ; 1,71] qui couvrait 0 à [0,19 ; 1,17].
+   - **Garde-fou.** Si un « oui » à plus de 95 % s'affiche encore avec un intervalle qui couvre 0, une ligne explique que la probabilité compare des modèles entiers alors que l'intervalle estime un écart ramené vers 0. Testé (`test-bay-fact-t.R`).
+2. **Étape 3, « 95,2 % » en double.** Ce n'était pas la même variable : « égales probables (95,2 %) » affichait 1 − P(variance par case), soit P(commune) + P(Student). La ligne donne désormais P(variance par case) elle-même (« inégales à 4,8 % »).
+3. **Hypothèse globale sous un « oui ».** Elle garde le soutien de son propre facteur de Bayes sur l'échelle du bilan (« soutien faible »), jamais « non tranché ».
+4. **Écart-type du bilan** à trois chiffres significatifs (`.bay_sig3`).

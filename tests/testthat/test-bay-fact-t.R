@@ -26,3 +26,22 @@ test_that("several factors: the t law is averaged with the normal laws", {
 	expect_equal(sum(r$laws$posterior), 1, tolerance = 1e-8)
 	expect_true(any(grepl("Queues|Tails", txt)))
 })
+
+test_that("a yes above 95 % is never shown with an interval covering 0 without a word (audit of a206ba5)", {
+	for (s in c(33L, 709001L, 5L)) {
+		set.seed(s)
+		d <- expand.grid(rep = 1:12, A = factor(c("a1", "a2")), B = factor(c("b1", "b2")))
+		d$y <- stats::rt(nrow(d), 3) / sqrt(3) + 1.2 * (d$A == "a2")
+		txt <- capture.output(r <- m.bay(y ~ A * B, data = d, draws = 2000, sensitivity = FALSE))
+		fam <- r$posthoc$families
+		for (f in fam) {
+			if (f$k == 2L && isTRUE(f$p_term > 0.95) && f$pairs$diff_low[1L] < 0 && f$pairs$diff_high[1L] > 0) {
+				expect_true(any(grepl("couvre 0|covers 0", txt)))
+			} else {
+				expect_true(TRUE)
+			}
+		}
+		# The gaps of step 6 come from the mix of laws when the Student law counts.
+		if (isTRUE(r$p_t > 0.01)) expect_false(is.null(fam[[1L]]$t_weight))
+	}
+})

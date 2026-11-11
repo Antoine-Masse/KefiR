@@ -1,5 +1,13 @@
 # Journal de m.bay
 
+## Séance 17 : 11 novembre 2026, audit de aed2319 et a206ba5, calibration au-delà de 8 groupes
+
+**Fait.**
+- **Audit.** Écarts de l'étape 6 tirés du mélange de lois (normale et Student), avec un garde-fou testé ; P(variance par case) affichée elle-même ; soutien de l'hypothèse globale sous un « oui » ; écart-type à 3 chiffres significatifs (D24, addendum).
+- **Choix de la suite** : calibrer le post-hoc au-delà de 8 groupes avant les queues lourdes avec sujets ou covariables. C'est une voie déjà livrée et jamais simulée ; une erreur y toucherait les utilisateurs dès aujourd'hui, alors que l'autre voie demande un moteur neuf. `agent_71` lancé : accord Gibbs-exact à 8 groupes, H0 à 10 et 12 groupes, deux paquets à 10 groupes.
+
+**Vérifié.** Tests bay (779).
+
 ## Séance 16 : 11 novembre 2026, audit de 9c44239 et queues lourdes à plusieurs facteurs (D24)
 
 **Fait.**

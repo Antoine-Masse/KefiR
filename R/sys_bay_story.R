@@ -594,7 +594,19 @@
 				paste0(f$term, " varie entre sujets : son \u00e9cart est fortement ramen\u00e9 vers 0, l'a priori \u00e9tant \u00e0 l'\u00e9chelle de la variation au sein des sujets ; \u00e9cart observ\u00e9 des moyennes : ",
 					paste(.bay_fx(diff(f$obs_means), f$dg, ","), collapse = ", "), "."), "decide")
 		}
+		if (!is.null(f$t_weight)) {
+			# D24: the gaps come from the same mix of laws as the answer of step 5.
+			.bay_tell(st, paste0("Gaps drawn from the same mix of laws as the answer (Student law at ", .bay_pct(f$t_weight, "."), "), not from the normal law alone."),
+				paste0("\u00c9carts tir\u00e9s du m\u00eame m\u00e9lange de lois que la r\u00e9ponse (loi de Student \u00e0 ", .bay_pct(f$t_weight, ","), "), pas de la seule loi normale."), "decide")
+		}
 		.bay_story_posthoc(st, f, caution = caution && j == length(fams), head = FALSE, notes = j == length(fams))
+		# Guard (audit of a206ba5): a "yes" above 95 % never shows, unexplained, an interval
+		# that covers 0.
+		if (f$k == 2L && isTRUE(f$p_term > 0.95) && isTRUE(f$pairs$diff_low[1L] < 0 && f$pairs$diff_high[1L] > 0)) {
+			f$covers0 <- TRUE
+			.bay_tell(st, paste0("The interval covers 0 although ", f$term, " is probable: the probability compares whole models (all the laws), the interval estimates one gap under the prior, pulled towards 0; both are right, they answer two questions."),
+				paste0("L'intervalle couvre 0 alors que ", f$term, " est probable : la probabilit\u00e9 compare des mod\u00e8les entiers (toutes les lois), l'intervalle estime un \u00e9cart sous l'a priori, ramen\u00e9 vers 0 ; les deux sont justes, ils r\u00e9pondent \u00e0 deux questions."), "decide")
+		}
 	}
 	if (!is.null(ph$by)) {
 		for (it in unique(ph$by$interaction)) {
@@ -654,6 +666,7 @@
 		measure = list(en = "SD of one measure (see the bilan)", fr = "\u00e9cart-type d'une mesure (voir le bilan)"),
 		within = list(en = "residual SD within subject", fr = "\u00e9cart-type r\u00e9siduel au sein des sujets"),
 		adjusted = list(en = "residual SD (covariates accounted for)", fr = "\u00e9cart-type r\u00e9siduel (covariables prises en compte)"),
+		tscale = list(en = "scale of the Student law (spread without the tails)", fr = "\u00e9chelle de la loi de Student (dispersion sans les queues)"),
 		others = list(en = "residual SD (other terms accounted for)", fr = "\u00e9cart-type r\u00e9siduel (autres termes pris en compte)"),
 		logor = list(en = "in log odds ratio", fr = "en log du rapport de cotes"),
 		tvd = list(en = "", fr = ""),

@@ -13,6 +13,9 @@
 	m <- max(abs(x[is.finite(x)]), 1e-300)
 	min(6L, max(0L, 2L - floor(log10(m))))
 }
+# Three significant digits (a standard deviation in the bilan, audit of a206ba5).
+.bay_sig3 <- function(x, dc) gsub(".", dc, format(signif(x, 3), trim = TRUE, scientific = FALSE), fixed = TRUE)
+
 # A value that rounds to zero is written without its sign ("-0.00" read as negative).
 .bay_fx <- function(x, dg, dc) {
 	x[!is.na(x) & round(x, dg) == 0] <- 0
@@ -70,6 +73,12 @@
 			lead_en <- tl_en
 			lead_fr <- tl_fr
 			undecided <- FALSE
+			# The global hypothesis keeps the support of its own Bayes factor, on the scale of
+			# the bilan, never "not settled" under a "yes" (audit of aed2319).
+			bfa <- exp(abs(li$lb))
+			lv <- findInterval(bfa, c(3, 20, 150)) + 1L
+			li$sup <- list(en = c("weak support", "moderate support", "strong support", "very strong support")[lv],
+				fr = c("soutien faible", "soutien mod\u00e9r\u00e9", "soutien fort", "soutien tr\u00e8s fort")[lv], level = lv + 1L)
 		}
 	}
 	if (isTRUE(narrated)) {

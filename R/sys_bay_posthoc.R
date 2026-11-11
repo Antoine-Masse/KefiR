@@ -170,7 +170,8 @@
 	paste(vapply(blocks, function(ix) paste(lev[ix][order(means[ix])], collapse = " = "), character(1)), collapse = " < ")
 }
 
-.bay_posthoc_oneway <- function(y, g, rscale, prior_h1, draws, seed, alphas = c(1, 1/2, 2), id = NULL, cov = NULL) {
+.bay_posthoc_oneway <- function(y, g, rscale, prior_h1, draws, seed, alphas = c(1, 1/2, 2), id = NULL, cov = NULL,
+                                keep_draws = FALSE) {
 	rm <- !is.null(id)
 	if (!is.null(cov) && !ncol(cov)) cov <- NULL
 	# Computed on the standardised response (Bayes factors and delta do not depend on the
@@ -277,7 +278,10 @@
 	}, numeric(6)))
 	res$diff <- sc * st[, 1L]; res$diff_low <- sc * st[, 2L]; res$diff_high <- sc * st[, 3L]
 	res$delta <- st[, 4L]; res$delta_low <- st[, 5L]; res$delta_high <- st[, 6L]
-	list(pairs = res, partitions = parts_tab, k = k, alphas = alphas, draws = nrow(po),
+	# The draws, for a mix with the Student law (D24).
+	draws_diff <- sc * vapply(seq_len(ncol(pairs)), function(j) m[, pairs[2L, j]] - m[, pairs[1L, j]], numeric(nrow(m)))
+	draws_delta <- vapply(seq_len(ncol(pairs)), function(j) (m[, pairs[2L, j]] - m[, pairs[1L, j]]) / sig, numeric(nrow(m)))
+	list(pairs = res, draws_diff = if (keep_draws) draws_diff, draws_delta = if (keep_draws) draws_delta, partitions = parts_tab, k = k, alphas = alphas, draws = nrow(po),
 		computed = TRUE, method = method, n_partitions = .bay_bell(k), sweeps = n_sweeps, mc_error = mc_error,
 		max_exact = .bay_posthoc_max_groups(rm || !is.null(cov)), delta_unit = if (is.data.frame(id) && ncol(id) > 1L) "measure" else if (rm) "within" else if (!is.null(cov)) "adjusted" else "pooled",
 		dg = dg0)
@@ -407,7 +411,7 @@
 }
 
 .bay_posthoc_factorial <- function(y, factors, effects, rscale, prior_h1, draws, seed, id = NULL, cov = NULL,
-                                   undecided = character(0)) {
+                                   undecided = character(0), t_weight = 0) {
 	keys <- .bay_term_key(effects$term)
 	fs <- strsplit(keys, ":", fixed = TRUE)
 	is_fac <- vapply(fs, function(f) all(f %in% names(factors)), logical(1))
@@ -430,7 +434,7 @@
 		other <- setdiff(names(factors), f)
 		nuis <- c(if (length(other)) as.list(factors[other]), if (!is.null(cov)) as.list(cov))
 		nuis <- if (length(nuis)) as.data.frame(nuis, check.names = FALSE) else NULL
-		ph <- .bay_posthoc_oneway(y, g, rscale, prior_h1, draws, seed + i, id = id, cov = nuis)
+		ph <- .bay_posthoc_oneway(y, g, rscale, prior_h1, draws, seed + i, id = id, cov = nuis, keep_draws = TRUE)
 		if (!is.null(nuis)) ph$delta_unit <- if (is.data.frame(id) && ncol(id) > 1L) "measure" else if (!is.null(id)) "within" else "others"
 		# A factor between subjects: its gaps are not measured on the residual within subject,
 		# so no standardised gap is given.
@@ -439,6 +443,25 @@
 			ph$between <- TRUE
 			ph$obs_means <- as.numeric(tapply(y, g, mean))
 		}
+		# Heavy tails (D24, audit of a206ba5): the gaps come from the same mix of laws as the
+		# answer, the normal draws and the Student draws in proportion of P(Student).
+		if (isTRUE(t_weight > 0.01) && is.null(id) && is.null(cov)) {
+			tg <- .bay_ft_gaps(y, factors[f], factors[other], rscale, max(4000L, as.integer(draws)), seed + 31L + i)
+			nn <- nrow(ph$draws_diff)
+			n_t <- round(t_weight * nn)
+			pick_n <- if (nn - n_t > 0L) sample.int(nn, nn - n_t) else integer(0)
+			pick_t <- if (n_t > 0L) sample.int(nrow(tg$diff), n_t, replace = TRUE) else integer(0)
+			dd <- rbind(ph$draws_diff[pick_n, , drop = FALSE], tg$diff[pick_t, , drop = FALSE])
+			de <- rbind(ph$draws_delta[pick_n, , drop = FALSE], tg$delta[pick_t, , drop = FALSE])
+			hd <- function(x) { h <- bayestestR::hdi(as.numeric(x), ci = 0.95); c(stats::median(x), h$CI_low, h$CI_high) }
+			a <- t(apply(dd, 2L, hd)); b <- t(apply(de, 2L, hd))
+			ph$pairs$diff <- a[, 1L]; ph$pairs$diff_low <- a[, 2L]; ph$pairs$diff_high <- a[, 3L]
+			ph$pairs$delta <- b[, 1L]; ph$pairs$delta_low <- b[, 2L]; ph$pairs$delta_high <- b[, 3L]
+			ph$t_weight <- t_weight
+			if (t_weight >= 0.5) ph$delta_unit <- "tscale"
+		}
+		ph$draws_diff <- NULL
+		ph$draws_delta <- NULL
 		ph$term <- effects$term[i]
 		ph$p_term <- p[i]
 		ph$cells <- length(f) > 1L

@@ -59,7 +59,7 @@
 }
 
 # Log marginal likelihood of one model for each r, by importance sampling around the mode.
-.bay_ft_ml <- function(y, Xs, rs, t_law, draws) {
+.bay_ft_ml <- function(y, Xs, rs, t_law, draws, keep_draws = FALSE) {
 	p <- sum(vapply(Xs, ncol, integer(1)))
 	d <- p + 2L + as.integer(t_law)
 	fit0 <- if (p) stats::lm.fit(cbind(1, do.call(cbind, Xs)), y) else list(coefficients = mean(y), residuals = y - mean(y))
@@ -80,7 +80,13 @@
 	fit <- if (ok) .bay_mvt_make(opt$par, 1 / ev$values, ev$vectors) else .bay_mvt_make(opt$par, rep(0.1, d), diag(d))
 	Z <- .bay_mvt_draw(draws, fit, 4, 1.1)
 	lq <- .bay_mvt_ld(Z, fit, 4, 1.1)
-	res <- lapply(rs, function(r) .bay_law_is(.bay_ft_logpost(Z, y, Xs, r, t_law) - lq))
+	lw1 <- .bay_ft_logpost(Z, y, Xs, rs[1L], t_law) - lq
+	res <- lapply(seq_along(rs), function(i) .bay_law_is(if (i == 1L) lw1 else .bay_ft_logpost(Z, y, Xs, rs[i], t_law) - lq))
+	if (isTRUE(keep_draws)) {
+		# Posterior draws at the central r, by importance resampling (for the gaps, D24).
+		w <- exp(lw1 - max(lw1))
+		return(Z[sample.int(nrow(Z), draws, replace = TRUE, prob = w), , drop = FALSE])
+	}
 	# + log 2: the normal laws of sys_bay_laws.R put 1 / taubar on the precision, which is twice
 	# the measure 1 / sigma used here (checked on the null model, test-bay-fact-t.R).
 	list(log_ml = log(2) + vapply(res, `[[`, numeric(1), "log_mean"), ess = min(vapply(res, `[[`, numeric(1), "ess")),
@@ -98,4 +104,41 @@
 	ys <- (y1 - mean(y1)) / unit
 	Xall <- .bay_ft_design(factors, sp$keys)
 	.bay_with_seed(seed, lapply(sp$models, function(m) .bay_ft_ml(ys, Xall[m], rs, t_law, draws)))
+}
+
+# Gaps between the levels of g (a factor, or the cells of an interaction) under the Student t
+# law, for the step 6 of a plan with several factors (D24, audit of a206ba5): the model is
+# g (its terms) + the other factors, additive, as in .bay_posthoc_factorial. Returns, for
+# every pair of levels, the posterior draws of the gap (units of y) and of the gap over the
+# scale of the t law (its spread without the tails).
+.bay_ft_gaps <- function(y, fam, others, rscale, draws, seed) {
+	facs <- c(fam, others)
+	keys <- names(fam)
+	if (length(fam) > 1L) {
+		keys <- c(keys, unlist(lapply(2:length(fam), function(o) apply(utils::combn(names(fam), o), 2L, paste, collapse = ":"))))
+	}
+	keys <- c(keys, names(others))
+	cl <- interaction(facs, drop = TRUE)
+	y1 <- y / max(abs(y))
+	unit <- sqrt(sum(tapply(y1, cl, function(v) sum((v - mean(v))^2))) / (length(y1) - nlevels(cl)))
+	ys <- (y1 - mean(y1)) / unit
+	back <- unit * max(abs(y))
+	Xs <- .bay_ft_design(facs, keys)
+	Z <- .bay_with_seed(seed, .bay_ft_ml(ys, Xs, rscale, TRUE, draws, keep_draws = TRUE))
+	p <- sum(vapply(Xs, ncol, integer(1)))
+	B <- Z[, 1L + seq_len(p), drop = FALSE]
+	nu <- 2 + exp(Z[, p + 3L])
+	s_t <- exp(Z[, p + 2L]) * sqrt((nu - 2) / nu)
+	# Fitted value of one observation of each level of g (the other factors cancel in a gap).
+	g <- if (length(fam) == 1L) fam[[1L]] else interaction(fam, sep = " x ", drop = TRUE, lex.order = TRUE)
+	X <- do.call(cbind, Xs)
+	rows <- match(levels(g), as.character(g))
+	# Keep only the columns of g's own terms: the other factors are additive and cancel.
+	own <- rep(seq_along(Xs) <= length(keys) - length(others), vapply(Xs, ncol, integer(1)))
+	Xg <- X[rows, , drop = FALSE]
+	Xg[, !own] <- 0
+	M <- tcrossprod(B, Xg)
+	pr <- utils::combn(nlevels(g), 2L)
+	list(diff = vapply(seq_len(ncol(pr)), function(j) back * (M[, pr[2L, j]] - M[, pr[1L, j]]), numeric(nrow(Z))),
+		delta = vapply(seq_len(ncol(pr)), function(j) (M[, pr[2L, j]] - M[, pr[1L, j]]) / s_t, numeric(nrow(Z))))
 }
