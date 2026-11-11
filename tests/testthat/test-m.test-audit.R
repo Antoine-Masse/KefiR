@@ -20,9 +20,32 @@ make_split_plot <- function() {
   d
 }
 
+test_that("a. split-plot : l'interaction G:T est gardee, avec les p-values d'aov", {
+  d <- make_split_plot()
+  ref <- summary(aov(y ~ G * T + Error(id / T), data = d))
+  p_GT <- ref[["Error: id:T"]][[1]]["G:T", "Pr(>F)"]
+  p_G <- ref[["Error: id"]][[1]]["G", "Pr(>F)"]
+  res <- audit_quiet(m.test(y ~ G * T + Error(id / T), data = d, plot = FALSE))
+  eff <- res$value$effects
+  expect_true("G:T" %in% eff$term)
+  expect_equal(eff$p.value[eff$term == "G:T"], p_GT, tolerance = 1e-6)
+  expect_equal(eff$p.value[eff$term == "G"], p_G, tolerance = 1e-6)
+  # G est inter-sujet : il ne doit pas etre annonce comme intra-sujet
+  expect_false(any(grepl("intra-sujet", res$output) & grepl("(s) : G", res$output, fixed = TRUE)))
+  expect_false(any(grepl("within-subject factor(s): G", res$output, fixed = TRUE)))
+})
+
+test_that("b. split-plot avec verbose = FALSE : pas de plantage", {
+  d <- make_split_plot()
+  res <- audit_quiet(m.test(y ~ G * T + Error(id / T), data = d, plot = FALSE, verbose = FALSE))
+  expect_true("G:T" %in% res$value$effects$term)
+})
+
 test_that("b. modele mixte force (plan desequilibre) avec verbose = FALSE : pas de plantage", {
   d <- make_split_plot()
   d <- d[-c(1, 20), ]
   expect_no_error(audit_quiet(m.test(y ~ G * T + Error(id / T), data = d,
                                      plot = FALSE, verbose = FALSE)))
+  res <- audit_quiet(m.test(y ~ G * T + Error(id / T), data = d, plot = FALSE))
+  expect_true("G:T" %in% res$value$effects$term)
 })

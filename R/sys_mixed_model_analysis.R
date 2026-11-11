@@ -159,9 +159,21 @@
       fixed_terms <- formula_terms[!grepl("\\|", formula_terms)]
     }
 
+    # Les termes fixes de la formule (interactions comprises) priment :
+    # coller within + between par " + " retirait l'interaction en silence.
+    formula_fixed <- character(0)
+    if (!is.null(formula)) {
+      formula_fixed <- tryCatch({
+        lbl <- attr(terms(.drop_error_term(formula)), "term.labels")
+        lbl[!grepl("\\||^Error\\(", lbl)]
+      }, error = function(e) character(0))
+    }
+
     # Construire partie fixe
-    if (length(fixed_terms) > 0) {
-      fixed_part <- paste(fixed_terms, collapse = " + ")
+    if (length(formula_fixed) > 0) {
+      fixed_part <- paste(formula_fixed, collapse = " + ")
+    } else if (length(fixed_terms) > 0) {
+      fixed_part <- paste(unique(fixed_terms), collapse = " * ")
     } else {
       fixed_part <- "1"  # Modele intercept-only
     }

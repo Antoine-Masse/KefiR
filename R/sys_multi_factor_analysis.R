@@ -662,8 +662,27 @@
         within_interaction <- interaction(data[within], drop = TRUE)
       }
     } else {
-      # Si within non sp\u00e9cifi\u00e9, utiliser tous les facteurs sauf between et id
-      auto_within <- setdiff(all_factors, c(between, id))
+      # Si within non sp\u00e9cifi\u00e9, utiliser tous les facteurs sauf between et id.
+      # Un facteur constant au sein de chaque sujet est inter-sujet (split-plot
+      # y ~ G*T + Error(id/T)) : le compter comme intra-sujet faussait le contr\u00f4le
+      # de structure (sujets \u00ab incomplets \u00bb) et l'aiguillage vers un lmer additif.
+      candidates <- setdiff(all_factors, c(between, id))
+      is_constant_within_id <- vapply(candidates, function(f) {
+        all(tapply(as.character(data[[f]]), data[[id]],
+                   function(v) length(unique(v[!is.na(v)])) <= 1), na.rm = TRUE)
+      }, logical(1))
+      auto_between <- candidates[is_constant_within_id]
+      auto_within <- candidates[!is_constant_within_id]
+      if (length(auto_between) > 0) {
+        between <- c(between, auto_between)
+        k <- .vbse(
+          paste0("Auto-detected between-subject factor(s) (constant within each subject): ",
+                 paste(auto_between, collapse = ", ")),
+          paste0("Facteur(s) inter-sujet auto-d\u00e9tect\u00e9(s) (constant(s) pour chaque sujet) : ",
+                 paste(auto_between, collapse = ", ")),
+          verbose = verbose, code = code, k = k, cpt = "off"
+        )
+      }
       if (length(auto_within) == 0) {
         .exit(
           "Could not identify within-subject factors. Please specify 'within' explicitly.",
@@ -907,7 +926,9 @@
         if (length(idx_b) == 0) next
 
         # Table id \u00e0\u2014 within dans ce sous-ensemble
-        tab_bw <- table(data[[id]][idx_b], within_fac[idx_b])
+        # as.character : un id facteur garde tous ses niveaux, et les sujets des
+        # autres niveaux du between apparaissaient comme \u00ab incomplets \u00bb.
+        tab_bw <- table(as.character(data[[id]][idx_b]), within_fac[idx_b])
 
         # 1) Chaque sujet pr\u00e9sent dans ce between doit avoir toutes les modalit\u00e9s within
         missing_per_id <- rowSums(tab_bw > 0) != n_within_levels
@@ -999,9 +1020,10 @@
         cross_count <- apply(cross_tab, 1, function(x) sum(x > 0))
 
         # Un plan \u00e9quilibr\u00e9 complet doit avoir exactement n_within_levels * n_between_levels combinaisons
+        # Un sujet n'appartient qu'\u00e0 un niveau du between (plan split-plot) :
+        # il doit avoir toutes les modalit\u00e9s within, pas within \u00d7 between.
         n_within <- length(unique(data[[within[1]]]))
-        n_between <- length(unique(data[[between[1]]]))
-        expected <- n_within * n_between
+        expected <- n_within
 
         if (any(cross_count != expected)) {
           k <- .vbse(
