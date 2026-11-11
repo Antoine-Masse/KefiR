@@ -748,8 +748,8 @@
 		.bay_tell(st, "Random subject effect: compound symmetry assumed, as in the uncorrected repeated-measures ANOVA (Mauchly's test in m.test()).",
 			"Effet sujet al\u00e9atoire : sym\u00e9trie compos\u00e9e suppos\u00e9e, comme dans l'ANOVA \u00e0 mesures r\u00e9p\u00e9t\u00e9es non corrig\u00e9e (test de Mauchly dans m.test()).", "detail")
 	}
-	.bay_tell(st, "heavy tails and unequal variances are not validated with subjects yet.",
-		"queues lourdes et variances in\u00e9gales ne sont pas encore valid\u00e9es avec des sujets.", "note")
+	.bay_tell(st, "heavy tails with subjects: measured without strong false \"yes\" (normal law kept, D28).",
+		"queues lourdes avec des sujets : mesur\u00e9es sans faux \u00ab oui \u00bb fort (loi normale gard\u00e9e, D28).", "note")
 	far <- chk$extremes[["far"]]
 	if (far > 0L) {
 		.bay_tell(st, paste0(far, if (far == 1L) " value lies" else " values lie", " beyond 3 interquartile ranges: read the answer with caution."),

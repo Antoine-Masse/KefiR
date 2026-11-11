@@ -29,6 +29,42 @@
 	"continuous"
 }
 
+# Proportional odds checked (D26, audit of d7a295a): the polr model against a multinomial
+# model of the same cells (nnet::multinom), where every level of the scale has its own effects,
+# so without proportional odds. Both by -BIC/2, at even odds; returns P(not proportional), NA
+# when nnet is missing or a fit fails. A comparison of the same kind as the Brant test, in the
+# terms of this route (unit information).
+.bay_po_check <- function(yo, h) {
+	if (!requireNamespace("nnet", quietly = TRUE)) return(NA_real_)
+	h <- droplevels(as.factor(h))
+	if (nlevels(h) < 2L || nlevels(droplevels(yo)) < 3L) return(NA_real_)
+	d <- data.frame(y = droplevels(yo), h = h)
+	f1 <- tryCatch(.bay_quiet(MASS::polr(y ~ h, data = d)), error = function(e) NULL)
+	f2 <- tryCatch(.bay_quiet(nnet::multinom(y ~ h, data = d, trace = FALSE)), error = function(e) NULL)
+	if (is.null(f1) || is.null(f2)) return(NA_real_)
+	l1 <- -stats::BIC(f1) / 2
+	l2 <- -stats::BIC(f2) / 2
+	if (!is.finite(l1) || !is.finite(l2)) return(NA_real_)
+	1 / (1 + exp(l1 - l2))
+}
+
+# The story lines of that check.
+.bay_po_tell <- function(story, p_np) {
+	if (is.na(p_np)) {
+		.bay_tell(story, "the gap between groups is assumed the same at every level of the scale (proportional odds, not checked here).",
+			"on suppose que l'\u00e9cart entre groupes est le m\u00eame \u00e0 tous les niveaux de l'\u00e9chelle (cotes proportionnelles, non v\u00e9rifi\u00e9 ici).", "note")
+	} else if (p_np >= 0.75) {
+		.bay_tell(story, paste0("Caution added: the gaps between groups seem to change from one level of the scale to another (proportional odds doubtful, ", .bay_pct(1 - p_np, "."), "); read the answer with caution."),
+			paste0("Prudence ajout\u00e9e : les \u00e9carts entre groupes semblent changer d'un niveau de l'\u00e9chelle \u00e0 l'autre (cotes proportionnelles douteuses, ", .bay_pct(1 - p_np, ","), ") ; lire la r\u00e9ponse avec r\u00e9serve."), "decide")
+	} else {
+		.bay_tell(story, paste0("Proportional odds ", if (p_np <= 0.25) "plausible" else "not settled", " (", .bay_pct(1 - p_np, "."), ", against a model where every level has its own effects)."),
+			paste0("Cotes proportionnelles ", if (p_np <= 0.25) "plausibles" else "non tranch\u00e9es", " (", .bay_pct(1 - p_np, ","), ", contre un mod\u00e8le o\u00f9 chaque niveau a ses propres effets)."))
+	}
+	.bay_tell(story, "Proportional odds checked by -BIC/2 of polr against nnet::multinom on the same groups or cells, at even odds (DECISIONS, D26).",
+		"Cotes proportionnelles v\u00e9rifi\u00e9es par -BIC/2 de polr contre nnet::multinom sur les m\u00eames groupes ou cases, \u00e0 poids \u00e9gaux (DECISIONS, D26).", "detail")
+	invisible(NULL)
+}
+
 .bay_polr_lm <- function(yo, h) {
 	d <- data.frame(y = yo, h = h)
 	one <- nlevels(droplevels(as.factor(h))) < 2L
@@ -105,10 +141,10 @@
 	.bay_tell(story, "Law of the data", "Loi des donn\u00e9es", "step", fun = "polr() {MASS}")
 	.bay_step_result(story, "proportional odds (cumulative logit)", "cotes proportionnelles (logit cumulatif)")
 	.bay_tell(story, "Only the order of the values counts, not their gaps.", "Seul compte l'ordre des valeurs, pas leurs \u00e9carts.")
-	.bay_tell(story, "the gap between groups is assumed the same at every level of the scale (proportional odds, not tested).",
-		"on suppose que l'\u00e9cart entre groupes est le m\u00eame \u00e0 tous les niveaux de l'\u00e9chelle (cotes proportionnelles, non test\u00e9).", "note")
-	.bay_tell(story, "Proportional odds model of McCullagh (1980), MASS::polr(); the Brant test of proportional odds is not run.",
-		"Mod\u00e8le \u00e0 cotes proportionnelles de McCullagh (1980), MASS::polr() ; le test de Brant des cotes proportionnelles n'est pas fait.", "detail")
+	p_np <- .bay_po_check(yo, g)
+	.bay_po_tell(story, p_np)
+	.bay_tell(story, "Proportional odds model of McCullagh (1980), MASS::polr().",
+		"Mod\u00e8le \u00e0 cotes proportionnelles de McCullagh (1980), MASS::polr().", "detail")
 	f0 <- .bay_polr_lm(yo, factor(rep(1L, length(y))))
 	f1 <- .bay_polr_lm(yo, g)
 	if (is.null(f0$fit) || is.null(f1$fit)) {

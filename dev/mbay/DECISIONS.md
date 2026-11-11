@@ -720,3 +720,24 @@ Demandé par la session parente dans l'ordre du PERIMETRE, avec trois points de 
 - Avec un effet sur le dernier temps, m.bay atteint 47 % à P > 0,75 (19,5 % à P > 0,95), contre 54,5 % pour Greenhouse-Geisser.
 
 **Décision.** Pas de correction : aucun faux « oui » fort sous une sphéricité violée. Le récit calcule ε de Greenhouse-Geisser (un facteur intra-sujet à 3 niveaux ou plus, sujets complets) et le dit à l'étape 3. Sous 0,75, il ajoute que ce cas a été mesuré sans faux « oui » fort. La note « non testé » est retirée.
+
+## D28. Queues lourdes et variances inégales avec des sujets : défaut MESURÉ, prudence provisoire FAITE (11 novembre)
+
+**Mesure d'abord** (`agent_76`, 15 sujets × 3 conditions, 200 jeux par scénario ; VALIDATION §27).
+- **Queues lourdes (t3).** Pas de défaut de faux « oui » : 0 % à P > 0,95 sous H0. Seule la puissance est plus basse que celle de Friedman (32 % contre 51,5 % au seuil de 0,75 et de p < 0,05). La loi normale est gardée, et le récit le dit (« mesurées sans faux « oui » fort »).
+- **Variances inégales par condition** (écarts-types 0,5 ; 0,5 ; 2). Défaut réel : sous H0, P > 0,95 dans 3,0 % des jeux, au-dessus du 0,7 % visé (l'ANOVA à mesures répétées : 11 %).
+
+**Prudence provisoire, comme D19 au départ.** La variance par condition est comparée par −BIC/2 de `nlme::lme` (sujet aléatoire, maximum de vraisemblance), avec et sans `varIdent`, à poids égaux. Si les variances inégales sont probables (≥ 0,75), le soutien est plafonné à « faible », le verdict reste prudent, et l'étape 3 le dit.
+- Sous H0 à variances inégales, le « oui » fort affiché passe de 3 % à 0 %.
+- Déclenchement à tort : 1,5 % à variances égales, 15,5 % avec un bruit t3 (des queues lourdes ressemblent à des variances inégales).
+- Prix : avec un effet et des variances inégales, aucun « oui » fort n'est affiché.
+
+**Correction, à faire.** Moyenner {variance commune, variance par condition} avec le sujet aléatoire. `lmBF` ne permet pas une variance par condition ; il faudrait un noyau propre (sujet aléatoire intégré) ou l'information unitaire sur `nlme`. Les deux options sont à mesurer comme en D19. `nlme` est en Suggests ; sans lui, pas de contrôle, et le récit garde la loi normale.
+
+## Cotes proportionnelles : VÉRIFIÉES (11 novembre, audit de d7a295a)
+
+Dans les deux voies ordinales (un facteur, D17 voie 3 ; plusieurs facteurs, D26), `polr` est comparé par −BIC/2 à `nnet::multinom` sur les mêmes groupes ou cases, un modèle où chaque niveau de l'échelle a ses propres effets, à poids égaux. C'est une comparaison du même ordre que le test de Brant, dans les termes de la voie (information unitaire).
+- Si P(non proportionnelles) ≥ 0,75 : « Prudence ajoutée : les écarts entre groupes semblent changer d'un niveau de l'échelle à l'autre ».
+- Sinon, « plausibles » ou « non tranchées », avec le chiffre.
+- `nnet` est en Suggests ; sans lui, le récit dit « non vérifié ici ».
+- Testé sur un cas construit (un groupe qui s'étale vers les deux extrémités).

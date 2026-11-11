@@ -979,3 +979,17 @@ n = 8 par groupe, 30 jeux par partie. Résultats : `scripts/resultats/agent_71_*
 |---|---:|---:|---:|---:|---:|
 | H0 | 2,5 % | 0,5 % | 1,5 % | 0,5 % | 5,5 % |
 | Effet de A, 0,5 | 28,0 % | 12,5 % | 28,0 % | 12,5 % | 64,5 % |
+
+## 27. Queues lourdes et variances inégales avec des sujets (D28, `agent_76`), 11 novembre
+
+15 sujets × 3 conditions, effet sujet d'écart-type 1, 200 jeux par scénario, sans sensibilité. Résultats : `scripts/resultats/agent_76_*.txt` (avant) et `*_D28.txt` (avec la prudence).
+
+| Scénario | m.bay P > 0,75 | m.bay P > 0,95 | ANOVA MR p < 0,05 | Friedman p < 0,05 | Prudence déclenchée | « Oui » fort affiché |
+|---|---:|---:|---:|---:|---:|---:|
+| t3, H0 | 2,5 % | 0 % | 3,0 % | 4,0 % | 15,5 % | 0 % |
+| t3, effet 0,6 | 32,0 % | 5,5 % | 43,5 % | 51,5 % | – | – |
+| Variances inégales, H0 | 8,0 % | 3,0 % | 11,0 % | 6,0 % | 90,5 % | 0 % (3,0 % avant) |
+| Variances inégales, effet 0,6 | 15,5 % | 3,5 % | 23,0 % | 42,0 % | 95,0 % | 0 % |
+| Normal, variances égales, H0 | 3,0 % | 0 % | 6,0 % | 5,5 % | 1,5 % | 0 % |
+
+**Lecture.** Les queues lourdes n'ajoutent pas de faux « oui » avec des sujets. Les variances inégales en ajoutent (3 %), et la prudence les retire de l'affichage, au prix de toute affirmation forte dans ce cas. La correction (moyenne des lois) est à faire.

@@ -62,6 +62,8 @@ Imports:
 Suggests:
     dae,
     doParallel,
+    nlme,
+    nnet,
     knitr,
     rmarkdown,
     testthat (>= 3.0.0),

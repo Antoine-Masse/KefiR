@@ -39,3 +39,17 @@ test_that("ordinal : facteur de Bayes = -BIC/2 de polr, rapports des cotes cumul
 	expect_lte(max(nchar(gsub("\t", "        ", txt), type = "width")), 80)
 	expect_true(any(grepl("^7\\) Bilan", txt)))
 })
+
+test_that("proportional odds checked against a multinomial model (audit of d7a295a)", {
+	skip_if_not_installed("nnet")
+	set.seed(5)
+	g <- factor(rep(c("a", "b"), each = 60))
+	y <- c(sample(2:4, 60, TRUE, prob = c(.2, .6, .2)), sample(c(1, 5, 3), 60, TRUE, prob = c(.4, .4, .2)))
+	yo <- factor(y, ordered = TRUE)
+	expect_gt(.bay_po_check(yo, g), 0.75)
+	txt <- capture.output(m.bay(y ~ g, sensitivity = FALSE, response = "ordinal"))
+	expect_true(any(grepl("douteuses|doubtful", txt)))
+	set.seed(6)
+	y2 <- pmin(5, pmax(1, round(3 + 0.8 * (g == "b") + stats::rnorm(120))))
+	expect_lt(.bay_po_check(factor(y2, ordered = TRUE), g), 0.25)
+})

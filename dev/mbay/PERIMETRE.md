@@ -354,7 +354,9 @@ Légende :
 | Oui/non apparié (McNemar, Cochran) | Refusé | — | Non couvert par `m.test()` non plus |
 | Tests de rangs (Wilcoxon, Kruskal) | Non couvert, raisons D17 | — | Leurs cas sont repris par les voies 3 et par les lois t |
 | Covariable seule (régression) | Refusé | — | Hors `m.test()` |
-| Variances inégales ou queues lourdes avec sujets ou covariables | Non couvert (annoncé dans le récit) | — | À faire (priorité 2) |
+| Queues lourdes avec sujets | Mesuré sans faux « oui » (D28) | Loi normale gardée | Puissance plus basse que Friedman |
+| Variances inégales par condition avec sujets | Prudence provisoire (D28) | `nlme::lme` avec et sans `varIdent`, BIC | Soutien plafonné si probables ; correction (moyenne des lois) à faire |
+| Variances inégales ou queues lourdes avec covariables | Non couvert (annoncé) | — | À faire |
 | Voie robuste ou Stan | Non couverte | — | rstanarm en Suggests (D1), non branché |
 
 **Temps typique** (valeurs par défaut, sensibilité comprise). Jeux de TP à N ≈ 40 : `scripts/resultats/agent_63.txt`, mesures du 10 novembre. Plans plus gros : mesures du 11 novembre.

@@ -18,37 +18,40 @@
 #' unequal variances) and averages its answers over their posterior probabilities.
 #'
 #' @section Plans covered:
-#' Available now: one factor, 2 groups or k groups, with the four shapes of noise
-#' compared; several crossed factors (for example `y ~ A * B`), with the normal law and a
-#' common variance only. With several factors, the marginal likelihoods come from the
-#' BayesFactor package (Rouder et al. 2012) and each term is answered as "does y differ
-#' according to A, alone or in interaction?". An interaction enters only with its factors,
-#' and the prior on the models gives one proportion ~ Beta(1,1) per order of interaction
-#' (Taylor-Rodriguez et al. 2016), which corrects for the number of terms; `prior_h1` and
-#' `laws` have no role there. Two costs of this prior (DECISIONS, D2): when one interaction
-#' is real, the other interactions of the same order are more often called "yes"; and an
-#' interaction without its lower-order terms (A:B:C alone) is outside the hereditary models
-#' and is poorly seen.
+#' Every plan is told in the same seven steps and ends with the same bilan. The DECISIONS file
+#' of the development folder (dev/mbay) gives the reasons and the measures of each choice
+#' (D1 to D28).
+#' - **One factor, 2 or k groups, continuous response**: four shapes of the noise
+#'   compared and averaged (normal or Student, equal or unequal variances, D6); which
+#'   groups differ through the groupings of their means (D11; Gibbs sampler beyond 8
+#'   groups).
+#' - **Several crossed factors between groups** (`y ~ A * B`): [BayesFactor::lmBF()]
+#'   on the hereditary models, HOP prior on the models (Taylor-Rodriguez et al. 2016, D2);
+#'   three laws averaged: normal with a common variance, normal with one variance per cell
+#'   (D19), Student (D24); which levels or cells differ for the probable terms (D20).
+#' - **Analysis of covariance** (`y ~ g + x`, `y ~ g * x`, D16): covariates centred,
+#'   in every model; parallel or different slopes (Bayesian Johnson-Neyman).
+#' - **Paired data and repeated measures** (`y ~ time | id`, `Error(id / time)`,
+#'   `(1 | id)`, `id =`, `paired = TRUE`, D15): subject random in every model; with
+#'   replicates per subject and condition, subject x condition random too (D21);
+#'   sphericity measured, not corrected (D27); unequal variances per condition: support
+#'   capped (D28).
+#' - **Several responses** (`cbind(y1, y2) ~ g`, MANOVA, D22, D23): standardised,
+#'   stacked, individual random; one or several factors between groups; reading per
+#'   response.
+#' - **Discrete responses**: yes/no or categories with one factor
+#'   ([BayesFactor::contingencyTableBF()], D17); counts (Poisson and negative binomial) and
+#'   ordered ratings (proportional odds, [MASS::polr()]) with one factor (D17); yes/no,
+#'   counts and ordered ratings with several factors between groups (glm or polr, BIC,
+#'   HOP, D25, D26).
 #'
-#' Paired data and repeated measures (DECISIONS, D15), written as in [m.test()]
-#' (`y ~ time | id`, `Error(id/time)`, `(1 | id)`, `id =`, `paired = TRUE`): the subject is a
-#' random effect present in every model, "no difference" included. Two levels: Bayesian paired
-#' t test on the differences, [BayesFactor::ttestBF()] with `paired = TRUE` (Rouder et al. 2009),
-#' and the size of the difference as dz with its credible interval. More levels, or factors
-#' between subjects too: [BayesFactor::lmBF()] with `whichRandom` (Rouder et al. 2012), each
-#' model against the subjects alone; one factor within subject gets the post-hoc on
-#' groupings. Normal law only. Several measures of one subject in one condition (replicates,
-#' DECISIONS, D21): the subject and the subject crossed with the factors within subject are
-#' random, so that the replicates do not count as more subjects; random slopes are refused.
+#' **Refused, with a message**: random slopes; covariates with subjects; MANOVA with
+#' covariates or subjects; discrete responses with subjects or covariates; categories (more
+#' than two) with several factors; a covariate alone (regression). Paired yes/no (McNemar,
+#' Cochran) is refused; [m.test()] does not handle it either.
 #'
-#' Analysis of covariance (DECISIONS, D16), `y ~ g + x` or `y ~ g * x`: covariates centred on
-#' their mean, present in every model, each answer read against the covariates alone
-#' ([BayesFactor::lmBF()], slope prior `rscaleCont` = sqrt(2)/4, varied with `r`). Groups that
-#' hardly overlap on a covariate cap the support at "weak". Parallel slopes: adjusted gaps
-#' and groupings as with one factor. Slopes that differ: gaps at the quartiles of the
-#' covariate and the zone where the groups differ (Bayesian Johnson-Neyman). A covariate
-#' alone, and covariates with subjects, are refused. The other plans of [m.test()] (mixed,
-#' MANOVA, discrete data) stop with an explicit message until they are validated.
+#' **Time.** Most plans answer in a few seconds. Many groups (8 and more), MANOVA with several
+#' factors or more than 50 models take longer: a line gives the expected time first.
 #'
 #' @param x Response: numeric vector, column name or index if `data` is given, or a
 #'   formula.
@@ -105,35 +108,88 @@
 #' @param detail If `TRUE`, the bilan also shows the shapes of the noise, the priors that
 #'   are varied and how to read the numbers. Also `print(result, detail = TRUE)`.
 #'
-#' @return With `return = TRUE`, a list of class `mbay`:
+#' @return With `return = TRUE`, a list of class `mbay`. The same elements in every plan:
 #'   \describe{
-#'     \item{hypotheses}{Ranked hypotheses: `label_en`, `label_fr`, `posterior`,
-#'       `prior`.}
-#'     \item{effects}{One row per term: `term`, `bf10`, `log_bf`, `p_h1`, `p_h0`,
-#'       `prior_h1`, `rscale`, `error_pct`, `analogue`. No column is a p-value.}
-#'     \item{laws}{Posterior probability of each sampling law, with the log Bayes
-#'       factor within that law.}
-#'     \item{models}{The eight models with their marginal likelihoods.}
-#'     \item{sensitivity}{Grid over r and odds, range over the priors, verdict.}
-#'     \item{priors}{The priors used.}
-#'     \item{descriptive_stats}{n, mean and SD per group.}
-#'     \item{prob_effect}{Posterior probability that at least one effect exists.}
-#'     \item{method, plan, label, n, notes, call}{Description of the analysis.}
-#'     \item{posthoc}{One factor: `pairs` (probability that two groups differ, its range over the
-#'       prior on groupings, differences and standardised differences with 95 % credible
-#'       intervals) and `partitions` (groupings ranked by posterior probability).}
+#'     \item{hypotheses}{Ranked hypotheses: `label_en`, `label_fr`, `posterior`, `prior`,
+#'       `null`.}
+#'     \item{effects}{One row per term: `term`, `bf10`, `log_bf`, `p_h1`, `p_h0`, `prior_h1`,
+#'       and per plan `rscale`, `error_pct`. No column is a p-value.}
+#'     \item{prob_effect}{Posterior probability that at least one effect exists. Not a
+#'       p-value.}
+#'     \item{laws}{Posterior probability of each law of the data compared (or `NULL` when
+#'       one law only).}
+#'     \item{models}{The models compared with their log Bayes factors (and priors).}
+#'     \item{sensitivity}{Range of the answers over the priors, and verdict.}
+#'     \item{posthoc}{Which groups, levels or cells differ: `pairs` (probability that two
+#'       differ, gaps with 95 % credible intervals), `partitions` (groupings); with several
+#'       factors, `families` (one per detailed term) and `by` (gaps per level when an
+#'       interaction is not settled).}
+#'     \item{descriptive_stats}{Sizes and means per group (or per cell, per response).}
+#'     \item{plan}{`"oneway"`, `"factorial"`, `"ancova"`, `"paired"`, `"repeated"`,
+#'       `"mixed"`, `"manova"`, `"contingency"`, `"counts"`, `"ordinal"` or
+#'       `"discrete_fact"` (with `kind`).}
+#'     \item{method, label, n, notes, call, priors, questions}{Description of the analysis.}
 #'     \item{story}{The steps told with `verbose = TRUE`, in English (`en`) and French
 #'       (`fr`), kept even when nothing was printed.}
 #'   }
+#'   Some plans add their own elements: `ratios` (odds or rate ratios), `responses` (reading
+#'   per response), `forms` (MANOVA), `cell_means`, `sd_within`.
 #'
 #' @seealso [m.test()]
 #'
 #' @examples
 #' set.seed(1)
+#' # One factor, three groups (sensitivity off to be quick).
 #' d <- data.frame(y = c(rnorm(15, 10, 2), rnorm(15, 12, 2), rnorm(15, 10.5, 2)),
 #'                 variety = rep(c("a", "b", "c"), each = 15))
 #' r <- m.bay(y ~ variety, data = d, draws = 1000, sensitivity = FALSE)
-#' r$effects[, c("term", "p_h1", "p_h0", "log_bf")]
+#' r$effects[, c("term", "p_h1", "log_bf")]
+#'
+#' # Paired data: before and after on the same 12 subjects.
+#' p <- data.frame(id = factor(rep(1:12, 2)), t = factor(rep(c("before", "after"), each = 12)))
+#' p$y <- rnorm(12)[p$id] + 0.8 * (p$t == "after") + rnorm(24, 0, 0.5)
+#' m.bay(y ~ t | id, data = p, verbose = FALSE)$prob_effect
+#'
+#' # Yes/no with one factor (contingency table).
+#' g <- data.frame(tr = rep(c("cold", "warm"), each = 30))
+#' g$germ <- ifelse(runif(60) < ifelse(g$tr == "warm", 0.8, 0.5), "yes", "no")
+#' m.bay(germ ~ tr, data = g, verbose = FALSE)$prob_effect
+#'
+#' # Counts with one factor (Poisson and negative binomial compared).
+#' k <- data.frame(plot = rep(c("p1", "p2"), each = 20))
+#' k$aphids <- rnbinom(40, mu = ifelse(k$plot == "p2", 6, 3), size = 2)
+#' m.bay(aphids ~ plot, data = k, verbose = FALSE, sensitivity = FALSE)$prob_effect
+#'
+#' # Ratings from 1 to 5 (ordered response).
+#' k$score <- pmin(5, pmax(1, round(3 + (k$plot == "p2") + rnorm(40))))
+#' m.bay(score ~ plot, data = k, verbose = FALSE, sensitivity = FALSE)$prob_effect
+#'
+#' # Yes/no with two factors (logistic regression, BIC).
+#' b <- expand.grid(rep = 1:20, tr = c("t0", "t1"), soil = c("clay", "sand"))
+#' b$germ <- ifelse(runif(80) < ifelse(b$tr == "t1", 0.75, 0.4), "yes", "no")
+#' m.bay(germ ~ tr * soil, data = b, verbose = FALSE, sensitivity = FALSE)$effects[, c("term", "p_h1")]
+#'
+#' \donttest{
+#' # Two crossed factors (three laws averaged), with the story told.
+#' f <- expand.grid(rep = 1:10, A = c("a1", "a2"), B = c("b1", "b2", "b3"))
+#' f$y <- rnorm(60) + 1.2 * (f$A == "a2")
+#' m.bay(y ~ A * B, data = f)
+#'
+#' # Repeated measures, three times on 15 subjects.
+#' rr <- data.frame(id = factor(rep(1:15, 3)), time = factor(rep(c("T1", "T2", "T3"), each = 15)))
+#' rr$y <- rnorm(15)[rr$id] + c(0, 0.5, 1)[rr$time] + rnorm(45, 0, 0.7)
+#' m.bay(y ~ time | id, data = rr, verbose = FALSE)$effects[, c("term", "p_h1")]
+#'
+#' # Analysis of covariance.
+#' a <- data.frame(g = rep(c("g1", "g2", "g3"), each = 15), x = runif(45, 0, 10))
+#' a$y <- 5 + 0.8 * a$x + c(0, 1.5, 3)[factor(a$g)] + rnorm(45, 0, 1.5)
+#' m.bay(y ~ g + x, data = a, verbose = FALSE)$prob_effect
+#'
+#' # Several responses (MANOVA, one factor).
+#' ir <- iris[c(1:15, 51:65, 101:115), ]
+#' m.bay(cbind(Sepal.Length, Petal.Length) ~ Species, data = ir, verbose = FALSE,
+#'       sensitivity = FALSE)$prob_effect
+#' }
 #'
 #' @importFrom BayesFactor lmBF extractBF posterior ttestBF
 #' @importFrom bayestestR hdi
@@ -721,6 +777,37 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 		}
 	} else if (rm) {
 		.bay_story_rm(story, input, y, paired, n_dropped, dropped_ids)
+		# Variances per condition with subjects (D28, agent_76): with variances that differ by
+		# condition, the model with one common variance said "yes" at P > .95 in 3 % of the
+		# datasets under H0. Interim caution, as D19 with several factors: the variance per
+		# condition is compared by -BIC/2 of nlme::lme with and without varIdent; if unequal
+		# variances are probable, the support is capped at weak.
+		het_cells <- FALSE
+		if (identical(input$plan, "repeated") && requireNamespace("nlme", quietly = TRUE)) {
+			cnd <- interaction(factors, drop = TRUE)
+			dl <- data.frame(y = y, cnd = cnd, id = input$id)
+			m_eq <- tryCatch(.bay_quiet(nlme::lme(y ~ cnd, random = ~ 1 | id, data = dl, method = "ML")), error = function(e) NULL)
+			m_he <- tryCatch(.bay_quiet(nlme::lme(y ~ cnd, random = ~ 1 | id, data = dl, method = "ML",
+				weights = nlme::varIdent(form = ~ 1 | cnd))), error = function(e) NULL)
+			if (!is.null(m_eq) && !is.null(m_he)) {
+				ph_c <- 1 / (1 + exp(stats::BIC(m_he) / 2 - stats::BIC(m_eq) / 2))
+				sds_c <- tapply(y - stats::ave(y, input$id), cnd, stats::sd)
+				rng_c <- function(dc) paste0(gsub(".", dc, format(signif(min(sds_c), 2), trim = TRUE), fixed = TRUE),
+					if (dc == ".") " to " else " \u00e0 ", gsub(".", dc, format(signif(max(sds_c), 2), trim = TRUE), fixed = TRUE))
+				if (ph_c >= 0.75) {
+					het_cells <- TRUE
+					.bay_tell(story, paste0("Variances per condition: unequal probable (", .bay_pct(ph_c, "."), "); spreads within subject from ", rng_c("."), "."),
+						paste0("Variances par condition : in\u00e9gales probables (", .bay_pct(ph_c, ","), ") ; dispersions au sein des sujets de ", rng_c(","), "."))
+					.bay_tell(story, "Caution added: the model with one common variance can then say yes wrongly; support capped at weak.",
+						"Prudence ajout\u00e9e : le mod\u00e8le \u00e0 variance commune peut alors dire oui \u00e0 tort ; soutien plafonn\u00e9 \u00e0 faible.", "decide")
+				} else {
+					.bay_tell(story, paste0("Variances per condition: ", if (ph_c <= 0.25) "equal probable" else "not settled", " (unequal at ", .bay_pct(ph_c, "."), ")."),
+						paste0("Variances par condition : ", if (ph_c <= 0.25) "\u00e9gales probables" else "non tranch\u00e9es", " (in\u00e9gales \u00e0 ", .bay_pct(ph_c, ","), ")."))
+				}
+				.bay_tell(story, "Variances per condition: -BIC/2 of nlme::lme (subject random) with and without varIdent, at even odds; interim caution until these laws are averaged (DECISIONS, D28).",
+					"Variances par condition : -BIC/2 de nlme::lme (sujet al\u00e9atoire) avec et sans varIdent, \u00e0 poids \u00e9gaux ; prudence provisoire en attendant que ces lois soient moyenn\u00e9es (DECISIONS, D28).", "detail")
+			}
+		}
 		if (!no_laws && !identical(laws, "normal_eq")) {
 			note("With subjects only the normal law is computed; laws is ignored.",
 				"Avec des sujets, seule la loi normale est calcul\u00e9e ; laws est ignor\u00e9.")

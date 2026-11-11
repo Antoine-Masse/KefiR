@@ -89,8 +89,8 @@
 		.bay_step_result(story, "proportional odds (cumulative logits)", "cotes proportionnelles (logits cumul\u00e9s)")
 		.bay_tell(story, "Each model is a proportional-odds regression: only the order of the values counts.",
 			"Chaque mod\u00e8le est une r\u00e9gression \u00e0 cotes proportionnelles : seul compte l'ordre des valeurs.")
-		.bay_tell(story, "proportional odds assumed (the effect of a factor is the same at every threshold), not tested.",
-			"cotes proportionnelles suppos\u00e9es (l'effet d'un facteur est le m\u00eame \u00e0 chaque seuil), non test\u00e9es.", "note")
+		p_np <- .bay_po_check(y01, cl)
+		.bay_po_tell(story, p_np)
 	} else if (bin) {
 		lm_m <- lml[, 1L]
 		.bay_step_result(story, "binomial (logistic regression)", "binomiale (r\u00e9gression logistique)")
