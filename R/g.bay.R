@@ -13,34 +13,34 @@
 #' then says where the link lies (which cells), how large it is, and gives a sentence ready for
 #' a report.
 #'
-#' @section Method (dev/gbay/DECISIONS.md, G1 to G9):
+#' @section Method (dev/gbay/DECISIONS.md, G1 to G11):
 #' - **Goodness of fit**: multinomial counts; under "no departure" the proportions are exactly
 #'   `p`, under "departure" they follow a uniform Dirichlet. The Bayes factor has a closed form
 #'   (Good 1967; the model of `multibridge`, Sarafoglou et al. 2023).
-#' - **Independence**: [BayesFactor::contingencyTableBF()] (Gunel and Dickey 1974; Jamil et al.
-#'   2017), uniform Dirichlet prior (a = 1). The Bayes factor depends on how the data were
-#'   collected (the sampling plan). By default (`sampling = "auto"`): a table, two vectors or
-#'   `~ A + B` are one sample of N classified twice (joint multinomial, total fixed); `y ~ g`
-#'   compares groups formed in advance (independent multinomial, margin of `g` fixed, the same
-#'   number as [m.bay()]). The answer under the other plans is always shown; if one of them
-#'   reverses it, the answer is called not settled.
+#' - **Independence**: test of the interaction of a log-linear Poisson model, the margins
+#'   free under both hypotheses. The Bayes factor is -BIC/2 with n = N, the number of
+#'   individuals (unit-information prior; Raftery 1986, 1995), the same method as [m.bay()] for
+#'   discrete responses (D25). It is read on the G statistic itself:
+#'   log BF = (G - df log N) / 2. The answer does not depend on how the data were collected
+#'   (total fixed, one margin fixed, or nothing fixed). The default Bayes factors of
+#'   [BayesFactor::contingencyTableBF()] are not used: under independence they announced a
+#'   strong link (Bayes factor above 20) in up to 21 % (joint multinomial) and 90 % (Poisson)
+#'   of 4 x 5 tables with N = 30 (dev/gbay/VALIDATION.md, section 9).
 #' - **2 x 2 tables**: odds ratio with its 95 % credible interval.
 #' - **Cells**: for each cell, how many times it is more (or less) frequent than without a
 #'   link, with a 95 % credible interval: the Bayesian counterpart of the standardised
 #'   residuals. A cell is read when its interval excludes 1.
 #' - **Size**: Cramer's V a posteriori (Cohen's w for a goodness of fit). It is positive even
 #'   without a link: a size, not a proof.
-#' - **Small counts**: no minimum count, no correction (the computation is exact). In a
-#'   goodness of fit, small counts make the answer less decisive, not wrong. In a sparse
-#'   table (Cochran's rule: more than 20 % of the cells with an expected count under 5, or
-#'   one under 1), the uniform prior leans towards a link (up to 12 % of false "very
-#'   probably" measured under independence): the support of a link is then capped at weak,
-#'   and the bilan says "rather a link, without concluding".
-#' - **Power**: for independence, close to the G test at P > 0.75; for a goodness of fit,
-#'   clearly lower (a point null against a spread alternative), in exchange for almost no
-#'   false "yes". Measures in dev/gbay/VALIDATION.md.
-#' - **Sensitivity**: the concentration of the Dirichlet (1, 2, 4; 1/2, 1, 2 for a goodness
-#'   of fit) and the starting chances (1 against 2 to 2 against 1) are varied.
+#' - **Small counts**: no minimum count and no correction. Small counts make the answer less
+#'   decisive: the Bayes factor stays near 1 or leans towards no link.
+#' - **Power**: lower than the G test at p < 0.05, in exchange for almost no false "yes"
+#'   (under independence, a Bayes factor above 20 in 0.2 % of the tables at most). In large
+#'   tables the BIC is very cautious: in a 3 x 4 table with N = 200, a medium link (w = 0.3)
+#'   is found in 16 % of the cases, against 93 % for the G test. Measures in
+#'   dev/gbay/VALIDATION.md.
+#' - **Sensitivity**: the starting chances (1 against 2 to 2 against 1); for a goodness of fit,
+#'   also the concentration of the Dirichlet (1/2, 1, 2).
 #'
 #' Not handled: tables with three dimensions or more; paired data (McNemar); which groups
 #' differ two by two (use [m.bay()] with `y ~ g`).
@@ -54,13 +54,8 @@
 #' @param data Data.frame, for a formula or column names.
 #' @param correct Accepted for compatibility with [DescTools::GTest()], ignored: the
 #'   computation is exact and needs no Williams or Yates correction.
-#' @param sampling Sampling plan of a contingency table: `"auto"` (default, see Method),
-#'   `"jointMulti"` (total fixed), `"indepMulti"` (one margin fixed, see `fixed`), `"poisson"`
-#'   (nothing fixed) or `"hypergeom"` (both margins fixed, 2 x 2 only).
-#' @param fixed With an independent multinomial plan, the margin fixed: `"rows"` or `"cols"`.
 #' @param prior_h1 Prior probability of a link (or of a departure). Default 1/2.
-#' @param sensitivity If `TRUE` (default), the sensitivity to the priors and to the sampling
-#'   plan is computed.
+#' @param sensitivity If `TRUE` (default), the sensitivity to the priors is computed.
 #' @param draws Posterior draws for the estimation (cells, V, odds ratio). Default 4000.
 #' @param seed Seed of this call. The global random state is left untouched.
 #' @param verbose If `TRUE`, tells the analysis in seven steps as [m.bay()] does: "==>" for a
@@ -79,30 +74,32 @@
 #'     \item{prob_effect, bf10, log_bf}{Posterior probability of a link (or departure), Bayes
 #'       factor and its log.}
 #'     \item{test}{`"independence"` or `"gof"`.}
-#'     \item{sampling, fixed, sampling_auto}{The sampling plan, and whether it was chosen
-#'       alone.}
+#'     \item{G, df}{The G statistic and its degrees of freedom (independence: the Bayes factor
+#'       is read on them).}
 #'     \item{table, expected, p}{Counts, counts expected without a link (or under `p`), `p`.}
 #'     \item{cells}{Per cell (or category): observed, expected, `ratio` to its value without a
 #'       link (or to `p`) with `ratio_low`, `ratio_high` (95 % HDI), `p_more` (probability that
 #'       the ratio exceeds 1) and `reading` (`"more"`, `"less"` or `"-"`).}
 #'     \item{cramer_v, w, odds_ratio}{Size of the effect: median and 95 % HDI; the odds ratio
 #'       (2 x 2) with `p_gt1`.}
-#'     \item{sensitivity}{Range of the leading answer over the priors (and plans), verdict, and
-#'       `plans`: the Bayes factor under each sampling plan.}
+#'     \item{sensitivity}{Range of the leading answer over the priors, and verdict.}
 #'     \item{story, notes, method, priors, call, n, label}{Description of the analysis; `story`
 #'       holds the steps in English and French.}
 #'   }
 #'
 #' @references
-#' Gunel, E., & Dickey, J. M. (1974). Bayes factors for independence in contingency tables.
-#' Biometrika, 61(3), 545-557.
+#' Raftery, A. E. (1986). Choosing models for cross-classifications. American Sociological
+#' Review, 51(1), 145-146.
+#'
+#' Raftery, A. E. (1995). Bayesian model selection in social research. Sociological
+#' Methodology, 25, 111-163.
 #'
 #' Good, I. J. (1967). A Bayesian significance test for multinomial distributions. Journal of
 #' the Royal Statistical Society B, 29(3), 399-431.
 #'
 #' Jamil, T., Ly, A., Morey, R. D., Love, J., Marsman, M., & Wagenmakers, E.-J. (2017).
 #' Default "Gunel and Dickey" Bayes factors for contingency tables. Behavior Research Methods,
-#' 49, 638-652. \doi{10.3758/s13428-016-0739-8}
+#' 49, 638-652 (the default Bayes factors not used here, see Method).
 #'
 #' Sarafoglou, A., Haaf, J. M., Ly, A., Gronau, Q. F., Wagenmakers, E.-J., & Marsman, M.
 #' (2023). Evaluating multinomial order restrictions with bridge sampling. Psychological
@@ -129,7 +126,7 @@
 #' # 2 x 2: odds ratio with its credible interval.
 #' g.bay(matrix(c(18, 7, 9, 16), 2), verbose = FALSE)$odds_ratio
 #'
-#' # Two factors in a data.frame, or a response and a factor (groups fixed).
+#' # Two factors in a data.frame, or a response and a factor.
 #' d <- data.frame(treat = rep(c("cold", "warm"), each = 30))
 #' set.seed(1)
 #' d$germ <- ifelse(runif(60) < ifelse(d$treat == "warm", 0.8, 0.5), "yes", "no")
@@ -139,13 +136,12 @@
 #' # A data.frame of counts, one row per combination.
 #' k <- data.frame(eye = c("blue", "blue", "brown", "brown"), hair = c("fair", "dark", "fair", "dark"),
 #'                 n = c(32, 11, 10, 41))
-#' g.bay(n ~ eye + hair, data = k, sampling = "poisson", verbose = FALSE)$prob_effect
+#' g.bay(n ~ eye + hair, data = k, verbose = FALSE)$prob_effect
 #'
 #' @importFrom BayesFactor contingencyTableBF extractBF
 #' @importFrom bayestestR hdi
 #' @export
 g.bay <- function(x, y = NULL, p = NULL, rescale.p = FALSE, data = NULL, correct = NULL,
-                  sampling = c("auto", "jointMulti", "indepMulti", "poisson", "hypergeom"), fixed = NULL,
                   prior_h1 = 1/2, sensitivity = TRUE, draws = 4000L, seed = 1L,
                   verbose = TRUE, return = TRUE, detail = FALSE) {
 	x_name <- tryCatch(deparse1(substitute(x)), error = function(e) "x")
@@ -159,14 +155,6 @@ g.bay <- function(x, y = NULL, p = NULL, rescale.p = FALSE, data = NULL, correct
 	if (is.null(y_name)) y_name <- "y"
 	call_expr <- match.call()
 	if (isFALSE(return) && !("verbose" %in% names(call_expr))) verbose <- FALSE
-	sampling <- match.arg(sampling)
-	if (!is.null(fixed)) {
-		fixed <- match.arg(fixed, c("rows", "cols"))
-		if (!sampling %in% c("auto", "indepMulti")) {
-			.gbay_err("fixed applies to the independent multinomial plan only (sampling = \"indepMulti\").",
-				"fixed ne s'applique qu'au plan multinomial ind\u00e9pendant (sampling = \u00ab indepMulti \u00bb).")
-		}
-	}
 	if (!is.numeric(prior_h1) || length(prior_h1) != 1L || !isTRUE(prior_h1 > 0 && prior_h1 < 1)) {
 		.gbay_err("prior_h1 must be one number strictly between 0 and 1.", "prior_h1 doit \u00eatre un seul nombre strictement entre 0 et 1.")
 	}
@@ -185,7 +173,7 @@ g.bay <- function(x, y = NULL, p = NULL, rescale.p = FALSE, data = NULL, correct
 		if (tell) .bay_tell_note(story, en, fr, kind)
 	}
 	inp <- .gbay_input(x, y, p, data, rescale.p, x_name, y_name, parent.frame())
-	.gbay_run(inp, sampling, fixed, prior_h1, sensitivity, draws, seed, detail, verbose, return, story, note,
+	.gbay_run(inp, prior_h1, sensitivity, draws, seed, detail, verbose, return, story, note,
 		function() notes, call_expr, !is.null(correct))
 }
 

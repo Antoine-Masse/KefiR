@@ -32,7 +32,10 @@ BF₁₀ = [Γ(ka) / Γ(ka + N)] Π Γ(a + n_i) / Γ(a) ÷ Π p_i^{n_i}.
 
 **Estimation.** Loi a posteriori Dirichlet(n + a), tirée par `rgamma` (définition de la Dirichlet ; aucun moteur). Par modalité, le rapport π_i / p_i (« x fois plus fréquente que prévu ») avec son intervalle de crédibilité à 95 % (`bayestestR::hdi`) et P(π_i > p_i). Taille de l'écart : w de Cohen a posteriori, w = √Σ (π_i − p_i)² / p_i (Cohen, J. 1988, *Statistical Power Analysis for the Behavioral Sciences*, 2e éd., Erlbaum, chap. 7).
 
-## G3. Indépendance dans une table r × c : DÉCIDÉ
+## G3. Indépendance dans une table r × c : REMPLACÉE par G11 (11 novembre, soir)
+
+*Conservée pour l'historique : le moteur `contingencyTableBF` décrit ici n'est plus utilisé pour le facteur de Bayes.*
+
 
 **Moteur.** `BayesFactor::contingencyTableBF` (Morey et Rouder ; Gunel et Dickey 1974 ; Jamil et al. 2017), a = 1. C'est le moteur déjà employé par m.bay (D17, voie 1), dont l'a priori a été retrouvé et testé à 1e-6.
 
@@ -108,7 +111,10 @@ V = √(φ² / (min(r, c) − 1)), φ² = Σ (π_ij − π_i+π_+j)² / (π_i+π
 - Même squelette en sept étapes : plan, contrôles, plan d'échantillonnage (loi des données), point de départ, solidité, où se trouve l'écart, bilan.
 - `return = FALSE` : un nombre, P(lien) ou P(écart), sans les tirages a posteriori (rapide, pour les simulations).
 
-## G10. Tables creuses : soutien d'un lien plafonné à « faible » : DÉCIDÉ ET FAIT après mesure (11 novembre)
+## G10. Tables creuses : soutien d'un lien plafonné à « faible » : RETIRÉE avec G11 (11 novembre, soir)
+
+*Le plafond corrigeait un symptôme du moteur de G3 ; G11 en retire la cause, et la recalibration ne montre plus de faux « oui » à corriger (VALIDATION.md, § 9). Texte conservé pour l'historique.*
+
 
 **Défaut mesuré** (VALIDATION.md, § 2 et 3). Sous indépendance, dans une table où les effectifs attendus sont petits, le facteur de Bayes de `contingencyTableBF` à a = 1 penche vers un lien :
 - P > 0,75 dans 32 à 36 % des tables 3 × 4 à N = 10-20 et dans 67 à 73 % des tables 4 × 5 à N = 10-20 (plan joint) ;
@@ -129,6 +135,43 @@ L'a priori uniforme (Dirichlet(1) sur r × c probabilités) met beaucoup de mass
 **Ajustement.** Pas de plafond : sous H0, P > 0,75 dans 6,4 % des cas au plus, même à N = 10 (5 modalités), et P > 0,95 dans 0,7 % au plus.
 
 **Suite possible, non faite.** Un a priori mieux adapté aux tables creuses (mélange sur la concentration, Good et Crook 1987) rendrait de la puissance. Il faudrait le coder à la main (pas de paquet établi) et le calibrer ; c'est une décision à part.
+
+## G11. Indépendance : test log-linéaire de l'interaction, BIC avec n = N : DÉCIDÉ ET FAIT (11 novembre, soir), remplace G3 et G10
+
+**Origine.** Point bloquant de la session parente, après l'avis d'un expert, recalculé par elle et par moi. Sous indépendance vraie, `contingencyTableBF` (a = 1) annonce un lien fort (BF > 20) dans :
+- 82,7 % des tables 4 × 5 à N = 50 (plan Poisson), 11,0 % (joint), 2,7 % (indépendant, lignes fixées), d'après la mesure de la session parente ;
+- 16 % des tables 4 × 5 à N = 50 à marges égales, et 4,1 % des tables 3 × 4 à N = 60, que la règle de Cochran ne classe pas comme creuses, d'après l'expert. Le plafond de G10 ne couvrait donc pas le défaut.
+
+Sur une même table, le BF allait de 0,28 à 6,74 selon le plan.
+
+**Cause.** L'a priori de Gunel et Dickey ne traite pas les marges de la même façon sous H0 et sous H1. Sous H1, les marges découlent d'une Dirichlet(a) sur les r × c cases ; sous H0, elles ont chacune leur propre Dirichlet (BayesFactor : `ldirich(ar - (J - 1))`, `ldirich(ac - (I - 1))`, code lu le 11 novembre). Le facteur de Bayes compare donc aussi deux lois des marges : des marges équilibrées, plus probables sous la Dirichlet des cases que sous celles des marges, comptent comme une preuve de lien. Le défaut grandit avec le nombre de cases et dépend du plan, qui change la loi des marges.
+
+**Décision.** Le lien est l'interaction d'un modèle log-linéaire de Poisson, et les marges sont libres sous les deux hypothèses :
+- H0 : log μ_ij = λ + α_i + β_j ;
+- H1 : on ajoute γ_ij, soit (r − 1)(c − 1) paramètres.
+
+Le facteur de Bayes est −BIC/2 de chaque modèle, avec n = N, le nombre d'individus et non le nombre de cases (approximation d'information unitaire : Schwarz 1978 ; Kass, R. E., & Wasserman, L. 1995, A reference Bayesian test for nested hypotheses and its relationship to the Schwarz criterion, *JASA*, 90(431), 928-934 ; Raftery 1995). Pour les modèles log-linéaires, Raftery (1986) l'écrit BIC = G² − ddl·log N (Raftery, A. E. 1986, Choosing models for cross-classifications, *American Sociological Review*, 51(1), 145-146 ; forme reprise dans le cours STAT 504 de Penn State, consulté le 11 novembre). D'où :
+
+  log BF₁₀ = (G − ddl·log N) / 2, avec G la statistique du test G (`GTest`, sans correction).
+
+**Calcul.** `stats::glm(n ~ lignes + colonnes, family = poisson)` sur les effectifs des cases. Sa déviance est G, puisque le modèle saturé a une déviance nulle ; la pénalité prend log N. `stats::BIC()` n'est pas appelé tel quel : sur une table agrégée, il compterait les cases (r × c) au lieu des N individus. Contrôles (tests) : égal à `(GTest(x)$statistic − ddl·log N)/2` à 1e-8 ; en 2 × 2 et 2 × 3 avec une réponse, égal à −BIC/2 calculé par `stats::BIC` sur les `glm` logistiques ou log-linéaires à une ligne par individu (la méthode de m.bay, D25).
+
+**Pourquoi le BIC plutôt que `BAS::bas.glm`.**
+- C'est la méthode de m.bay pour les réponses discrètes (D17 voies 2 et 3, D25, D26) : la famille reste cohérente, et la session parente demande la même correction à m.bay.
+- BAS sur une table agrégée prendrait le nombre de lignes, c'est-à-dire de cases, comme taille d'échantillon dans ses a priori g (Bayarri et al. 2012). Il faudrait développer la table en N lignes et passer par un modèle multinomial, que `bas.glm` ne propose pas pour une réponse à plus de deux modalités.
+- Le BIC se lit sur G, ce qui relie directement g.bay au test G que les étudiants connaissent.
+
+**Pourquoi le plan d'échantillonnage n'a plus d'importance.** Sous les plans Poisson, multinomial et multinomial à une marge fixée, le noyau de vraisemblance du paramètre d'interaction et ses estimations sont les mêmes (Birch 1963 ; Agresti 2013, modèles log-linéaires) : G et ddl ne changent pas, et N non plus. Les arguments `sampling` et `fixed` sont donc retirés, ce qui supprime le problème « BF de 0,28 à 6,74 selon le plan ».
+
+**Ce que le BIC coûte.** C'est une approximation d'ordre O(1). Elle penche vers H0, d'autant plus que la table est grande (pénalité ddl·log N). La puissance est mesurée au § 9 de VALIDATION.md. La sensibilité ne porte que sur les chances de départ : l'information unitaire n'a pas d'échelle à faire varier, comme dans D25.
+
+**`contingencyTableBF` garde un seul usage : l'estimation.** Son tirage a posteriori, plan joint, donne une loi de Dirichlet(n + 1) sur les cases ; il sert aux cases, au V de Cramér et au rapport des cotes (G4, G6, G7). Cet usage est calibré : l'intervalle à 95 % du rapport des cotes couvre la vraie valeur dans 93 à 96 % des cas (VALIDATION.md, § 6). Son facteur de Bayes n'est plus utilisé.
+
+**G10 retiré.** Le plafond des tables creuses corrigeait un symptôme du moteur de G3. Avec G11, aucun scénario ne dépasse 0,4 % de BF > 20 sous H0 (§ 9), et le plafond n'a plus d'objet.
+
+**Ajustement (G2) inchangé.** H0 y est un vrai point (les proportions données) ; il n'y a pas de marges à traiter, et la calibration de G2 tient (§ 2).
+
+**Pour m.bay.** La même correction est demandée à `sys_bay_contingency.R`. La formulation ci-dessus vaut pour les deux fonctions : test de l'interaction, marges libres, −BIC/2 avec n = N.
 
 ## G9. Validation : PRÉVUE, résultats dans VALIDATION.md
 

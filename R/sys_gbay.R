@@ -1,14 +1,18 @@
 # sys_gbay.R
 # Engine, story and bilan of g.bay(), the Bayesian counterpart of the G test (DescTools::GTest).
-# Decisions and references: dev/gbay/DECISIONS.md (G1 to G9). The layout functions of m.bay
+# Decisions and references: dev/gbay/DECISIONS.md (G1 to G11). The layout functions of m.bay
 # (sys_bay_story.R, sys_bay_layout.R, sys_bay_bilan.R) are called, never modified.
 #
 #   Goodness of fit (G2): multinomial, point H0 (the proportions given) against a Dirichlet(a)
 #     alternative, closed form (Good 1967; Sarafoglou et al. 2023, multibridge).
-#   Independence (G3): BayesFactor::contingencyTableBF (Gunel and Dickey 1974; Jamil et al.
-#     2017), sampling plan chosen from the form of the input, every other plan shown.
-#   Estimation (G4, G6, G7): draws of the cell probabilities from contingencyTableBF(posterior
-#     = TRUE); odds ratio (2 x 2), ratio of each cell to its value under independence, Cramer's V.
+#   Independence (G11, replaces G3): test of the interaction of a log-linear Poisson model,
+#     margins free under both hypotheses; Bayes factor by -BIC/2 with n = N (unit information;
+#     Raftery 1986, 1995), i.e. log BF10 = (G - df log N) / 2, G the statistic of the G test.
+#     The same answer whatever the sampling plan (Poisson, multinomial, one margin fixed).
+#   Estimation (G4, G6, G7): draws of the cell probabilities, uniform Dirichlet posterior
+#     (contingencyTableBF(posterior = TRUE), joint multinomial: estimation only, its Bayes factor
+#     is not used); odds ratio (2 x 2), ratio of each cell to its value under independence,
+#     Cramer's V.
 
 # ---------------------------------------------------------------------------------------------
 # Bayes factors
@@ -22,42 +26,22 @@
 	.gbay_ldm(n[keep], rep(a, sum(keep))) - sum(n[keep] * log(p[keep]))
 }
 
-# Independence: log BF of contingencyTableBF under a sampling plan.
-.gbay_lbf_ct <- function(tab, sampling, fixed = NULL, a = 1) {
+# Independence (G11): -BIC/2 of the log-linear Poisson model with and without the interaction,
+# n = N, the number of individuals (Raftery 1986). The saturated model has deviance 0, so the
+# difference of the deviances is that of the independence model, the G statistic of GTest.
+.gbay_loglin <- function(tab) {
 	tab <- unclass(as.matrix(tab))
-	bf <- if (identical(sampling, "indepMulti")) {
-		BayesFactor::contingencyTableBF(tab, sampleType = "indepMulti", fixedMargin = fixed, priorConcentration = a)
-	} else {
-		BayesFactor::contingencyTableBF(tab, sampleType = sampling, priorConcentration = a)
-	}
-	BayesFactor::extractBF(bf, logbf = TRUE)$bf
+	d <- data.frame(n = as.numeric(tab), r = factor(rep(seq_len(nrow(tab)), ncol(tab))),
+		c = factor(rep(seq_len(ncol(tab)), each = nrow(tab))))
+	fit0 <- stats::glm(n ~ r + c, family = stats::poisson(), data = d)
+	G <- stats::deviance(fit0)
+	df <- (nrow(tab) - 1) * (ncol(tab) - 1)
+	N <- sum(tab)
+	list(G = G, df = df, N = N, log_bf = (G - df * log(N)) / 2)
 }
+.gbay_lbf_ct <- function(tab) .gbay_loglin(tab)$log_bf
 
 .gbay_prob <- function(lb, prior_h1) 1 / (1 + exp(-lb) * (1 - prior_h1) / prior_h1)
-
-# The plans compared (G3): code, BayesFactor arguments, words.
-.gbay_plan_words <- function(sampling, fixed, rn, cn) {
-	if (identical(sampling, "indepMulti")) {
-		v <- if (identical(fixed, "rows")) rn else cn
-		return(list(en = paste0("independent multinomial (margin of ", v, " fixed)"),
-			fr = paste0("multinomial ind\u00e9pendant (marge de ", v, " fix\u00e9e)"),
-			short_en = paste0("independent, ", v, " fixed"), short_fr = paste0("ind\u00e9pendant, ", v, " fix\u00e9")))
-	}
-	switch(sampling,
-		jointMulti = list(en = "joint multinomial (total fixed)", fr = "multinomial joint (total fix\u00e9)",
-			short_en = "joint multinomial", short_fr = "multinomial joint"),
-		poisson = list(en = "Poisson (nothing fixed)", fr = "Poisson (rien de fix\u00e9)", short_en = "Poisson", short_fr = "Poisson"),
-		hypergeom = list(en = "hypergeometric (both margins fixed)", fr = "hyperg\u00e9om\u00e9trique (deux marges fix\u00e9es)",
-			short_en = "hypergeometric", short_fr = "hyperg\u00e9om\u00e9trique"))
-}
-
-# Log BF under each plan of the comparison (G3), a = 1.
-.gbay_plans <- function(tab) {
-	pl <- data.frame(sampling = c("jointMulti", "poisson", "indepMulti", "indepMulti"), fixed = c(NA, NA, "rows", "cols"),
-		stringsAsFactors = FALSE)
-	pl$log_bf <- vapply(seq_len(nrow(pl)), function(i) .gbay_lbf_ct(tab, pl$sampling[i], if (is.na(pl$fixed[i])) NULL else pl$fixed[i]), numeric(1))
-	pl
-}
 
 # ---------------------------------------------------------------------------------------------
 # Posterior draws and summaries
@@ -67,19 +51,12 @@
 	c(stats::median(v), h$CI_low, h$CI_high)
 }
 
-# Draws of the cell probabilities (S x r x c) under the plan (G4, G6, G7). The hypergeometric
-# plan has no sampler in BayesFactor: the joint multinomial one is used for the estimation.
-.gbay_draws_ct <- function(tab, sampling, fixed, draws, seed) {
+# Draws of the cell probabilities (S x r x c): uniform Dirichlet posterior, Dirichlet(n + 1), from
+# BayesFactor (joint multinomial; estimation only, G4, G6, G7, G11).
+.gbay_draws_ct <- function(tab, draws, seed) {
 	tab <- unclass(as.matrix(tab))
 	r <- nrow(tab); cc <- ncol(tab)
-	smp <- if (identical(sampling, "hypergeom")) "jointMulti" else sampling
-	ps <- .bay_with_seed(seed, {
-		if (identical(smp, "indepMulti")) {
-			BayesFactor::contingencyTableBF(tab, sampleType = smp, fixedMargin = fixed, posterior = TRUE, iterations = draws, progress = FALSE)
-		} else {
-			BayesFactor::contingencyTableBF(tab, sampleType = smp, posterior = TRUE, iterations = draws, progress = FALSE)
-		}
-	})
+	ps <- .bay_with_seed(seed, BayesFactor::contingencyTableBF(tab, sampleType = "jointMulti", posterior = TRUE, iterations = draws, progress = FALSE))
 	m <- as.matrix(ps)[, seq_len(r * cc), drop = FALSE]
 	m <- m / rowSums(m)
 	array(m, c(nrow(m), r, cc))
@@ -452,10 +429,7 @@
 
 .gbay_cite <- function(obj) {
 	if (identical(obj$test, "gof")) return(list(en = "Dirichlet against the proportions given, Good 1967", fr = "Dirichlet contre les proportions donn\u00e9es, Good 1967"))
-	w <- .gbay_plan_words(obj$sampling, obj$fixed, obj$names[1L], obj$names[2L])
-	nf <- if (is.null(obj$names_fr)) obj$names else obj$names_fr
-	wf <- .gbay_plan_words(obj$sampling, obj$fixed, nf[1L], nf[2L])
-	list(en = paste0("Gunel and Dickey 1974, ", w$short_en), fr = paste0("Gunel et Dickey 1974, ", wf$short_fr))
+	list(en = "log-linear test of the interaction, BIC, Raftery 1986", fr = "test log-lin\u00e9aire de l'interaction, BIC, Raftery 1986")
 }
 
 # ---------------------------------------------------------------------------------------------
@@ -465,9 +439,6 @@
 	emit <- .bay_block_emitter()
 	li <- .bay_lead_info(obj)
 	h <- li$h
-	# Sparse table: a link is at most weakly supported (DECISIONS, G10).
-	capped <- isTRUE(obj$sparse) && !h$null[1L] && li$sup$level > 2L
-	if (capped) li$sup <- .bay_support(0.7)
 	undecided <- li$open || li$sup$level <= 1L || h$posterior[1L] < 0.6
 	gof <- identical(obj$test, "gof")
 	lead_en <- if (undecided) paste0("undecided (", h$label_en[1L], ": ", .bay_pct(h$posterior[1L], "."), ")") else
@@ -483,12 +454,7 @@
 			paste0("Bilan de g.bay (", obj$label, ", N = ", obj$n, ") - ", lead_fr, "."))
 	}
 	v <- .gbay_verdict(obj, undecided)
-	if (capped && !undecided) v <- list(en = "Verdict: rather a link, without concluding.", fr = "Verdict : plut\u00f4t un lien, sans conclure.")
 	emit("fact", v$en, v$fr)
-	if (isTRUE(obj$sparse) && !h$null[1L]) {
-		emit("decide", "Caution: sparse table (Cochran's rule), where the uniform prior leans towards a link; the support of a link is capped at weak.",
-			"Prudence : table creuse (r\u00e8gle de Cochran), o\u00f9 l'a priori uniforme penche vers un lien ; le soutien d'un lien est plafonn\u00e9 \u00e0 faible.")
-	}
 	w_en <- max(nchar(h$label_en)); w_fr <- max(nchar(h$label_fr))
 	fit <- max(w_en, w_fr) + 32L <= .bay_width() - 12L
 	pad <- function(x, w) if (fit) paste0(x, strrep("\u00a0", w - nchar(x))) else x
@@ -503,8 +469,7 @@
 	sens <- obj$sensitivity
 	if (!is.null(sens$range_lead)) {
 		rg <- sens$range_lead
-		why_en <- if (isTRUE(sens$plan_changes)) " (also with the sampling plan)" else ""
-		why_fr <- if (isTRUE(sens$plan_changes)) " (aussi selon le plan d'\u00e9chantillonnage)" else ""
+		why_en <- why_fr <- ""
 		if (li$open) {
 			emit("decide", paste0("Depending on the starting point", why_en, ": ", .bay_pct(rg[1L], "."), " to ", .bay_pct(rg[2L], "."), "; the order can reverse, not settled."),
 				paste0("Selon le point de d\u00e9part", why_fr, " : ", .bay_pct(rg[1L], ","), " \u00e0 ", .bay_pct(rg[2L], ","), " ; l'ordre peut s'inverser, non tranch\u00e9."))
@@ -556,9 +521,9 @@
 				if (h$null[1L]) against_fr else "", ") ; g.bay {KefiR}, ", ct$fr, ". \u00bb"))
 	} else {
 		emit("note", paste0("for a report: \"", h$label_en[1L], " (posterior probability ", .bay_pct(h$posterior[1L], "."), "), Bayes factor ", bf_en,
-				if (!h$null[1L]) size_en else "", if (capped) "; sparse table, weak support" else "", " (g.bay {KefiR}, ", ct$en, ").\""),
+				if (!h$null[1L]) size_en else "", " (g.bay {KefiR}, ", ct$en, ").\""),
 			paste0("pour un compte rendu : \u00ab ", h$label_fr[1L], " (probabilit\u00e9 a posteriori ", .bay_pct(h$posterior[1L], ","), "), facteur de Bayes ", bf_fr,
-				if (!h$null[1L]) size_fr else "", if (capped) " ; table creuse, soutien faible" else "", " (g.bay {KefiR}, ", ct$fr, "). \u00bb"))
+				if (!h$null[1L]) size_fr else "", " (g.bay {KefiR}, ", ct$fr, "). \u00bb"))
 	}
 	if (length(obj$notes$en) && !isTRUE(narrated)) {
 		for (i in seq_along(obj$notes$en)) emit("fact", obj$notes$en[i], obj$notes$fr[i])
@@ -597,10 +562,14 @@
 		say("Estimation: posterior Dirichlet(n + 1); per category, ratio of the proportion to the one given, 95 % HDI (bayestestR); Cohen's w.",
 			"Estimation : Dirichlet(n + 1) a posteriori ; par modalit\u00e9, rapport de la proportion \u00e0 celle donn\u00e9e, HDI \u00e0 95 % (bayestestR) ; w de Cohen.")
 	} else {
-		say("Prior: Dirichlet(1) on the probabilities under a link; under independence, the product of its margins (contingencyTableBF, Gunel and Dickey 1974; Jamil et al. 2017).",
-			"A priori : Dirichlet(1) sur les probabilit\u00e9s s'il y a un lien ; sous l'ind\u00e9pendance, le produit de ses marges (contingencyTableBF, Gunel et Dickey 1974 ; Jamil et al. 2017).")
-		say("Sensitivity: concentration a 1, 2 and 4 crossed with the starting chances; Bayes factor under the other sampling plans.",
-			"Sensibilit\u00e9 : concentration a 1, 2 et 4 crois\u00e9e avec les chances de d\u00e9part ; facteur de Bayes sous les autres plans d'\u00e9chantillonnage.")
+		say("Model: log-linear Poisson, margins free under both hypotheses; a link is the interaction, (r - 1)(c - 1) parameters. Bayes factor by -BIC/2 with n = N (unit-information prior; Schwarz 1978; Raftery 1986, 1995): log BF = (G - df log N) / 2.",
+			"Mod\u00e8le : log-lin\u00e9aire de Poisson, marges libres sous les deux hypoth\u00e8ses ; un lien est l'interaction, (r - 1)(c - 1) param\u00e8tres. Facteur de Bayes par -BIC/2 avec n = N (a priori d'information unitaire ; Schwarz 1978 ; Raftery 1986, 1995) : log BF = (G - ddl log N) / 2.")
+		say("The same answer whether the total, one margin or nothing was fixed: the interaction test does not depend on the sampling plan (DECISIONS, G11).",
+			"M\u00eame r\u00e9ponse que le total, une marge ou rien ait \u00e9t\u00e9 fix\u00e9 : le test de l'interaction ne d\u00e9pend pas du plan d'\u00e9chantillonnage (DECISIONS, G11).")
+		say("Sensitivity: the starting chances 1:2, 1:1, 2:1 (no prior scale with unit information, as in m.bay, D25).",
+			"Sensibilit\u00e9 : les chances de d\u00e9part 1:2, 1:1, 2:1 (pas d'\u00e9chelle a priori avec l'information unitaire, comme dans m.bay, D25).")
+		say("Estimation (cells, V, odds ratio): uniform Dirichlet posterior on the cell probabilities, Dirichlet(n + 1).",
+			"Estimation (cases, V, rapport des cotes) : loi a posteriori de Dirichlet uniforme sur les probabilit\u00e9s des cases, Dirichlet(n + 1).")
 		say("Cells: ratio pi_ij / (pi_i+ pi_+j) on the posterior draws, 95 % HDI on its log; a cell is read when the interval excludes 1 (Albert 1997; Kruschke 2015, ch. 24).",
 			"Cases : rapport pi_ij / (pi_i+ pi_+j) sur les tirages a posteriori, HDI \u00e0 95 % sur son log ; une case est lue quand l'intervalle exclut 1 (Albert 1997 ; Kruschke 2015, chap. 24).")
 	}
@@ -610,7 +579,7 @@
 # ---------------------------------------------------------------------------------------------
 # Whole analysis
 
-.gbay_run <- function(inp, sampling, fixed, prior_h1, sensitivity, draws, seed, detail, verbose, return, story, note, get_notes, call_expr, correct_given) {
+.gbay_run <- function(inp, prior_h1, sensitivity, draws, seed, detail, verbose, return, story, note, get_notes, call_expr, correct_given) {
 	gof <- identical(inp$kind, "gof")
 	tab <- inp$tab
 	N <- sum(tab)
@@ -679,78 +648,38 @@
 	}
 	small <- sum(E < 5)
 	if (small > 0L) {
-		.bay_tell(story, paste0(small, " of ", length(E), if (gof) " categories" else " cells", " with an expected count under 5: the G test and the chi-squared would be approximate there (Williams' correction); the computation below is exact."),
-			paste0(small, " ", if (gof) "modalit\u00e9" else "case", if (small > 1L) "s" else "", " sur ", length(E), " d'effectif attendu inf\u00e9rieur \u00e0 5 : le test G et le khi-deux y seraient approximatifs (correction de Williams) ; le calcul ci-dessous est exact."))
+		.bay_tell(story, paste0(small, " of ", length(E), if (gof) " categories" else " cells", " with an expected count under 5: the G test and the chi-squared would be approximate there (Williams' correction)."),
+			paste0(small, " ", if (gof) "modalit\u00e9" else "case", if (small > 1L) "s" else "", " sur ", length(E), " d'effectif attendu inf\u00e9rieur \u00e0 5 : le test G et le khi-deux y seraient approximatifs (correction de Williams)."))
 	}
-	# Sparse table (Cochran's rule as commonly read: more than 20 % of the cells with an expected
-	# count under 5, or one under 1): the uniform prior leans towards a link there (DECISIONS, G10).
-	sparse <- !gof && (mean(E < 5) > 0.2 || any(E < 1))
-	if (sparse) {
-		.bay_step_result(story, "exact computation, sparse table: caution added", "calcul exact, table creuse : prudence ajout\u00e9e")
-		.bay_tell(story, "Caution added: sparse table (Cochran's rule). Here the uniform prior leans towards a link (up to 12 % of \"very probably a link\" measured under independence): a link can only be called weak.",
-			"Prudence ajout\u00e9e : table creuse (r\u00e8gle de Cochran). L'a priori uniforme y penche vers un lien (jusqu'\u00e0 12 % de \u00ab tr\u00e8s probablement un lien \u00bb mesur\u00e9s sous ind\u00e9pendance) : un lien ne pourra \u00eatre dit que faible.", "decide")
-		.bay_tell(story, "Cochran's rule: more than 20 % of the cells with an expected count under 5, or one under 1 (Cochran 1954). Measures: dev/gbay/VALIDATION.md.",
-			"R\u00e8gle de Cochran : plus de 20 % des cases d'effectif attendu inf\u00e9rieur \u00e0 5, ou une case sous 1 (Cochran 1954). Mesures : dev/gbay/VALIDATION.md.", "detail")
-	} else {
+	if (gof || small == 0L) {
 		.bay_tell(story, "small counts do not make the answer wrong, only less decisive.", "les petits effectifs ne faussent pas la r\u00e9ponse, ils la rendent moins tranch\u00e9e.", "note")
+	} else {
+		.bay_tell(story, "small counts make the answer less decisive: the Bayes factor stays near 1 or leans towards independence.",
+			"les petits effectifs rendent la r\u00e9ponse moins tranch\u00e9e : le facteur de Bayes reste pr\u00e8s de 1 ou penche vers l'ind\u00e9pendance.", "note")
 	}
 	if (correct_given) {
-		.bay_tell(story, "correct (Williams, Yates) is ignored: these corrections bring a statistic closer to its asymptotic law; the Bayes factor here needs none.",
-			"correct (Williams, Yates) est ignor\u00e9 : ces corrections rapprochent une statistique de sa loi asymptotique ; le facteur de Bayes ici n'en a pas besoin.", "note_first")
-		note("correct is ignored (exact computation).", "correct est ignor\u00e9 (calcul exact).", tell = FALSE)
+		.bay_tell(story, "correct (Williams, Yates) is ignored: these corrections bring the p-value of G closer to its law; the Bayes factor is read on G itself.",
+			"correct (Williams, Yates) est ignor\u00e9 : ces corrections rapprochent la p-value de G de sa loi ; le facteur de Bayes se lit sur G lui-m\u00eame.", "note_first")
+		note("correct is ignored.", "correct est ignor\u00e9.", tell = FALSE)
 	}
 
-	# Step 3: law of the data, sampling plan.
-	auto <- identical(sampling, "auto")
+	# Step 3: law of the data.
 	if (gof) {
 		.bay_tell(story, "Law of the data", "Loi des donn\u00e9es", "step")
 		.bay_step_result(story, "multinomial, total N fixed", "multinomiale, total N fix\u00e9")
 		.bay_tell(story, paste0("Departure: the ", length(tab), " proportions are free, every set equally possible in advance."),
 			paste0("\u00c9cart : les ", length(tab), " proportions sont libres, toutes \u00e9galement possibles d'avance."))
 		.bay_tell(story, "No departure: the proportions are exactly those expected.", "Pas d'\u00e9cart : les proportions sont exactement celles attendues.")
-		if (!auto) note("sampling does not apply to a goodness of fit; ignored.", "sampling ne s'applique pas \u00e0 un ajustement ; ignor\u00e9.")
-		sampling <- "multinomial"; fixed <- NULL
 	} else {
-		if (auto) {
-			if (!is.null(fixed)) {
-				sampling <- "indepMulti"
-				why_en <- paste0("fixed = \"", fixed, "\" given"); why_fr <- paste0("fixed = \u00ab ", fixed, " \u00bb donn\u00e9")
-			} else if (isTRUE(inp$resp)) {
-				sampling <- "indepMulti"; fixed <- "rows"
-				why_en <- paste0("the formula names a response and a factor: the groups of ", nm[1L], " are taken as formed in advance")
-				why_fr <- paste0("la formule d\u00e9signe une r\u00e9ponse et un facteur : les groupes de ", nm_fr[1L], " sont pris comme constitu\u00e9s d'avance")
-			} else {
-				sampling <- "jointMulti"
-				why_en <- "neither variable is named as explanatory: one sample of N, classified twice"
-				why_fr <- "aucune des deux variables n'est d\u00e9sign\u00e9e comme explicative : un \u00e9chantillon de N, class\u00e9 deux fois"
-			}
-		} else {
-			if (identical(sampling, "indepMulti") && is.null(fixed)) fixed <- "rows"
-			if (!identical(sampling, "indepMulti")) fixed <- NULL
-			if (identical(sampling, "hypergeom") && !(nrow(tab) == 2L && ncol(tab) == 2L)) {
-				.gbay_err("The hypergeometric plan is available for 2 x 2 tables only (BayesFactor).",
-					"Le plan hyperg\u00e9om\u00e9trique n'existe que pour les tables 2 x 2 (BayesFactor).")
-			}
-			why_en <- "set by sampling ="; why_fr <- "impos\u00e9 par sampling ="
-		}
-		pw <- .gbay_plan_words(sampling, fixed, nm[1L], nm[2L])
-		pw_fr <- .gbay_plan_words(sampling, fixed, nm_fr[1L], nm_fr[2L])
-		.bay_tell(story, "Sampling plan", "Plan d'\u00e9chantillonnage", "step")
-		.bay_step_result(story, pw$en, pw_fr$fr)
-		what_en <- switch(sampling, jointMulti = paste0("Only the total N = ", N, " is fixed; both classifications are random."),
-			poisson = "Nothing is fixed: neither the cells nor the total (counting during a time).",
-			hypergeom = "Both margins are fixed (rare: median splits, for instance).",
-			indepMulti = paste0("The totals of ", if (identical(fixed, "rows")) nm[1L] else nm[2L], " are fixed; the other variable is random within each."))
-		what_fr <- switch(sampling, jointMulti = paste0("Seul le total N = ", N, " est fix\u00e9 ; les deux classements sont al\u00e9atoires."),
-			poisson = "Rien n'est fix\u00e9 : ni les cases, ni le total (comptage pendant une dur\u00e9e).",
-			hypergeom = "Les deux marges sont fix\u00e9es (rare : partage \u00e0 la m\u00e9diane, par exemple).",
-			indepMulti = paste0("Les totaux de ", if (identical(fixed, "rows")) nm_fr[1L] else nm_fr[2L], " sont fix\u00e9s ; l'autre variable est al\u00e9atoire dans chacun."))
-		.bay_tell(story, what_en, what_fr)
-		.bay_tell(story, paste0("Plan chosen: ", why_en, "."), paste0("Plan retenu : ", why_fr, "."), "decide")
-		.bay_tell(story, "the plan says how the data were collected; sampling = sets it, step 5 gives the answer under the others.",
-			"le plan dit comment les donn\u00e9es ont \u00e9t\u00e9 recueillies ; sampling = l'impose, l'\u00e9tape 5 donne la r\u00e9ponse sous les autres.", "note")
-		.bay_tell(story, "Sampling plans of Jamil et al. (2017): Poisson, joint multinomial, independent multinomial, hypergeometric.",
-			"Plans d'\u00e9chantillonnage de Jamil et al. (2017) : Poisson, multinomial joint, multinomial ind\u00e9pendant, hyperg\u00e9om\u00e9trique.", "detail")
+		.bay_tell(story, "Law of the data", "Loi des donn\u00e9es", "step")
+		.bay_step_result(story, "log-linear Poisson, margins free", "log-lin\u00e9aire de Poisson, marges libres")
+		df <- (nrow(tab) - 1L) * (ncol(tab) - 1L)
+		.bay_tell(story, paste0("Link: each cell its own frequency; independence: the margins alone. The link adds ", df, if (df == 1L) " parameter (the interaction)." else " parameters (the interaction)."),
+			paste0("Lien : chaque case sa propre fr\u00e9quence ; ind\u00e9pendance : les marges seules. Le lien ajoute ", df, if (df == 1L) " param\u00e8tre (l'interaction)." else " param\u00e8tres (l'interaction)."))
+		.bay_tell(story, "The same answer whether the total, one margin or nothing was fixed when the data were collected.",
+			"M\u00eame r\u00e9ponse que le total, une marge ou rien ait \u00e9t\u00e9 fix\u00e9 au recueil des donn\u00e9es.", "decide")
+		.bay_tell(story, "the margins are free under both hypotheses: balanced margins say nothing of a link.",
+			"les marges sont libres sous les deux hypoth\u00e8ses : des marges \u00e9quilibr\u00e9es ne disent rien d'un lien.", "note")
 	}
 
 	# Step 4: priors.
@@ -763,21 +692,23 @@
 		.bay_tell(story, "Prior: Dirichlet(1, ..., 1) under a departure, the proportions given under none (Good 1967; Sarafoglou et al. 2023).",
 			"A priori : Dirichlet(1, ..., 1) s'il y a un \u00e9cart, les proportions donn\u00e9es sinon (Good 1967 ; Sarafoglou et al. 2023).", "detail")
 	} else {
-		.bay_tell(story, "If there is a link, every set of cell probabilities equally possible in advance.",
-			"S'il y a un lien, toutes les probabilit\u00e9s des cases sont \u00e9galement possibles d'avance.")
-		.bay_tell(story, "Prior: Dirichlet with concentration a = 1 (contingencyTableBF; Gunel and Dickey 1974; Jamil et al. 2017).",
-			"A priori : Dirichlet de concentration a = 1 (contingencyTableBF ; Gunel et Dickey 1974 ; Jamil et al. 2017).", "detail")
+		.bay_tell(story, "If there is a link, the prior on its size weighs as much as one individual (unit information).",
+			"S'il y a un lien, l'a priori sur sa taille p\u00e8se autant qu'un seul individu (information unitaire).")
+		.bay_tell(story, "Prior: unit information on the interaction terms, the prior behind the BIC (Kass and Wasserman 1995; Raftery 1995).",
+			"A priori : information unitaire sur les termes d'interaction, celui qui fonde le BIC (Kass et Wasserman 1995 ; Raftery 1995).", "detail")
 	}
-	.bay_tell(story, "these values are not tuned on the data; step 5 varies them.",
-		"ces valeurs ne sont pas ajust\u00e9es sur les donn\u00e9es ; l'\u00e9tape 5 les fait varier.", "note")
+	.bay_tell(story, if (gof) "these values are not tuned on the data; step 5 varies them." else "these values are not tuned on the data; step 5 varies the starting chances.",
+		if (gof) "ces valeurs ne sont pas ajust\u00e9es sur les donn\u00e9es ; l'\u00e9tape 5 les fait varier." else "ces valeurs ne sont pas ajust\u00e9es sur les donn\u00e9es ; l'\u00e9tape 5 fait varier les chances de d\u00e9part.", "note")
 
 	# Step 5: Bayes factor and sensitivity.
+	ll <- NULL
 	if (gof) {
 		.bay_tell(story, "Solidity of the answer", "Solidit\u00e9 de la r\u00e9ponse", "step", fun = c("g.bay() {KefiR}", "g.bay() {KefiR}"))
 		lb <- .gbay_lbf_gof(tab, inp$p, 1)
 	} else {
-		.bay_tell(story, "Solidity of the answer", "Solidit\u00e9 de la r\u00e9ponse", "step", fun = "contingencyTableBF() {BayesFactor}")
-		lb <- .gbay_lbf_ct(tab, sampling, fixed, 1)
+		.bay_tell(story, "Solidity of the answer", "Solidit\u00e9 de la r\u00e9ponse", "step", fun = "glm() {stats}")
+		ll <- .gbay_loglin(tab)
+		lb <- ll$log_bf
 	}
 	p_h1 <- .gbay_prob(lb, prior_h1)
 	inv_en <- if (lb < 0) paste0(", i.e. ", .bay_bf_txt(-lb, "."), " in favour of ", if (gof) "the proportions given" else "independence") else ""
@@ -785,52 +716,32 @@
 	.bay_tell(story, paste0("Bayes factor: ", .bay_bf_txt(lb, "."), inv_en, "."), paste0("Facteur de Bayes : ", .bay_bf_txt(lb, ","), inv_fr, "."))
 	.bay_tell(story, paste0("The Bayes factor says how many times more probable the counts are with ", if (gof) "a departure" else "a link", " than without."),
 		paste0("Le facteur de Bayes dit combien de fois les effectifs sont plus probables avec ", if (gof) "un \u00e9cart" else "un lien", " que sans."), "note")
-	.bay_tell(story, "Precision: exact computation, without draws.", "Pr\u00e9cision : calcul exact, sans tirage.")
-	sens <- NULL
-	plans <- NULL
-	if (!gof && isTRUE(sensitivity)) {
-		plans <- .gbay_plans(tab)
-		plans$p_h1 <- .gbay_prob(plans$log_bf, prior_h1)
-		plans$chosen <- plans$sampling == sampling & (is.na(plans$fixed) | identical(sampling, "indepMulti") & plans$fixed %in% fixed)
+	if (gof) {
+		.bay_tell(story, "Precision: exact computation, without draws.", "Pr\u00e9cision : calcul exact, sans tirage.")
+	} else {
+		g_en <- formatC(ll$G, format = "f", digits = 2)
+		.bay_tell(story, paste0("Read on the G statistic: G = ", g_en, ", ", ll$df, " df, N = ", ll$N, "; log BF = (G - df log N) / 2 (BIC approximation, without draws)."),
+			paste0("Lu sur la statistique G : G = ", gsub(".", ",", g_en, fixed = TRUE), ", ", ll$df, " ddl, N = ", ll$N, " ; log BF = (G - ddl log N) / 2 (approximation BIC, sans tirage)."))
 	}
+	sens <- NULL
 	if (isTRUE(sensitivity)) {
-		concs <- if (gof) c(1 / 2, 1, 2) else c(1, 2, 4)
+		concs <- if (gof) c(1 / 2, 1, 2) else 1
 		phs <- c(1 / 3, 1 / 2, 2 / 3)
-		lbs <- vapply(concs, function(a) if (gof) .gbay_lbf_gof(tab, inp$p, a) else .gbay_lbf_ct(tab, sampling, fixed, a), numeric(1))
+		lbs <- if (gof) vapply(concs, function(a) .gbay_lbf_gof(tab, inp$p, a), numeric(1)) else lb
 		grid <- outer(lbs, phs, function(l, p) .gbay_prob(l, p))
 		lead_h1 <- p_h1 >= 0.5
-		vals <- if (lead_h1) grid else 1 - grid
-		plan_changes <- FALSE
-		if (!gof && auto) {
-			gp <- outer(plans$log_bf, phs, function(l, p) .gbay_prob(l, p))
-			pv <- if (lead_h1) gp else 1 - gp
-			vals <- c(vals, pv)
-			# The plan alone reverses the answer (at the starting chances given).
-			plan_changes <- any((plans$p_h1 >= 0.5) != lead_h1)
-		}
-		rng <- range(vals)
+		rng <- range(if (lead_h1) grid else 1 - grid)
 		verdict <- .bay_sensitivity_verdict(max(p_h1, 1 - p_h1), rng)
-		if (plan_changes) verdict <- "changes"
-		sens <- list(conc = concs, prior_h1 = phs, p = grid, log_bf = lbs, range_lead = rng, verdict = verdict, plans = plans, plan_changes = plan_changes)
+		sens <- list(conc = if (gof) concs else NULL, prior_h1 = phs, p = grid, log_bf = lbs, range_lead = rng, verdict = verdict)
 		stb <- .bay_stab_txt(verdict)
 		.bay_step_result(story, paste0("Bayes factor ", .bay_bf_txt(lb, "."), ", ", stb$en), paste0("facteur de Bayes ", .bay_bf_txt(lb, ","), ", ", stb$fr))
 		.bay_tell(story, paste0("Sensitivity: the leading answer ", .bay_range_txt(rng)$en, "."),
 			paste0("Sensibilit\u00e9 : la r\u00e9ponse en t\u00eate ", .bay_range_txt(rng)$fr, "."))
-		if (!gof) {
-			oth <- plans[!plans$chosen, , drop = FALSE]
-			ow_en <- vapply(seq_len(nrow(oth)), function(i) .gbay_plan_words(oth$sampling[i], if (is.na(oth$fixed[i])) NULL else oth$fixed[i], nm[1L], nm[2L])$short_en, character(1))
-			ow_fr <- vapply(seq_len(nrow(oth)), function(i) .gbay_plan_words(oth$sampling[i], if (is.na(oth$fixed[i])) NULL else oth$fixed[i], nm_fr[1L], nm_fr[2L])$short_fr, character(1))
-			.bay_tell(story, paste0("Other sampling plans: Bayes factor ", paste0(vapply(oth$log_bf, .bay_bf_txt, character(1), dec = "."), " (", ow_en, ")", collapse = ", "), "."),
-				paste0("Autres plans d'\u00e9chantillonnage : facteur de Bayes ", paste0(vapply(oth$log_bf, .bay_bf_txt, character(1), dec = ","), " (", ow_fr, ")", collapse = ", "), "."))
-		}
 		.bay_tell(story, if (gof) "what varies is the expected spread of the proportions (a = 1/2, 1, 2) and the starting chances (1 against 2 to 2 against 1)." else
-				paste0("what varies is the expected spread of the probabilities (a = 1, 2, 4) and the starting chances (1 against 2 to 2 against 1)", if (auto) ", and the sampling plan." else "."),
+				"what varies is the starting chances (1 against 2 to 2 against 1); the unit-information prior has no scale to vary.",
 			if (gof) "on fait varier l'\u00e9talement attendu des proportions (a = 1/2, 1, 2) et les chances de d\u00e9part (1 contre 2 \u00e0 2 contre 1)." else
-				paste0("on fait varier l'\u00e9talement attendu des probabilit\u00e9s (a = 1, 2, 4) et les chances de d\u00e9part (1 contre 2 \u00e0 2 contre 1)", if (auto) ", et le plan d'\u00e9chantillonnage." else "."), "note")
-		if (plan_changes) {
-			.bay_tell(story, "Caution added: the answer depends on how the data were collected (sampling plan); it will be called not settled. Set sampling = if the plan is known.",
-				"Prudence ajout\u00e9e : la r\u00e9ponse d\u00e9pend de la fa\u00e7on dont les donn\u00e9es ont \u00e9t\u00e9 recueillies (plan d'\u00e9chantillonnage) ; elle sera dite non tranch\u00e9e. Pr\u00e9ciser sampling = si le plan est connu.", "decide")
-		} else if (identical(verdict, "changes")) {
+				"on fait varier les chances de d\u00e9part (1 contre 2 \u00e0 2 contre 1) ; l'a priori d'information unitaire n'a pas d'\u00e9chelle \u00e0 faire varier.", "note")
+		if (identical(verdict, "changes")) {
 			.bay_tell(story, "Caution added: the answer can reverse; it will be called not settled.",
 				"Prudence ajout\u00e9e : la r\u00e9ponse peut s'inverser ; elle sera dite non tranch\u00e9e.", "decide")
 		} else {
@@ -849,17 +760,17 @@
 
 	# Step 6: where the gap lies, and its size.
 	est <- if (gof) .gbay_summ_gof(tab, inp$p, 1, max(1000L, as.integer(draws)), seed) else
-		.gbay_summ_ct(.gbay_draws_ct(tab, sampling, fixed, max(1000L, as.integer(draws)), seed), tab)
+		.gbay_summ_ct(.gbay_draws_ct(tab, max(1000L, as.integer(draws)), seed), tab)
 	out <- list(hypotheses = hyp, prob_effect = p_h1, bf10 = exp(lb), log_bf = lb,
 		effects = data.frame(term = if (gof) nm else paste0(nm[1L], ":", nm[2L]), bf10 = exp(lb), log_bf = lb, p_h1 = p_h1, p_h0 = 1 - p_h1,
 			prior_h1 = prior_h1, analogue = if (gof) "G test of goodness of fit" else "G test of independence", stringsAsFactors = FALSE),
-		test = obj$test, names = nm, names_fr = nm_fr, resp = obj$resp, sampling = sampling, fixed = fixed, sampling_auto = auto && !gof,
+		test = obj$test, names = nm, names_fr = nm_fr, resp = obj$resp, G = if (gof) NULL else ll$G, df = if (gof) length(tab) - 1L else ll$df,
 		table = tab, expected = E, p = if (gof) inp$p else NULL, cells = est$cells,
 		cramer_v = est$cramer_v, odds_ratio = est$odds_ratio, w = est$w,
-		sensitivity = sens, contradiction = FALSE, detail = isTRUE(detail), sparse = sparse,
-		priors = list(concentration = 1, prior_h1 = prior_h1, law = if (gof) "multinomial" else sampling),
+		sensitivity = sens, contradiction = FALSE, detail = isTRUE(detail),
+		priors = list(concentration = if (gof) 1 else NULL, prior_h1 = prior_h1, law = if (gof) "multinomial" else "log-linear Poisson, unit information (BIC)"),
 		method = if (gof) "Goodness of fit, Dirichlet-multinomial against a point (Good 1967)" else
-			paste0("Independence, contingencyTableBF (Gunel and Dickey 1974), ", .gbay_plan_words(sampling, fixed, nm[1L], nm[2L])$en),
+			"Independence, log-linear test of the interaction, BIC with n = N (Raftery 1986)",
 		label = if (gof) nm else paste(nm, collapse = " x "), n = N, call = call_expr)
 	out$label <- if (gof) nm else paste0(nm[1L], " x ", nm[2L])
 	pk <- if (gof) c("g.bay() {KefiR}", "hdi() {bayestestR}") else c("posterior() {BayesFactor}", "hdi() {bayestestR}")
@@ -873,10 +784,6 @@
 	}
 	tell_emit <- function(kind, en, fr) .bay_tell(story, en, fr, kind)
 	if (!is.null(est$odds_ratio)) .gbay_size_line(out, tell_emit)
-	if (identical(sampling, "hypergeom")) {
-		.bay_tell(story, "No posterior sampler for the hypergeometric plan in BayesFactor: the estimation uses the joint multinomial one.",
-			"Pas de tirage a posteriori pour le plan hyperg\u00e9om\u00e9trique dans BayesFactor : l'estimation prend celui du multinomial joint.", "decide")
-	}
 	if (p_h1 < 0.5) {
 		.bay_tell(story, if (gof) "No departure is in the lead: the lines below are read only as an indication." else "Independence is in the lead: the lines below are read only as an indication.",
 			if (gof) "L'absence d'\u00e9cart est en t\u00eate : les lignes ci-dessous ne se lisent qu'\u00e0 titre indicatif." else "L'ind\u00e9pendance est en t\u00eate : les lignes ci-dessous ne se lisent qu'\u00e0 titre indicatif.", "decide")

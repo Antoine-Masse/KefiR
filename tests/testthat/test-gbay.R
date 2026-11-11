@@ -3,22 +3,39 @@
 tab23 <- matrix(c(20, 15, 25, 30, 10, 12), nrow = 2,
 	dimnames = list(sexe = c("F", "M"), couleur = c("bleu", "vert", "rouge")))
 
-test_that("independance : facteur de Bayes = contingencyTableBF sous chaque plan", {
-	ref <- function(t, s, fm = NULL) {
-		bf <- if (is.null(fm)) BayesFactor::contingencyTableBF(t, sampleType = s) else BayesFactor::contingencyTableBF(t, sampleType = s, fixedMargin = fm)
-		BayesFactor::extractBF(bf, logbf = TRUE)$bf
+test_that("independance : log BF = (G - ddl log N) / 2, G de GTest ; = -BIC/2 des glm a une ligne par individu (D25)", {
+	for (t in list(tab23, matrix(c(18, 7, 9, 16), 2), matrix(c(30, 10, 12, 8, 25, 9, 5, 6, 28), 3), matrix(c(3, 0, 1, 2, 5, 1), 2))) {
+		G <- unname(suppressWarnings(DescTools::GTest(t)$statistic))
+		df <- (nrow(t) - 1) * (ncol(t) - 1)
+		r <- g.bay(t, verbose = FALSE, sensitivity = FALSE)
+		expect_equal(r$log_bf, (G - df * log(sum(t))) / 2, tolerance = 1e-8)
+		expect_equal(r$G, G, tolerance = 1e-8)
+		expect_equal(r$prob_effect, 1 / (1 + exp(-r$log_bf)), tolerance = 1e-12)
 	}
-	t <- unname(unclass(tab23))
-	expect_equal(g.bay(tab23, verbose = FALSE, sensitivity = FALSE)$log_bf, ref(t, "jointMulti"), tolerance = 1e-10)
-	expect_equal(g.bay(tab23, sampling = "poisson", verbose = FALSE, sensitivity = FALSE)$log_bf, ref(t, "poisson"), tolerance = 1e-10)
-	expect_equal(g.bay(tab23, sampling = "indepMulti", fixed = "cols", verbose = FALSE, sensitivity = FALSE)$log_bf, ref(t, "indepMulti", "cols"), tolerance = 1e-10)
-	expect_equal(g.bay(tab23, fixed = "rows", verbose = FALSE, sensitivity = FALSE)$log_bf, ref(t, "indepMulti", "rows"), tolerance = 1e-10)
-	t22 <- matrix(c(18, 7, 9, 16), 2)
-	expect_equal(g.bay(t22, sampling = "hypergeom", verbose = FALSE, sensitivity = FALSE)$log_bf, ref(t22, "hypergeom"), tolerance = 1e-10)
-	r <- g.bay(tab23, verbose = FALSE)
-	pl <- r$sensitivity$plans
-	expect_equal(pl$log_bf[pl$sampling == "poisson"], ref(t, "poisson"), tolerance = 1e-10)
-	expect_equal(r$prob_effect, 1 / (1 + exp(-ref(t, "jointMulti"))), tolerance = 1e-10)
+	# Une reponse oui/non et un facteur, une ligne par individu : -BIC/2 des glm logistiques.
+	set.seed(41)
+	d <- data.frame(g = factor(rep(c("a", "b", "c"), each = 30)))
+	d$y <- factor(ifelse(rbinom(90, 1, c(.5, .5, .8)[d$g]) == 1, "oui", "non"))
+	b1 <- stats::BIC(stats::glm(y ~ g, data = d, family = stats::binomial()))
+	b0 <- stats::BIC(stats::glm(y ~ 1, data = d, family = stats::binomial()))
+	expect_equal(g.bay(y ~ g, data = d, verbose = FALSE, sensitivity = FALSE)$log_bf, (b0 - b1) / 2, tolerance = 1e-8)
+	# Deux facteurs a une ligne par individu : -BIC/2 du modele log-lineaire sur les individus
+	# revient au meme ; la table, x et y, et y ~ g donnent le meme nombre (plan sans effet).
+	t <- table(d$g, d$y)
+	expect_equal(g.bay(d$g, d$y, verbose = FALSE, sensitivity = FALSE)$log_bf, g.bay(y ~ g, data = d, verbose = FALSE, sensitivity = FALSE)$log_bf)
+	expect_equal(g.bay(t(t), verbose = FALSE, sensitivity = FALSE)$log_bf, g.bay(t, verbose = FALSE, sensitivity = FALSE)$log_bf, tolerance = 1e-10)
+})
+
+test_that("calibration sous H0 : marges equilibrees ne font pas un lien (cas de l'audit, 4 x 5, N = 50)", {
+	set.seed(2026)
+	P <- outer(rep(0.25, 4), rep(0.2, 5))
+	X <- stats::rmultinom(300, 50, as.numeric(P))
+	lb <- apply(X, 2L, function(x) {
+		t <- matrix(x, 4); t <- t[rowSums(t) > 0, colSums(t) > 0, drop = FALSE]
+		.gbay_lbf_ct(t)
+	})
+	expect_equal(mean(lb > log(20)), 0)
+	expect_lt(mean(lb > log(3)), 0.01)
 })
 
 test_that("ajustement : forme close = integration numerique (2 modalites) et multibridge (proportions egales)", {
@@ -30,15 +47,6 @@ test_that("ajustement : forme close = integration numerique (2 modalites) et mul
 	x <- c(3, 7, 12, 5)
 	mb <- getExportedValue("multibridge", "mult_bf_equality")(x = x, a = rep(1, 4))
 	expect_equal(.gbay_lbf_gof(x, rep(0.25, 4), 1), mb$bf$LogBFe0, tolerance = 1e-7)
-})
-
-test_that("y ~ g donne le meme nombre que m.bay (plan independant, groupes fixes)", {
-	set.seed(41)
-	d <- data.frame(g = factor(rep(c("a", "b", "c"), each = 30)))
-	d$y <- factor(ifelse(rbinom(90, 1, c(.5, .5, .8)[d$g]) == 1, "oui", "non"))
-	r <- g.bay(y ~ g, data = d, verbose = FALSE, sensitivity = FALSE)
-	expect_identical(r$sampling, "indepMulti"); expect_identical(r$fixed, "rows")
-	expect_equal(r$log_bf, m.bay(y ~ g, data = d, verbose = FALSE, sensitivity = FALSE, posthoc = FALSE)$effects$log_bf, tolerance = 1e-10)
 })
 
 test_that("formes d'entree equivalentes : table, x et y, ~ A + B, n ~ A + B, noms de colonnes", {
@@ -85,9 +93,7 @@ test_that("ligne ou colonne vide retiree et dite ; refus clairs", {
 	expect_equal(dim(r$table), c(2L, 3L))
 	expect_equal(r$log_bf, g.bay(tab23, verbose = FALSE, sensitivity = FALSE)$log_bf)
 	expect_true(any(grepl("noir", r$notes$fr)))
-	expect_error(g.bay(matrix(1:6, 2), sampling = "hypergeom", verbose = FALSE))
 	expect_error(g.bay(y ~ A * B, data = data.frame(y = 1:4, A = 1:4, B = 1:4), verbose = FALSE))
-	expect_error(g.bay(tab23, sampling = "poisson", fixed = "rows", verbose = FALSE))
 })
 
 test_that("2 x 2 : rapport des cotes proche de glm a grand effectif ; V de Cramer proche de l'observe", {
@@ -163,33 +169,3 @@ test_that("recit : 80 colonnes au plus, marques sur chaque ligne, francais et an
 	expect_error(g.bay(c(1.5, 2), verbose = FALSE), "whole numbers")
 })
 
-test_that("plan choisi seul : si un autre plan inverse la reponse, elle est dite non tranchee", {
-	# Table ou le plan Poisson et les plans a marge fixee ne vont pas du meme cote.
-	found <- FALSE
-	for (s in 1:200) {
-		set.seed(s)
-		t <- matrix(stats::rpois(4, 6) + 1, 2)
-		pl <- .gbay_plans(t)
-		if (any(pl$log_bf > 0) && any(pl$log_bf < 0)) { found <- TRUE; break }
-	}
-	skip_if(!found)
-	r <- g.bay(t, verbose = FALSE)
-	expect_true(r$sensitivity$plan_changes)
-	expect_identical(r$sensitivity$verdict, "changes")
-	r2 <- g.bay(t, sampling = "jointMulti", verbose = FALSE)
-	expect_false(isTRUE(r2$sensitivity$plan_changes))
-})
-
-test_that("table creuse (regle de Cochran) : soutien d'un lien plafonne a faible, dit dans le recit et le bilan", {
-	t <- matrix(c(6, 1, 0, 1, 1, 5, 1, 0, 0, 1, 6, 2), 3, byrow = TRUE)
-	r <- g.bay(t, verbose = FALSE)
-	expect_true(r$sparse)
-	expect_gt(r$prob_effect, 0.99)
-	out <- capture.output(print(r))
-	expect_true(any(grepl("Cochran", out)))
-	expect_false(any(grepl("very probably exists|existe tr\u00e8s probablement", out)))
-	expect_true(any(grepl("Cochran", c(r$story$en, r$story$fr))))
-	# Une table bien remplie n'est pas creuse ; l'ajustement n'est jamais plafonne.
-	expect_false(g.bay(tab23, verbose = FALSE, sensitivity = FALSE)$sparse)
-	expect_false(g.bay(c(12, 3, 1, 0), verbose = FALSE, sensitivity = FALSE)$sparse)
-})

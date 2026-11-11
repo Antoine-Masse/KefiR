@@ -4,13 +4,15 @@
 
 **Voie rapide des simulations.** `contingencyTableBF` et `GTest` coûtent environ 22 ms par appel. Les simulations appellent donc les fonctions internes que `contingencyTableBF` appelle elle-même (`BayesFactor:::contingencyJointMultinomial`, `contingencyIndepMultinomial`, `contingencyPoisson`, 0,15 ms) et une statistique G vectorisée. Chaque script vérifie d'abord, sur 20 tables tirées au hasard, l'égalité à 1e-10 avec `contingencyTableBF`, `g.bay()` et `DescTools::GTest`.
 
+**Attention (11 novembre au soir).** Les § 2 (partie indépendance), 3 et 4 (partie indépendance) mesurent l'ancien moteur, `contingencyTableBF` (G3, G10). Ils sont gardés parce qu'ils fondent le remplacement. Le moteur actuel, le test log-linéaire de G11, est mesuré au § 9. Les § 1 (en partie), 2 (ajustement), 5 et 6 valent toujours : l'ajustement et l'estimation n'ont pas changé.
+
 Sauf mention, « oui » veut dire probabilité a posteriori d'un lien (ou d'un écart) supérieure au seuil, à chances de départ égales ; « bilan oui » veut dire ce que dit vraiment le bilan (§ 3).
 
 ## 1. Accord numérique (tests testthat, `tests/testthat/test-gbay.R`)
 
-- `g.bay()` = `contingencyTableBF` à 1e-10 sous les cinq plans (joint, Poisson, indépendant lignes, indépendant colonnes, hypergéométrique en 2 × 2) ; la probabilité a posteriori = 1 / (1 + 1/BF).
+- (Ancien moteur.) `g.bay()` = `contingencyTableBF` à 1e-10 sous les cinq plans. Remplacé par : log BF = (G − ddl·log N)/2 avec G de `GTest`, à 1e-8, sur quatre tables ; = −BIC/2 des `glm` logistiques à une ligne par individu (méthode de m.bay, D25) ; table, `x, y`, `y ~ g` et table transposée donnent le même nombre.
 - Ajustement : forme close = intégration numérique à deux modalités (trois cas, a = 1/2, 1, 2) à 1e-7 ; = `multibridge::mult_bf_equality` pour des proportions égales à 1e-7 (test ignoré si `multibridge` n'est pas installé ; il l'a été ici dans une bibliothèque temporaire : log BF 0,38202 des deux côtés sur (3, 7, 12)).
-- `g.bay(y ~ g)` = `m.bay(y ~ g)` à 1e-10 (même modèle : indépendant, marge de g fixée).
+- (Ancien moteur.) `g.bay(y ~ g)` = `m.bay(y ~ g)` à 1e-10 ; plus vrai tant que m.bay garde `contingencyTableBF`.
 - Formes d'entrée : table, `x` et `y`, `~ A + B`, noms de colonnes, `Freq ~ A + B` donnent le même BF ; ajustement : vecteur, facteur, `~ A`, matrice à une ligne, `p` à normaliser.
 - 2 × 2 à N = 4 000 : log du rapport des cotes à moins de 0,03 de `glm` binomial ; V de Cramér à moins de 0,01 de l'observé, dans son intervalle.
 - Cases à N = 5 000 : rapport a posteriori à moins de 0,03 de O/E.
@@ -129,3 +131,58 @@ Sept sorties (ajustement, 2 × 2, 2 × 3, 3 × 3, `y ~ g`, petits effectifs, `de
 ## 8. R CMD check (11 novembre, sur 1ecbda5)
 
 `R CMD check --no-manual --ignore-vignettes`, suite de tests complète du paquet comprise : **Status: 1 NOTE**. La NOTE (« Problems with news in 'NEWS.md': No news entries found ») existe déjà sur c8e8976 : l'en-tête `# KefiR (development version, branch feat/m.bay)` n'est pas lu comme une version par R (vérifié avec `tools:::.build_news_db_from_package_NEWS_md` sur les deux versions du fichier). Exemples OK, dépendances des tests OK (le test `multibridge` passe par `getExportedValue`, ignoré si le paquet manque), code ASCII OK. Information sur les xrefs : `ez` absent de mbay-lib, comme pour m.bay.
+
+## 9. Recalibration après G11 (test log-linéaire, BIC avec n = N), 11 novembre au soir
+
+Script : `scripts/sim_loglin.R` (sortie `sim_loglin.out`, `.rds`). 2 000 tables par scénario (1 000 pour la puissance), plan joint. En tête du script, contrôle à 1e-8 : G vectorisé = `GTest` et log BF = `.gbay_lbf_ct()` (glm). « Bilan oui » : P ≥ 0,75, BF ≥ 3, et l'ordre tient de 1:2 à 2:1.
+
+### Sous H0 : G11 contre l'ancien moteur (`contingencyTableBF`, a = 1)
+
+| Table | Marges | N | G11 BF > 3 | **G11 BF > 20** | G11 bilan oui (très probable) | ancien BF > 20 : joint / Poisson / lignes fixées | test G p < 0,05 |
+|---|---|---|---|---|---|---|---|
+| 2 × 2 | égales | 30 | 1,95 % | 0,20 % | 1,95 % (0,20) | 0,55 / 0,80 / 0,40 % | 5,0 % |
+| 2 × 2 | égales | 60 | 1,15 | 0,15 | 1,15 (0,15) | 0,40 / 0,55 / 0,25 | 4,9 |
+| 2 × 2 | égales | 200 | 0,80 | 0,10 | 0,80 (0,10) | 0,55 / 0,60 / 0,40 | 5,1 |
+| 2 × 2 | inégales | 30 | 1,65 | 0,20 | 1,65 (0,20) | 0,30 / 0,40 / 0,25 | 6,7 |
+| 2 × 2 | inégales | 60 | 1,60 | 0,20 | 1,60 (0,20) | 0,25 / 0,40 / 0,15 | 6,1 |
+| 2 × 2 | inégales | 200 | 0,50 | 0,05 | 0,50 (0,10) | 0,25 / 0,30 / 0,20 | 4,4 |
+| 3 × 4 | égales | 30 | 0,30 | 0 | 0,30 (0) | 8,0 / 30,4 / 2,9 | 11,3 |
+| 3 × 4 | égales | 60 | 0 | 0 | 0 (0) | 4,3 / 17,4 / 1,3 | 7,1 |
+| 3 × 4 | égales | 200 | 0,05 | 0 | 0,05 (0) | 0,3 / 2,5 / 0,05 | 5,9 |
+| 3 × 4 | inégales | 30 | 0 | 0 | 0 (0) | 2,1 / 10,4 / 1,1 | 7,0 |
+| 3 × 4 | inégales | 60 | 0,10 | 0,05 | 0,10 (0,05) | 1,2 / 6,1 / 0,7 | 6,9 |
+| 3 × 4 | inégales | 200 | 0 | 0 | 0 (0) | 0,05 / 1,2 / 0,05 | 7,0 |
+| 4 × 5 | égales | 30 | 0 | 0 | 0 (0) | 21,1 / 90,4 / 5,6 | 12,9 |
+| 4 × 5 | égales | 60 | 0 | 0 | 0 (0) | 11,6 / 76,9 / 2,7 | 10,4 |
+| 4 × 5 | égales | 200 | 0 | 0 | 0 (0) | 0,9 / 13,2 / 0,1 | 6,4 |
+| 4 × 5 | inégales | 30 | 0 | 0 | 0 (0) | 7,5 / 61,5 / 2,6 | 9,0 |
+| 4 × 5 | inégales | 60 | 0 | 0 | 0 (0) | 2,4 / 42,8 / 0,7 | 8,1 |
+| 4 × 5 | inégales | 200 | 0 | 0 | 0 (0) | 0,25 / 6,2 / 0,15 | 7,7 |
+
+**Lecture.**
+- La cible de la session parente, moins de 1 % de BF > 20 sous H0, est tenue partout : 0,2 % au plus, contre 90 % pour l'ancien moteur sous le plan Poisson (4 × 5, N = 30).
+- Le bilan dit « un lien existe » sous indépendance dans 2 % des tables au plus (2 × 2, N = 30), « très probablement » dans 0,2 % au plus.
+- Nos chiffres de l'ancien moteur rejoignent ceux de l'audit : 4 × 5 à marges égales, N = 60 : 11,6 % (joint) et 76,9 % (Poisson), contre 11,0 % et 82,7 % mesurés par la session parente à N = 50.
+- Plus de dépendance au plan : G, ddl et N sont les mêmes sous tous les plans.
+
+### Puissance (1 000 tables par ligne ; écart de taille w, w de Cohen)
+
+| Table | w | N | G11 P > 0,75 | G11 P > 0,95 | ancien (joint) P > 0,75 | test G p < 0,05 |
+|---|---|---|---|---|---|---|
+| 2 × 2 | 0,3 | 30 | 25,8 % | 9,8 % | 44,2 % | 40,0 % |
+| 2 × 2 | 0,3 | 60 | 46,0 | 20,2 | 65,9 | 66,4 |
+| 2 × 2 | 0,3 | 200 | 93,6 | 82,5 | 97,8 | 99,1 |
+| 2 × 2 | 0,5 | 30 | 68,0 | 39,4 | 83,1 | 80,6 |
+| 2 × 3 | 0,3 | 60 | 27,1 | 12,3 | 63,9 | 56,7 |
+| 2 × 3 | 0,3 | 200 | 82,7 | 63,3 | 96,5 | 98,2 |
+| 2 × 3 | 0,5 | 60 | 86,5 | 69,6 | 97,4 | 96,8 |
+| 3 × 4 | 0,3 | 60 | 2,4 | 0,5 | 54,6 | 45,2 |
+| 3 × 4 | 0,3 | 200 | 15,7 | 9,4 | 83,6 | 93,1 |
+| 3 × 4 | 0,1 | 200 | 0 | 0 | 5,1 | 14,8 |
+
+(Table complète dans `sim_loglin.out`.)
+
+**Lecture.**
+- En 2 × 2, un lien moyen (w = 0,3) est dit à P > 0,75 dans 94 % des tables à N = 200, contre 99 % au test G. À N = 30-60, la puissance est environ deux tiers de celle du test G.
+- Dans les grandes tables, la pénalité ddl·log N rend le BIC très prudent : en 3 × 4, un lien moyen n'est presque jamais dit à N = 60 (2,4 %), et rarement à N = 200 (15,7 %, contre 93 % au test G). Le bilan dit alors « indécis » ou « plutôt pas de lien » ; le V de Cramér et les cases (étape 6) restent lisibles. C'est le prix d'un taux de faux « oui » quasi nul (Raftery 1995 : le BIC favorise les modèles simples plus que les p-values).
+- Suite possible, à décider à part : un a priori moins diffus que l'information unitaire sur l'interaction rendrait de la puissance aux grandes tables ; il faudrait le calibrer de même.

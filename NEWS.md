@@ -36,16 +36,21 @@ columns.
 
 * Goodness of fit to given proportions: Dirichlet against the proportions given, closed-form
   Bayes factor (Good 1967; the model of `multibridge`).
-* Independence in an r x c table: `BayesFactor::contingencyTableBF()` (Gunel and Dickey 1974;
-  Jamil et al. 2017). The sampling plan is chosen from the form of the input (joint
-  multinomial for a table or two variables, groups fixed for `y ~ g`, as in `m.bay()`) and can
-  be set with `sampling =`; the answer under every other plan is shown, and called not settled
-  if a plan reverses it.
+* Independence in an r x c table: test of the interaction of a log-linear Poisson model,
+  margins free under both hypotheses, Bayes factor by -BIC/2 with n = N (Raftery 1986), the
+  method of `m.bay()` for discrete responses. It is read on the G statistic itself,
+  log BF = (G - df log N) / 2, and does not depend on the sampling plan. The default
+  `contingencyTableBF()` Bayes factors were measured and set aside: under independence they
+  announced a strong link (Bayes factor above 20) in up to 21 % (joint multinomial) and 90 %
+  (Poisson) of 4 x 5 tables with N = 30. With the log-linear test, 0.2 % at most; the price
+  is a low power in large tables (3 x 4, N = 200, medium link: 16 % against 93 % for the G
+  test).
 * 2 x 2 tables: odds ratio with its 95 % credible interval.
 * Which cells carry the link: ratio of each cell to its value without a link, with a 95 %
   credible interval (in place of the standardised residuals); Cramer's V a posteriori
   (Cohen's w for a goodness of fit).
-* No minimum count and no Williams or Yates correction: the computation is exact.
+* No minimum count and no Williams or Yates correction; small counts make the answer less
+  decisive.
 
 Decisions, references and measures by simulation: `dev/gbay/DECISIONS.md`,
 `dev/gbay/PERIMETRE.md`, `dev/gbay/VALIDATION.md`.
