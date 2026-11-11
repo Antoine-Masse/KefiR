@@ -1,5 +1,15 @@
 # Journal de m.bay
 
+## Séance 19 : 11 novembre 2026, audit de b447387, sphéricité, réponse ordonnée à plusieurs facteurs
+
+**Fait.**
+- **Repli trop tôt** (audit de b447387), deux causes corrigées à la source dans `.bay_wrap` :
+  - la protection « a = b » soudait « facteur : > 99,9 % » en un bloc insécable de 18 caractères ; une coupure est désormais possible après le deux-points ;
+  - le retrait de continuation (15 colonnes) réduisait aussi la largeur de la première ligne (12 colonnes) ; chaque ligne a maintenant sa propre largeur.
+  Le cas oui/non 2 × 2 est ajouté au test des 80 colonnes, avec une vérification qu'aucune ligne numérotée n'est repliée trop tôt.
+- **Arrêt de Gibbs sur l'erreur Monte-Carlo : essayé, non retenu** (VALIDATION §22, mesures du 11 novembre). À 10 groupes, l'erreur vaut 0,037 à 250 tours, 0,019 à 1000 et 0,017 à 2000. S'arrêter à 1000 tours gagnerait environ 5 s sur 73 s. Viser 2 points demanderait environ 5000 tours, donc plus de temps. Les 73 s viennent surtout des 4 lois avec la sensibilité. La ligne d'attente (« environ 70 s ») est la réponse retenue.
+- **Ce que couvre m.test** (vérifié dans le code) : ni McNemar ni Cochran, donc le oui/non apparié n'est pas prioritaire et reste refusé ; Mauchly et Greenhouse-Geisser en mesures répétées ; Scheirer-Ray-Hare pour les données non normales à plusieurs facteurs.
+
 ## Séance 18 : 11 novembre 2026, temps au-delà de 8 groupes, post-hoc à plusieurs facteurs calibré, réponses discrètes à plusieurs facteurs (D25)
 
 **Fait.**

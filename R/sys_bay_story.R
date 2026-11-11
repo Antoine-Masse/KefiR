@@ -50,7 +50,14 @@
 	txt <- gsub("(\\[[^] ]*) ([^] ]*) ([^] ]*\\])", paste0("\\1", nb, "\\2", nb, "\\3"), txt)
 	txt <- gsub(" ([=<>x]) ", paste0(nb, "\\1", nb), txt)
 	txt <- gsub("([<>]) ([0-9])", paste0("\\1", nb, "\\2"), txt)
-	p <- strwrap(txt, width = avail + 1L)
+	# After a colon, "> 99.9 %" may go to the next line: otherwise "factor : > 99.9 %" made one
+	# unbreakable block of 18 characters and folded the line too early (audit of b447387).
+	txt <- gsub(paste0(":", nb, "([<>])"), ": \\1", txt)
+	# The first line has the width left by its own lead, the next ones the width left by the
+	# continuation (audit of b447387: the wider indent used to shorten the first line too).
+	a1 <- max(20L, .bay_width() - .bay_vis(lead))
+	p <- strwrap(txt, width = a1 + 1L)
+	if (length(p) > 1L && avail < a1) p <- c(p[1L], strwrap(paste(p[-1L], collapse = " "), width = avail + 1L))
 	p <- gsub(nb, " ", p, fixed = TRUE)
 	if (!length(p)) p <- ""
 	c(paste0(lead, p[1L]), if (length(p) > 1L) paste0(cont, p[-1L]))

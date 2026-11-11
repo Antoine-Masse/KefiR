@@ -141,11 +141,16 @@ test_that("80 colonnes au plus, tabulation comptee 8 : 8 plans, francais et angl
 	da$y <- 5 + 0.8 * da$x + c(0, 1.5, 3)[as.integer(da$g)] + rnorm(45, 0, 1.5)
 	dj <- data.frame(tr = factor(rep(c("temoin", "froid", "chaud"), each = 30)))
 	dj$germe <- factor(ifelse(rbinom(90, 1, c(.5, .5, .8)[dj$tr]) == 1, "oui", "non"))
+	set.seed(2)
+	dg <- expand.grid(rep = 1:25, tr = factor(c("temoin", "engrais")), sol = factor(c("argile", "sable")))
+	dg$germe <- factor(ifelse(rbinom(nrow(dg), 1, ifelse(dg$tr == "engrais", 0.9, 0.3)) == 1, "oui", "non"), levels = c("non", "oui"))
 	cas <- list(function() m.bay(y ~ g, data = d2, draws = 1000), function() m.bay(y ~ g, data = d4, draws = 1000),
 		function() m.bay(y ~ A * B, data = d22), function() m.bay(y ~ t, data = dp, id = "id", paired = TRUE),
 		function() m.bay(y ~ t | id, data = dr), function() m.bay(y ~ g + x, data = da), function() m.bay(germe ~ tr, data = dj),
 		# MANOVA on iris (audit of D22): long response names in a numbered hypothesis.
-		function() m.bay(cbind(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) ~ Species, data = iris, draws = 1000, sensitivity = FALSE))
+		function() m.bay(cbind(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) ~ Species, data = iris, draws = 1000, sensitivity = FALSE),
+		# Yes/no with two factors (audit of b447387): a hypothesis with guillemets and "> 99,9 %".
+		function() m.bay(germe ~ tr * sol, data = dg, sensitivity = FALSE))
 	vis <- function(x) nchar(gsub("\t", "        ", x, fixed = TRUE), type = "width")
 	old_loc <- Sys.getlocale("LC_CTYPE"); old_w <- getOption("width")
 	on.exit({ Sys.setlocale("LC_CTYPE", old_loc); options(width = old_w) }, add = TRUE)
@@ -160,4 +165,15 @@ test_that("80 colonnes au plus, tabulation comptee 8 : 8 plans, francais et angl
 	options(width = 60)
 	expect_lte(max(vis(capture.output(cas[[2]]()))), 60)
 	expect_lte(max(vis(capture.output(cas[[6]]()))), 60)
+	# No numbered item folded too early: the first word of the next line would not have fit.
+	options(width = 80)
+	txt <- capture.output(cas[[length(cas)]]())
+	i1 <- grep("^\t    1[.] ", txt)
+	for (i in i1) {
+		if (grepl("^\t       [^ ]", txt[i + 1L])) {
+			nx <- sub("^\t +", "", txt[i + 1L])
+			w1 <- regmatches(nx, regexpr("^([<>] [0-9.,]+ %|[^ ]+)", nx))
+			expect_gt(vis(txt[i]) + 1L + nchar(w1), 80)
+		}
+	}
 })
