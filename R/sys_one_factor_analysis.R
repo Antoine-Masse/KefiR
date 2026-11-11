@@ -786,6 +786,31 @@
     }
 
 	  ## --------------------------------------------------------------------------
+	  # Non-normalite + heteroscedasticite CONFIRMEE (Levene puis Brown-Forsythe), k > 2,
+	  # asymetrie moderee : Kruskal-Wallis et l'ANOVA classique supposent des variances
+	  # egales. Sous H0 (n = 5/5/40, sd = 4/4/1), Kruskal-Wallis rejette 21 % des fois,
+	  # t1way 9,6 %, le F de Welch 5,1 % (dev/mtest_audit/RAPPORT.md). Le F de Welch
+	  # reste le moins mauvais avec une asymetrie moderee (Delacre et al., 2019).
+	  if (!isTRUE(check_normality) && isFALSE(check_variance_equal) && !isTRUE(paired) &&
+	      check_number > 2) {
+	    skew_hetero <- suppressWarnings(max(unlist(by(x, g, function(z)
+	      if (length(z) >= 3) abs(agricolae::skewness(z)) else NA_real_)), na.rm = TRUE))
+	    extreme_hetero <- exists("max_outliers_extrem") && isTRUE(max_outliers_extrem > 0.05)
+	    if (is.finite(skew_hetero) && skew_hetero < 2 && !extreme_hetero) {
+	      k <- .vbse(
+	        paste0("Heterogeneous variances confirmed, moderate asymmetry (max |skew| = ", round(skew_hetero, 2), ").\n\t",
+	               "Kruskal-Wallis and the classical ANOVA assume equal variances.\n\t",
+	               "--> Welch's heteroscedastic F-test, robust to moderate non-normality."),
+	        paste0("Variances h\u00e9t\u00e9rog\u00e8nes confirm\u00e9es, asym\u00e9trie mod\u00e9r\u00e9e (max |skew| = ", round(skew_hetero, 2), ").\n\t",
+	               "Kruskal-Wallis et l'ANOVA classique supposent des variances \u00e9gales.\n\t",
+	               "--> Test F h\u00e9t\u00e9rosc\u00e9dastique de Welch, robuste \u00e0 une non-normalit\u00e9 mod\u00e9r\u00e9e."),
+	        verbose = verbose, code = code, k = k, cpt = "on"
+	      )
+	      # Branche NORMAL, variances in\u00e9gales : Welch, puis post-hocs t sans variance commune
+	      check_normality <- TRUE
+	    }
+	  }
+
 	  ################################################################
 	  #
 	  #

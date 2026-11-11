@@ -155,3 +155,14 @@ test_that("j. lettres d'une interaction en modele mixte : la cellule entiere est
   res <- audit_quiet(m.test(y ~ G * T + Error(id / T), data = d, plot = FALSE, boot = FALSE))
   expect_true(any(grepl("B t3 : EMM = ", res$output, fixed = TRUE)))
 })
+
+test_that("k. non normal et variances heterogenes confirmees : Welch, pas Kruskal-Wallis", {
+  set.seed(1)
+  n <- c(5, 5, 40)
+  x <- unlist(mapply(function(n, s) rnorm(n, 0, s), n, c(4, 4, 1)))
+  g <- factor(rep(c("A", "B", "C"), n))
+  res <- audit_quiet(m.test(x, g, plot = FALSE, boot = FALSE))
+  expect_identical(res$value$method, "Welch ANOVA")
+  expect_equal(res$value$global_pvalue, oneway.test(x ~ g)$p.value)
+  expect_equal(audit_quiet(m.test(x, g, return = FALSE, boot = FALSE))$value, oneway.test(x ~ g)$p.value)
+})
