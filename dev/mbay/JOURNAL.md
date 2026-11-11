@@ -7,7 +7,7 @@
 - **D20 calibré** (`agent_72`, VALIDATION §23).
 - **D25.** Oui/non et comptages à plusieurs facteurs entre groupes (`R/sys_bay_discrete_fact.R`) ; `agent_73` (VALIDATION §24).
 
-**Vérifié.** R CMD check sur 9922725 : Status OK. Tests bay ; deux tests qui attendaient le refus des réponses discrètes à plusieurs facteurs sont mis à jour.
+**Vérifié.** R CMD check sur 9922725 et sur b447387 : Status OK. Tests bay ; deux tests qui attendaient le refus des réponses discrètes à plusieurs facteurs sont mis à jour.
 
 **Non fait.** Variances inégales et queues lourdes avec sujets ou covariables ; réponses discrètes avec sujets.
 
