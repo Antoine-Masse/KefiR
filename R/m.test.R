@@ -1639,14 +1639,60 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
     # Cela donne une vue compl\u00e8te \u00e0 l'utilisateur qui peut juger par lui-m\u00eame
     # Note: Le titre "Posthoc - Tests post-hoc..." est affich\u00e9 par .posthoc() lui-m\u00eame
 
+    # Plan split-plot (facteur inter-sujet + facteur intra-sujet) analyse par aov() + Error() :
+    # .posthoc(paired = TRUE) sur les cellules croisees apparierait PAR POSITION des sujets
+    # differents (A.t1 contre B.t3). Les comparaisons passent par emmeans sur
+    # lmer(y ~ termes + (1 | id)), comme la voie modele mixte.
+    split_plot_model <- NULL
+    if (!is_mixed_model && !is_ancova && isTRUE(paired) && !is.null(id) &&
+        is.data.frame(data) && length(id) == 1 && id %in% names(data) && !is.null(formula) &&
+        requireNamespace("lmerTest", quietly = TRUE)) {
+      sp_factors <- setdiff(intersect(all.vars(.drop_error_term(formula)[[3]]), names(data)), id)
+      sp_factors <- sp_factors[vapply(sp_factors, function(f) is.factor(data[[f]]) || is.character(data[[f]]),
+                                      logical(1))]
+      sp_constant <- vapply(sp_factors, function(f) {
+        all(tapply(as.character(data[[f]]), data[[id]],
+                   function(v) length(unique(v[!is.na(v)])) <= 1), na.rm = TRUE)
+      }, logical(1))
+      if (length(sp_factors) > 1 && any(sp_constant) && any(!sp_constant)) {
+        sp_fixed <- attr(terms(.drop_error_term(formula)), "term.labels")
+        sp_fixed <- sp_fixed[!grepl("\\|", sp_fixed)]
+        sp_formula <- stats::as.formula(paste0(deparse1(formula[[2]]), " ~ ",
+                                               paste(sp_fixed, collapse = " + "), " + (1 | ", id, ")"))
+        split_plot_model <- tryCatch(suppressMessages(suppressWarnings(
+          lmerTest::lmer(sp_formula, data = data, REML = TRUE))), error = function(e) NULL)
+      }
+      if (!is.null(split_plot_model)) {
+        sp_anova <- stats::anova(split_plot_model, type = "III")
+        sp_sig <- rownames(sp_anova)[!is.na(sp_anova[["Pr(>F)"]]) & sp_anova[["Pr(>F)"]] <= alpha]
+        k <- .vbse(
+          paste0("Between- and within-subject factors (", paste(names(sp_constant)[sp_constant], collapse = ", "),
+                 " / ", paste(names(sp_constant)[!sp_constant], collapse = ", "), "):\n\t",
+                 "paired tests on crossed cells would pair different subjects.\n\t",
+                 "--> Comparisons by emmeans on lmer(", deparse1(sp_formula), ")."),
+          paste0("Facteurs inter- et intra-sujet (", paste(names(sp_constant)[sp_constant], collapse = ", "),
+                 " / ", paste(names(sp_constant)[!sp_constant], collapse = ", "), ") :\n\t",
+                 "des tests appari\u00e9s sur les cellules crois\u00e9es apparieraient des sujets diff\u00e9rents.\n\t",
+                 "--> Comparaisons par emmeans sur lmer(", deparse1(sp_formula), ")."),
+          verbose = verbose, code = code, k = k, cpt = "on"
+        )
+        is_mixed_model <- TRUE
+      }
+    }
+
     if (is_mixed_model) {
       .dbg("Mixed model detected, routing to .posthoc_mixed_model()",
            "Mod\u00e8le mixte d\u00e9tect\u00e9, routage vers .posthoc_mixed_model()",
            debug = debug)
 
       # Extraire le mod\u00e8le et les effets significatifs
-      mixed_model <- bilan$robust_results$model
-      sig_effects <- bilan$robust_results$significant_effects
+      if (!is.null(split_plot_model)) {
+        mixed_model <- split_plot_model
+        sig_effects <- sp_sig
+      } else {
+        mixed_model <- bilan$robust_results$model
+        sig_effects <- bilan$robust_results$significant_effects
+      }
 
       synth <- .posthoc_mixed_model(
         mixed_model = mixed_model,

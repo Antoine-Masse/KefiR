@@ -136,3 +136,16 @@ test_that("h. mesures repetees : lignes non triees par sujet, post-hocs toujours
   r_vec <- audit_quiet(m.test(ds$y, ds$T, id = ds$id, plot = FALSE, verbose = FALSE))$value
   expect_equal(unname(r_vec$p.value), unname(ref))
 })
+
+test_that("i. split-plot : post-hocs par emmeans, sans apparier des sujets differents", {
+  d <- make_split_plot()
+  res <- audit_quiet(m.test(y ~ G * T + Error(id / T), data = d, plot = FALSE, boot = FALSE))
+  expect_false(any(grepl("pairwise.t.test(paired=TRUE)", res$output, fixed = TRUE)))
+  expect_true(any(grepl("emmeans", res$output, fixed = TRUE)))
+  mm <- lmerTest::lmer(y ~ G * T + (1 | id), data = d)
+  ref <- as.data.frame(summary(pairs(emmeans::emmeans(mm, ~ G:T), adjust = "tukey")))
+  p_ref <- ref$p.value[ref$contrast == "B t1 - B t3"]
+  ligne <- grep("B t1 - B t3 : diff", res$output, value = TRUE)
+  expect_length(ligne, 1)
+  expect_match(ligne, paste0("p = ", .format_pval(p_ref)), fixed = TRUE)
+})
