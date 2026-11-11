@@ -19,12 +19,13 @@
 		fit <- tryCatch(switch(law,
 			binomial = .bay_quiet(stats::glm(fo, data = d, family = stats::binomial())),
 			poisson = .bay_quiet(stats::glm(fo, data = d, family = stats::poisson())),
-			negbin = .bay_quiet(MASS::glm.nb(fo, data = d))), error = function(e) NULL)
+			negbin = .bay_quiet(MASS::glm.nb(fo, data = d)),
+			polr = .bay_quiet(MASS::polr(fo, data = d))), error = function(e) NULL)
 		if (is.null(fit)) return(NA_real_)
 		if (identical(law, "negbin") && (!is.finite(fit$theta) || fit$theta > 1e6)) return(NA_real_)
 		-stats::BIC(fit) / 2
 	}
-	laws <- if (kind == "binary") "binomial" else c("poisson", "negbin")
+	laws <- if (kind == "binary") "binomial" else if (kind == "ordinal") "polr" else c("poisson", "negbin")
 	out <- vapply(laws, function(l) vapply(sp$models, one, numeric(1), law = l), numeric(length(sp$models)))
 	matrix(out, ncol = length(laws), dimnames = list(NULL, laws))
 }
@@ -40,14 +41,20 @@
 	cl <- interaction(factors, sep = " x ", drop = TRUE, lex.order = TRUE)
 	cn <- table(cl)
 	bin <- identical(kind, "binary")
+	ord <- identical(kind, "ordinal")
 	if (bin) {
 		yc <- if (is.factor(y)) droplevels(y) else factor(y)
 		yes <- levels(yc)[2L]
 		y01 <- as.integer(yc == yes)
+		stat <- tapply(y01, cl, mean)
+	} else if (ord) {
+		# Ordered response (D26): the values keep their order only; mean rank of the level per cell.
+		y01 <- if (is.ordered(y)) droplevels(y) else factor(y, levels = sort(unique(y)), ordered = TRUE)
+		stat <- tapply(as.integer(y01), cl, mean)
 	} else {
 		y01 <- round(y)
+		stat <- tapply(y01, cl, mean)
 	}
-	stat <- tapply(y01, cl, mean)
 
 	# Step 2 (title told by m.bay).
 	.bay_tell(story, paste0("Sizes: ", min(cn), if (max(cn) > min(cn)) paste0(" to ", max(cn)), " per cell."),
@@ -60,6 +67,9 @@
 			.bay_tell(story, "A cell is all yes or all no: the logistic fit is at its limit there; read the answer with caution.",
 				"Une case est tout oui ou tout non : l'ajustement logistique y est \u00e0 sa limite ; lire la r\u00e9ponse avec r\u00e9serve.", "decide")
 		}
+	} else if (ord) {
+		.bay_tell(story, paste0(nlevels(y01), " ordered values (", paste(levels(y01), collapse = " < "), "); mean rank per cell: ", paste0(names(stat), " ", f2(stat, "."), collapse = ", "), "."),
+			paste0(nlevels(y01), " valeurs ordonn\u00e9es (", paste(levels(y01), collapse = " < "), ") ; rang moyen par case : ", paste0(names(stat), " ", f2(stat, ","), collapse = ", "), "."))
 	} else {
 		.bay_tell(story, paste0("Mean count per cell: ", paste0(names(stat), " ", f2(stat, "."), collapse = ", "), "."),
 			paste0("Comptage moyen par case : ", paste0(names(stat), " ", f2(stat, ","), collapse = ", "), "."))
@@ -68,12 +78,20 @@
 	.bay_tell(story, "No value is removed.", "Aucune valeur retir\u00e9e.", "decide")
 
 	# Step 3: law.
-	.bay_tell(story, if (bin) "Law of the answers" else "Law of the counts", if (bin) "Loi des r\u00e9ponses" else "Loi des comptages", "step",
-		fun = if (bin) "glm(family = binomial) {stats}" else c("glm(), glm.nb() {stats, MASS}", "glm(), glm.nb() {stats, MASS}"))
+	.bay_tell(story, if (bin) "Law of the answers" else if (ord) "Law of the ordered values" else "Law of the counts",
+		if (bin) "Loi des r\u00e9ponses" else if (ord) "Loi des valeurs ordonn\u00e9es" else "Loi des comptages", "step",
+		fun = if (bin) "glm(family = binomial) {stats}" else if (ord) "polr() {MASS}" else c("glm(), glm.nb() {stats, MASS}", "glm(), glm.nb() {stats, MASS}"))
 	lml <- .bay_df_lml(y01, factors, sp, kind)
 	n_warn <- .bay_cw$n
 	p_nb <- NA_real_
-	if (bin) {
+	if (ord) {
+		lm_m <- lml[, 1L]
+		.bay_step_result(story, "proportional odds (cumulative logits)", "cotes proportionnelles (logits cumul\u00e9s)")
+		.bay_tell(story, "Each model is a proportional-odds regression: only the order of the values counts.",
+			"Chaque mod\u00e8le est une r\u00e9gression \u00e0 cotes proportionnelles : seul compte l'ordre des valeurs.")
+		.bay_tell(story, "proportional odds assumed (the effect of a factor is the same at every threshold), not tested.",
+			"cotes proportionnelles suppos\u00e9es (l'effet d'un facteur est le m\u00eame \u00e0 chaque seuil), non test\u00e9es.", "note")
+	} else if (bin) {
 		lm_m <- lml[, 1L]
 		.bay_step_result(story, "binomial (logistic regression)", "binomiale (r\u00e9gression logistique)")
 		.bay_tell(story, paste0("Each model is a logistic regression of the share of \"", yes, "\"."),
@@ -156,14 +174,15 @@
 
 	# Step 6: size of each probable main effect with two levels, from its own model fit.
 	ratios <- NULL
-	.bay_tell(story, if (bin) "By how much the share changes" else "By how much the counts change",
-		if (bin) "De combien la part change" else "De combien les comptages changent", "step", fun = "glm() {stats}")
+	.bay_tell(story, if (bin) "By how much the share changes" else if (ord) "By how much the values shift" else "By how much the counts change",
+		if (bin) "De combien la part change" else if (ord) "De combien les valeurs se d\u00e9placent" else "De combien les comptages changent", "step",
+		fun = if (ord) "polr() {MASS}" else "glm() {stats}")
 	main2 <- which(lengths(strsplit(terms, ":", fixed = TRUE)) == 1L & eff$p_h1 >= 0.5)
 	main2 <- main2[vapply(terms[main2], function(v) nlevels(factors[[v]]) == 2L, logical(1))]
 	if (length(main2)) {
 		dd <- data.frame(y = y01, factors, check.names = FALSE)
 		fo <- stats::as.formula(paste("y ~", paste0("`", names(factors), "`", collapse = " + ")))
-		fit <- .bay_quiet(if (bin) stats::glm(fo, data = dd, family = stats::binomial()) else if (isTRUE(p_nb >= 0.5)) MASS::glm.nb(fo, data = dd) else stats::glm(fo, data = dd, family = stats::poisson()))
+		fit <- .bay_quiet(if (ord) MASS::polr(fo, data = dd, Hess = TRUE) else if (bin) stats::glm(fo, data = dd, family = stats::binomial()) else if (isTRUE(p_nb >= 0.5)) MASS::glm.nb(fo, data = dd) else stats::glm(fo, data = dd, family = stats::poisson()))
 		co <- summary(fit)$coefficients
 		for (i in main2) {
 			v <- terms[i]
@@ -174,8 +193,8 @@
 			rr <- exp(c(est, est - 1.96 * se, est + 1.96 * se))
 			ratios <- rbind(ratios, data.frame(term = v, group1 = levels(factors[[v]])[1L], group2 = levels(factors[[v]])[2L],
 				ratio = rr[1L], low = rr[2L], high = rr[3L], stringsAsFactors = FALSE))
-			lab_en <- if (bin) "odds ratio" else "rate ratio"
-			lab_fr <- if (bin) "rapport des cotes" else "rapport des moyennes"
+			lab_en <- if (bin) "odds ratio" else if (ord) "cumulative odds ratio" else "rate ratio"
+			lab_fr <- if (bin) "rapport des cotes" else if (ord) "rapport des cotes cumul\u00e9es" else "rapport des moyennes"
 			.bay_tell(story, paste0(v, ": ", lab_en, " ", levels(factors[[v]])[2L], "/", levels(factors[[v]])[1L], " = ", f2(rr[1L], "."), " [", f2(rr[2L], "."), "; ", f2(rr[3L], "."), "], at equal other factors."),
 				paste0(v, " : ", lab_fr, " ", levels(factors[[v]])[2L], "/", levels(factors[[v]])[1L], " = ", f2(rr[1L], ","), " [", f2(rr[2L], ","), " ; ", f2(rr[3L], ","), "], \u00e0 autres facteurs \u00e9gaux."))
 		}
@@ -189,11 +208,11 @@
 	}
 
 	p_any <- 1 - p_null
-	what_en <- if (bin) paste0("the share of \"", yes, "\"") else paste0("the counts of ", resp)
-	what_fr <- if (bin) paste0("la part de \u00ab ", yes, " \u00bb") else paste0("les comptages de ", resp)
+	what_en <- if (bin) paste0("the share of \"", yes, "\"") else if (ord) paste0("the values of ", resp) else paste0("the counts of ", resp)
+	what_fr <- if (bin) paste0("la part de \u00ab ", yes, " \u00bb") else if (ord) paste0("les valeurs de ", resp) else paste0("les comptages de ", resp)
 	verb_en <- if (bin) " differs" else " differ"
 	verb_fr <- if (bin) " diff\u00e8re" else " diff\u00e8rent"
-	no_fr <- if (bin) paste0("Aucune diff\u00e9rence de ", what_fr) else paste0("Aucune diff\u00e9rence des comptages de ", resp)
+	no_fr <- if (bin) paste0("Aucune diff\u00e9rence de ", what_fr) else if (ord) paste0("Aucune diff\u00e9rence des valeurs de ", resp) else paste0("Aucune diff\u00e9rence des comptages de ", resp)
 	hyp <- data.frame(
 		label_en = c(paste0(toupper(substr(what_en, 1L, 1L)), substring(what_en, 2L), verb_en, " according to at least one factor"), paste0("No difference in ", what_en, " according to ", fac_txt)),
 		label_fr = c(paste0(toupper(substr(what_fr, 1L, 1L)), substring(what_fr, 2L), verb_fr, " selon au moins un facteur"), paste0(no_fr, " selon ", fac_txt)),
@@ -201,7 +220,7 @@
 	hyp <- hyp[order(-hyp$posterior), , drop = FALSE]
 	rownames(hyp) <- NULL
 	out <- list(hypotheses = hyp, effects = eff,
-		laws = if (bin) data.frame(law = "binomial", posterior = 1) else data.frame(law = c("poisson", "negbin"), posterior = c(1 - p_nb, p_nb)),
+		laws = if (bin) data.frame(law = "binomial", posterior = 1) else if (ord) data.frame(law = "polr", posterior = 1) else data.frame(law = c("poisson", "negbin"), posterior = c(1 - p_nb, p_nb)),
 		models = data.frame(model = vapply(sp$models, function(m) if (length(m)) paste(terms[m], collapse = " + ") else "(null)", character(1)),
 			log_bf = lb, log_prior = lp, stringsAsFactors = FALSE),
 		questions = list(en = paste0("Does ", what_en, " differ, term by term?"), fr = paste0(what_fr, " diff\u00e8re-t-elle, terme par terme ?")),
@@ -209,7 +228,7 @@
 		cell_stats = data.frame(cell = names(stat), n = as.integer(cn[names(stat)]), value = as.numeric(stat), stringsAsFactors = FALSE),
 		kind = kind, priors = list(model_prior = "HOP(1,1)", effects = "unit information (BIC)"),
 		contradiction = FALSE, heavy = FALSE, detail = isTRUE(detail), prob_effect = p_any,
-		method = if (bin) "Yes/no with several factors: logistic regression, BIC approximation" else "Counts with several factors: Poisson and negative binomial, BIC approximation",
+		method = if (bin) "Yes/no with several factors: logistic regression, BIC approximation" else if (ord) "Ordered response with several factors: proportional odds (MASS::polr), BIC approximation" else "Counts with several factors: Poisson and negative binomial, BIC approximation",
 		plan = "discrete_fact", label = input$label, n = length(y01), notes = get_notes(), call = call_expr)
 	class(out) <- "mbay"
 	out$story <- .bay_story_lines(story)
@@ -229,10 +248,11 @@
 		emit("block", "", "")
 		cs <- obj$cell_stats
 		bin <- identical(obj$kind, "binary")
+		ord <- identical(obj$kind, "ordinal")
 		f2 <- function(v, dc) gsub(".", dc, formatC(v, format = "f", digits = 2), fixed = TRUE)
-		emit("fact", paste0(if (bin) "Observed shares per cell: " else "Mean counts per cell: ",
+		emit("fact", paste0(if (bin) "Observed shares per cell: " else if (ord) "Mean rank per cell: " else "Mean counts per cell: ",
 				paste0(cs$cell, " = ", if (bin) vapply(cs$value, .bay_pct, character(1), dec = ".") else f2(cs$value, "."), collapse = "; "), "."),
-			paste0(if (bin) "Parts observ\u00e9es par case : " else "Comptages moyens par case : ",
+			paste0(if (bin) "Parts observ\u00e9es par case : " else if (ord) "Rang moyen par case : " else "Comptages moyens par case : ",
 				paste0(cs$cell, " = ", if (bin) vapply(cs$value, .bay_pct, character(1), dec = ",") else f2(cs$value, ","), collapse = " ; "), "."))
 	}
 	.bay_bilan_common(obj, narrated, body)

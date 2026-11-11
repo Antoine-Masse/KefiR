@@ -27,3 +27,17 @@ test_that("counts with two factors: Poisson and negative binomial averaged", {
 	expect_gt(r$effects$p_h1[2L], 0.75)
 	expect_true(all(c("ratio", "low", "high") %in% names(r$ratios)))
 })
+
+test_that("ordered response with two factors (D26): polr per model, BIC, HOP", {
+	set.seed(4)
+	d <- expand.grid(rep = 1:20, recette = factor(c("r1", "r2")), sexe = factor(c("F", "H")))
+	d$note <- pmin(5, pmax(1, round(3 + 0.9 * (d$recette == "r2") + stats::rnorm(nrow(d), 0, 1))))
+	r <- m.bay(note ~ recette * sexe, data = d, verbose = FALSE, sensitivity = FALSE)
+	expect_identical(r$plan, "discrete_fact")
+	expect_identical(r$kind, "ordinal")
+	d$o <- factor(d$note, ordered = TRUE)
+	lb <- (-BIC(MASS::polr(o ~ recette, data = d)) + BIC(MASS::polr(o ~ 1, data = d))) / 2
+	expect_equal(r$models$log_bf[r$models$model == "recette"], lb, tolerance = 1e-6)
+	expect_gt(r$effects$p_h1[1L], 0.9)
+	expect_gt(r$ratios$ratio[1L], 1)
+})

@@ -693,3 +693,30 @@ Demandé par la session parente dans l'ordre du PERIMETRE, avec trois points de 
 **Calibration** (`agent_73`, VALIDATION §24). Pas de faux « oui » fort sous H0. P(A) > 0,75 dans 36 % (oui/non) et 32 % (comptages) des jeux, contre 74 % et 69 % pour le test du rapport de vraisemblance.
 
 **Refusés.** Réponses discrètes avec sujets ou covariables ; réponse ordonnée à plusieurs facteurs.
+
+## D26. Réponse ordonnée à plusieurs facteurs entre groupes : DÉCIDÉ ET FAIT (11 novembre)
+
+**Pourquoi maintenant.** m.test traite ces données (notes, échelles) par Scheirer-Ray-Hare, alors que m.bay les refusait. Le oui/non apparié passe après : m.test ne fait ni McNemar ni Cochran (vérifié dans son code).
+
+**Moteur.** Celui de D25 (`R/sys_bay_discrete_fact.R`), avec `MASS::polr` (cotes proportionnelles) pour chaque modèle héréditaire.
+- Vraisemblance marginale par −BIC/2, comme D17 voie 3. A priori HOP, réponse par terme, bilan mené par les termes.
+- Étape 6 : rapport des cotes cumulées pour chaque effet principal probable à deux niveaux, tiré du modèle additif.
+- **Routage.** `response = "ordinal"`, ou détection automatique (échelle bornée, au plus 10 valeurs, règle de D17) appliquée aux cases.
+- Contrôle : le log BF d'un modèle est exactement (−BIC₁ + BIC₀)/2 des `polr` correspondants (`test-bay-discrete-fact.R`).
+
+**Calibration** (`agent_75`, 2 × 2, n = 25, notes de 1 à 5, 200 jeux par scénario ; VALIDATION §26).
+- Sous H0 : P > 0,95 dans 0,5 % des jeux (un sur 200), sous le 0,7 % de D6.
+- Avec un effet de A de 0,5 écart-type latent : P(A) > 0,75 dans 28 % des jeux, contre 64,5 % pour le test du rapport de vraisemblance.
+
+**Non fait.** Cotes proportionnelles non testées ; réponse ordonnée avec sujets ou covariables.
+
+## D27. Sphéricité en mesures répétées : MESURÉE, pas de correction (11 novembre)
+
+**Constat avant mesure.** m.bay prend les conditions comme également corrélées au sein d'un sujet (symétrie composée, `lmBF` avec sujet aléatoire). m.test, lui, fait le test de Mauchly et corrige par Greenhouse-Geisser.
+
+**Mesure** (`agent_74`, 15 sujets × 4 temps, 200 jeux par scénario ; VALIDATION §25). Covariance AR(1), ρ = 0,8, soit ε de Greenhouse-Geisser médian 0,67 : une sphéricité nettement violée.
+- Sous H0, l'ANOVA à mesures répétées non corrigée donne 7 % de p < 0,05 (Greenhouse-Geisser : 5 %).
+- m.bay ne dépasse jamais 0,95 et dépasse 0,75 dans 2 % des jeux, contre 3 % sous symétrie composée.
+- Avec un effet sur le dernier temps, m.bay atteint 47 % à P > 0,75 (19,5 % à P > 0,95), contre 54,5 % pour Greenhouse-Geisser.
+
+**Décision.** Pas de correction : aucun faux « oui » fort sous une sphéricité violée. Le récit calcule ε de Greenhouse-Geisser (un facteur intra-sujet à 3 niveaux ou plus, sujets complets) et le dit à l'étape 3. Sous 0,75, il ajoute que ce cas a été mesuré sans faux « oui » fort. La note « non testé » est retirée.

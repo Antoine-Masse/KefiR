@@ -337,7 +337,7 @@ Légende :
 | Plusieurs facteurs entre groupes, interactions | Couvert | `lmBF`, HOP, D2 ; trois lois moyennées : normale commune, normale par case (D19), Student (D24) | Post-hoc D20 calibré (`agent_72`) ; une interaction réelle n'est détaillée en cases que si A:B ≥ 50 % |
 | ANCOVA, pentes parallèles ou différentes, plusieurs covariables | Couvert | `lmBF`, covariable centrée, D16 | Normale à variance commune seule ; post-hoc à plusieurs facteurs D20 |
 | Apparié, 2 niveaux | Couvert | `ttestBF(paired)`, D15 | Normale seule |
-| Mesures répétées, 1 facteur intra | Couvert | `lmBF(whichRandom)`, D15 | Symétrie composée supposée, non testée ; normale seule |
+| Mesures répétées, 1 facteur intra | Couvert | `lmBF(whichRandom)`, D15 | Symétrie composée supposée ; ε de Greenhouse-Geisser dit, sphéricité violée mesurée sans faux « oui » (D27) ; normale seule |
 | Plan en tranches (inter × intra) | Couvert | `lmBF(whichRandom)`, D15 | Post-hoc D20 ; pas d'écart standardisé pour le facteur inter |
 | Modèle mixte avec répliques par sujet et condition | Couvert | `lmBF`, sujet et sujet × condition aléatoires, D21 | Puissance prudente ; normale seule |
 | Pentes aléatoires | Refusé | — | Stan (rstanarm) seulement |
@@ -349,7 +349,9 @@ Légende :
 | Oui/non, plusieurs facteurs entre groupes | Couvert | `glm` logistique, BIC, HOP, D25 | Puissance prudente ; plus de deux modalités : refusé |
 | Comptages, 1 facteur | Couvert | Poisson et binomiale négative, BIC, D17 voie 2 | Puissance modeste |
 | Comptages, plusieurs facteurs entre groupes | Couvert | Poisson et binomiale négative moyennées, BIC, HOP, D25 | Puissance prudente ; avec sujets ou covariables : refusé |
-| Réponse ordonnée (notation bornée), 1 facteur | Couvert | `polr`, BIC, D17 voie 3 | Cotes proportionnelles non testées ; plusieurs facteurs : refusé |
+| Réponse ordonnée (notation bornée), 1 facteur | Couvert | `polr`, BIC, D17 voie 3 | Cotes proportionnelles non testées |
+| Réponse ordonnée, plusieurs facteurs entre groupes | Couvert | `polr`, BIC, HOP, D26 | Puissance prudente ; avec sujets ou covariables : refusé |
+| Oui/non apparié (McNemar, Cochran) | Refusé | — | Non couvert par `m.test()` non plus |
 | Tests de rangs (Wilcoxon, Kruskal) | Non couvert, raisons D17 | — | Leurs cas sont repris par les voies 3 et par les lois t |
 | Covariable seule (régression) | Refusé | — | Hors `m.test()` |
 | Variances inégales ou queues lourdes avec sujets ou covariables | Non couvert (annoncé dans le récit) | — | À faire (priorité 2) |

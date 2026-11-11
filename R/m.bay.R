@@ -227,7 +227,8 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	# Several factors between groups (D25): counts are recognised the same way, on the cells;
 	# an ordered scale stays continuous there.
 	if (identical(response, "auto") && identical(input$plan, "factorial") && !isTRUE(input$categorical) && is.numeric(input$response)) {
-		route <- if (identical(.bay_int_route(input$response, interaction(input$factors, drop = TRUE)), "counts")) "counts" else "none"
+		rt <- .bay_int_route(input$response, interaction(input$factors, drop = TRUE))
+		route <- if (rt %in% c("counts", "ordinal")) rt else "none"
 	}
 	input$counts_auto <- identical(route, "counts")
 	if (input$counts_auto) input$counts <- TRUE
@@ -289,6 +290,10 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	}
 	if (any(is.infinite(y))) {
 		.exit("y contains infinite values.", "y contient des valeurs infinies.")
+	}
+	if (isTRUE(input$ordinal) && identical(input$plan, "factorial")) {
+		# Ordered response with several factors between groups (D26).
+		return(.bay_m_discrete_fact(input, y, "ordinal", call_expr, function() notes, note, sensitivity, detail, verbose, return, story, posthoc))
 	}
 	if (isTRUE(input$ordinal)) {
 		if (!identical(input$plan, "oneway")) {

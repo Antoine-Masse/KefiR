@@ -958,3 +958,24 @@ n = 8 par groupe, 30 jeux par partie. Résultats : `scripts/resultats/agent_71_*
 | Comptages, effet de A | 33,0 % | 13,0 % | 32,0 % | 13,0 % | 68,5 % |
 
 **Lecture.** Pas de faux « oui » fort sous H0 ; puissance prudente, comme à un facteur (D17), parce que l'information unitaire pénalise chaque terme. Contrôle indépendant : le log BF d'un modèle est exactement (−BIC₁ + BIC₀)/2 du `glm` correspondant (`test-bay-discrete-fact.R`).
+
+## 25. Sphéricité en mesures répétées (D27, `agent_74`), 11 novembre
+
+15 sujets × 4 temps, écart-type 1, 200 jeux par scénario, sans sensibilité. Résultats : `scripts/resultats/agent_74_*.txt`.
+
+| Scénario | ε médian | m.bay P > 0,75 | m.bay P > 0,95 | ANOVA MR non corrigée p < 0,05 | Greenhouse-Geisser p < 0,05 |
+|---|---:|---:|---:|---:|---:|
+| H0, AR(1) ρ = 0,8 | 0,67 | 2,0 % | 0 % | 7,0 % | 5,0 % |
+| H0, symétrie composée (témoin) | 0,84 | 3,0 % | 0 % | 4,0 % | 4,0 % |
+| Effet 0,5 au dernier temps, AR(1) | 0,66 | 47,0 % | 19,5 % | 67,0 % | 54,5 % |
+
+**Lecture.** La sphéricité violée gonfle l'ANOVA non corrigée, pas m.bay. Pas de correction ; ε est dit dans le récit.
+
+## 26. Réponse ordonnée à plusieurs facteurs (D26, `agent_75`), 11 novembre
+
+2 × 2, n = 25 par case, notes de 1 à 5 (normale latente arrondie), 200 jeux par scénario, `response = "ordinal"`. Résultats : `scripts/resultats/agent_75_*.txt`.
+
+| Scénario | Un terme P > 0,75 | Un terme P > 0,95 | P(A) > 0,75 | P(A) > 0,95 | polr, rapport de vraisemblance sur A, p < 0,05 |
+|---|---:|---:|---:|---:|---:|
+| H0 | 2,5 % | 0,5 % | 1,5 % | 0,5 % | 5,5 % |
+| Effet de A, 0,5 | 28,0 % | 12,5 % | 28,0 % | 12,5 % | 64,5 % |

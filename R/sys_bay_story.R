@@ -723,8 +723,28 @@
 			.bay_tell(st, "Random effects: subject, and subject x each combination of factors within subject in the formula (lmBF, whichRandom; Rouder et al. 2012). No random slopes.",
 				"Effets al\u00e9atoires : sujet, et sujet x chaque combinaison de facteurs intra-sujet de la formule (lmBF, whichRandom ; Rouder et al. 2012). Pas de pentes al\u00e9atoires.", "detail")
 		}
-		.bay_tell(st, "conditions assumed equally correlated within a subject (not tested; m.test() checks sphericity).",
-			"conditions suppos\u00e9es \u00e9galement corr\u00e9l\u00e9es au sein d'un sujet (non test\u00e9 ; m.test() contr\u00f4le la sph\u00e9ricit\u00e9).", "note")
+		# Sphericity (audit of b447387, agent_74): the model takes the conditions equally
+		# correlated; with one factor within subject of 3 levels or more and complete subjects,
+		# the Greenhouse-Geisser epsilon says how far the data are from it. Measured: an AR(1)
+		# pattern (epsilon 0.67) gives no strong false "yes" (0 % at P > .95), so no correction.
+		eps <- NA_real_
+		if (length(wi) == 1L && nlevels(fac[[wi]]) >= 3L && !identical(input$plan, "mixed")) {
+			W <- tryCatch(stats::xtabs(y ~ id + fac[[wi]]) / stats::xtabs(~ id + fac[[wi]]), error = function(e) NULL)
+			if (!is.null(W) && !anyNA(W) && all(is.finite(W)) && nrow(W) > ncol(W)) {
+				kk <- ncol(W)
+				Cm <- stats::contr.helmert(kk); Cm <- sweep(Cm, 2L, sqrt(colSums(Cm^2)), "/")
+				S <- stats::cov(unclass(W) %*% Cm)
+				eps <- sum(diag(S))^2 / ((kk - 1) * sum(S^2))
+			}
+		}
+		if (is.na(eps)) {
+			.bay_tell(st, "conditions taken as equally correlated within a subject (compound symmetry).",
+				"conditions prises comme \u00e9galement corr\u00e9l\u00e9es au sein d'un sujet (sym\u00e9trie compos\u00e9e).", "note")
+		} else {
+			e_txt <- function(dc) gsub(".", dc, formatC(eps, format = "f", digits = 2), fixed = TRUE)
+			.bay_tell(st, paste0("Correlations between conditions: Greenhouse-Geisser epsilon ", e_txt("."), if (eps < 0.75) " (far from equal; measured without strong false \"yes\", no correction needed)." else " (close to equal)."),
+				paste0("Corr\u00e9lations entre conditions : epsilon de Greenhouse-Geisser ", e_txt(","), if (eps < 0.75) " (loin d'\u00eatre \u00e9gales ; mesur\u00e9 sans faux \u00ab oui \u00bb fort, pas de correction n\u00e9cessaire)." else " (proches d'\u00eatre \u00e9gales)."))
+		}
 		.bay_tell(st, "Random subject effect: compound symmetry assumed, as in the uncorrected repeated-measures ANOVA (Mauchly's test in m.test()).",
 			"Effet sujet al\u00e9atoire : sym\u00e9trie compos\u00e9e suppos\u00e9e, comme dans l'ANOVA \u00e0 mesures r\u00e9p\u00e9t\u00e9es non corrig\u00e9e (test de Mauchly dans m.test()).", "detail")
 	}

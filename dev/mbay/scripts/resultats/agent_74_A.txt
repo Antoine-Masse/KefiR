@@ -1,0 +1,3 @@
+R version 4.6.1 (2026-06-24 ucrt)
+agent_74 : sphericite, 15 sujets x 4 temps, scenario A, N = 200
+m.bay P(temps)>.75 : 0.470 | >.95 : 0.195 || ANOVA MR non corrigee p<.05 : 0.670 | Greenhouse-Geisser p<.05 : 0.545 || epsilon median 0.66

@@ -1,0 +1,3 @@
+R version 4.6.1 (2026-06-24 ucrt)
+agent_75 : reponse ordonnee a plusieurs facteurs, 2 x 2, n = 25, notes 1-5, scenario A, N = 200
+un terme P>.75 : 0.280 | P>.95 : 0.125 || P(A)>.75 : 0.280 | P(A)>.95 : 0.125 || polr, rapport de vraisemblance sur A p<.05 : 0.645
