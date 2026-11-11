@@ -1,6 +1,6 @@
 # Power compared with cor.test, and calibration under the prior. Output: resultats/sim_power.rds, sim_calib.rds
 source("C:/Users/masse/Desktop/KefiR/KefiR/.claude/worktrees/feat-cor-bay-59ccb0/dev/corbay/scripts/proto.R")
-args <- commandArgs(TRUE); only <- if (length(args) > 1) strsplit(args[2], ",")[[1]] else NULL; sfx <- if (length(args) > 2) args[3] else ""; R <- if (length(args)) as.integer(args[1]) else 300
+args <- commandArgs(TRUE); only <- if (length(args) > 1 && nzchar(args[2]) && args[2] != "all") strsplit(args[2], ",")[[1]] else NULL; sfx <- if (length(args) > 2) args[3] else ""; R <- if (length(args)) as.integer(args[1]) else 300
 bvn <- function(n, rho) { x <- rnorm(n); list(x = x, y = rho * x + sqrt(1 - rho^2) * rnorm(n)) }
 gen <- list(
 	normal = function(n, rho) bvn(n, rho),
@@ -12,6 +12,7 @@ set.seed(11); res <- list()
 for (sc in if (is.null(only)) names(gen) else only) for (rho in c(0.2, 0.3, 0.5)) for (n in c(20, 50, 100)) {
 	for (r in seq_len(R)) {
 		d <- gen[[sc]](n, rho)
+		while (length(unique(d$x)) < 2 || length(unique(d$y)) < 2) d <- gen[[sc]](n, rho)
 		res[[length(res) + 1]] <- data.frame(sc = sc, rho = rho, n = n,
 			pP = post3(lbf_pearson(d$x, d$y))[["plus"]], pK = post3(lbf_kendall(d$x, d$y))[["plus"]], pS = post3(lbf_spearman(d$x, d$y))[["plus"]],
 			cP = cor.test(d$x, d$y)$p.value, cK = suppressWarnings(cor.test(d$x, d$y, method = "kendall")$p.value),

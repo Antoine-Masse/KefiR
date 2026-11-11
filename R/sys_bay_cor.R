@@ -173,6 +173,12 @@
 # Estimate of the link, with its credible interval
 # ---------------------------------------------------------------------------
 
+# Width of the prior for the estimate: stretched beta with alpha = beta = 1/2 (kappa = 2),
+# Jeffreys's choice for estimation, recommended by van Doorn et al. (2018, section 2.2); on
+# Kendall's tau it is uniform. The test keeps kappa (DECISIONS, C8: with kappa = 1/3 the
+# credible interval could exclude the observed coefficient of a strong link).
+.corbay_kappa_est <- function() 2
+
 # Under the hypothesis of a link (both signs, or the sign tested). Pearson and Spearman:
 # draws of rho from BayesFactor; Kendall: the posterior of tau on a grid, then draws.
 .corbay_estimate <- function(method, x, y, kappa, alternative, draws, seed, ci) {
@@ -319,8 +325,11 @@
 	why_fr <- c(far = "valeurs \u00e9loign\u00e9es", influence = "paires influentes", scale = "une \u00e9chelle courte (7 valeurs ou moins)")
 	if (auto) {
 		if (identical(method, "kendall")) {
-			.bay_tell(st, paste0("Seen at step 2: ", paste(why_en[why], collapse = ", "), "; a few values could carry Pearson's answer."),
-				paste0("Vu \u00e0 l'\u00e9tape 2 : ", paste(why_fr[why], collapse = ", "), " ; quelques valeurs pourraient porter la r\u00e9ponse de Pearson."))
+			apart <- any(c("far", "influence") %in% why)
+			.bay_tell(st, paste0("Seen at step 2: ", paste(why_en[why], collapse = ", "), "; ",
+					if (apart) "a few pairs could carry Pearson's answer." else "Pearson assumes a continuous measure."),
+				paste0("Vu \u00e0 l'\u00e9tape 2 : ", paste(why_fr[why], collapse = ", "), " ; ",
+					if (apart) "quelques paires pourraient porter la r\u00e9ponse de Pearson." else "Pearson suppose une mesure continue."))
 			.bay_tell(st, "Change of strategy: Kendall's tau, on the ranks, in place of Pearson's correlation.",
 				"Changement de strat\u00e9gie : tau de Kendall, sur les rangs, \u00e0 la place de la corr\u00e9lation de Pearson.", "decide")
 		} else {
@@ -438,8 +447,8 @@
 	pc <- format(round(100 * est$ci), trim = TRUE)
 	.bay_tell(st, paste0("[; ] = ", pc, " % credible interval (", pc, " % chances to find ", mw$par, " in it)."),
 		paste0("[ ; ] = intervalle de cr\u00e9dibilit\u00e9 \u00e0 ", pc, " % (", pc, " % de chances d'y trouver ", mw$par, ")."), "note")
-	.bay_tell(st, "the estimate is drawn towards 0 by the prior, the more so with few pairs.",
-		"l'estimation est ramen\u00e9e vers 0 par l'a priori, d'autant plus que les paires sont peu nombreuses.", "note")
+	.bay_tell(st, "estimate under Jeffreys's prior for estimation (stretched beta 1/2), which hardly pulls it towards 0; the test keeps its own prior.",
+		"estimation sous l'a priori de Jeffreys pour l'estimation (b\u00eata \u00e9tir\u00e9e 1/2), qui la tire peu vers 0 ; le test garde son propre a priori.", "note")
 }
 
 # ---------------------------------------------------------------------------
@@ -584,6 +593,8 @@
 		say(paste0(if (obj$method == "spearman") "For Spearman: ranks, then " else "", "correlationBF() {BayesFactor}, bivariate normal model, Jeffreys's test with a stretched beta prior (Ly et al. 2016); kappa = ", kt$en, "."),
 			paste0(if (obj$method == "spearman") "Pour Spearman : rangs, puis " else "", "correlationBF() {BayesFactor}, mod\u00e8le normal bivari\u00e9, test de Jeffreys avec a priori b\u00eata \u00e9tir\u00e9 (Ly et al. 2016) ; kappa = ", kt$fr, "."))
 	}
+	say("Estimate: under the hypothesis of a link, with Jeffreys's prior for estimation, stretched beta 1/2 (kappa = 2; van Doorn et al. 2018, section 2.2); highest density interval, bayestestR::hdi.",
+		"Estimation : sous l'hypoth\u00e8se d'un lien, avec l'a priori de Jeffreys pour l'estimation, b\u00eata \u00e9tir\u00e9e 1/2 (kappa = 2 ; van Doorn et al. 2018, section 2.2) ; intervalle de plus haute densit\u00e9, bayestestR::hdi.")
 	if (!is.null(obj$sensitivity)) {
 		g <- obj$sensitivity$grid
 		say(paste0("Sensitivity grid (probability of the leading hypothesis): kappa ", paste(rownames(g), collapse = ", "), " by odds 1:2, 1:1, 2:1: ",

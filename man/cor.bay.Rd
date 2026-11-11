@@ -66,8 +66,9 @@ A list of class \code{corbay}:
 \item{prob_link}{Posterior probability of a link (of the sign tested). Not a p-value.}
 \item{bf}{\code{log_bf10}, \code{log_bf_plus}, \code{log_bf_minus} (log Bayes factors against no link)
 and \code{error_pct}.}
-\item{estimate}{Under the hypothesis of a link: \code{param} (\code{rho} or \code{tau}), \code{median},
-\code{lo}, \code{hi}, \code{ci}.}
+\item{estimate}{Under the hypothesis of a link, with Jeffreys's prior for estimation
+(stretched beta 1/2, recommended by van Doorn et al. 2018), which hardly pulls the
+estimate towards 0: \code{param} (\code{rho} or \code{tau}), \code{median}, \code{lo}, \code{hi}, \code{ci}.}
 \item{observed}{\code{r}, \code{tau}, \code{rho_s}: Pearson, Kendall and Spearman coefficients.}
 \item{method, auto, why}{The method, whether the rule chose it, and why.}
 \item{other}{The cross-check by the other method (\code{method = "auto"} only).}

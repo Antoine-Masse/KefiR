@@ -62,8 +62,9 @@
 #'     \item{prob_link}{Posterior probability of a link (of the sign tested). Not a p-value.}
 #'     \item{bf}{`log_bf10`, `log_bf_plus`, `log_bf_minus` (log Bayes factors against no link)
 #'       and `error_pct`.}
-#'     \item{estimate}{Under the hypothesis of a link: `param` (`rho` or `tau`), `median`,
-#'       `lo`, `hi`, `ci`.}
+#'     \item{estimate}{Under the hypothesis of a link, with Jeffreys's prior for estimation
+#'       (stretched beta 1/2, recommended by van Doorn et al. 2018), which hardly pulls the
+#'       estimate towards 0: `param` (`rho` or `tau`), `median`, `lo`, `hi`, `ci`.}
 #'     \item{observed}{`r`, `tau`, `rho_s`: Pearson, Kendall and Spearman coefficients.}
 #'     \item{method, auto, why}{The method, whether the rule chose it, and why.}
 #'     \item{other}{The cross-check by the other method (`method = "auto"` only).}
@@ -193,7 +194,8 @@ cor.bay <- function(x, y = NULL, data = NULL, method = c("auto", "pearson", "ken
 		}
 	}
 	sens <- if (isTRUE(sensitivity)) .corbay_sensitivity(meth, xv, yv, kappa, alternative, prior_h1, lead, xn, yn, lbf) else NULL
-	est <- .corbay_estimate(meth, xv, yv, kappa, alternative, as.integer(draws), seed, conf.level)
+	# Estimation under Jeffreys's estimation prior, stretched beta 1/2 (DECISIONS, C8).
+	est <- .corbay_estimate(meth, xv, yv, .corbay_kappa_est(), alternative, as.integer(draws), seed, conf.level)
 	observed <- c(r = stats::cor(xv, yv), tau = suppressWarnings(stats::cor(xv, yv, method = "kendall")),
 		rho_s = suppressWarnings(stats::cor(xv, yv, method = "spearman")))
 	if (alternative != "two.sided" && isTRUE(sign(observed[["r"]]) == (if (alternative == "greater") -1 else 1))) {
@@ -230,7 +232,8 @@ print.corbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 .corbay_input <- function(x, y, data, sx, sy, env) {
 	nm_of <- function(s, def) {
 		d <- tryCatch(deparse1(s), error = function(e) def)
-		if (length(d) != 1L || nchar(d) > 30L) def else sub("^.*[$]", "", d)
+		# A plain name (or data$name) only; an expression such as c(1, 2, 3) gives "x" or "y".
+		if (length(d) != 1L || nchar(d) > 40L || !grepl("^[A-Za-z.][A-Za-z0-9._]*([$][A-Za-z.][A-Za-z0-9._]*)?$", d)) def else sub("^.*[$]", "", d)
 	}
 	col <- function(v, what) {
 		if (is.null(data)) return(NULL)

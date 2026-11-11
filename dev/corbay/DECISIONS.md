@@ -62,11 +62,12 @@ Pourquoi Kendall plutôt que Spearman comme voie robuste : Kendall a un test bay
 - Moins de 10 paires : une décision le dit à l'étape 2 (« la réponse s'appuiera sur le point de départ plus que sur les données ») ; les paires influentes ne sont pas cherchées sous 20 paires (C3). Kendall reste permis : sous H0, l'approximation normale est donnée suffisante dès n = 10 ([vanDoorn2018], §2.4) ; mesuré à n = 10 en VALIDATION §2.
 - Pas de borne haute : `cor(method = "kendall")` est en n² ; 2000 paires prennent 3 s.
 
-## C8. Estimation : DÉCIDÉ
+## C8. Estimation : DÉCIDÉ, a priori d'estimation CHANGÉ après mesure (11 novembre)
 
 Sous l'hypothèse d'un lien (du signe testé en unilatéral), comme l'écart de m.bay : médiane a posteriori et intervalle HDI à `conf.level` (`bayestestR::hdi`).
+- **A priori d'estimation** : bêta étirée alpha = beta = 1/2 (kappa = 2), le choix de Jeffreys pour l'estimation, que [vanDoorn2018] (§2.2) recommande « quand l'objet est l'estimation plutôt que le test » ; sur tau, il est uniforme. **Le test garde kappa = 1/3** (C2). Raison mesurée : avec kappa = 1/3 aussi pour l'estimation, un lien fort était trop ramené vers 0. Exemple : notes 1 à 5, n = 40, tau-b observé 0,79, r = 0,89. Avec kappa = 1/3, tau estimé 0,59 [0,40 ; 0,77] : l'intervalle excluait la valeur observée. Avec kappa = 2, 0,75 [0,54 ; 0,98]. Sur un lien modéré, l'écart est petit : r = 0,53, n = 30, Pearson 0,45 [0,19 ; 0,72] avec kappa = 1/3, 0,51 [0,23 ; 0,75] avec kappa = 2. Prix : l'estimation et le test ne partent pas du même a priori ; c'est dit en note à l'étape 6 et dans le détail.
 - Pearson et Spearman : 10 000 tirages de `correlationBF(posterior = TRUE)` (Metropolis-Hastings à proposition indépendante de BayesFactor), graine propre à l'appel (`.bay_with_seed`), état aléatoire global intact.
-- Kendall : densité a posteriori de tau sur une grille de 4001 points autour du sommet (éq. 11 × éq. 9), puis 10 000 tirages pour `hdi`.
+- Kendall : densité a posteriori de tau sur une grille de 4001 points autour du sommet (éq. 11 × éq. 9), puis 10 000 tirages pour `hdi`. L'écart-type de T* est pris égal à 1 ; il est plus petit quand |tau| est grand (éq. 14), donc l'intervalle de Kendall est un peu trop large pour un lien fort : prudent, comme l'article le dit de son test.
 - Quand « aucun lien » est en tête, l'estimation est dite « si un lien existe ».
 - Pas de moyenne entre hypothèses : P(aucun lien) est donnée à part, comme dans m.bay.
 

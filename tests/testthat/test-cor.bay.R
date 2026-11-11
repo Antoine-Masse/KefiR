@@ -169,3 +169,13 @@ test_that("Kendall avec ex-aequo : T* = z de cor.test (variance corrigee des ex-
 	x <- rnorm(25); y <- rnorm(25)
 	expect_equal(.corbay_tstar(x, y)[["ts"]], unname(cor.test(x, y, method = "kendall", exact = FALSE)$statistic), tolerance = 1e-10)
 })
+
+test_that("noms : une expression devient x ou y ; estimation proche de l'observe sur un lien fort", {
+	r <- cor.bay(c(1.2, 2.3, 2.9, 4.1, 5.5, 6.0), c(3.1, 3.0, 4.2, 4.0, 5.9, 6.3), verbose = FALSE, sensitivity = FALSE, draws = 1000)
+	expect_identical(r$label, "x, y")
+	set.seed(2)
+	a <- sample(1:5, 40, TRUE); b <- pmin(5, pmax(1, a + sample(-1:1, 40, TRUE)))
+	r2 <- cor.bay(a, b, verbose = FALSE, sensitivity = FALSE, draws = 2000)
+	expect_identical(r2$method, "kendall")
+	expect_true(r2$estimate$lo <= r2$observed[["tau"]] && r2$observed[["tau"]] <= r2$estimate$hi)
+})
