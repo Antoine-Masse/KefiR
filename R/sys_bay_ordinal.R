@@ -126,7 +126,11 @@
 	g <- droplevels(as.factor(g))
 	vals <- sort(unique(y))
 	yo <- factor(y, levels = vals, ordered = TRUE)
-	if (auto) {
+	if (!is.null(input$ordered_levels)) {
+		lv <- input$ordered_levels
+		.bay_tell(story, paste0("Ordered response (ordered factor): ordinal model, only the order counts; ranks ", paste0(seq_along(lv), " = ", lv, collapse = ", "), "."),
+			paste0("R\u00e9ponse ordonn\u00e9e (facteur ordonn\u00e9) : mod\u00e8le ordinal, seul compte l'ordre ; rangs ", paste0(seq_along(lv), " = ", lv, collapse = ", "), "."), "decide")
+	} else if (auto) {
 		.bay_tell(story, paste0("Change of strategy: bounded rating scale (", length(vals), " values, from ", min(vals), " to ", max(vals), "): ordinal model instead of the continuous laws."),
 			paste0("Changement de strat\u00e9gie : \u00e9chelle de notation born\u00e9e (", length(vals), " valeurs, de ", min(vals), " \u00e0 ", max(vals), ") : mod\u00e8le ordinal au lieu des lois continues."), "decide")
 		.bay_tell(story, "Ordinal route: whole numbers from 0, at most 10 values, maximum at a usual scale top (4, 5, 6, 7, 9, 10, 20, 100); response = \"continuous\" or \"counts\" forces another route.",
@@ -167,7 +171,7 @@
 	inv_en <- if (lb < 0) paste0(", i.e. ", .bay_bf_txt(-lb, "."), " in favour of no difference") else ""
 	inv_fr <- if (lb < 0) paste0(", soit ", .bay_bf_txt(-lb, ","), " en faveur de l'absence de diff\u00e9rence") else ""
 	.bay_tell(story, paste0("Bayes factor: ", .bay_bf_txt(lb, "."), inv_en, "."), paste0("Facteur de Bayes : ", .bay_bf_txt(lb, ","), inv_fr, "."))
-	.bay_tell(story, "Precision: closed form, without draws.", "Pr\u00e9cision : forme close, sans tirage.")
+	.bay_tell(story, "Precision: exact computation, without draws.", "Pr\u00e9cision : calcul exact, sans tirage.")
 	sens <- NULL
 	if (isTRUE(sensitivity)) {
 		phs <- c(1 / 3, 1 / 2, 2 / 3)

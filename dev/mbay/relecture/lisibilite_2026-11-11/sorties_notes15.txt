@@ -1,0 +1,104 @@
+############ PLAN : notes15 ############
+
+== Donnees (head) ==
+  recette note
+1      R1    2
+2      R1    4
+3      R1    2
+4      R1    2
+5      R1    2
+6      R1    2
+n = 45 
+
+============ m.test ============
+m.test(note ~ recette, data = d) 
+
+1) Plus de deux groupes.
+2) ASSOMPTION 1/3 : Contrôle de l'indépendance - vérifiez que les observations entre les groupes sont indépendantes.
+	Vérifiez que :
+	  • Pas de mesures répétées
+	  • Pas d'effet cluster
+	  • Pas d'effets report [influence sur l'ordre des mesures]
+
+[m.test : ERREUR m.test : ℹ In argument: `is.outlier = is_outlier(values)`.
+Caused by error in `quantile.default()`:
+! 'type' doit être 1 ou 3 pour les facteurs ordonnés - 0.1 s]
+
+============ m.bay ============
+m.bay(note ~ recette, data = d) 
+
+1) Plan reconnu : un facteur, recette, à 3 groupes (R1, R2, R3) ; N = 45.
+	==> Réponse catégorielle, 5 modalités : 1, 2, 3, 4, 5.
+	--> Une question : les proportions diffèrent-elles selon recette ?
+	    (pendant du test du khi-deux)
+2) Contrôles des données - calcul exact, sans effectif minimum.
+	==> R1 : 0 5, 1 4, 5 3, 9 2, 0 1 (sur 15).
+	==> R2 : 1 5, 6 4, 3 3, 3 2, 2 1 (sur 15).
+	==> R3 : 7 5, 4 4, 3 3, 1 2, 0 1 (sur 15).
+	==> 3 cases vides : sans problème, aucun effectif minimum n'est demandé.
+	Note : les petits effectifs ne faussent pas la réponse, ils la rendent
+	       moins tranchée (contrairement au khi-deux).
+3) Loi des données - multinomiale.
+	==> Chaque groupe a ses propres proportions des 5 modalités.
+	==> Aucune différence : les mêmes proportions dans tous les groupes.
+	Note : pas de forme du bruit à comparer avec des effectifs.
+4) Point de départ (a priori) - 50,0 % de chances d'une différence.
+	==> Dans chaque groupe, toutes les proportions sont également possibles
+	    d'avance.
+	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
+	       fait varier.
+5) Solidité de la réponse [contingencyTableBF() {BayesFactor}] - facteur de
+   Bayes 399, l'ordre ne change pas.
+	==> Facteur de Bayes : 399.
+	==> Précision : calcul exact, sans tirage.
+	==> Sensibilité : la réponse en tête va de 93,8 % à 99,9 %.
+	--> La réponse ne change pas de côté.
+	Note : le facteur de Bayes dit combien de fois les effectifs sont plus
+	       probables avec une différence que sans.
+	Note : on fait varier l'étalement attendu des proportions et les chances
+	       de départ (1 contre 2 à 2 contre 1).
+6) Quels groupes diffèrent, et de combien [Dirichlet-multinomiale {KefiR}, hdi()
+   {bayestestR}] - R1 < R2 < R3 en tête (68,2 %).
+	==> Si une différence existe, regroupements en tête : R1 < R2 < R3
+	    (68,2 %) ; R1 < R2 = R3 (19,1 %) ; R1 = R2 < R3 (12,3 %).
+	==> R1/R2 : différents à 87,1 % ; R2 - R1 = 43,9 points [19,2 ; 65,9].
+	==> R1/R3 : différents à 98,9 % ; R3 - R1 = 55,3 points [33,0 ; 75,8].
+	==> R2/R3 : différents à 80,3 % ; R3 - R2 = 38,6 points [16,5 ; 59,1].
+	Note : écart total des proportions, en points ; [ ; ] = intervalle de
+	       crédibilité à 95 %.
+	Note : toutes les paires sont jugées ensemble, sans correction à la
+	       Tukey, et ne peuvent pas se contredire.
+
+7) Bilan - Les proportions de note diffèrent selon recette : 99,7 % (soutien
+   très fort).
+	==> Verdict : une différence existe très probablement.
+	==> Probabilité de chaque hypothèse :
+	    1. Les proportions de note diffèrent selon recette : 99,7 % (soutien
+	       très fort)
+	    2. Les proportions de note ne diffèrent pas selon recette : 0,3 %
+	==> Selon le point de départ : 93,8 % à 99,9 % ; l'ordre ne change pas.
+	Note : les données sont 399 fois plus probables sous l'hypothèse 1 que
+	       sous la 2 (facteur de Bayes ; 1 à 3 faible, 3 à 20 modéré, 20 à
+	       150 fort, au-delà très fort).
+
+	==> Différents : R1/R2, R2/R3 (modéré) ; R1/R3 (fort).
+	==> Si une différence existe, regroupement le plus probable :
+	    R1 < R2 < R3 (68,2 %).
+	Note : différents à partir de 75 % de probabilité, semblables jusqu'à
+	       25 %, sinon non tranchés ; écarts chiffrés à l'étape 6.
+
+	==> R1 : 0 5 (< 0,1 %), 1 4 (6,7 %), 5 3 (33,3 %), 9 2 (60,0 %), 0 1
+	    (< 0,1 %), sur 15.
+	==> R2 : 1 5 (6,7 %), 6 4 (40,0 %), 3 3 (20,0 %), 3 2 (20,0 %), 2 1
+	    (13,3 %), sur 15.
+	==> R3 : 7 5 (46,7 %), 4 4 (26,7 %), 3 3 (20,0 %), 1 2 (6,7 %), 0 1
+	    (< 0,1 %), sur 15.
+	==> Écart le plus marqué : 2, 6,7 % en R3 contre 60,0 % en R1.
+	Note : pour un compte rendu : « Les proportions de note diffèrent selon
+	       recette (probabilité a posteriori 99,7 %), facteur de Bayes 399
+	       (m.bay {KefiR}, Gunel et Dickey 1974). »
+	Note : probabilités d'hypothèses, pas des p-values ; ni l'importance, ni
+	       la cause d'une différence ; la méthode avec print(resultat,
+	       detail = TRUE).
+
+[m.bay : OK - 0.5 s]

@@ -57,9 +57,9 @@
 	k <- if (!is.null(obj$story$k)) obj$story$k + 1L else 7L
 	# Undecided: the title does not assert the leading hypothesis (relecture apres, point 1).
 	undecided <- li$open || li$sup$level <= 1L || h$posterior[1L] < 0.6
-	lead_en <- if (undecided) paste0("undecided (", h$label_en[1L], ": ", .bay_pct(h$posterior[1L], "."), ")") else
+	lead_en <- if (undecided) paste0("not settled (", h$label_en[1L], ": ", .bay_pct(h$posterior[1L], "."), ")") else
 		paste0(h$label_en[1L], ": ", .bay_pct(h$posterior[1L], "."), " (", li$sup$en, ")")
-	lead_fr <- if (undecided) paste0("ind\u00e9cis (", h$label_fr[1L], " : ", .bay_pct(h$posterior[1L], ","), ")") else
+	lead_fr <- if (undecided) paste0("non tranch\u00e9 (", h$label_fr[1L], " : ", .bay_pct(h$posterior[1L], ","), ")") else
 		paste0(h$label_fr[1L], " : ", .bay_pct(h$posterior[1L], ","), " (", li$sup$fr, ")")
 	# Several terms with at least one "yes" (audit of 9c44239, point 1): the title, the verdict
 	# and the report sentence lead with the answers per term, the global "at least one
@@ -96,9 +96,11 @@
 	v <- .bay_verdict(obj)
 	first <- function(x) sub("^([^.]*\\.).*$", "\\1", x)
 	if (term_lead) {
-		yes_t <- e$term[!ta$open & ta$yes]
-		emit("fact", paste0("Verdict: a difference according to ", paste(yes_t, collapse = ", "), "; the other terms are below."),
-			paste0("Verdict : une diff\u00e9rence selon ", paste(yes_t, collapse = ", "), " ; les autres termes sont plus bas."))
+		yes_s <- !ta$open & ta$yes
+		rest_en <- if (any(!yes_s)) paste0("; ", paste0(e$term[!yes_s], " ", ta$short_en[!yes_s], collapse = ", ")) else ""
+		rest_fr <- if (any(!yes_s)) paste0(" ; ", paste0(e$term[!yes_s], " ", ta$short_fr[!yes_s], collapse = ", ")) else ""
+		emit("fact", paste0("Verdict: a difference according to ", paste(e$term[yes_s], collapse = ", "), rest_en, "."),
+			paste0("Verdict : une diff\u00e9rence selon ", paste(e$term[yes_s], collapse = ", "), rest_fr, "."))
 	} else {
 		emit("fact", first(v$en), first(v$fr))
 	}

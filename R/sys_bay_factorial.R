@@ -416,11 +416,16 @@
 		if ((isTRUE(any(obj$overlap$poor)) || (isTRUE(obj$het_cells) && yes)) && s$level > 2L) s <- .bay_support(0.7)
 		against <- !is.na(e$log_bf[i]) && ((e$log_bf[i] >= 0) != yes)
 		open <- s$level == 1L || against || (!is.null(sens) && identical(sens$verdict_terms[i], "changes"))
+		# One rule with the pairs (audit of c8e8976): "yes" from 75 %, "no" up to 25 %, "rather"
+		# in between.
+		mid <- e$p_h1[i] < 0.75 && e$p_h1[i] > 0.25
+		w_en <- if (yes) (if (mid) "rather yes" else "yes") else (if (mid) "rather no" else "no")
+		w_fr <- if (yes) (if (mid) "plut\u00f4t oui" else "oui") else (if (mid) "plut\u00f4t non" else "non")
 		data.frame(open = open, yes = yes,
-			short_en = if (open) "not settled" else if (yes) "yes" else "no",
-			short_fr = if (open) "non tranch\u00e9" else if (yes) "oui" else "non",
-			long_en = if (open) "not settled" else paste0(if (yes) "yes, " else "no, ", s$en),
-			long_fr = if (open) "non tranch\u00e9" else paste0(if (yes) "oui, " else "non, ", s$fr),
+			short_en = if (open) "not settled" else w_en,
+			short_fr = if (open) "non tranch\u00e9" else w_fr,
+			long_en = if (open) "not settled" else paste0(w_en, ", ", s$en),
+			long_fr = if (open) "non tranch\u00e9" else paste0(w_fr, ", ", s$fr),
 			stringsAsFactors = FALSE)
 	})
 	do.call(rbind, out)

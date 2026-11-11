@@ -1,0 +1,180 @@
+############ PLAN : f2x2int ############
+
+== Donnees (head) ==
+  rep engrais lumiere    y
+1   1    sans  faible  9.4
+2   2    sans  faible 11.1
+3   3    sans  faible 11.2
+4   4    sans  faible  9.4
+5   5    sans  faible 11.9
+6   6    sans  faible 10.6
+n = 32 
+
+============ m.test ============
+m.test(y ~ engrais * lumiere, data = d) 
+
+1) Type de modèle détecté : ANOVA (facteurs catégoriques uniquement).
+2) ASSOMPTION DE BASE : Indépendance des observations (vérification de plan).
+	C'est une assomption de PLAN qui ne peut pas être testée statistiquement.
+	Vérifiez que :
+	  • Pas de mesures répétées (chaque observation d'un sujet différent)
+	  • Pas d'effets cluster (observations non groupées/emboîtées)
+	  • Pas d'effets report (ordre des mesures n'influence pas les résultats)
+3) Ajustement du modèle ANOVA [aov()].
+4) DIAGNOSTIC : Influence sur les résidus du modèle [cooks.distance() {stats}]
+	• Distance de Cook : mesure combinée (leverage × résidu²)
+	    Seuil : 4/n = 0.125 (critique si > 1)
+	    ==> 6.2% observations influençant le modèle (max = 0.205).
+	• DFBETAS [dfbetas()] : 18.8% affectant coefficients individuels (seuil : 2/√n).
+	--> Interpréter le modèle avec précaution.
+5) ASSOMPTION 2/3 : Contrôle de la normalité des résidus du modèle ANOVA.
+	Shapiro-Wilk [shapiro.test()]
+	==> Les résidus sont normaux (p-value : 0.23).
+6) ASSOMPTION 3/3 : Contrôle ACADÉMIQUE de l'homogénéité de la variance des groupes.
+	Test de Bartlett [bartlett.test()] - Variances homogènes (p = 0.33).
+7) ANOVA Sommes de Carrés Type I [anova() {stats}]
+	Raison : Plan ANOVA 2-way équilibré: Sommes des Carrés Type I (indépendant de l'ordre pour plans équilibrés)
+
+Analysis of Variance Table
+
+Response: y
+                Df Sum Sq Mean Sq F value    Pr(>F)    
+engrais          1 35.280  35.280  16.899 0.0003119 ***
+lumiere          1 25.920  25.920  12.416 0.0014826 ** 
+engrais:lumiere  1 58.320  58.320  27.935 1.272e-05 ***
+Residuals       28 58.455   2.088                      
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+	Effet(s) significatif(s) détecté(s) (α = 0.05) : engrais, lumiere, engrais:lumiere
+
+8) Posthoc - Tests post-hoc sur groupes normaux.
+	a) Posthoc - Analyse des différences de moyennes par bootstrap [pairwise.boot() de {KefiR}].
+	b) Posthoc - Test de Student [pairwise.t.test(pool.sd=TRUE)].
+	c) Posthoc - Test conservateur de Scheffé [scheffe.test() of {agricolae}].
+	d) Posthoc - Test conservateur de Tukey [HSD.test() of {agricolae}].
+	e) Posthoc - Test puissant de Newman-Keuls [SNK.test() of {agricolae}].
+	f) Posthoc - Test puissant de Waller-Duncan [waller.test() of {agricolae}].
+
+m.test() - version 02 bêta 2026 - envoyer ce bilan à antoine.masse@u-bordeaux.fr en cas d'anomalie.
+
+[m.test : OK - 3.4 s]
+
+============ m.bay ============
+m.bay(y ~ engrais * lumiere, data = d) 
+
+1) Plan reconnu : 2 facteurs croisés, engrais (2 niveaux), lumiere (2 niveaux) ;
+   4 cases, N = 32.
+	==> Termes : engrais, lumiere, engrais:lumiere. 5 combinaisons de termes
+	    sont possibles (une interaction n'entre qu'avec ses facteurs :
+	    hérédité).
+	--> Une réponse par terme, obtenue en pesant ensemble ces 5
+	    combinaisons.
+2) Contrôles des données [quantile() {stats}] - rien à retirer.
+	==> Effectifs : 8 par case (N = 32).
+	==> Ex-aequo : 19 % des valeurs répètent une valeur déjà vue.
+	==> Valeurs éloignées de leur case : 1 au-delà de 1,5 écart
+	    interquartile, 0 au-delà de 3 (sur 32).
+	--> Aucune valeur retirée.
+3) Forme du bruit - normale (variance commune ou par case) et Student,
+   moyennées.
+	==> Variances par case : non tranchées (inégales à 31,1 %) ;
+	    écarts-types de 0,96 à 1,8.
+	--> Les deux sont gardées : chaque réponse pèse la variance commune et
+	    une variance par case selon leur probabilité.
+	==> Queues : normales probables (loi de Student à 20,3 %) ; elle est
+	    moyennée elle aussi avec les lois normales.
+	--> Aucune valeur éloignée ne met d'emblée la loi normale en doute.
+4) Point de départ (a priori) - aucune différence du tout : 33,3 %.
+	==> Chance de chaque terme d'avance : engrais 50,0 %, lumiere 50,0 %,
+	    engrais:lumiere 16,7 %.
+	==> Taille attendue r = 0,5 par terme.
+	Note : ces chances ne s'additionnent pas ; plus il y a de termes, moins
+	       chacun est probable, ce qui protège des fausses interactions.
+	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
+	       fait varier.
+5) Solidité de la réponse [lmBF() {BayesFactor}] - aucun terme ne change de
+   côté.
+	==> 5 modèles comparés (combinaisons de termes).
+	==> Précision du calcul : < 0,1 point sur les probabilités, négligeable.
+	--> Aucun terme ne change de côté.
+	Note : r va de 0,25 à 1, avec trois lois sur les modèles.
+6) Quels niveaux diffèrent, et de combien [lmBF(), posterior() {BayesFactor},
+   hdi() {bayestestR}] - cases engrais x lumiere :
+   sans x forte = avec x faible = sans x faible < avec x forte.
+	--> engrais:lumiere probable (95,1 %) : les écarts d'un facteur
+	    dépendent de l'autre, donc les cases sont comparées.
+	--> Écarts tirés du même mélange de lois que la réponse (loi de Student
+	    à 20,3 %), pas de la seule loi normale.
+	==> Regroupement en tête :
+	    sans x forte = avec x faible = sans x faible < avec x forte
+	    (73,6 %).
+	==> Si une différence existe, regroupements en tête :
+	    sans x forte = avec x faible = sans x faible < avec x forte
+	    (73,6 %) ;
+	    sans x forte = avec x faible < sans x faible < avec x forte
+	    (11,0 %) ;
+	    sans x forte < avec x faible = sans x faible < avec x forte (7,5 %).
+	==> sans x faible/sans x forte : différents à 21,0 % ; sans x forte -
+	    sans x faible = -0,9 [-2,3 ; 0,5], soit -0,61 écart-type.
+	==> sans x faible/avec x faible : différents à 18,8 % ; avec x faible -
+	    sans x faible = -0,6 [-2,0 ; 0,9], soit -0,39 écart-type.
+	==> sans x faible/avec x forte : différents à > 99,9 % ; avec x forte -
+	    sans x faible = 3,5 [2,1 ; 5,2], soit 2,46 écart-type.
+	==> sans x forte/avec x faible : différents à 15,3 % ; avec x faible -
+	    sans x forte = 0,3 [-1,1 ; 1,7], soit 0,22 écart-type.
+	==> sans x forte/avec x forte : différents à > 99,9 % ; avec x forte -
+	    sans x forte = 4,4 [2,8 ; 6,0], soit 3,09 écart-type.
+	==> avec x faible/avec x forte : différents à > 99,9 % ; avec x forte -
+	    avec x faible = 4,1 [2,6 ; 5,7], soit 2,86 écart-type.
+	Note : [ ; ] = intervalle de crédibilité à 95 % (95 % de chances d'y
+	       trouver l'écart).
+	Note : l'écart estimé est ramené vers 0 par l'a priori, surtout quand
+	       les groupes sont petits.
+
+7) Bilan - engrais oui (96,2 %), lumiere oui (96,3 %), engrais:lumiere oui
+   (95,1 %).
+	==> Verdict : une différence selon engrais, lumiere, engrais:lumiere ;
+	    les autres termes sont plus bas.
+	==> Probabilité de chaque hypothèse :
+	    1. y diffère selon au moins un facteur : 97,0 % (soutien modéré)
+	    2. Aucune différence de y selon engrais, lumiere : 3,0 %
+	==> Selon le point de départ : 92,0 % à 99,1 % ; l'ordre ne change pas.
+	Note : les données sont 16,1 fois plus probables sous l'hypothèse 1 que
+	       sous la 2 (facteur de Bayes ; 1 à 3 faible, 3 à 20 modéré, 20 à
+	       150 fort, au-delà très fort).
+
+	==> engrais (seul ou en interaction) : oui, soutien fort (96,2 % ; a
+	    priori 50,0 % ; facteur de Bayes 25,1).
+	==> lumiere (seul ou en interaction) : oui, soutien fort (96,3 % ; a
+	    priori 50,0 % ; facteur de Bayes 26,4).
+	==> engrais:lumiere (les écarts selon engrais changent avec lumiere) :
+	    oui, soutien fort (95,1 % ; a priori 16,7 % ; facteur de Bayes
+	    96,3).
+	==> Paires, cases engrais x lumiere :
+	==> Différents : sans x faible/avec x forte, sans x forte/avec x forte,
+	    avec x faible/avec x forte (très fort).
+	==> Semblables : sans x faible/sans x forte,
+	    sans x faible/avec x faible, sans x forte/avec x faible (modéré).
+	==> Si une différence existe, regroupement le plus probable :
+	    sans x forte = avec x faible = sans x faible < avec x forte
+	    (73,6 %).
+	Note : différents à partir de 75 % de probabilité, semblables jusqu'à
+	       25 %, sinon non tranchés ; écarts chiffrés à l'étape 6.
+
+	==> Moyennes observées, engrais : sans = 10,3 ; avec = 12,4 (n = 16).
+	==> Moyennes observées, lumiere : faible = 10,5 ; forte = 12,3 (n = 16).
+	==> Par case : sans x faible = 10,8 ; avec x faible = 10,2 ;
+	    sans x forte = 9,9 ; avec x forte = 14,7.
+	==> Écart-type au sein des cases : 1,44 ; normale (commune ou par case)
+	    et Student, moyennées.
+	Note : pour un compte rendu : « engrais oui, seul ou en interaction,
+	       (96,2 %), lumiere oui, seul ou en interaction, (96,3 %),
+	       engrais:lumiere oui (95,1 %) ; au moins une différence : 97,0 %,
+	       facteur de Bayes 16,1 (m.bay {KefiR}, BayesFactor, Rouder et al.
+	       2012). »
+	Note : probabilités d'hypothèses, pas des p-values ; ni l'importance, ni
+	       la cause d'une différence ; la méthode avec print(resultat,
+	       detail = TRUE).
+
+[m.bay : OK - 6.2 s]

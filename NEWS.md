@@ -1,4 +1,4 @@
-# KefiR (development version, branch feat/m.bay)
+# KefiR 0.0.2.2.9000 (development, branch feat/m.bay)
 
 ## New: `m.bay()`, the Bayesian counterpart of `m.test()`
 

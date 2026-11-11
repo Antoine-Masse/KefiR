@@ -18,8 +18,13 @@
 # and the answer is "not settled by the data", whatever probability the prior gives; the
 # probability itself is still shown (DECISIONS, D14).
 .bay_support_bf <- function(p, log_bf) {
-	if (is.na(log_bf) || abs(log_bf) >= log(3) || p < 0.6) return(.bay_support(p))
-	list(en = "not settled by the data", fr = "non tranch\u00e9 par les donn\u00e9es", level = 1L)
+	if (is.na(log_bf) || p < 0.6) return(.bay_support(p))
+	if (abs(log_bf) < log(3)) return(list(en = "not settled by the data", fr = "non tranch\u00e9 par les donn\u00e9es", level = 1L))
+	# Same scale as the note of the bilan (audit of c8e8976): with a prior other than 1/2 (the
+	# terms under HOP), the posterior and the Bayes factor no longer give the same level.
+	lv <- findInterval(abs(log_bf), log(c(20, 150))) + 3L
+	list(en = c("moderate support", "strong support", "very strong support")[lv - 2L],
+		fr = c("soutien mod\u00e9r\u00e9", "soutien fort", "soutien tr\u00e8s fort")[lv - 2L], level = lv)
 }
 
 .bay_support <- function(p) {
@@ -106,20 +111,20 @@
 	lead_h1 <- isTRUE(obj$prob_effect >= 0.5)
 	open <- identical(obj$sensitivity$verdict, "changes")
 	if (isTRUE(obj$contradiction)) {
-		return(list(en = "Verdict: undecided, the answer depends on the shape of the noise.",
-			fr = "Verdict : ind\u00e9cis, la r\u00e9ponse d\u00e9pend de la forme du bruit."))
+		return(list(en = "Verdict: not settled, the answer depends on the shape of the noise.",
+			fr = "Verdict : non tranch\u00e9, la r\u00e9ponse d\u00e9pend de la forme du bruit."))
 	}
 	if (p < 0.6) {
-		return(list(en = "Verdict: undecided. The data allow no conclusion, neither a difference nor its absence.",
-			fr = "Verdict : ind\u00e9cis. Les donn\u00e9es ne permettent de conclure ni \u00e0 une diff\u00e9rence, ni \u00e0 son absence."))
+		return(list(en = "Verdict: not settled. The data allow no conclusion, neither a difference nor its absence.",
+			fr = "Verdict : non tranch\u00e9. Les donn\u00e9es ne permettent de conclure ni \u00e0 une diff\u00e9rence, ni \u00e0 son absence."))
 	}
 	if (!lead_h1) {
 		if (p >= 0.95 && !open) {
 			return(list(en = "Verdict: very probably no difference of the size expected. This is not a proof of equivalence.",
 				fr = "Verdict : tr\u00e8s probablement pas de diff\u00e9rence de l'ordre attendu. Ce n'est pas une preuve d'\u00e9quivalence."))
 		}
-		return(list(en = "Verdict: rather no difference, without concluding. This does not prove that the groups are equivalent.",
-			fr = "Verdict : plut\u00f4t pas de diff\u00e9rence, sans conclure. Cela ne prouve pas que les groupes sont \u00e9quivalents."))
+		return(list(en = "Verdict: not settled, leaning towards no difference. This does not prove that the groups are equivalent.",
+			fr = "Verdict : non tranch\u00e9, penche vers aucune diff\u00e9rence. Cela ne prouve pas que les groupes sont \u00e9quivalents."))
 	}
 	if (p >= 0.95 && !open) {
 		return(list(en = "Verdict: a difference very probably exists. This says neither that it matters, nor which groups differ, nor why.",
@@ -129,8 +134,8 @@
 		return(list(en = "Verdict: a difference probably exists. This says neither that it matters, nor which groups differ, nor why.",
 			fr = "Verdict : une diff\u00e9rence existe probablement. Cela ne dit ni qu'elle est importante, ni quels groupes diff\u00e8rent, ni pourquoi."))
 	}
-	list(en = "Verdict: rather a difference, without concluding.",
-		fr = "Verdict : plut\u00f4t une diff\u00e9rence, sans conclure.")
+	list(en = "Verdict: not settled, leaning towards a difference.",
+		fr = "Verdict : non tranch\u00e9, penche vers une diff\u00e9rence.")
 }
 
 .bay_law_labels <- function() {

@@ -1,0 +1,133 @@
+############ PLAN : comptages ############
+
+== Donnees (head) ==
+  boite colonies
+1    B1       13
+2    B1       16
+3    B1       14
+4    B1       17
+5    B1       13
+6    B1       13
+n = 24 
+
+============ m.test ============
+m.test(colonies ~ boite, data = d) 
+
+1) Plus de deux groupes.
+2) ASSOMPTION 1/3 : Contrôle de l'indépendance - vérifiez que les observations entre les groupes sont indépendantes.
+	Vérifiez que :
+	  • Pas de mesures répétées
+	  • Pas d'effet cluster
+	  • Pas d'effets report [influence sur l'ordre des mesures]
+3) Détection outliers [identify_outliers() {rstatix}]
+	Résultat : 25% outliers (maximum dans un groupe, non extrêmes)
+	==> Valeurs à surveiller, mais non excessives
+4) Ajustement du modèle ANOVA [aov()].
+5) ASSOMPTION 2/3 : Contrôle ACADÉMIQUE de la normalité des résidus du modèle ANOVA.
+	Shapiro-Wilk [shapiro.test()]
+	==> Les résidus sont normaux (p-value : 0.34).
+6) ASSOMPTION 3/3 : Contrôle ACADÉMIQUE de l'homogénéité de la variance des groupes.
+	Test de Bartlett [bartlett.test()] - Variances hétérogènes (p = 0.036).
+7) Test F hétéroscédastique de Welch [oneway.test()].
+	Résultat : F = 7.813, ddl = 2 ; 12.26, p = 0.0065 (< alpha).
+	==> Différences de moyennes significatives entre groupes.
+8) Posthoc - Tests post-hoc sur groupes normaux.
+	a) Posthoc - Analyse des différences de moyennes par bootstrap [pairwise.boot() de {KefiR}].
+	b) Posthoc - Test de Student [pairwise.t.test(pool.sd=FALSE)].
+		Attention ! Le bootstrap détecte des faiblesses dans la signification des résultats.
+	c) Posthoc - Test de Games-Howell sur données normales à variances non-homogènes...
+		... [games_howell_test() of {rstatix}].
+	d) Posthoc - Test de Dunnett T3 sur données normales à variances non-homogènes [dunnettT3Test() of {PMCMRplus}].
+
+m.test() - version 02 bêta 2026 - envoyer ce bilan à antoine.masse@u-bordeaux.fr en cas d'anomalie.
+
+[m.test : OK - 0.3 s]
+
+============ m.bay ============
+m.bay(colonies ~ boite, data = d) 
+
+1) Plan reconnu : un facteur, boite, à 3 groupes (B1, B2, B3) ; N = 24.
+	--> Une question : colonies diffère-t-il selon boite ?
+	Note : aucun test préalable ne choisit la méthode ; les formes du bruit
+	       sont comparées.
+2) Contrôles des données [quantile() {stats}] - rien à retirer.
+	==> Effectifs : 8 par groupe (N = 24).
+	==> Ex-aequo : 33 % des valeurs répètent une valeur déjà vue.
+	==> Valeurs éloignées de leur groupe : 2 au-delà de 1,5 écart
+	    interquartile, 0 au-delà de 3 (sur 24).
+	--> Aucune valeur retirée : les formes à queues lourdes sont là pour ce
+	    genre de valeurs.
+3) Formes du bruit [m.bay() {KefiR}] - normale, variances inégales en tête
+   (47,7 %).
+	==> Probabilités : normale, variances inégales 47,7 % ; queues lourdes,
+	    variances inégales 23,6 % ; queues lourdes, variances égales
+	    20,6 % ; normale, variances égales 8,1 %.
+	==> Variances : les données penchent vers des variances inégales sans
+	    trancher (inégales à 71,3 %).
+	--> La réponse porte surtout sur les moyennes (formes normales :
+	    55,8 %).
+	Note : la forme du bruit est la façon dont les valeurs s'écartent dans
+	       leur groupe ; les queues lourdes, des valeurs éloignées plus
+	       fréquentes que sous la loi normale.
+	Note : aucune forme n'est choisie ; chaque réponse est pondérée par sa
+	       probabilité.
+4) Point de départ (a priori) - 50,0 % de chances d'une différence (pile ou
+   face).
+	==> Taille attendue r = 0,5 ; chaque forme du bruit part à 25,0 %.
+	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
+	       fait varier.
+5) Solidité de la réponse [m.bay() {KefiR}] - facteur de Bayes 20,6, l'ordre ne
+   change pas.
+	==> Facteur de Bayes : 20,6 (les données favorisent une différence).
+	==> Précision du calcul : environ 1,1 % sur le facteur de Bayes,
+	    négligeable.
+	==> Sensibilité : « colonies diffère selon boite » va de 87,5 % à
+	    98,7 %.
+	--> L'ordre ne change pas ; seul le degré de soutien peut changer.
+	Note : le facteur de Bayes dit combien de fois les données sont plus
+	       probables avec une différence que sans.
+	Note : r va de 0,25 à 1, les chances de départ de 1 contre 2 à 2 contre
+	       1, la répartition des variances varie.
+6) Quels groupes diffèrent, et de combien [lmBF(), posterior() {BayesFactor},
+   hdi() {bayestestR}] - B2 = B1 < B3 en tête (78,6 %).
+	==> Si une différence existe, regroupements en tête : B2 = B1 < B3
+	    (78,6 %) ; B2 < B1 < B3 (20,8 %) ; B2 < B1 = B3 (0,4 %).
+	==> B1/B2 : différents à 21,3 % ; B2 - B1 = -1,0 [-5,3 ; 3,4], soit
+	    -0,22 écart-type.
+	==> B1/B3 : différents à 98,8 % ; B3 - B1 = 7,7 [3,0 ; 12,5], soit 1,70
+	    écart-type.
+	==> B2/B3 : différents à 99,1 % ; B3 - B2 = 8,7 [3,8 ; 13,3], soit 1,91
+	    écart-type.
+	Note : [ ; ] = intervalle de crédibilité à 95 % (95 % de chances d'y
+	       trouver l'écart).
+	Note : l'écart estimé est ramené vers 0 par l'a priori, surtout quand
+	       les groupes sont petits.
+
+7) Bilan - colonies diffère selon boite : 95,4 % (soutien fort).
+	==> Verdict : une différence existe très probablement.
+	==> Probabilité de chaque hypothèse :
+	    1. colonies diffère selon boite : 95,4 % (soutien fort)
+	    2. Aucune différence de colonies selon boite : 4,6 %
+	==> Selon le point de départ : 87,5 % à 98,7 % ; l'ordre ne change pas.
+	Note : les données sont 20,6 fois plus probables sous l'hypothèse 1 que
+	       sous la 2 (facteur de Bayes ; 1 à 3 faible, 3 à 20 modéré, 20 à
+	       150 fort, au-delà très fort).
+
+	==> Différents : B1/B3, B2/B3 (fort).
+	==> Semblables : B1/B2 (modéré).
+	==> Si une différence existe, regroupement le plus probable :
+	    B2 = B1 < B3 (78,6 %).
+	Note : différents à partir de 75 % de probabilité, semblables jusqu'à
+	       25 %, sinon non tranchés ; écarts chiffrés à l'étape 6.
+
+	==> Moyennes observées : B1 = 14,2 ; B2 = 13,1 ; B3 = 23,1 (n = 8 par
+	    groupe).
+	==> Écarts-types : B1 = 2,2 ; B2 = 3,7 ; B3 = 6,2.
+	Note : pour un compte rendu : « colonies diffère selon boite
+	       (probabilité a posteriori 95,4 %), facteur de Bayes 20,6 (m.bay
+	       {KefiR}, comparaison de lois du bruit, Rouder et al. 2012). »
+	Note : probabilités d'hypothèses, pas des p-values ; ni l'importance, ni
+	       la cause d'une différence ; la méthode avec print(resultat,
+	       detail = TRUE).
+
+[m.bay : OK - 8.8 s]

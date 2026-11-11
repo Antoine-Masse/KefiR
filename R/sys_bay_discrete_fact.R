@@ -143,7 +143,7 @@
 	rownames(eff) <- NULL
 	p_null <- .bay_fact_null(lb, lp)
 	.bay_tell(story, paste0(length(sp$models), " models compared (combinations of terms)."), paste0(length(sp$models), " mod\u00e8les compar\u00e9s (combinaisons de termes)."))
-	.bay_tell(story, "Precision: closed form, without draws.", "Pr\u00e9cision : forme close, sans tirage.")
+	.bay_tell(story, "Precision: exact computation, without draws.", "Pr\u00e9cision : calcul exact, sans tirage.")
 	sens <- NULL
 	if (isTRUE(sensitivity)) {
 		priors <- list(hop = lp, hip = .bay_fact_prior(sp, "hip"), unif = .bay_fact_prior(sp, "unif"))
@@ -166,8 +166,8 @@
 		moved <- which(verdict_terms == "changes")
 		.bay_step_result(story, if (length(moved)) paste0(paste(terms[moved], collapse = ", "), " change side with the prior") else "no term changes side",
 			if (length(moved)) paste0(paste(terms[moved], collapse = ", "), " changent de c\u00f4t\u00e9 selon l'a priori") else "aucun terme ne change de c\u00f4t\u00e9")
-		.bay_tell(story, "three priors on the models (HOP, independent terms, uniform); no scale r with unit information.",
-			"trois lois sur les mod\u00e8les (HOP, termes ind\u00e9pendants, uniforme) ; pas d'\u00e9chelle r avec l'information unitaire.", "note")
+		.bay_tell(story, "three ways of sharing the chances between the models; no scale r with unit information.",
+			"trois fa\u00e7ons de r\u00e9partir les chances entre les mod\u00e8les ; pas d'\u00e9chelle r avec l'information unitaire.", "note")
 	} else {
 		.bay_step_result(story, "sensitivity not computed", "sensibilit\u00e9 non calcul\u00e9e")
 	}

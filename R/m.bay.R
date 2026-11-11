@@ -291,6 +291,18 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	input$ordinal <- identical(response, "ordinal") || identical(route, "ordinal")
 	input$ordinal_auto <- identical(route, "ordinal")
 	input$bounded <- identical(route, "bounded")
+	# An ordered factor (ordered()) with more than two levels is an ordered response, not a set
+	# of unordered categories (readability audit of 11 November: the same ratings coded as
+	# integers or as ordered() gave two different answers). Its ranks are kept, in the order of
+	# its levels, and the story names them.
+	if (is.ordered(input$response) && nlevels(droplevels(input$response)) > 2L && !identical(response, "continuous") &&
+		input$plan %in% c("oneway", "factorial")) {
+		input$ordered_levels <- levels(droplevels(input$response))
+		input$response <- as.integer(droplevels(input$response))
+		input$categorical <- FALSE
+		input$ordinal <- TRUE
+		input$ordinal_auto <- TRUE
+	}
 	# Several responses (DECISIONS, D22): their own route, which tells its own plan.
 	if (identical(input$plan, "manova")) {
 		return(.bay_m_manova(input, call_expr, function() notes, note, prior_h1, rscale, sensitivity, draws, seed, detail, verbose,

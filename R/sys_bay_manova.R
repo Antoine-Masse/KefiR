@@ -161,8 +161,8 @@
 			paste0("Sensibilit\u00e9 : la r\u00e9ponse en t\u00eate ", .bay_range_txt(rng)$fr, "."))
 		.bay_tell(story, if (identical(verdict, "changes")) "Caution added: the answer can reverse; it will be called not settled." else "The order does not change.",
 			if (identical(verdict, "changes")) "Prudence ajout\u00e9e : la r\u00e9ponse peut s'inverser ; elle sera dite non tranch\u00e9e." else "L'ordre ne change pas.", "decide")
-		.bay_tell(story, "r goes from r/2 to 2r, the starting chances from 1 against 2 to 2 against 1.",
-			"r va de r/2 \u00e0 2r, les chances de d\u00e9part de 1 contre 2 \u00e0 2 contre 1.", "note")
+		.bay_tell(story, paste0("r goes from ", .bay_num_txt(rscale / 2)$en, " to ", .bay_num_txt(rscale * 2)$en, ", the starting chances from 1 against 2 to 2 against 1."),
+			paste0("r va de ", .bay_num_txt(rscale / 2)$fr, " \u00e0 ", .bay_num_txt(rscale * 2)$fr, ", les chances de d\u00e9part de 1 contre 2 \u00e0 2 contre 1."), "note")
 	} else {
 		.bay_step_result(story, paste0("Bayes factor ", .bay_bf_txt(lb, "."), ", sensitivity not computed"), paste0("facteur de Bayes ", .bay_bf_txt(lb, ","), ", sensibilit\u00e9 non calcul\u00e9e"))
 	}

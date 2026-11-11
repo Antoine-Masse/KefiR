@@ -1,0 +1,116 @@
+############ PLAN : apparie ############
+
+== Donnees (head) ==
+  id     t    y
+1  1 avant 74.6
+2  2 avant 73.3
+3  3 avant 79.6
+4  4 avant 83.2
+5  5 avant 80.1
+6  6 avant 85.3
+n = 24 
+
+============ m.test ============
+m.test(y ~ t | id, data = d) 
+
+1) Type de modèle détecté : ANOVA (facteurs catégoriques uniquement).
+2) Effets aléatoires détectés dans la formule (terme Error) : y ~ t + Error(id)
+3) Plan apparié / mesures répétées détecté. Réalisation de contrôles spécifiques...
+	Facteur(s) intra-sujet auto-détecté(s) : t
+4) Vérification de la structure du plan à mesures répétées (équilibrage et unicité)...
+	Structure ATTENDUE du plan (vérification des réplicats) :
+	• Nombre de sujets : 12
+	• Conditions par sujet : 2 (toutes combinaisons facteurs intra-sujet)
+	• Total observations : 24
+	Structure du plan ÉQUILIBRÉE :
+	==> Les 12 sujets ont exactement 2 observations (une par condition).
+	--> Vers une ANOVA à mesures répétées.
+5) ASSOMPTION DE BASE : Indépendance des observations (contexte mesures répétées).
+	C'est une assomption de PLAN qui ne peut pas être testée statistiquement.
+	Vérifiez que :
+	  • Mesures répétées sur les mêmes sujets (attendu)
+	  • Pas de cluster supplémentaire au-delà du sujet
+	  • Effets d'ordre/report contrôlés
+	  • Pas d'abandon systématique
+6) Seulement deux conditions détectées dans le plan apparié ==> Délégation à .one_factor_analysis() [optimisé pour comparaisons appariées].
+7) Alignement par id pour les données appariées.
+8) Contrôle de la normalité des différences appariées :
+	Test de Shapiro-Wilk (<=50), Jarque-Bera (<=500) ou skewness/kurtosis (>500).
+	Les différences sont normales (p-value : 0.97).
+9) Test de Student apparié [t.test(paired=TRUE)] :
+	==> Différences significatives entre les conditions. p-value : 0.00053
+
+m.test() - version 02 bêta 2026 - envoyer ce bilan à antoine.masse@u-bordeaux.fr en cas d'anomalie.
+
+[m.test : OK - 1.2 s]
+
+============ m.bay ============
+m.bay(y ~ t | id, data = d) 
+
+1) Plan reconnu : données appariées, t (avant, apres) mesuré sur les mêmes 12
+   sujets ; N = 24.
+	--> Une question : y diffère-t-il selon t, chaque sujet comparé à
+	    lui-même ?
+2) Contrôles des données [quantile() {stats}] - rien à retirer.
+	==> Sujets : 12 ; complets : 12.
+	==> Effectifs : 12 par condition (N = 24).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur condition : 0 au-delà de 1,5 écart
+	    interquartile, 0 au-delà de 3 (sur 24).
+	--> Aucune valeur retirée.
+	Note : valeurs éloignées cherchées une fois retiré le niveau propre de
+	       chaque sujet.
+3) Forme du bruit - normale, seule.
+	==> Données appariées : on compare la différence au sein de chaque
+	    sujet.
+	--> Aucune valeur éloignée ne met d'emblée la loi normale en doute.
+	Note : queues lourdes avec des sujets : mesurées sans faux « oui » fort
+	       (loi normale gardée, D28).
+4) Point de départ (a priori) [ttestBF(paired = TRUE) {BayesFactor}] - 50,0 % de
+   chances d'une différence.
+	==> Taille attendue r = 0,5 sur dz (écart au sein du sujet rapporté à
+	    son écart-type).
+	==> Chaque sujet est comparé à lui-même : c'est l'écart au sein du sujet
+	    qui est testé.
+	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
+	       fait varier.
+5) Solidité de la réponse [ttestBF(paired = TRUE) {BayesFactor}] - facteur de
+   Bayes 57,6, l'ordre ne change pas.
+	==> Facteur de Bayes : 57,6 (les données favorisent une différence).
+	==> Précision : calcul exact, sans tirage.
+	==> Sensibilité : la réponse en tête va de 94,6 % à 99,3 %.
+	--> La réponse ne change pas de côté.
+	Note : r va de 0,25 à 1, les chances de départ de 1 contre 2 à 2 contre
+	       1.
+6) De combien les deux niveaux diffèrent [posterior(ttestBF()) {BayesFactor},
+   hdi() {bayestestR}] - apres - avant = -3,1 [-4,6 ; -1,2].
+	==> Écart estimé apres - avant = -3,1 [-4,6 ; -1,2], soit -1,18
+	    écart-type des différences (dz).
+	Note : [ ; ] = intervalle de crédibilité à 95 % (95 % de chances d'y
+	       trouver l'écart).
+	Note : l'écart estimé est ramené vers 0 par l'a priori, surtout quand
+	       les groupes sont petits.
+
+7) Bilan - y diffère selon t : 98,3 % (soutien fort).
+	==> Verdict : une différence existe très probablement.
+	==> Probabilité de chaque hypothèse :
+	    1. y diffère selon t              : 98,3 % (soutien fort)
+	    2. Aucune différence de y selon t : 1,7 %
+	==> Selon le point de départ : 94,6 % à 99,3 % ; l'ordre ne change pas.
+	Note : les données sont 57,6 fois plus probables sous l'hypothèse 1 que
+	       sous la 2 (facteur de Bayes ; 1 à 3 faible, 3 à 20 modéré, 20 à
+	       150 fort, au-delà très fort).
+
+	==> Écart estimé apres - avant : -3,1 [-4,6 ; -1,2] (étape 6).
+
+	==> Moyennes observées, t : avant = 80,6 ; apres = 77,2 (n = 12).
+	==> Écart-type résiduel au sein des sujets : 1,72 ; loi normale à
+	    variance commune seule.
+	Note : pour un compte rendu : « y diffère selon t (probabilité a
+	       posteriori 98,3 %), facteur de Bayes 57,6 (m.bay {KefiR}, test t
+	       apparié bayésien, Rouder et al. 2009). »
+	Note : probabilités d'hypothèses, pas des p-values ; ni l'importance, ni
+	       la cause d'une différence ; la méthode avec print(resultat,
+	       detail = TRUE).
+
+[m.bay : OK - 0.1 s]

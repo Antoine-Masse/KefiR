@@ -1,0 +1,152 @@
+############ PLAN : repet3 ############
+
+== Donnees (head) ==
+  id  t    y
+1  1 J0 48.7
+2  2 J0 49.8
+3  3 J0 44.7
+4  4 J0 48.5
+5  5 J0 47.9
+6  6 J0 47.7
+n = 30 
+
+============ m.test ============
+m.test(y ~ t | id, data = d) 
+
+1) Type de modèle détecté : ANOVA (facteurs catégoriques uniquement).
+2) Effets aléatoires détectés dans la formule (terme Error) : y ~ t + Error(id)
+3) Plan apparié / mesures répétées détecté. Réalisation de contrôles spécifiques...
+	Facteur(s) intra-sujet auto-détecté(s) : t
+4) Vérification de la structure du plan à mesures répétées (équilibrage et unicité)...
+	Structure ATTENDUE du plan (vérification des réplicats) :
+	• Nombre de sujets : 10
+	• Conditions par sujet : 3 (toutes combinaisons facteurs intra-sujet)
+	• Total observations : 30
+	Structure du plan ÉQUILIBRÉE :
+	==> Les 10 sujets ont exactement 3 observations (une par condition).
+	--> Vers une ANOVA à mesures répétées.
+5) ASSOMPTION DE BASE : Indépendance des observations (contexte mesures répétées).
+	C'est une assomption de PLAN qui ne peut pas être testée statistiquement.
+	Vérifiez que :
+	  • Mesures répétées sur les mêmes sujets (attendu)
+	  • Pas de cluster supplémentaire au-delà du sujet
+	  • Effets d'ordre/report contrôlés
+	  • Pas d'abandon systématique
+6) ASSOMPTION 1/3 : Indépendance des observations (contexte mesures répétées).
+	C'est une assomption de PLAN qui ne peut pas être testée statistiquement.
+	Dans le contexte de mesures répétées, vérifiez que :
+	  • Mesures répétées SUR MÊMES SUJETS (normal pour plan intra-sujet)
+	  • Pas d'effets cluster supplémentaires (observations non emboîtées davantage)
+	  • Pas d'effets report/contamination (ordre mesures contrôlé/randomisé)
+	  • Période de sevrage suffisante (si applicable)
+	  • Pas d'abandon créant des patterns systématiques de données manquantes
+7) Ajustement du modèle ANOVA avec effets aléatoires / mesures répétées [aov() avec terme Error].
+8) ASSOMPTION 2/3 : Contrôle de la normalité des résidus du modèle ANOVA.
+	    Note : mesures répétées avec k >= 3 niveaux
+	==> la normalité est testée sur les résidus du modèle (pas les différences par paires).
+	Shapiro-Wilk [shapiro.test()]
+	==> Les résidus sont non-normaux (p-value : 2e-06).
+	--> Les contrôles de la variance devront être plus exigeants (Levene au lieu de Bartlett).
+9) ASSOMPTION 3/3 : Test de sphéricité (Test de Mauchly) [anova_test() {rstatix}].
+	Note : Les variances des différences entre toutes les paires de niveaux intra-sujets doivent être égales.
+	==> Hypothèse de sphéricité RESPECTÉE (test de Mauchly p = 0.65).
+	--> Aucune correction nécessaire. Les degrés de liberté standard du test F s'appliquent.
+	Note : Test d'homogénéité des variances (Levene) non effectué pour un plan intra-sujets pur.
+	La sphéricité (test de Mauchly) contrôle déjà l'homogénéité des variances des différences.
+10) Variances homogènes mais non-normalité sévère détectée.
+	Skewness = -3, Kurtosis = 13.05
+	--> Vers analyse robuste
+11) Application du test de Friedman pour mesures répétées (k >= 3 conditions, un facteur)...
+	Résultats du test de Friedman :
+	χ² = 5.6
+	p-value = 0.0608
+	Tests post-hoc applicables : Non
+	a) Posthoc - Analyse des différences de médianes par bootstrap [pairwise.boot() de {KefiR}].
+	b) Posthoc - Test de Wilcoxon-Mann-Whitney [pairwise.wilcox.test()].
+	c) Posthoc - Test post-hoc sur groupes non normaux appariés [frdAllPairsNemenyiTest() of {PMCMRplus}].
+
+m.test() - version 02 bêta 2026 - envoyer ce bilan à antoine.masse@u-bordeaux.fr en cas d'anomalie.
+
+[m.test : OK - 0.9 s]
+
+============ m.bay ============
+m.bay(y ~ t | id, data = d) 
+
+1) Plan reconnu : mesures répétées sur 10 sujets, t (3 niveaux, intra-sujet) ;
+   N = 30.
+	--> Une question : y diffère-t-il selon t, chaque sujet comparé à
+	    lui-même ?
+2) Contrôles des données [quantile() {stats}] - rien à retirer.
+	==> Sujets : 10 ; complets : 10.
+	==> Effectifs : 10 par condition (N = 30).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur condition : 1 au-delà de 1,5 écart
+	    interquartile, 0 au-delà de 3 (sur 30).
+	--> Aucune valeur retirée.
+	Note : valeurs éloignées cherchées une fois retiré le niveau propre de
+	       chaque sujet.
+3) Forme du bruit - normale, seule.
+	==> Mesures répétées : chaque sujet garde son niveau propre.
+	==> Corrélations entre conditions : epsilon de Greenhouse-Geisser 0,91
+	    (proches d'être égales).
+	--> Aucune valeur éloignée ne met d'emblée la loi normale en doute.
+	==> Variances par condition : égales probables (inégales à 3,9 %).
+	Note : queues lourdes avec des sujets : mesurées sans faux « oui » fort
+	       (loi normale gardée, D28).
+4) Point de départ (a priori) - 50,0 % de chances d'une différence.
+	==> Taille attendue r = 0,5.
+	==> Chaque sujet garde son niveau propre, dans tous les modèles,
+	    « aucune différence » compris.
+	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
+	       fait varier.
+5) Solidité de la réponse [lmBF() {BayesFactor}] - facteur de Bayes 6,65,
+   l'ordre ne change pas.
+	==> Facteur de Bayes : 6,65 (les données favorisent une différence).
+	==> Précision du calcul : < 0,1 point sur les probabilités, négligeable.
+	==> Sensibilité : la réponse en tête va de 72,7 % à 93,0 %.
+	--> La réponse ne change pas de côté.
+	Note : r va de 0,25 à 1, les chances de départ de 1 contre 2 à 2 contre
+	       1.
+6) Quelles conditions diffèrent, et de combien [lmBF(), posterior()
+   {BayesFactor}, hdi() {bayestestR}] - J0 = J7 < J14 en tête (69,3 %).
+	==> Si une différence existe, regroupements en tête : J0 = J7 < J14
+	    (69,3 %) ; J0 < J7 < J14 (24,5 %) ; J0 < J7 = J14 (4,2 %).
+	==> J0/J7 : différents à 26,8 % ; J7 - J0 = 0,4 [-1,5 ; 2,4], soit 0,15
+	    écart-type résiduel au sein des sujets.
+	==> J0/J14 : différents à 85,4 % ; J14 - J0 = 2,7 [0,6 ; 5,0], soit 1,11
+	    écart-type résiduel au sein des sujets.
+	==> J7/J14 : différents à 83,5 % ; J14 - J7 = 2,3 [0,3 ; 4,4], soit 0,96
+	    écart-type résiduel au sein des sujets.
+	Note : [ ; ] = intervalle de crédibilité à 95 % (95 % de chances d'y
+	       trouver l'écart).
+	Note : l'écart estimé est ramené vers 0 par l'a priori, surtout quand
+	       les groupes sont petits.
+
+7) Bilan - y diffère selon t : 86,9 % (soutien modéré).
+	==> Verdict : une différence existe probablement.
+	==> Probabilité de chaque hypothèse :
+	    1. y diffère selon t              : 86,9 % (soutien modéré)
+	    2. Aucune différence de y selon t : 13,1 %
+	==> Selon le point de départ : 72,7 % à 93,0 % ; l'ordre ne change pas.
+	Note : les données sont 6,65 fois plus probables sous l'hypothèse 1 que
+	       sous la 2 (facteur de Bayes ; 1 à 3 faible, 3 à 20 modéré, 20 à
+	       150 fort, au-delà très fort).
+
+	==> Différents : J0/J14, J7/J14 (modéré).
+	==> Non tranchés : J0/J7.
+	==> Si une différence existe, regroupement le plus probable :
+	    J0 = J7 < J14 (69,3 %).
+	Note : différents à partir de 75 % de probabilité, semblables jusqu'à
+	       25 %, sinon non tranchés ; écarts chiffrés à l'étape 6.
+
+	==> Moyennes observées, t : J0 = 49,8 ; J7 = 50,3 ; J14 = 53,3 (n = 10).
+	==> Écart-type résiduel au sein des sujets : 2,29 ; loi normale à
+	    variance commune seule.
+	Note : pour un compte rendu : « y diffère selon t (probabilité a
+	       posteriori 86,9 %), facteur de Bayes 6,65 (m.bay {KefiR},
+	       BayesFactor, Rouder et al. 2012). »
+	Note : probabilités d'hypothèses, pas des p-values ; ni l'importance, ni
+	       la cause d'une différence ; la méthode avec print(resultat,
+	       detail = TRUE).
+
+[m.bay : OK - 2.4 s]

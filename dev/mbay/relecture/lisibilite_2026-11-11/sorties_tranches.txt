@@ -1,0 +1,278 @@
+############ PLAN : tranches ############
+
+== Donnees (head) ==
+  temps id  groupe    y
+1    T1  1 placebo 30.4
+2    T2  1 placebo 29.5
+3    T3  1 placebo 29.8
+4    T1  2 placebo 27.9
+5    T2  2 placebo 27.6
+6    T3  2 placebo 29.5
+n = 48 
+
+============ m.test ============
+m.test(y ~ groupe * temps + Error(id/temps), data = d) 
+
+1) Type de modèle détecté : ANOVA (facteurs catégoriques uniquement).
+2) Effets aléatoires détectés dans la formule (terme Error) : y ~ groupe * temps + Error(id/temps)
+	Structure d'effets aléatoires complexe détectée (plan emboîté ou plusieurs facteurs intra-sujet).
+3) Plan apparié / mesures répétées détecté. Réalisation de contrôles spécifiques...
+	Facteur(s) intra-sujet auto-détecté(s) : groupe, temps
+4) Vérification de la structure du plan à mesures répétées (équilibrage et unicité)...
+	Structure ATTENDUE du plan (vérification des réplicats) :
+	• Nombre de sujets : 16
+	• Conditions par sujet : 6 (toutes combinaisons facteurs intra-sujet)
+	• Total observations : 48
+	PROBLÈMES détectés dans la structure du plan :
+	• Déséquilibre : 16 sujet(s) n'ont pas 6 observations
+	  Sujets problématiques : 1, 2, 3, 4, 5, ...
+	• Données manquantes : 48 cellule(s) avec 0 observation (attendu 1)
+	• Observations réelles : 48 (attendu 96)
+	RECOMMANDATION : Modèle à effets mixtes (lmer) requis.
+	Raison : Déséquilibre/doublons/données manquantes violent hypothèses ANOVA-RM standard.
+	--> Vers modèle à effets mixtes (lmer)
+5) ASSOMPTION DE BASE : Indépendance des observations (contexte mesures répétées).
+	C'est une assomption de PLAN qui ne peut pas être testée statistiquement.
+	Vérifiez que :
+	  • Mesures répétées sur les mêmes sujets (attendu)
+	  • Pas de cluster supplémentaire au-delà du sujet
+	  • Effets d'ordre/report contrôlés
+	  • Pas d'abandon systématique
+6) Modèle mixte sélectionné selon les caractéristiques du design :
+	- Nombre de facteurs : 2
+	- Design : déséquilibré
+	- Doublons : non
+	- Sujets incomplets : 16 sujets
+7) Ajustement modèle à effets mixtes [lmer() {lmerTest}]
+	Formule : y ~ groupe + temps + (1 | id)
+	Effets aléatoires : intercept aléatoire
+	Méthode : REML (Maximum vraisemblance restreinte)
+	Approximation DL : Satterthwaite (pour p-values)
+8) Analyse des p-values du modèle et de ses coefficients.
+	Veuillez noter, modèle mixte.
+	==> Calcul d'une p-value globale pour la comparaison du modèle avec effets aléatoires seuls par test du rapport de vraisemblance (LRT).
+	L'effet fixe combiné à l'effet aléatoire est plus pertinent que l'effet aléatoire seul. p-value : 0.0016
+	L'effet aléatoire améliore le modèle par rapport aux effets fixes seuls.
+		Confirmation par ranova().
+		Attention !
+	Mauvaise signification d'au moins un terme du modèle. max(p.value) : 0.41
+9) Contrôle de la normalité des résidus avec tolérance si n>15.
+	==> Skewness <=2 et Kurtosis <=7.
+	==> Les résidus présentent une normalité acceptable.
+10) Normalité des effets aléatoires pour au moins une variable aléatoire. p.value : 0.66
+11) Analyse de l'indépendance des résidus
+	Attention : uniquement en triant les valeurs en fonction de Y et en fonction des variables d'effet aléatoire.
+	Test de Durbin-Watson (dwtest()) - Bonne indépendance des résidus. p.value : 0.45
+12) - Analyse de la variance des résidus.
+13) - Analyse de l'effet de levier.
+	Attention !
+	Distance de Cook (cooks.distance()) - Effet de levier. max(cooks.distance()) : 1.0139
+14) ATTENTION : Certaines vérifications ont échoué (voir bilan valreg() ci-dessus).
+            Évaluer si les violations sont sévères pour votre analyse :
+            - Coefficients non-significatifs : Effets faibles possibles ou multicolinéarité
+            - Violations normalité : Transformation données (log, sqrt, Box-Cox) ou GLMM
+            - Hétéroscédasticité : Utiliser nlme::lme() avec structure de variance
+            - Simplification modèle : Réduire structure effets aléatoires si problèmes convergence
+	ANOVA Type III pour modèle mixte [anova() {lmerTest}]
+	Approximation DL : Satterthwaite
+
+Type III Analysis of Variance Table with Satterthwaite's method
+       Sum Sq Mean Sq NumDF DenDF F value   Pr(>F)   
+groupe  1.795  1.7949     1    14  0.7077 0.414339   
+temps  43.687 21.8433     2    30  8.6125 0.001107 **
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+		Interprétation : Effet(s) fixe(s) significatif(s) : temps
+	                 Ces facteurs montrent des effets au niveau populationnel.
+	                 Les effets aléatoires capturent les variations inter-sujets.
+
+	Composantes variance [VarCorr() {lme4}] :
+
+ Groups   Name        Std.Dev.
+ id       (Intercept) 2.7111  
+ Residual             1.5926  
+
+	Coefficients effets fixes [fixef() {lme4}] :
+
+  (Intercept) groupeplacebo       tempsT2       tempsT3 
+    30.933333     -1.204167      0.675000      2.275000 
+
+15) Comparaisons post-hoc par paires pour modèle mixte (méthode emmeans) :
+	Effet(s) significatif(s) : temps
+	Méthode d'ajustement : tukey
+	Niveau de confiance : 0.95
+Note: adjust = "tukey" was changed to "sidak"
+because "tukey" is only appropriate for one set of pairwise comparisons
+		Effet : temps
+		  T1 - T2 : diff = -0.675 (SE = 0.563), p = 0.46 ns
+		  T1 - T3 : diff = -2.275 (SE = 0.563), p = 0.00097 ***
+		  T2 - T3 : diff = -1.6 (SE = 0.563), p = 0.021 *
+		Affichage compact par lettres (groupes ne partageant pas une lettre diffèrent à alpha = 0.05) :
+		  T1 : EMM = 30.331, groupe = a
+		  T2 : EMM = 31.006, groupe = a
+		  T3 : EMM = 32.606, groupe = b
+
+m.test() - version 02 bêta 2026 - envoyer ce bilan à antoine.masse@u-bordeaux.fr en cas d'anomalie.
+
+[m.test : OK - 2.6 s]
+
+============ m.bay ============
+m.bay(y ~ groupe * temps + Error(id/temps), data = d) 
+
+1) Plan reconnu : mesures répétées sur 16 sujets, groupe (2 niveaux, entre
+   sujets), temps (3 niveaux, intra-sujet) ; N = 48.
+	--> Termes : groupe, temps, groupe:temps ; une réponse par terme,
+	    obtenue en pesant ensemble les 5 combinaisons de termes.
+2) Contrôles des données [quantile() {stats}] - rien à retirer.
+	==> Sujets : 16 ; complets : 16.
+	==> Effectifs : 8 par condition (N = 48).
+	==> Ex-aequo : 12 % des valeurs répètent une valeur déjà vue.
+	==> Valeurs éloignées de leur condition : 1 au-delà de 1,5 écart
+	    interquartile, 0 au-delà de 3 (sur 48).
+	--> Aucune valeur retirée.
+	Note : valeurs éloignées cherchées une fois retiré le niveau propre de
+	       chaque sujet.
+3) Forme du bruit - normale, seule.
+	==> Mesures répétées : chaque sujet garde son niveau propre.
+	==> Corrélations entre conditions : epsilon de Greenhouse-Geisser 0,86
+	    (proches d'être égales).
+	--> Aucune valeur éloignée ne met d'emblée la loi normale en doute.
+	==> Variances par condition : égales probables (inégales à 0,3 %).
+	Note : queues lourdes avec des sujets : mesurées sans faux « oui » fort
+	       (loi normale gardée, D28).
+4) Point de départ (a priori) - aucune différence du tout : 33,3 %.
+	==> Chance de chaque terme d'avance : groupe 50,0 %, temps 50,0 %,
+	    groupe:temps 16,7 %.
+	==> Taille attendue r = 0,5 par terme.
+	==> Chaque sujet garde son niveau propre, dans tous les modèles,
+	    « aucune différence » compris.
+	Note : ces chances ne s'additionnent pas ; plus il y a de termes, moins
+	       chacun est probable, ce qui protège des fausses interactions.
+	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
+	       fait varier.
+5) Solidité de la réponse [lmBF() {BayesFactor}] - aucun terme ne change de
+   côté.
+	==> 5 modèles comparés (combinaisons de termes).
+	==> Précision du calcul : environ 1,2 point sur les probabilités,
+	    négligeable.
+	--> Aucun terme ne change de côté.
+	Note : r va de 0,25 à 1, avec trois lois sur les modèles.
+6) Quels niveaux diffèrent, et de combien [lmBF(), posterior() {BayesFactor},
+   hdi() {bayestestR}] - cases groupe x temps :
+   actif x T1 = placebo x T2 = placebo x T1 = placebo x T3 = actif x T2 < actif x T3.
+	--> groupe:temps probable (66,0 %) : les écarts d'un facteur dépendent
+	    de l'autre, donc les cases sont comparées.
+	--> Changement de stratégie : 203 regroupements, trop pour tous les
+	    calculer ; explorés par tirage, 2 000 tours.
+	==> Regroupement en tête :
+	    actif x T1 = placebo x T2 = placebo x T1 = placebo x T3 = actif x T2 < actif x T3
+	    (31,2 %).
+	==> Si une différence existe, regroupements en tête :
+	    actif x T1 = placebo x T2 = placebo x T1 = placebo x T3 = actif x T2 < actif x T3
+	    (31,2 %) ;
+	    actif x T1 = placebo x T2 = placebo x T1 = placebo x T3 < actif x T2 < actif x T3
+	    (11,2 %) ;
+	    actif x T1 < placebo x T2 = placebo x T1 = placebo x T3 = actif x T2 < actif x T3
+	    (9,0 %).
+	==> actif x T1/actif x T2 : différents à 53,0 % ; actif x T2 -
+	    actif x T1 = 1,2 [-0,2 ; 2,5], soit 0,84 écart-type résiduel au sein
+	    des sujets.
+	==> actif x T1/actif x T3 : différents à 98,8 % ; actif x T3 -
+	    actif x T1 = 3,2 [1,7 ; 4,9], soit 2,22 écart-type résiduel au sein
+	    des sujets.
+	==> actif x T1/placebo x T1 : différents à 38,1 % ; placebo x T1 -
+	    actif x T1 = 1,0 [-1,1 ; 3,0], soit 0,65 écart-type résiduel au sein
+	    des sujets.
+	==> actif x T1/placebo x T2 : différents à 36,8 % ; placebo x T2 -
+	    actif x T1 = 0,8 [-1,2 ; 2,8], soit 0,56 écart-type résiduel au sein
+	    des sujets.
+	==> actif x T1/placebo x T3 : différents à 47,9 % ; placebo x T3 -
+	    actif x T1 = 1,4 [-0,6 ; 3,4], soit 0,99 écart-type résiduel au sein
+	    des sujets.
+	==> actif x T2/actif x T3 : différents à 96,2 % ; actif x T3 -
+	    actif x T2 = 2,0 [0,6 ; 3,4], soit 1,37 écart-type résiduel au sein
+	    des sujets.
+	==> actif x T2/placebo x T1 : différents à 41,1 % ; placebo x T1 -
+	    actif x T2 = -0,3 [-2,4 ; 1,6], soit -0,18 écart-type résiduel au
+	    sein des sujets.
+	==> actif x T2/placebo x T2 : différents à 42,5 % ; placebo x T2 -
+	    actif x T2 = -0,4 [-2,5 ; 1,5], soit -0,27 écart-type résiduel au
+	    sein des sujets.
+	==> actif x T2/placebo x T3 : différents à 42,2 % ; placebo x T3 -
+	    actif x T2 = 0,3 [-1,8 ; 2,3], soit 0,17 écart-type résiduel au sein
+	    des sujets.
+	==> actif x T3/placebo x T1 : différents à 94,8 % ; placebo x T1 -
+	    actif x T3 = -2,2 [-4,5 ; -0,2], soit -1,52 écart-type résiduel au
+	    sein des sujets.
+	==> actif x T3/placebo x T2 : différents à 94,6 % ; placebo x T2 -
+	    actif x T3 = -2,4 [-4,6 ; -0,3], soit -1,62 écart-type résiduel au
+	    sein des sujets.
+	==> actif x T3/placebo x T3 : différents à 91,0 % ; placebo x T3 -
+	    actif x T3 = -1,7 [-3,9 ; 0,3], soit -1,14 écart-type résiduel au
+	    sein des sujets.
+	==> placebo x T1/placebo x T2 : différents à 24,6 % ; placebo x T2 -
+	    placebo x T1 = -0,2 [-1,5 ; 1,2], soit -0,10 écart-type résiduel au
+	    sein des sujets.
+	==> placebo x T1/placebo x T3 : différents à 31,8 % ; placebo x T3 -
+	    placebo x T1 = 0,5 [-0,8 ; 1,9], soit 0,36 écart-type résiduel au
+	    sein des sujets.
+	==> placebo x T2/placebo x T3 : différents à 34,8 % ; placebo x T3 -
+	    placebo x T2 = 0,7 [-0,7 ; 2,0], soit 0,46 écart-type résiduel au
+	    sein des sujets.
+	Note : erreur de tirage d'environ 3 points sur les probabilités.
+	Note : [ ; ] = intervalle de crédibilité à 95 % (95 % de chances d'y
+	       trouver l'écart).
+
+7) Bilan - groupe oui (79,6 %), temps oui (98,2 %), groupe:temps oui (66,0 %).
+	==> Verdict : une différence selon groupe, temps, groupe:temps ; les
+	    autres termes sont plus bas.
+	==> Probabilité de chaque hypothèse :
+	    1. y diffère selon au moins un facteur : 98,6 % (soutien fort)
+	    2. Aucune différence de y selon groupe, temps : 1,4 %
+	==> Selon le point de départ : 98,1 % à 99,3 % ; l'ordre ne change pas.
+	Note : les données sont 36,3 fois plus probables sous l'hypothèse 1 que
+	       sous la 2 (facteur de Bayes ; 1 à 3 faible, 3 à 20 modéré, 20 à
+	       150 fort, au-delà très fort).
+
+	==> groupe (seul ou en interaction) : oui, soutien modéré (79,6 % ; a
+	    priori 50,0 % ; facteur de Bayes 3,91).
+	==> temps (seul ou en interaction) : oui, soutien fort (98,2 % ; a
+	    priori 50,0 % ; facteur de Bayes 54,6).
+	==> groupe:temps (les écarts selon groupe changent avec temps) : oui,
+	    soutien faible (66,0 % ; a priori 16,7 % ; facteur de Bayes 9,72).
+	==> Paires, cases groupe x temps :
+	==> Différents : actif x T1/actif x T3, actif x T2/actif x T3 (fort) ;
+	    actif x T3/placebo x T1, actif x T3/placebo x T2,
+	    actif x T3/placebo x T3 (modéré).
+	==> Semblables : placebo x T1/placebo x T2 (modéré).
+	==> Non tranchés : actif x T1/actif x T2, actif x T1/placebo x T1,
+	    actif x T1/placebo x T2, actif x T1/placebo x T3,
+	    actif x T2/placebo x T1, actif x T2/placebo x T2,
+	    actif x T2/placebo x T3, placebo x T1/placebo x T3,
+	    placebo x T2/placebo x T3.
+	==> Si une différence existe, regroupement le plus probable :
+	    actif x T1 = placebo x T2 = placebo x T1 = placebo x T3 = actif x T2 < actif x T3
+	    (31,2 %).
+	Note : différents à partir de 75 % de probabilité, semblables jusqu'à
+	       25 %, sinon non tranchés ; écarts chiffrés à l'étape 6.
+
+	==> Moyennes observées, groupe : actif = 31,9 ; placebo = 30,7 (8
+	    sujets x 3 mesures).
+	==> Moyennes observées, temps : T1 = 30,3 ; T2 = 31,0 ; T3 = 32,6
+	    (n = 16).
+	==> Par case : actif x T1 = 30,1 ; placebo x T1 = 30,6 ;
+	    actif x T2 = 31,6 ; placebo x T2 = 30,4 ; actif x T3 = 34,0 ;
+	    placebo x T3 = 31,2.
+	==> Écart-type résiduel au sein des sujets : 1,4 ; loi normale à
+	    variance commune seule.
+	Note : pour un compte rendu : « groupe oui, seul ou en interaction,
+	       (79,6 %), temps oui, seul ou en interaction, (98,2 %),
+	       groupe:temps oui (66,0 %) ; au moins une différence : 98,6 %,
+	       facteur de Bayes 36,3 (m.bay {KefiR}, BayesFactor, Rouder et al.
+	       2012). »
+	Note : probabilités d'hypothèses, pas des p-values ; ni l'importance, ni
+	       la cause d'une différence ; la méthode avec print(resultat,
+	       detail = TRUE).
+
+[m.bay : OK - 43.2 s]

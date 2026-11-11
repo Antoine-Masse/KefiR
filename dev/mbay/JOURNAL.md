@@ -5,6 +5,8 @@
 **Fait.**
 - **D28.** Queues lourdes et variances inégales avec des sujets mesurées (`agent_76`) ; prudence provisoire pour les variances inégales par condition (`nlme`, BIC).
 - **Cotes proportionnelles** vérifiées contre `nnet::multinom` dans les deux voies ordinales.
+- **Audit indépendant de lisibilité** (m.test et m.bay côte à côte, 13 plans) : retouches faites (D29), dont une de fond (facteur ordonné → voie ordinale).
+- **R CMD check sur c8e8976** : 1 NOTE (NEWS.md sans numéro de version), corrigée.
 - **Aide de m.bay** réécrite (plans couverts et refusés, éléments du résultat, onze exemples dont cinq sous `\donttest`). `NEWS.md` créé. `nlme` et `nnet` en Suggests.
 
 ## Séance 19 : 11 novembre 2026, audit de b447387, sphéricité, réponse ordonnée à plusieurs facteurs

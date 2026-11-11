@@ -471,8 +471,12 @@
 	}
 	unit <- .bay_delta_unit(ph)
 	op <- if (ratio) "/" else " - "
+	# French plural from 2 (audit of c8e8976): "2,37 \u00e9carts-types r\u00e9siduels".
+	plur <- function(x) sub("^\u00e9cart-type( r\u00e9siduel)?", "\u00e9carts-types\\1", x)
+	plur2 <- function(x) sub("^\u00e9carts-types r\u00e9siduel", "\u00e9carts-types r\u00e9siduels", x)
 	dl <- function(i, dc) if (is.na(pr$delta[i]) || cont || ratio) "" else paste0(if (dc == ",") ", soit " else ", i.e. ",
-		gsub(".", dc, formatC(pr$delta[i], format = "f", digits = 2), fixed = TRUE), " ", if (dc == ",") unit$fr else unit$en)
+		gsub(".", dc, formatC(pr$delta[i], format = "f", digits = 2), fixed = TRUE), " ",
+		if (dc == ",") (if (abs(pr$delta[i]) >= 2) plur2(plur(unit$fr)) else unit$fr) else unit$en)
 	big <- function(n) formatC(n, format = "d", big.mark = " ")
 	if (ph$k > 2L && identical(ph$method, "gibbs")) {
 		mc <- max(1L, ceiling(200 * ph$mc_error))
@@ -486,11 +490,8 @@
 	if (ph$k > 2L) {
 		top <- .bay_top_grouping(ph)
 		if (!is.null(top)) {
-			if (head) {
-				.bay_step_result(st, paste0(top$label, " ahead (", .bay_pct(top$p, "."), ")"), paste0(top$label, " en t\u00eate (", .bay_pct(top$p, ","), ")"))
-			} else {
-				.bay_tell(st, paste0("Leading grouping: ", top$label, " (", .bay_pct(top$p, "."), ")."), paste0("Regroupement en t\u00eate : ", top$label, " (", .bay_pct(top$p, ","), ")."))
-			}
+			# With several factors the title of the step already gives it (audit of c8e8976).
+			if (head) .bay_step_result(st, paste0(top$label, " ahead (", .bay_pct(top$p, "."), ")"), paste0(top$label, " en t\u00eate (", .bay_pct(top$p, ","), ")"))
 			pt <- ph$partitions[grepl("[<>]", ph$partitions$partition), , drop = FALSE]
 			pt <- pt[seq_len(min(3L, nrow(pt))), , drop = FALSE]
 			pc <- pt$posterior / sum(ph$partitions$posterior[grepl("[<>]", ph$partitions$partition)])
@@ -748,8 +749,8 @@
 		.bay_tell(st, "Random subject effect: compound symmetry assumed, as in the uncorrected repeated-measures ANOVA (Mauchly's test in m.test()).",
 			"Effet sujet al\u00e9atoire : sym\u00e9trie compos\u00e9e suppos\u00e9e, comme dans l'ANOVA \u00e0 mesures r\u00e9p\u00e9t\u00e9es non corrig\u00e9e (test de Mauchly dans m.test()).", "detail")
 	}
-	.bay_tell(st, "heavy tails with subjects: measured without strong false \"yes\" (normal law kept, D28).",
-		"queues lourdes avec des sujets : mesur\u00e9es sans faux \u00ab oui \u00bb fort (loi normale gard\u00e9e, D28).", "note")
+	.bay_tell(st, "the normal law is kept; far values do not create a strong false \"yes\" here.",
+		"la loi normale est gard\u00e9e ; des valeurs \u00e9loign\u00e9es ne cr\u00e9ent pas ici de faux \u00ab oui \u00bb fort.", "note")
 	far <- chk$extremes[["far"]]
 	if (far > 0L) {
 		.bay_tell(st, paste0(far, if (far == 1L) " value lies" else " values lie", " beyond 3 interquartile ranges: read the answer with caution."),

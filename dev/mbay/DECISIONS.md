@@ -741,3 +741,10 @@ Dans les deux voies ordinales (un facteur, D17 voie 3 ; plusieurs facteurs, D26)
 - Sinon, « plausibles » ou « non tranchées », avec le chiffre.
 - `nnet` est en Suggests ; sans lui, le récit dit « non vérifié ici ».
 - Testé sur un cas construit (un groupe qui s'étale vers les deux extrémités).
+
+## D29. Audit indépendant de lisibilité, m.test et m.bay côte à côte : retouches FAITES (11 novembre)
+
+Rapport : `relecture/lisibilite_2026-11-11/AUDIT.md` (13 plans, plus une variante en facteur ordonné). Les retouches faites et celles laissées sont listées à la fin du rapport. Deux décisions de fond en sortent.
+- **Seuils des termes.** Une seule règle pour les termes et les paires : « oui » ≥ 75 %, « non » ≤ 25 %, « plutôt oui » ou « plutôt non » entre les deux. Un terme à 66 % n'est plus dit « oui ».
+- **Qualificatif de soutien.** Il suit l'échelle du facteur de Bayes imprimée dans le bilan, et non plus la probabilité a posteriori. À a priori 1/2, les deux coïncident (0,75 ↔ 3 ; 0,95 ↔ 20 ; 0,993 ↔ 150, D14). Avec l'a priori HOP d'une interaction (16,7 %), elles divergeaient, et le lecteur voyait « soutien faible » pour un facteur de Bayes de 9,7.
+- **Facteur ordonné.** Une réponse `ordered()` à plus de deux modalités prend la voie ordinale (un facteur ou plusieurs entre groupes), et non la voie multinomiale.

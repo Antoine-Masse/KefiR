@@ -1,0 +1,107 @@
+############ PLAN : ouinon2x2 ############
+
+== Donnees (head) ==
+  rep souche milieu pousse
+1   1     S1  riche    oui
+2   2     S1  riche    non
+3   3     S1  riche    non
+4   4     S1  riche    non
+5   5     S1  riche    oui
+6   6     S1  riche    oui
+n = 100 
+
+============ m.test ============
+m.test(pousse ~ souche * milieu, data = d) 
+
+1) Variable dépendante discrète détectée [valeurs uniques < sqrt(n)].
+	Critère : Nombre de valeurs uniques trop faible pour analyse continue.
+	==> Passage vers stratégie d'analyse non paramétrique robuste.
+2) Type de modèle détecté : ANOVA (facteurs catégoriques uniquement).
+3) ASSOMPTION DE BASE : Indépendance des observations (vérification de plan).
+	C'est une assomption de PLAN qui ne peut pas être testée statistiquement.
+	Vérifiez que :
+	  • Pas de mesures répétées (chaque observation d'un sujet différent)
+	  • Pas d'effets cluster (observations non groupées/emboîtées)
+	  • Pas d'effets report (ordre des mesures n'influence pas les résultats)
+4) Application du test de Scheirer-Ray-Hare [rcompanion::scheirerRayHare()] pour plan bifactoriel indépendant.
+	Raison : Alternative non paramétrique à l'ANOVA 2-way (basée sur rangs).
+		Teste les effets principaux ET l'interaction.
+		(Approprié pour données discrètes/non-normales avec 2 facteurs.)
+
+              Df      H  p.value
+souche         1 8.9422 0.002787
+milieu         1 1.9474 0.162866
+souche:milieu  1 3.2192 0.072780
+
+	==> Effets significatifs détectés (alpha = 0.05) : souche
+5) Note : Comparaisons post-hoc ignorées : .posthoc() attend un vecteur numérique 'x'.
+
+[m.test : ERREUR m.test : x must be numeric - 0 s]
+
+============ m.bay ============
+m.bay(pousse ~ souche * milieu, data = d) 
+
+1) Plan reconnu : 2 facteurs croisés, souche (2 niveaux), milieu (2 niveaux) ; 4
+   cases, N = 100.
+	==> Termes : souche, milieu, souche:milieu. 5 combinaisons de termes
+	    sont possibles (une interaction n'entre qu'avec ses facteurs :
+	    hérédité).
+	--> Une réponse par terme, obtenue en pesant ensemble ces 5
+	    combinaisons.
+2) Contrôles des données - rien à retirer.
+	==> Effectifs : 25 par case.
+	==> Part de « oui » par case : S1 x riche 48,0 %, S1 x pauvre 16,0 %,
+	    S2 x riche 60,0 %, S2 x pauvre 64,0 %.
+	--> Aucune valeur retirée.
+3) Loi des réponses [glm(family = binomial) {stats}] - binomiale (régression
+   logistique).
+	==> Chaque modèle est une régression logistique de la part de « oui ».
+4) Point de départ (a priori) - aucune différence du tout : 33,3 %.
+	==> Chance de chaque terme d'avance : souche 50,0 %, milieu 50,0 %,
+	    souche:milieu 16,7 %.
+	Note : a priori sur les effets : le poids d'une seule observation
+	       (information unitaire), sans échelle à choisir.
+5) Solidité de la réponse - aucun terme ne change de côté.
+	==> 5 modèles comparés (combinaisons de termes).
+	==> Précision : forme close, sans tirage.
+	Note : trois lois sur les modèles (HOP, termes indépendants, uniforme) ;
+	       pas d'échelle r avec l'information unitaire.
+6) De combien la part change [glm() {stats}] - souche : S2/S1 = 3,57.
+	==> souche : rapport des cotes S2/S1 = 3,57 [1,55 ; 8,25], à autres
+	    facteurs égaux.
+	Note : 1 = pas de différence ; [ ; ] = intervalle à 95 % (approximation
+	       de Laplace du modèle additif).
+
+7) Bilan - souche oui (86,8 %), milieu non tranché (31,1 %), souche:milieu non
+   tranché (12,5 %).
+	==> Verdict : une différence selon souche ; les autres termes sont plus
+	    bas.
+	==> Probabilité de chaque hypothèse :
+	    1. La part de « oui » diffère selon au moins un facteur : 88,3 %
+	       (soutien modéré)
+	    2. Aucune différence de la part de « oui » selon souche, milieu :
+	       11,7 %
+	==> Selon le point de départ : 88,3 % à 93,8 % ; l'ordre ne change pas.
+	Note : les données sont 3,79 fois plus probables sous l'hypothèse 1 que
+	       sous la 2 (facteur de Bayes ; 1 à 3 faible, 3 à 20 modéré, 20 à
+	       150 fort, au-delà très fort).
+
+	==> souche : oui, soutien modéré (86,8 % ; a priori 50,0 % ; facteur de
+	    Bayes 6,57).
+	==> milieu : non tranché (31,1 % ; a priori 50,0 % ; facteur de Bayes
+	    0,451).
+	==> souche:milieu : non tranché (12,5 % ; a priori 16,7 % ; facteur de
+	    Bayes 0,716).
+
+	==> Parts observées par case : S1 x riche = 48,0 % ;
+	    S1 x pauvre = 16,0 % ; S2 x riche = 60,0 % ; S2 x pauvre = 64,0 %.
+	Note : pour un compte rendu : « souche oui (86,8 %), milieu non tranché
+	       (31,1 %), souche:milieu non tranché (12,5 %) ; au moins une
+	       différence : 88,3 %, facteur de Bayes 3,79 (m.bay {KefiR},
+	       régression logistique, approximation BIC, a priori HOP, Raftery
+	       1995). »
+	Note : probabilités d'hypothèses, pas des p-values ; ni l'importance, ni
+	       la cause d'une différence ; la méthode avec print(resultat,
+	       detail = TRUE).
+
+[m.bay : OK - 0.2 s]

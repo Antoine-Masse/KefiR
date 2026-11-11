@@ -76,16 +76,18 @@ test_that("etape 3 : variances inegales annoncees, avec le groupe le plus disper
 	expect_match(en, "Unequal variances probable.*c the most dispersed")
 })
 
-test_that("qualificatif : un facteur de Bayes entre 1/3 et 3 donne non tranche par les donnees, verdict indecis", {
+test_that("qualificatif : un facteur de Bayes entre 1/3 et 3 donne non tranche par les donnees, verdict non tranche", {
 	s <- .bay_support_bf(0.94, log(2))
 	expect_equal(s$level, 1L)
 	expect_match(s$fr, "non tranch")
-	expect_equal(.bay_support_bf(0.94, log(20))$level, .bay_support(0.94)$level)
+	# Same scale as the note of the bilan (audit of c8e8976): BF 20 is "strong", whatever the prior.
+	expect_equal(.bay_support_bf(0.94, log(20))$level, 4L)
+	expect_equal(.bay_support_bf(0.94, log(10))$level, 3L)
 	expect_equal(.bay_support_bf(0.55, log(2))$level, 1L)
 	# verdict plafonne : forte probabilite venue de l'a priori
 	obj <- list(hypotheses = data.frame(posterior = c(0.9, 0.1), prior = c(0.8, 0.2)), prob_effect = 0.9,
 		sensitivity = NULL, contradiction = FALSE)
-	expect_match(.bay_verdict(obj)$fr, "ind")
+	expect_match(.bay_verdict(obj)$fr, "non tranch")
 })
 
 test_that("session anglaise reelle : le recit sort en anglais", {
