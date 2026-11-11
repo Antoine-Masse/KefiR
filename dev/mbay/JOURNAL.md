@@ -12,6 +12,10 @@
 - **D27, sphéricité.** Mesurée (`agent_74`) : pas de faux « oui » fort sous AR(1) ; pas de correction, ε dit dans le récit.
 - **D26.** Réponse ordonnée à plusieurs facteurs (`polr`, BIC, HOP) ; `agent_75`.
 
+**Vérifié.** R CMD check sur d7a295a : Status OK, dans un dossier propre. Un check lancé en même temps dans le même dossier avait échoué (« path does not exist ») : collision entre les deux runs, pas défaut du code. Depuis, un check à la fois, chacun dans son dossier. Tests bay : 801.
+
+**Suite proposée.** Variances inégales et queues lourdes avec sujets ou covariables ; réponses discrètes et ordonnées avec sujets.
+
 ## Séance 18 : 11 novembre 2026, temps au-delà de 8 groupes, post-hoc à plusieurs facteurs calibré, réponses discrètes à plusieurs facteurs (D25)
 
 **Fait.**
