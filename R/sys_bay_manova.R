@@ -42,11 +42,15 @@
 
 .bay_m_manova <- function(input, call_expr, get_notes, note, prior_h1, rscale, sensitivity, draws, seed, detail, verbose,
                           return, story, posthoc) {
-	if (length(input$factors) != 1L || length(input$covariates) || !is.null(input$id)) {
-		.bay_tell(story, paste0("Plan recognised: several responses (MANOVA) with several factors, covariates or subjects; N = ", NROW(input$response), "."),
-			paste0("Plan reconnu : plusieurs r\u00e9ponses (MANOVA) avec plusieurs facteurs, des covariables ou des sujets ; N = ", NROW(input$response), "."), "step")
-		.exit("Several responses: one factor between groups only for now (no second factor, covariate or subject).",
-			"Plusieurs r\u00e9ponses : un seul facteur entre groupes pour l'instant (ni second facteur, ni covariable, ni sujet).")
+	if (length(input$covariates) || !is.null(input$id)) {
+		.bay_tell(story, paste0("Plan recognised: several responses (MANOVA) with covariates or subjects; N = ", NROW(input$response), "."),
+			paste0("Plan reconnu : plusieurs r\u00e9ponses (MANOVA) avec des covariables ou des sujets ; N = ", NROW(input$response), "."), "step")
+		.exit("Several responses: factors between groups only for now (no covariate or subject).",
+			"Plusieurs r\u00e9ponses : facteurs entre groupes seulement pour l'instant (ni covariable, ni sujet).")
+	}
+	# Several factors (D23).
+	if (length(input$factors) > 1L) {
+		return(.bay_m_manova_fact(input, call_expr, get_notes, note, rscale, sensitivity, draws, seed, detail, verbose, return, story))
 	}
 	Y <- as.matrix(input$response)
 	if (is.null(colnames(Y))) colnames(Y) <- paste0("y", seq_len(ncol(Y)))
@@ -231,18 +235,33 @@
 			emit("decide", "Correlations between responses far from equal: the model may miss a difference; a \"no\" is to be read with caution.",
 				"Corr\u00e9lations entre r\u00e9ponses loin d'\u00eatre \u00e9gales : le mod\u00e8le peut manquer une diff\u00e9rence ; un \u00ab non \u00bb est \u00e0 lire avec r\u00e9serve.")
 		}
+		e <- obj$effects
+		if (nrow(e) > 1L) {
+			# Several factors (D23): one line per term, with the words of the report sentence.
+			ta <- .bay_term_answers(obj)
+			for (i in seq_len(nrow(e))) {
+				emit("fact", paste0(e$term[i], ": ", ta$long_en[i], " (", .bay_pct(e$p_h1[i], "."), "; prior ", .bay_pct(e$prior_h1[i], "."), "; Bayes factor ", .bay_bf_txt(e$log_bf[i], "."), ")."),
+					paste0(e$term[i], " : ", ta$long_fr[i], " (", .bay_pct(e$p_h1[i], ","), " ; a priori ", .bay_pct(e$prior_h1[i], ","), " ; facteur de Bayes ", .bay_bf_txt(e$log_bf[i], ","), ")."))
+			}
+		}
 		emit("block", "", "")
 		ds <- obj$descriptive_stats
+		grp <- if (!is.null(ds$group)) ds$group else ds$cell
 		for (v in unique(ds$response)) {
-			s <- ds[ds$response == v, , drop = FALSE]
-			dg <- .bay_dg(s$mean)
-			emit("fact", paste0("Observed means, ", v, ": ", paste0(s$group, " = ", .bay_fx(s$mean, dg, "."), collapse = "; "), "."),
-				paste0("Moyennes observ\u00e9es, ", v, " : ", paste0(s$group, " = ", .bay_fx(s$mean, dg, ","), collapse = " ; "), "."))
+			s <- ds$response == v
+			dg <- .bay_dg(ds$mean[s])
+			emit("fact", paste0("Observed means, ", v, ": ", paste0(grp[s], " = ", .bay_fx(ds$mean[s], dg, "."), collapse = "; "), "."),
+				paste0("Moyennes observ\u00e9es, ", v, " : ", paste0(grp[s], " = ", .bay_fx(ds$mean[s], dg, ","), collapse = " ; "), "."))
 		}
 	}
 	.bay_bilan_common(obj, narrated, body)
 	if (!isTRUE(detail)) return(invisible(obj))
 	say <- .bay_detail_head(obj)
+	if (is.null(obj$forms)) {
+		say("Each term of the factors in two forms at even odds: t (same gap on every response) or t + t:response; HOP prior on the terms; responses standardised, stacked, individual random effect (lmBF; DECISIONS, D23).",
+			"Chaque terme des facteurs sous deux formes \u00e0 poids \u00e9gaux : t (m\u00eame \u00e9cart sur chaque r\u00e9ponse) ou t + t:r\u00e9ponse ; a priori HOP sur les termes ; r\u00e9ponses standardis\u00e9es, empil\u00e9es, effet individu al\u00e9atoire (lmBF ; DECISIONS, D23).")
+		return(invisible(obj))
+	}
 	say(paste0("Forms of a difference, given a difference: same gap on every response ", .bay_pct(obj$forms$posterior_given_h1[1L], "."),
 			"; gaps that change with the response ", .bay_pct(obj$forms$posterior_given_h1[2L], "."), "."),
 		paste0("Formes d'une diff\u00e9rence, s'il y en a une : m\u00eame \u00e9cart sur chaque r\u00e9ponse ", .bay_pct(obj$forms$posterior_given_h1[1L], ","),

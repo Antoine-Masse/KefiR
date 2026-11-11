@@ -8,7 +8,10 @@
 
 **Vérifié.** `agent_68` (VALIDATION §19) ; `test-bay-manova.R` contre `lmBF` sur les données empilées ; tests bay.
 
-**Non fait.** MANOVA à plusieurs facteurs, avec covariables ou sujets.
+- R CMD check sur 3135136 (D22 et les deux corrections d'audit) : Status OK.
+- **D23.** MANOVA à plusieurs facteurs : `R/sys_bay_manova_fact.R`, deux formes par terme, HOP ; `agent_69` (VALIDATION §20).
+
+**Non fait.** MANOVA avec covariables ou sujets ; queues lourdes à plusieurs facteurs.
 
 ## Séance 14 : 10 novembre 2026, audit de 23c941e et mesures répétées avec répliques (D21)
 

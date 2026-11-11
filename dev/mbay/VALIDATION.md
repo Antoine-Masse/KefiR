@@ -874,3 +874,14 @@ Temps : 6 à 9 s pour un appel complet avec sensibilité (3 × 2, 2 × 2, split-
 | Effet 0,8 sur y1, corrélée 0,8 à y2 | 84 % | 29 / 14 % | 23 / 13 % | 15 / 4 % |
 
 **Lecture.** C n'invente pas de différence, et il est le plus puissant, sauf quand l'effet passe par un contraste entre réponses corrélées : Pillai y exploite la covariance, C ne le peut pas. Un appel complet avec la sensibilité prend environ 15 s (3 réponses, N = 45).
+
+## 20. MANOVA à deux facteurs (D23, `agent_69`), 11 novembre
+
+2 × 2, 3 réponses (corrélations 0,3), n = 12 par case, 60 jeux par scénario, sans sensibilité. Résultats : `scripts/resultats/agent_69_*.txt`.
+
+| Scénario | Un terme P > 0,75 | Un terme P > 0,95 | P(A) > 0,75 | P(A) > 0,95 | B ou A:B P > 0,95 | Pillai sur A, p < 0,05 |
+|---|---:|---:|---:|---:|---:|---:|
+| H0 | 1,7 % | 0 % | 0 % | 0 % | 0 % | 5,0 % |
+| Effet de A (0,8 sur y1) | 38,3 % | 18,3 % | 38,3 % | 16,7 % | 1,7 % | 76,7 % |
+
+**Lecture.** Aucun faux « oui » fort sous H0 ; puissance prudente, comme à un facteur (D22). Temps médian 21 s sans sensibilité, sous la charge de deux simulations ; 50 à 70 s avec la sensibilité, ligne d'attente affichée. Le test des 80 colonnes et R CMD check (Status OK) portent sur 3135136.

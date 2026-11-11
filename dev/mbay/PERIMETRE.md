@@ -343,7 +343,8 @@ Légende :
 | Pentes aléatoires | Refusé | — | Stan (rstanarm) seulement |
 | ANCOVA appariée, MANCOVA, MANOVA répétée | Refusé | — | Non couverts par `m.test()` non plus |
 | MANOVA, 1 facteur | Couvert | `lmBF` sur réponses standardisées empilées, D22 | Corrélations prises égales : peut manquer une différence portée par un contraste |
-| MANOVA, plusieurs facteurs, covariables ou sujets | Refusé | — | À faire |
+| MANOVA, plusieurs facteurs entre groupes | Couvert | `lmBF` empilé, deux formes par terme, HOP, D23 | 50 à 70 s avec sensibilité (ligne d'attente) ; puissance prudente |
+| MANOVA avec covariables ou sujets | Refusé | — | À faire |
 | Réponse binaire ou catégorielle, 1 facteur | Couvert | `contingencyTableBF`, D17 voie 1 | Plusieurs facteurs : refusé |
 | Comptages, 1 facteur | Couvert | Poisson et binomiale négative, BIC, D17 voie 2 | Plusieurs facteurs : refusé ; puissance modeste |
 | Réponse ordonnée (notation bornée), 1 facteur | Couvert | `polr`, BIC, D17 voie 3 | Cotes proportionnelles non testées ; plusieurs facteurs : refusé |

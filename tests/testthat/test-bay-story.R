@@ -99,9 +99,9 @@ test_that("session anglaise reelle : le recit sort en anglais", {
 })
 
 test_that("plan refuse : l'etape 1 le nomme avant le refus", {
-	# MANOVA a un facteur acceptee depuis D22 : un plan encore refuse, la MANOVA a deux facteurs
-	d <- data.frame(y = rnorm(20), y2 = rnorm(20), g = factor(rep(1:2, 10)), h = factor(rep(1:2, each = 10)))
-	txt <- capture.output(expect_error(m.bay(cbind(y, y2) ~ g * h, data = d)))
+	# MANOVA acceptee depuis D22-D23 : un plan encore refuse, la MANOVA avec covariable
+	d <- data.frame(y = rnorm(20), y2 = rnorm(20), g = factor(rep(1:2, 10)), x = rnorm(20))
+	txt <- capture.output(expect_error(m.bay(cbind(y, y2) ~ g + x, data = d)))
 	expect_true(any(grepl("^1[)] ", txt)))
 	expect_true(any(grepl("MANOVA", txt)))
 })

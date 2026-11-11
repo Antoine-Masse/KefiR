@@ -608,3 +608,21 @@ Demandé par la session parente dans l'ordre du PERIMETRE, avec trois points de 
 **Audit de D22 par « KefiR officiel » (11 novembre), deux corrections faites avant le commit.**
 1. **Largeur.** Le repli d'un élément numéroté pouvait atteindre 83 colonnes (iris, noms de réponses longs) : la largeur disponible ne tenait pas compte du retrait de continuation. Corrigé à la source dans `.bay_wrap`, pour tous les plans : la largeur se calcule sur le plus large des deux retraits. iris est ajouté au test des 80 colonnes.
 2. **Noms du résultat.** La MANOVA a désormais `laws`, `models` et `questions`, comme les autres plans. La probabilité d'un effet s'appelle `prob_effect` partout, MANOVA comprise ; aucun plan n'a d'élément `p_h1` à la racine (il est dans `$effects$p_h1`).
+
+## D23. MANOVA à plusieurs facteurs entre groupes : DÉCIDÉ ET FAIT (11 novembre)
+
+**Faisabilité.** Avec BayesFactor empilé, oui, proprement. Un plan 2 × 2 à 3 réponses compte 17 modèles et environ 20 s par appel sans sensibilité. Avec la sensibilité (3 valeurs de r), il faut 50 à 70 s : une ligne d'attente s'affiche alors (« Calcul de 17 modèles pour 3 valeurs de r, environ 70 s… »).
+
+**Modèle** (`R/sys_bay_manova_fact.R`). Même empilement qu'à un facteur (D22) : réponses standardisées, individu aléatoire, `lmBF`.
+- Chaque terme des facteurs entre sous l'une de deux formes : t (même écart sur chaque réponse) ou t + t:réponse (écarts qui changent avec la réponse).
+- Les modèles sont les combinaisons héréditaires des termes (comme à une réponse), chaque terme présent sous l'une des deux formes.
+- A priori : HOP sur les termes, puis 1/2 par forme. Chaque facteur de Bayes se lit contre « réponse + individu ».
+- **Choix KefiR.** Les formes de deux termes sont indépendantes : A:B:réponse n'exige pas A:réponse. Cela garde 17 modèles au lieu de plusieurs dizaines.
+
+**Réponses par terme.** P(terme) est la somme des modèles qui le contiennent, sous l'une ou l'autre forme. Le bilan et le compte rendu emploient les mêmes mots (`.bay_term_answers`). L'étape 6 donne, pour chaque terme, P(écarts qui changent avec la réponse | le terme agit).
+
+**Calibration** (`agent_69`, 2 × 2, 3 réponses, n = 12 par case, 60 jeux par scénario ; VALIDATION §20).
+- Sous H0, aucun terme ne dépasse P > 0,95 ; un terme dépasse 0,75 dans 1,7 % des jeux.
+- Avec un effet de A de 0,8 sur une réponse, P(A) > 0,75 dans 38 % des jeux et > 0,95 dans 17 %, contre 77 % pour Pillai à p < 0,05. B ou A:B ne dépassent 0,95 que dans 1 jeu sur 60.
+
+**Refusés.** MANOVA avec covariables ou avec sujets.
