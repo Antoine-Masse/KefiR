@@ -69,6 +69,8 @@ and \code{error_pct}.}
 \item{estimate}{Under the hypothesis of a link, with Jeffreys's prior for estimation
 (stretched beta 1/2, recommended by van Doorn et al. 2018), which hardly pulls the
 estimate towards 0: \code{param} (\code{rho} or \code{tau}), \code{median}, \code{lo}, \code{hi}, \code{ci}.}
+\item{estimate_test}{The same under the prior of the test (\code{kappa}), shown with
+\code{detail = TRUE}; it can miss a strong link (dev/corbay/DECISIONS.md, C8).}
 \item{observed}{\code{r}, \code{tau}, \code{rho_s}: Pearson, Kendall and Spearman coefficients.}
 \item{method, auto, why}{The method, whether the rule chose it, and why.}
 \item{other}{The cross-check by the other method (\code{method = "auto"} only).}

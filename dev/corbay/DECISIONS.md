@@ -72,6 +72,21 @@ Décision : la voie robuste est Kendall, choisie par la règle C3. **Pas de mod�
 
 Sous l'hypothèse d'un lien (du signe testé en unilatéral), comme l'écart de m.bay : médiane a posteriori et intervalle HDI à `conf.level` (`bayestestR::hdi`).
 - **A priori d'estimation** : bêta étirée alpha = beta = 1/2 (kappa = 2), le choix de Jeffreys pour l'estimation, que [vanDoorn2018] (§2.2) recommande « quand l'objet est l'estimation plutôt que le test » ; sur tau, il est uniforme. **Le test garde kappa = 1/3** (C2). Raison mesurée : avec kappa = 1/3 aussi pour l'estimation, un lien fort était trop ramené vers 0. Exemple : notes 1 à 5, n = 40, tau-b observé 0,79, r = 0,89. Avec kappa = 1/3, tau estimé 0,59 [0,40 ; 0,77] : l'intervalle excluait la valeur observée. Avec kappa = 2, 0,75 [0,54 ; 0,98]. Sur un lien modéré, l'écart est petit : r = 0,53, n = 30, Pearson 0,45 [0,19 ; 0,72] avec kappa = 1/3, 0,51 [0,23 ; 0,75] avec kappa = 2. Prix : l'estimation et le test ne partent pas du même a priori ; c'est dit en note à l'étape 6 et dans le détail.
+- **Revu le 11 novembre au soir, à la demande de la session parente** (règle de famille : l'estimation vient du même modèle que le test, sauf argument fort chiffré). Mesure `scripts/check_estim.R` : 60 jeux par case, rho vrai fixé, intervalle à 95 %. On compte la couverture du coefficient vrai (tau vrai = 2/pi arcsin(rho)) et la part des jeux où l'intervalle contient la valeur observée.
+
+| Méthode | rho vrai | n | Médiane, a priori du test (k = 1/3) | Médiane, Jeffreys (k = 2) | Couverture, k = 1/3 | Couverture, k = 2 | Observé dans l'intervalle, k = 1/3 | Idem, k = 2 |
+|---|---|---|---|---|---|---|---|---|
+| Kendall | 0,9 (tau 0,71) | 8 | 0,32 | 0,57 | 0 % | 100 % | 17 % | 98 % |
+| Kendall | 0,9 | 15 | 0,43 | 0,63 | 13 % | 100 % | 22 % | 100 % |
+| Kendall | 0,9 | 30 | 0,54 | 0,67 | 68 % | 98 % | 72 % | 100 % |
+| Pearson | 0,9 | 8 | 0,66 | 0,84 | 57 % | 98 % | 88 % | 100 % |
+| Pearson | 0,9 | 15 | 0,79 | 0,87 | 75 % | 95 % | 100 % | 100 % |
+| Pearson | 0,9 | 30 | 0,85 | 0,88 | 87 % | 97 % | 100 % | 100 % |
+| Kendall | 0,6 (tau 0,41) | 8 | 0,21 | 0,36 | 92 % | 98 % | 72 % | 100 % |
+| Pearson | 0,6 | 8 | 0,38 | 0,55 | 88 % | 97 % | 93 % | 100 % |
+| les deux | 0,3 | 8 à 30 | | | 90 à 95 % | 90 à 95 % | 97 à 100 % | 100 % |
+
+  Avec l'a priori du test, un lien fort est rendu à la moitié de sa valeur (tau 0,32 pour 0,71 à n = 8), et l'intervalle de Kendall manque le vrai tau dans 87 à 100 % des jeux sous 15 paires. Il exclut même le tau observé dans 78 à 83 % des jeux. Or les liens forts sont courants en TP (étalonnage, mesures physiques). La bêta(3, 3) les juge très improbables : P(|rho| > 0,9) = 0,23 % a priori. **Décision : on garde Jeffreys pour l'estimation du bilan**, faute de quoi l'étudiant lirait un rho estimé démenti par son propre nuage de points. L'estimation sous l'a priori du test est gardée dans l'objet (`$estimate_test`) et dite par `print(x, detail = TRUE)`. Pour les liens faibles et modérés, les deux s'accordent. **Pour revenir à la règle de famille, une seule ligne** : `.corbay_kappa_est()` dans `sys_bay_cor.R`.
 - Pearson et Spearman : 10 000 tirages de `correlationBF(posterior = TRUE)` (Metropolis-Hastings à proposition indépendante de BayesFactor), graine propre à l'appel (`.bay_with_seed`), état aléatoire global intact.
 - Kendall : densité a posteriori de tau sur une grille de 4001 points autour du sommet (éq. 11 × éq. 9), puis 10 000 tirages pour `hdi`. L'écart-type de T* est pris égal à 1 ; il est plus petit quand |tau| est grand (éq. 14), donc l'intervalle de Kendall est un peu trop large pour un lien fort : prudent, comme l'article le dit de son test.
 - Quand « aucun lien » est en tête, l'estimation est dite « si un lien existe ».

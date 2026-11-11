@@ -65,6 +65,8 @@
 #'     \item{estimate}{Under the hypothesis of a link, with Jeffreys's prior for estimation
 #'       (stretched beta 1/2, recommended by van Doorn et al. 2018), which hardly pulls the
 #'       estimate towards 0: `param` (`rho` or `tau`), `median`, `lo`, `hi`, `ci`.}
+#'     \item{estimate_test}{The same under the prior of the test (`kappa`), shown with
+#'       `detail = TRUE`; it can miss a strong link (dev/corbay/DECISIONS.md, C8).}
 #'     \item{observed}{`r`, `tau`, `rho_s`: Pearson, Kendall and Spearman coefficients.}
 #'     \item{method, auto, why}{The method, whether the rule chose it, and why.}
 #'     \item{other}{The cross-check by the other method (`method = "auto"` only).}
@@ -196,6 +198,8 @@ cor.bay <- function(x, y = NULL, data = NULL, method = c("auto", "pearson", "ken
 	sens <- if (isTRUE(sensitivity)) .corbay_sensitivity(meth, xv, yv, kappa, alternative, prior_h1, lead, xn, yn, lbf) else NULL
 	# Estimation under Jeffreys's estimation prior, stretched beta 1/2 (DECISIONS, C8).
 	est <- .corbay_estimate(meth, xv, yv, .corbay_kappa_est(), alternative, as.integer(draws), seed, conf.level)
+	# The same estimate under the prior of the test, kept and shown with detail = TRUE.
+	est_test <- .corbay_estimate(meth, xv, yv, kappa, alternative, as.integer(draws), seed, conf.level)
 	observed <- c(r = stats::cor(xv, yv), tau = suppressWarnings(stats::cor(xv, yv, method = "kendall")),
 		rho_s = suppressWarnings(stats::cor(xv, yv, method = "spearman")))
 	if (alternative != "two.sided" && isTRUE(sign(observed[["r"]]) == (if (alternative == "greater") -1 else 1))) {
@@ -204,7 +208,7 @@ cor.bay <- function(x, y = NULL, data = NULL, method = c("auto", "pearson", "ken
 	}
 	out <- list(hypotheses = hyp, prob_link = sum(hyp$posterior[!hyp$null]),
 		bf = list(log_bf10 = unname(lb10), log_bf_plus = unname(lbf[["plus"]]), log_bf_minus = unname(lbf[["minus"]]), error_pct = unname(lbf[["error_pct"]])),
-		estimate = est, observed = observed, method = meth, auto = auto, why = ch$why, other = other,
+		estimate = est, estimate_test = est_test, observed = observed, method = meth, auto = auto, why = ch$why, other = other,
 		contradiction = contradiction, sensitivity = sens, checks = ck, n = n, n_removed = n_removed,
 		alternative = alternative, priors = list(prior_h1 = prior_h1, kappa = kappa),
 		label = paste0(xn, ", ", yn), notes = notes, call = call_expr, detail = isTRUE(detail))

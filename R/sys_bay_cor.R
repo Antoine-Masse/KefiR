@@ -370,8 +370,8 @@
 	}
 	.bay_tell(st, "these values are not adjusted on the data; step 5 varies them.",
 		"ces valeurs ne sont pas ajust\u00e9es sur les donn\u00e9es ; l'\u00e9tape 5 les fait varier.", "note")
-	.bay_tell(st, paste0("The prior on rho: stretched beta, (rho + 1) / 2 ~ Beta(1/kappa, 1/kappa), kappa = ", kt$en, " (\"medium\" of BayesFactor; JASP takes kappa = 1, uniform)."),
-		paste0("L'a priori sur rho : b\u00eata \u00e9tir\u00e9e, (rho + 1) / 2 ~ B\u00eata(1/kappa, 1/kappa), kappa = ", kt$fr, " (\u00ab medium \u00bb de BayesFactor ; JASP prend kappa = 1, uniforme)."), "detail")
+	.bay_tell(st, paste0("the prior on rho: stretched beta, (rho + 1) / 2 ~ Beta(1/kappa, 1/kappa), kappa = ", kt$en, " (\"medium\" of BayesFactor; JASP takes kappa = 1, uniform)."),
+		paste0("l'a priori sur rho : b\u00eata \u00e9tir\u00e9e, (rho + 1) / 2 ~ B\u00eata(1/kappa, 1/kappa), kappa = ", kt$fr, " (\u00ab medium \u00bb de BayesFactor ; JASP prend kappa = 1, uniforme)."), "detail")
 }
 
 .corbay_story_solidity <- function(st, obj) {
@@ -550,9 +550,9 @@
 		paste0("M\u00e9thode : ", mw$fr, if (obj$auto) " (choisie par la r\u00e8gle de method = \u00ab auto \u00bb)" else "", "."))
 	emit("block", "", "")
 	ob <- obj$observed
-	emit("fact", paste0("Observed: r = ", .corbay_num(ob[["r"]], 2L, "."), " (Pearson), tau = ", .corbay_num(ob[["tau"]], 2L, "."), " (Kendall), rho = ",
+	emit("fact", paste0("Observed coefficients: r = ", .corbay_num(ob[["r"]], 2L, "."), " (Pearson), tau = ", .corbay_num(ob[["tau"]], 2L, "."), " (Kendall), rho = ",
 			.corbay_num(ob[["rho_s"]], 2L, "."), " (Spearman), N = ", obj$n, " pairs."),
-		paste0("Observ\u00e9 : r = ", .corbay_num(ob[["r"]], 2L, ","), " (Pearson), tau = ", .corbay_num(ob[["tau"]], 2L, ","), " (Kendall), rho = ",
+		paste0("Coefficients observ\u00e9s : r = ", .corbay_num(ob[["r"]], 2L, ","), " (Pearson), tau = ", .corbay_num(ob[["tau"]], 2L, ","), " (Kendall), rho = ",
 			.corbay_num(ob[["rho_s"]], 2L, ","), " (Spearman), N = ", obj$n, " paires."))
 	if (length(obj$notes$en) && !isTRUE(narrated)) for (i in seq_along(obj$notes$en)) emit("fact", obj$notes$en[i], obj$notes$fr[i])
 	est_en <- if (!is.null(est)) paste0("; ", mw$par, " = ", .corbay_est_txt(est, "."), ", ", format(round(100 * est$ci)), " % credible interval") else ""
@@ -561,18 +561,23 @@
 	h1 <- which(!h$null)[1L]
 	p_link <- sum(h$posterior[!h$null])
 	if (undecided) {
-		emit("note", paste0("for a report: \"The data do not settle it (probability of a link ", .bay_pct(p_link, "."), ", Bayes factor ", .bay_bf_txt(obj$bf$log_bf10, "."),
-				"); cor.bay {KefiR}, ", mw$cite_en, ".\""),
+		# Same form as m.bay: the Bayes factor of the leading hypothesis against the second, said
+		# in favour of the absence when "no link" leads.
+		emit("note", paste0("for a report: \"The data do not settle it (probability of a link ", .bay_pct(p_link, "."), ", Bayes factor ", bf_en,
+				if (h0) " in favour of no link" else "", "); cor.bay {KefiR}, ", mw$cite_en, ".\""),
 			paste0("pour un compte rendu : \u00ab Les donn\u00e9es ne permettent pas de conclure (probabilit\u00e9 d'un lien ", .bay_pct(p_link, ","), ", facteur de Bayes ",
-				.bay_bf_txt(obj$bf$log_bf10, ","), ") ; cor.bay {KefiR}, ", mw$cite_fr, ". \u00bb"))
+				bf_fr, if (h0) " en faveur de l'absence de lien" else "", ") ; cor.bay {KefiR}, ", mw$cite_fr, ". \u00bb"))
 	} else {
 		emit("note", paste0("for a report: \"", h$label_en[1L], " (posterior probability ", .bay_pct(h$posterior[1L], "."), "), Bayes factor ", bf_en, est_en,
 				" (cor.bay {KefiR}, ", mw$cite_en, ").\""),
 			paste0("pour un compte rendu : \u00ab ", h$label_fr[1L], " (probabilit\u00e9 a posteriori ", .bay_pct(h$posterior[1L], ","), "), facteur de Bayes ", bf_fr, est_fr,
 				" (cor.bay {KefiR}, ", mw$cite_fr, "). \u00bb"))
 	}
-	emit("note", paste0("probabilities of hypotheses, not p-values; a link is not a cause; the method with print(result, detail = TRUE)."),
-		paste0("probabilit\u00e9s d'hypoth\u00e8ses, pas des p-values ; un lien n'est pas une cause ; la m\u00e9thode avec print(resultat, detail = TRUE)."))
+	# Same words as m.bay ("neither the size nor the cause of a difference"), for a link.
+	cause_en <- if (!h0 && !undecided) "; neither the strength nor the cause of a link" else ""
+	cause_fr <- if (!h0 && !undecided) " ; ni la force, ni la cause d'un lien" else ""
+	emit("note", paste0("probabilities of hypotheses, not p-values", cause_en, "; the method with print(result, detail = TRUE)."),
+		paste0("probabilit\u00e9s d'hypoth\u00e8ses, pas des p-values", cause_fr, " ; la m\u00e9thode avec print(resultat, detail = TRUE)."))
 	emit("flush", "", "")
 	if (isTRUE(detail)) .corbay_print_detail(obj)
 	invisible(NULL)
@@ -595,12 +600,19 @@
 	}
 	say("Estimate: under the hypothesis of a link, with Jeffreys's prior for estimation, stretched beta 1/2 (kappa = 2; van Doorn et al. 2018, section 2.2); highest density interval, bayestestR::hdi.",
 		"Estimation : sous l'hypoth\u00e8se d'un lien, avec l'a priori de Jeffreys pour l'estimation, b\u00eata \u00e9tir\u00e9e 1/2 (kappa = 2 ; van Doorn et al. 2018, section 2.2) ; intervalle de plus haute densit\u00e9, bayestestR::hdi.")
+	et <- obj$estimate_test
+	if (!is.null(et)) {
+		say(paste0("Under the prior of the test (kappa = ", .bay_num_txt(obj$priors$kappa, 3)$en, "), ", mw$par, " would be ", .corbay_est_txt(et, "."),
+				"; this prior draws strong links towards 0 (DECISIONS, C8)."),
+			paste0("Sous l'a priori du test (kappa = ", .bay_num_txt(obj$priors$kappa, 3)$fr, "), ", mw$par, " vaudrait ", .corbay_est_txt(et, ","),
+				" ; cet a priori ram\u00e8ne les liens forts vers 0 (DECISIONS, C8)."))
+	}
 	if (!is.null(obj$sensitivity)) {
 		g <- obj$sensitivity$grid
 		say(paste0("Sensitivity grid (probability of the leading hypothesis): kappa ", paste(rownames(g), collapse = ", "), " by odds 1:2, 1:1, 2:1: ",
-				paste(vapply(g, .bay_pct, character(1), dec = "."), collapse = ", "), "."),
+				paste(vapply(g, .bay_pct, character(1), dec = "."), collapse = " / "), "."),
 			paste0("Grille de sensibilit\u00e9 (probabilit\u00e9 de l'hypoth\u00e8se en t\u00eate) : kappa ", gsub(".", ",", paste(rownames(g), collapse = " ; "), fixed = TRUE), " par cotes 1:2, 1:1, 2:1 : ",
-				paste(vapply(g, .bay_pct, character(1), dec = ","), collapse = " ; "), "."))
+				paste(vapply(g, .bay_pct, character(1), dec = ","), collapse = " / "), "."))
 	}
 	pr <- .bay_prec_txt(obj$bf$error_pct)
 	say(paste0("Numerical error on the Bayes factor: ", pr$en, "."),

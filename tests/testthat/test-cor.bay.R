@@ -132,7 +132,9 @@ test_that("80 colonnes au plus, tabulation comptee 8, francais et anglais, et wi
 		function() cor.bay(d$x, d$y, draws = 1000),
 		function() cor.bay(~ longueur_de_la_tige_principale + masse_seche_des_racines, data = lg, draws = 1000, detail = TRUE),
 		function() cor.bay(d$x, d$y, alternative = "less", draws = 1000),
-		function() cor.bay(d$x[1:6], d$y[1:6], method = "kendall", draws = 1000))
+		function() cor.bay(d$x[1:6], d$y[1:6], method = "kendall", draws = 1000),
+		# lien tres fort : la grille de sensibilite n'a que des "> 99,9 %" (detail)
+		function() cor.bay(d$x, d$x + 0.05 * d$y, draws = 1000, detail = TRUE))
 	for (lc in c("French_France.utf8", "English_United States.utf8")) {
 		if (identical(suppressWarnings(Sys.setlocale("LC_CTYPE", lc)), "")) next
 		for (w in c(60, 80, 120)) {
@@ -178,4 +180,21 @@ test_that("noms : une expression devient x ou y ; estimation proche de l'observe
 	r2 <- cor.bay(a, b, verbose = FALSE, sensitivity = FALSE, draws = 2000)
 	expect_identical(r2$method, "kendall")
 	expect_true(r2$estimate$lo <= r2$observed[["tau"]] && r2$observed[["tau"]] <= r2$estimate$hi)
+})
+
+test_that("vocabulaire de la famille : compte rendu indecis comme m.bay, note finale, estimation sous l'a priori du test en detail", {
+	old <- Sys.getlocale("LC_CTYPE"); on.exit(Sys.setlocale("LC_CTYPE", old), add = TRUE)
+	suppressWarnings(Sys.setlocale("LC_CTYPE", "French_France.utf8"))
+	set.seed(4); x <- rnorm(30); z <- 0.15 * x + rnorm(30)
+	r <- cor.bay(x, z, verbose = FALSE, draws = 1000)
+	txt <- gsub("[[:space:]]+", " ", paste(capture.output(print(r)), collapse = " "))
+	if (identical(.msg("en", "fr"), "fr")) {
+		expect_match(txt, "en faveur de l'absence de lien", fixed = TRUE)
+		expect_match(txt, "1 \u00e0 3 faible, 3 \u00e0 20 mod\u00e9r\u00e9, 20 \u00e0 150 fort, au-del\u00e0 tr\u00e8s fort", fixed = TRUE)
+		expect_match(txt, "probabilit\u00e9s d'hypoth\u00e8ses, pas des p-values ; la m\u00e9thode", fixed = TRUE)
+		expect_match(txt, "non tranch\u00e9", fixed = TRUE)
+	}
+	expect_false(is.null(r$estimate_test))
+	det <- gsub("[[:space:]]+", " ", paste(capture.output(print(r, detail = TRUE)), collapse = " "))
+	expect_true(grepl("kappa = 0.333), rho", det, fixed = TRUE) || grepl("kappa = 0,333), rho", det, fixed = TRUE))
 })
