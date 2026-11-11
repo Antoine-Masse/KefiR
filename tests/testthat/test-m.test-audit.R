@@ -212,3 +212,13 @@ test_that("l. mesures repetees : p-value toujours corrigee de la sphericite (GG 
   expect_true(any(grepl("Greenhouse-Geisser|Huynh-Feldt", res$output)))
   expect_false(any(grepl("Aucune correction n.cessaire", res$output)))
 })
+
+test_that("m. le recit du Welch heteroscedastique ne promet pas la robustesse", {
+  set.seed(1)
+  n <- c(5, 5, 40)
+  x <- unlist(mapply(function(n, s) rnorm(n, 0, s), n, c(4, 4, 1)))
+  g <- factor(rep(c("A", "B", "C"), n))
+  res <- audit_quiet(m.test(x, g, plot = FALSE, boot = FALSE))
+  expect_true(any(grepl("Prudence", res$output, fixed = TRUE)))
+  expect_false(any(grepl("robuste \u00e0 une non-normalit\u00e9 mod\u00e9r\u00e9e", res$output, fixed = TRUE)))
+})
