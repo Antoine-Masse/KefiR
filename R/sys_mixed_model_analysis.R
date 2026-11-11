@@ -300,8 +300,14 @@
   })
   .dbg(NULL,"Fin de valreg()",debug=debug)
   # Extract results from valreg() new return format
-  validation_result <- valreg_output$valid
-  k <- valreg_output$k
+  # valreg() renvoie un simple logique quand k == 0 (cas verbose = FALSE) :
+  # accepter les deux formes plut\u00f4t que planter sur `$`.
+  if (is.list(valreg_output)) {
+    validation_result <- valreg_output$valid
+    if (!is.null(valreg_output$k)) k <- valreg_output$k
+  } else {
+    validation_result <- isTRUE(valreg_output)
+  }
 
   # Message selon validation
   if (!isTRUE(validation_result)) {
