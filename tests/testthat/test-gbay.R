@@ -28,7 +28,7 @@ test_that("ajustement : forme close = integration numerique (2 modalites) et mul
 	}
 	skip_if_not_installed("multibridge")
 	x <- c(3, 7, 12, 5)
-	mb <- multibridge::mult_bf_equality(x = x, a = rep(1, 4))
+	mb <- getExportedValue("multibridge", "mult_bf_equality")(x = x, a = rep(1, 4))
 	expect_equal(.gbay_lbf_gof(x, rep(0.25, 4), 1), mb$bf$LogBFe0, tolerance = 1e-7)
 })
 
