@@ -106,3 +106,15 @@ test_that("d. (1|id) donne des post-hocs apparies, comme Error(id/T)", {
   # t1-t2 : apparie p ~ 0,02 ; non apparie (ancien comportement) p = 1
   expect_lt(r_lmer$p.value["t2", "t1"], 0.1)
 })
+
+test_that("g. la MANOVA non normale aboutit vite, par le Wilks sur les rangs", {
+  set.seed(2)
+  d <- data.frame(g = rep(c("A", "B", "C"), each = 30), a = rexp(90), b = rexp(90)^2)
+  d$a[1:3] <- 40
+  duree <- system.time(r <- audit_quiet(m.test(cbind(a, b) ~ g, data = d, plot = FALSE,
+                                                 verbose = FALSE))$value)[["elapsed"]]
+  expect_identical(r$method, "Robust MANOVA (Wilks, ranks)")
+  ref <- rrcov::Wilks.test(cbind(d$a, d$b), grouping = factor(d$g), method = "rank")$p.value
+  expect_equal(r$global_pvalue, unname(ref))
+  expect_lt(duree, 120)
+})
