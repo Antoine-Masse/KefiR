@@ -6,7 +6,7 @@
 - **Audit de 9c44239** (aed2319) : bilan mené par les termes dès qu'un terme reçoit un « oui » (tous les plans à plusieurs termes) ; lecture par réponse en MANOVA à plusieurs facteurs ; écart de puissance avec Pillai mesuré (même rapport, effet sur une réponse ou réparti).
 - **D24.** Loi de Student à plusieurs facteurs (`R/sys_bay_fact_t.R`), moyennée avec les deux lois normales de D19.
 
-**Vérifié.** R CMD check sur aed2319 : Status OK. `agent_70` avant et après (VALIDATION §21). `test-bay-fact-t.R` (mesure contre `lmBF` et contre la forme close). Tests bay.
+**Vérifié.** R CMD check sur aed2319 et sur a206ba5 : Status OK. `agent_70` avant et après (VALIDATION §21). `test-bay-fact-t.R` (mesure contre `lmBF` et contre la forme close). Tests bay.
 
 **Non fait.** Student par case ; queues lourdes avec sujets, covariables, ou en MANOVA.
 
