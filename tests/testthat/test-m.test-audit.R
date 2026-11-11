@@ -67,3 +67,14 @@ test_that("f. un message anglais d'une seule chaine s'affiche en locale anglaise
   expect_true(any(grepl("Fisher-Snedecor test", res$output, fixed = TRUE)))
   expect_false(any(grepl("Test de Fisher-Snedecor", res$output, fixed = TRUE)))
 })
+
+test_that("e. m.test(formula = y ~ F, data = d) est accepte, comme m.test(y ~ F, d)", {
+  set.seed(5)
+  d <- data.frame(F = rep(c("A", "B", "C"), each = 10), y = rnorm(30))
+  ref <- audit_quiet(m.test(y ~ F, data = d, return = FALSE))$value
+  p_named <- audit_quiet(m.test(formula = y ~ F, data = d, return = FALSE))$value
+  expect_equal(p_named, ref)
+  f <- y ~ F
+  expect_equal(audit_quiet(m.test(formula = f, data = d, return = FALSE))$value, ref)
+  expect_equal(audit_quiet(m.test(formula = "y ~ F", data = d, return = FALSE))$value, ref)
+})

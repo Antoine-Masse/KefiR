@@ -277,8 +277,12 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
   }
 
   # Cas suppl\u00e9mentaire : formule a \u00e9t\u00e9 pass\u00e9e via argument nomm\u00e9
-  if ("formula" %in% names(call_expr)) {
-    formula <- call_expr$formula
+  # Le param\u00e8tre `formula` est d\u00e9j\u00e0 \u00e9valu\u00e9 : le remplacer par call_expr$formula
+  # (expression non \u00e9valu\u00e9e, de classe "call") faisait refuser y ~ F.
+  # Une formule \u00e9crite en texte ("y ~ F") reste accept\u00e9e.
+  if (!is.null(formula) && !inherits(formula, "formula") && is.character(formula)) {
+    formula <- tryCatch(stats::as.formula(formula, env = parent.frame()),
+                        error = function(e) formula)
   }
 
   # Cas formule avec data$ : essayer d'extraire le data.frame depuis l'environnement parent
