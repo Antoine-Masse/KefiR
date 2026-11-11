@@ -61,7 +61,7 @@ test_that("comptages : refus clairs, 80 colonnes", {
 	expect_error(m.bay(y ~ g, data = transform(d, y = y + 0.5), response = "counts", verbose = FALSE), "entiers|whole")
 	expect_error(m.bay(y ~ g, data = transform(d, y = -y), response = "counts", verbose = FALSE), "entiers|whole")
 	d$B <- factor(rep(1:2, 20))
-	expect_error(m.bay(y ~ g * B, data = d, response = "counts", verbose = FALSE), "un facteur seulement|one factor only")
+	expect_identical(m.bay(y ~ g * B, data = d, response = "counts", verbose = FALSE, sensitivity = FALSE)$plan, "discrete_fact")  # D25
 	old <- options(width = 80); on.exit(options(old))
 	txt <- capture.output(m.bay(y ~ g, data = .cnt(c(4, 4, 8), theta = 2, seed = 51), response = "counts"))
 	expect_lte(max(nchar(gsub("\t", "        ", txt), type = "width")), 80)

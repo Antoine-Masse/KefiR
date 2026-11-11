@@ -334,7 +334,7 @@ Légende :
 |---|---|---|---|
 | 2 et k groupes, réponse continue | Couvert | 4 lois comparées (normale ou t, variances égales ou non), D6 | Au-delà de 25 s environ (8 groupes et plus), ligne d'attente |
 | Post-hoc à un facteur | Couvert | Regroupements, D11 ; Gibbs au-delà de 8 groupes | Calibré (`agent_71`) : aucune fausse paire sous H0 à 10 et 12 groupes ; écart au calcul exact de 2,6 points en médiane |
-| Plusieurs facteurs entre groupes, interactions | Couvert | `lmBF`, HOP, D2 ; trois lois moyennées : normale commune, normale par case (D19), Student (D24) | Post-hoc D20 non calibré par simulation (en cours) |
+| Plusieurs facteurs entre groupes, interactions | Couvert | `lmBF`, HOP, D2 ; trois lois moyennées : normale commune, normale par case (D19), Student (D24) | Post-hoc D20 calibré (`agent_72`) ; une interaction réelle n'est détaillée en cases que si A:B ≥ 50 % |
 | ANCOVA, pentes parallèles ou différentes, plusieurs covariables | Couvert | `lmBF`, covariable centrée, D16 | Normale à variance commune seule ; post-hoc à plusieurs facteurs D20 |
 | Apparié, 2 niveaux | Couvert | `ttestBF(paired)`, D15 | Normale seule |
 | Mesures répétées, 1 facteur intra | Couvert | `lmBF(whichRandom)`, D15 | Symétrie composée supposée, non testée ; normale seule |
@@ -345,8 +345,10 @@ Légende :
 | MANOVA, 1 facteur | Couvert | `lmBF` sur réponses standardisées empilées, D22 | Corrélations prises égales : peut manquer une différence portée par un contraste |
 | MANOVA, plusieurs facteurs entre groupes | Couvert | `lmBF` empilé, deux formes par terme, HOP, D23 ; lecture par réponse | 40 à 70 s avec sensibilité (ligne d'attente) ; puissance prudente |
 | MANOVA avec covariables ou sujets | Refusé | — | À faire |
-| Réponse binaire ou catégorielle, 1 facteur | Couvert | `contingencyTableBF`, D17 voie 1 | Plusieurs facteurs : refusé (à faire, priorité 1) |
-| Comptages, 1 facteur | Couvert | Poisson et binomiale négative, BIC, D17 voie 2 | Plusieurs facteurs : refusé (à faire, priorité 1) ; puissance modeste |
+| Réponse binaire ou catégorielle, 1 facteur | Couvert | `contingencyTableBF`, D17 voie 1 | — |
+| Oui/non, plusieurs facteurs entre groupes | Couvert | `glm` logistique, BIC, HOP, D25 | Puissance prudente ; plus de deux modalités : refusé |
+| Comptages, 1 facteur | Couvert | Poisson et binomiale négative, BIC, D17 voie 2 | Puissance modeste |
+| Comptages, plusieurs facteurs entre groupes | Couvert | Poisson et binomiale négative moyennées, BIC, HOP, D25 | Puissance prudente ; avec sujets ou covariables : refusé |
 | Réponse ordonnée (notation bornée), 1 facteur | Couvert | `polr`, BIC, D17 voie 3 | Cotes proportionnelles non testées ; plusieurs facteurs : refusé |
 | Tests de rangs (Wilcoxon, Kruskal) | Non couvert, raisons D17 | — | Leurs cas sont repris par les voies 3 et par les lois t |
 | Covariable seule (régression) | Refusé | — | Hors `m.test()` |
@@ -379,6 +381,6 @@ Au-delà de 25 à 30 s, une ligne d'attente s'affiche avant le calcul, avec une 
 **Stan sur ce poste.** La compilation échoue : R 4.6 attend Rtools 4.5, et seul Rtools 4.4 est installé (`agent_62`). Un poste étudiant n'a en général pas Rtools. Les voies Stan (brms, rstanarm compilé) sont donc écartées pour l'usage en TP.
 
 **Priorités, pour un TP de BUT** (mises à jour le 11 novembre avec la session parente). Faits : post-hoc à plusieurs facteurs (D20), variances inégales et queues lourdes à plusieurs facteurs (D19, D24), modèle mixte avec répliques (D21), MANOVA (D22, D23), calibration au-delà de 8 groupes (`agent_71`).
-0. **Calibrer le post-hoc à plusieurs facteurs (D20)** : pas de fausse paire sous H0 en 2 × 3, lecture correcte avec et sans interaction probable.
-1. **Réponses discrètes à plusieurs facteurs** (oui/non, comptages en 2 × 2), fréquentes en TP de biologie.
-2. **Variances inégales et queues lourdes avec sujets ou covariables.**
+Faits aussi le 11 novembre : calibration du post-hoc à plusieurs facteurs (`agent_72`), réponses discrètes à plusieurs facteurs (D25).
+0. **Variances inégales et queues lourdes avec sujets ou covariables.**
+1. **Réponses discrètes avec sujets** (oui/non répété : modèle mixte logistique, sans Stan à argumenter).

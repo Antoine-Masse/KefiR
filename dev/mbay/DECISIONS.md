@@ -669,3 +669,27 @@ Demandé par la session parente dans l'ordre du PERIMETRE, avec trois points de 
 2. **Étape 3, « 95,2 % » en double.** Ce n'était pas la même variable : « égales probables (95,2 %) » affichait 1 − P(variance par case), soit P(commune) + P(Student). La ligne donne désormais P(variance par case) elle-même (« inégales à 4,8 % »).
 3. **Hypothèse globale sous un « oui ».** Elle garde le soutien de son propre facteur de Bayes sur l'échelle du bilan (« soutien faible »), jamais « non tranché ».
 4. **Écart-type du bilan** à trois chiffres significatifs (`.bay_sig3`).
+
+## D25. Réponses discrètes à plusieurs facteurs entre groupes : DÉCIDÉ ET FAIT (11 novembre)
+
+**Demande.** Oui/non et comptages en 2 × 2, fréquents en TP de biologie, jusqu'ici refusés.
+
+**Moteur** (`R/sys_bay_discrete_fact.R`). Même logique que D17.
+- Un `glm` par modèle héréditaire (`sys_bay_factorial.R`) : logistique pour oui/non ; Poisson et binomiale négative (`MASS::glm.nb`) pour les comptages.
+- Vraisemblance marginale par −BIC/2 (information unitaire ; Schwarz 1978, Raftery 1995).
+- Pour les comptages, les deux lois sont moyennées à poids égaux dans chaque modèle. Si la binomiale négative échoue pour un modèle, Poisson est gardée seule, et le récit le dit.
+- A priori HOP sur les modèles, réponse par terme, bilan mené par les termes.
+- Sensibilité : les trois lois sur les modèles (HOP, termes indépendants, uniforme) ; pas d'échelle r avec l'information unitaire.
+
+**Pourquoi pas `contingencyTableBF`.** Il ne traite qu'une table à deux dimensions, un facteur contre la réponse. Deux facteurs croisés donnent une table à trois dimensions, et l'hérédité des termes n'y a pas d'équivalent direct.
+
+**Étape 6.** Pour chaque effet principal probable à deux niveaux, rapport des cotes (oui/non) ou des moyennes (comptages), tiré du modèle additif avec un intervalle de Laplace. Les cases se lisent au bilan.
+
+**Routage.**
+- Oui/non : toute réponse à deux modalités, plan à plusieurs facteurs entre groupes. Plus de deux modalités : refusé.
+- Comptages : `response = "counts"`, ou détection automatique par la règle de D17 appliquée aux cases.
+- Comme à un facteur, un comptage à peu de valeurs dont le maximum ressemble à une borne d'échelle (10, 20…) n'est pas reconnu automatiquement. Il reste alors continu, et `response = "counts"` force la voie.
+
+**Calibration** (`agent_73`, VALIDATION §24). Pas de faux « oui » fort sous H0. P(A) > 0,75 dans 36 % (oui/non) et 32 % (comptages) des jeux, contre 74 % et 69 % pour le test du rapport de vraisemblance.
+
+**Refusés.** Réponses discrètes avec sujets ou covariables ; réponse ordonnée à plusieurs facteurs.

@@ -924,3 +924,37 @@ n = 8 par groupe, 30 jeux par partie. Résultats : `scripts/resultats/agent_71_*
 - **Retenu.**
   - Une ligne d'attente avant le calcul, avec une durée estimée (« environ 70 s » pour 73 s mesurées à k = 10).
   - Le facteur de Bayes d'un regroupement est désormais tiré des statistiques fusionnées des groupes (`.bay_bf_zs_stats`) : même valeur qu'à partir des données, gain faible (23 s → 21 s), car le coût est dans l'intégrale.
+
+## 23. Post-hoc à plusieurs facteurs (D20, `agent_72`), 11 novembre
+
+3 × 2 (A à 3 niveaux, B à 2), n = 10 par case, bruit normal, 60 jeux par scénario, sans sensibilité. Résultats : `scripts/resultats/agent_72_*.txt`.
+
+| Scénario | Mesure | Résultat |
+|---|---|---:|
+| H0 | jeux avec une famille détaillée (un terme ≥ 50 %) | 5,0 % |
+| H0 | jeux avec une paire à P ≥ 0,75 / ≥ 0,95 | 3,3 % / 0 % |
+| Effet de A (a3 = +1) | famille détaillée = niveaux de A | 80,0 % |
+| idem | paires avec a3 dites différentes (quand A est détaillé) | 88,5 % |
+| idem | a1/a2 dite différente à tort | 6,2 % |
+| Interaction (a3 × b2 = +1,5) | famille détaillée = cases A × B | 43,3 % |
+| idem | paires avec a3 × b2 dites différentes (cases détaillées) | 97,7 % |
+| idem | autres paires dites différentes à tort | 0,8 % |
+
+**Lecture.**
+- Sous H0, aucune paire forte ; une paire au-delà de 0,75 dans 2 jeux sur 60.
+- Quand le bon terme est détaillé, la lecture est juste : bonnes paires trouvées, fausses rares.
+- Une interaction réelle n'est détaillée en cases que dans 43 % des jeux. L'a priori HOP part à 16,7 % pour A:B, et c'est la prudence voulue contre les fausses interactions (D2).
+- Dans les autres jeux, les effets principaux sont détaillés. La note de l'étape 6 (audit de 23c941e) signale alors l'interaction non tranchée et donne les écarts par niveau dans `$posthoc$by`.
+
+## 24. Réponses discrètes à plusieurs facteurs (D25, `agent_73`), 11 novembre
+
+2 × 2, n = 25 par case, 200 jeux par scénario, sans sensibilité. Oui/non : p = 0,4, ou 0,4 → 0,65 selon A. Comptages : binomiale négative de taille 2, moyenne 4, ou 4 → 6 selon A, avec `response = "counts"`. Résultats : `scripts/resultats/agent_73_*.txt`.
+
+| Scénario | Un terme P > 0,75 | Un terme P > 0,95 | P(A) > 0,75 | P(A) > 0,95 | glm, rapport de vraisemblance sur A, p < 0,05 |
+|---|---:|---:|---:|---:|---:|
+| Oui/non, H0 | 0,5 % | 0 % | 0,5 % | 0 % | 6,0 % |
+| Oui/non, effet de A | 36,0 % | 18,0 % | 35,5 % | 18,0 % | 74,0 % |
+| Comptages, H0 | 0,5 % | 0 % | 0,5 % | 0 % | 5,5 % |
+| Comptages, effet de A | 33,0 % | 13,0 % | 32,0 % | 13,0 % | 68,5 % |
+
+**Lecture.** Pas de faux « oui » fort sous H0 ; puissance prudente, comme à un facteur (D17), parce que l'information unitaire pénalise chaque terme. Contrôle indépendant : le log BF d'un modèle est exactement (−BIC₁ + BIC₀)/2 du `glm` correspondant (`test-bay-discrete-fact.R`).

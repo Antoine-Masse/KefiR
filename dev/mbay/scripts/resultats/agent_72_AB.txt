@@ -1,0 +1,3 @@
+R version 4.6.1 (2026-06-24 ucrt)
+agent_72 : post-hoc a plusieurs facteurs, 3 x 2, n = 10, scenario AB, N = 60
+famille = cases A x B : 0.433 | paires avec a3 x b2 dites differentes : 0.977 | autres paires dites differentes : 0.008 | une paire P>=.95 : 0.500 | A:B P>=.75 : 0.233

@@ -1,0 +1,3 @@
+R version 4.6.1 (2026-06-24 ucrt)
+agent_72 : post-hoc a plusieurs facteurs, 3 x 2, n = 10, scenario A, N = 60
+famille = niveaux de A : 0.800 | paires avec a3 dites differentes : 0.885 | a1/a2 dite differente : 0.062 | une paire P>=.95 : 0.567 | A P>=.75 : 0.833

@@ -68,7 +68,9 @@ test_that("plus de deux modalites : ecart total des proportions, sans delta ; re
 	expect_false(grepl("% %", court, fixed = TRUE))
 })
 
-test_that("reponse binaire avec plusieurs facteurs : refus clair (voie 2 a venir)", {
+test_that("reponse binaire avec plusieurs facteurs : voie logistique (D25), plus de deux modalites refusees", {
 	d <- data.frame(y = rbinom(40, 1, .5), A = factor(rep(1:2, 20)), B = factor(rep(1:2, each = 20)))
-	expect_error(m.bay(y ~ A * B, data = d, verbose = FALSE), "un facteur seulement|one factor only")
+	expect_identical(m.bay(y ~ A * B, data = d, verbose = FALSE, sensitivity = FALSE)$plan, "discrete_fact")
+	d$z <- factor(sample(c("a", "b", "c"), 40, replace = TRUE))
+	expect_error(m.bay(z ~ A * B, data = d, verbose = FALSE), "un facteur seulement|one factor only")
 })

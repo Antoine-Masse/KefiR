@@ -1,5 +1,16 @@
 # Journal de m.bay
 
+## Séance 18 : 11 novembre 2026, temps au-delà de 8 groupes, post-hoc à plusieurs facteurs calibré, réponses discrètes à plusieurs facteurs (D25)
+
+**Fait.**
+- **Audit de 8c0523a.** Ligne d'attente avec durée estimée avant le calcul des lois (le temps vient surtout des 4 lois, pas de Gibbs) ; tours adaptés mesurés et non retenus ; PERIMETRE §7 relu en entier (9922725).
+- **D20 calibré** (`agent_72`, VALIDATION §23).
+- **D25.** Oui/non et comptages à plusieurs facteurs entre groupes (`R/sys_bay_discrete_fact.R`) ; `agent_73` (VALIDATION §24).
+
+**Vérifié.** R CMD check sur 9922725 : Status OK. Tests bay ; deux tests qui attendaient le refus des réponses discrètes à plusieurs facteurs sont mis à jour.
+
+**Non fait.** Variances inégales et queues lourdes avec sujets ou covariables ; réponses discrètes avec sujets.
+
 ## Séance 17 : 11 novembre 2026, audit de aed2319 et a206ba5, calibration au-delà de 8 groupes
 
 **Fait.**

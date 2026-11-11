@@ -224,6 +224,11 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	# Counts chosen alone, before the plan is told (DECISIONS, D17, way 2).
 	route <- if (identical(response, "auto") && identical(input$plan, "oneway") && !isTRUE(input$categorical))
 		.bay_int_route(input$response, input$factors[[1L]]) else "none"
+	# Several factors between groups (D25): counts are recognised the same way, on the cells;
+	# an ordered scale stays continuous there.
+	if (identical(response, "auto") && identical(input$plan, "factorial") && !isTRUE(input$categorical) && is.numeric(input$response)) {
+		route <- if (identical(.bay_int_route(input$response, interaction(input$factors, drop = TRUE)), "counts")) "counts" else "none"
+	}
 	input$counts_auto <- identical(route, "counts")
 	if (input$counts_auto) input$counts <- TRUE
 	input$ordinal <- identical(response, "ordinal") || identical(route, "ordinal")
@@ -268,6 +273,11 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	cat_resp <- isTRUE(input$categorical) || (is.numeric(y) && length(unique(y)) == 2L &&
 		!isTRUE(diff(range(y)) <= 8 * .Machine$double.eps * max(abs(y))))
 	if (cat_resp) {
+		yc0 <- if (is.factor(y)) droplevels(y) else factor(y)
+		# Yes/no with several factors between groups (D25).
+		if (identical(input$plan, "factorial") && nlevels(yc0) == 2L) {
+			return(.bay_m_discrete_fact(input, yc0, "binary", call_expr, function() notes, note, sensitivity, detail, verbose, return, story, posthoc))
+		}
 		if (!identical(input$plan, "oneway")) {
 			.exit("Binary or categorical response with several factors, covariates or subjects: not handled by m.bay() yet (one factor only).",
 				"R\u00e9ponse binaire ou cat\u00e9gorielle avec plusieurs facteurs, des covariables ou des sujets : pas encore trait\u00e9e par m.bay() (un facteur seulement).")
@@ -292,6 +302,13 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 		vals <- sort(unique(y))
 		.bay_tell(story, paste0("Bounded score (", length(vals), " values, from ", min(vals), " to ", max(vals), "): neither counts nor few ratings; kept continuous (response = \"ordinal\" for the ordinal route)."),
 			paste0("Score born\u00e9 (", length(vals), " valeurs, de ", min(vals), " \u00e0 ", max(vals), ") : ni comptage, ni notation \u00e0 peu de valeurs ; gard\u00e9 continu (response = \u00ab ordinal \u00bb pour la voie ordinale)."), "decide")
+	}
+	if (isTRUE(input$counts) && identical(input$plan, "factorial")) {
+		# Counts with several factors between groups (D25).
+		if (any(y < 0) || any(abs(y - round(y)) > 1e-8)) {
+			.exit("response = \"counts\" needs non-negative whole numbers.", "response = \"counts\" demande des nombres entiers positifs ou nuls.")
+		}
+		return(.bay_m_discrete_fact(input, round(y), "counts", call_expr, function() notes, note, sensitivity, detail, verbose, return, story, posthoc))
 	}
 	if (isTRUE(input$counts)) {
 		if (!identical(input$plan, "oneway")) {
@@ -617,6 +634,8 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 	if (told) .bay_story_replay(x$story)
 	if (identical(x$plan, "contingency")) {
 		.bay_print_bilan_cont(x, detail = detail, narrated = told)
+	} else if (identical(x$plan, "discrete_fact")) {
+		.bay_print_bilan_discrete_fact(x, detail = detail, narrated = told)
 	} else if (identical(x$plan, "manova")) {
 		.bay_print_bilan_manova(x, detail = detail, narrated = told)
 	} else if (identical(x$plan, "ordinal")) {
