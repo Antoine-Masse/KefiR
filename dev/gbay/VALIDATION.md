@@ -125,3 +125,7 @@ N = 40 : 95,8 % ; N = 100 : 94,0 % ; N = 400 : 93,0 %.
 ## 7. Lisibilité (tests testthat)
 
 Sept sorties (ajustement, 2 × 2, 2 × 3, 3 × 3, `y ~ g`, petits effectifs, `detail = TRUE`), en français et en anglais, avec `width` à 80 et 120 : aucune ligne au-delà de 80 colonnes (tabulation comptée 8), chaque ligne porte une marque (« ==> », « --> », « Note : », titre numéroté ou suite repliée), aucune p-value. À `width = 60`, rien au-delà de 60. `print(r, story = TRUE)` rejoue exactement le récit.
+
+## 8. R CMD check (11 novembre, sur 1ecbda5)
+
+`R CMD check --no-manual --ignore-vignettes`, suite de tests complète du paquet comprise : **Status: 1 NOTE**. La NOTE (« Problems with news in 'NEWS.md': No news entries found ») existe déjà sur c8e8976 : l'en-tête `# KefiR (development version, branch feat/m.bay)` n'est pas lu comme une version par R (vérifié avec `tools:::.build_news_db_from_package_NEWS_md` sur les deux versions du fichier). Exemples OK, dépendances des tests OK (le test `multibridge` passe par `getExportedValue`, ignoré si le paquet manque), code ASCII OK. Information sur les xrefs : `ez` absent de mbay-lib, comme pour m.bay.
