@@ -179,3 +179,17 @@ test_that("plan choisi seul : si un autre plan inverse la reponse, elle est dite
 	r2 <- g.bay(t, sampling = "jointMulti", verbose = FALSE)
 	expect_false(isTRUE(r2$sensitivity$plan_changes))
 })
+
+test_that("table creuse (regle de Cochran) : soutien d'un lien plafonne a faible, dit dans le recit et le bilan", {
+	t <- matrix(c(6, 1, 0, 1, 1, 5, 1, 0, 0, 1, 6, 2), 3, byrow = TRUE)
+	r <- g.bay(t, verbose = FALSE)
+	expect_true(r$sparse)
+	expect_gt(r$prob_effect, 0.99)
+	out <- capture.output(print(r))
+	expect_true(any(grepl("Cochran", out)))
+	expect_false(any(grepl("very probably exists|existe tr\u00e8s probablement", out)))
+	expect_true(any(grepl("Cochran", c(r$story$en, r$story$fr))))
+	# Une table bien remplie n'est pas creuse ; l'ajustement n'est jamais plafonne.
+	expect_false(g.bay(tab23, verbose = FALSE, sensitivity = FALSE)$sparse)
+	expect_false(g.bay(c(12, 3, 1, 0), verbose = FALSE, sensitivity = FALSE)$sparse)
+})

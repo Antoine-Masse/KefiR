@@ -78,6 +78,7 @@ Rapport des cotes OR = π₁₁π₂₂ / (π₁₂π₂₁), calculé sur les t
 - Le seuil de m.bay (D14) s'applique : un BF entre 1/3 et 3 (« pas plus qu'une simple mention », Kass et Raftery 1995) donne « non tranché par les données », quelle que soit la probabilité a posteriori.
 - Kass, R. E., & Raftery, A. E. (1995). Bayes factors. *JASA*, 90(430), 773-795. https://doi.org/10.1080/01621459.1995.10476572.
 - Validation : taux de faux « oui » sous H0 mesurés aussi à N = 10 et 20 (VALIDATION.md).
+- **Corrigé par G10 après mesure** : l'affirmation « les petits effectifs rendent la réponse moins tranchée, jamais fausse » tient pour l'ajustement, pas pour l'indépendance dans une table creuse. Le récit ne la dit plus quand la table est creuse.
 
 ## G6. Lecture des cases : rapport à l'indépendance a posteriori : DÉCIDÉ
 
@@ -106,6 +107,28 @@ V = √(φ² / (min(r, c) − 1)), φ² = Σ (π_ij − π_i+π_+j)² / (π_i+π
 - Mêmes fonctions de mise en forme que m.bay (`sys_bay_story.R`, `sys_bay_layout.R`, `sys_bay_bilan.R`), appelées sans les modifier ; le bilan de g.bay a son propre gabarit (`R/sys_gbay.R`), car celui de m.bay parle de groupes et de différences.
 - Même squelette en sept étapes : plan, contrôles, plan d'échantillonnage (loi des données), point de départ, solidité, où se trouve l'écart, bilan.
 - `return = FALSE` : un nombre, P(lien) ou P(écart), sans les tirages a posteriori (rapide, pour les simulations).
+
+## G10. Tables creuses : soutien d'un lien plafonné à « faible » : DÉCIDÉ ET FAIT après mesure (11 novembre)
+
+**Défaut mesuré** (VALIDATION.md, § 2 et 3). Sous indépendance, dans une table où les effectifs attendus sont petits, le facteur de Bayes de `contingencyTableBF` à a = 1 penche vers un lien :
+- P > 0,75 dans 32 à 36 % des tables 3 × 4 à N = 10-20 et dans 67 à 73 % des tables 4 × 5 à N = 10-20 (plan joint) ;
+- une fois la sensibilité appliquée (a = 1, 2, 4 ; chances de départ ; plans), le bilan dit encore « un lien existe » dans 11,9 % des tables 4 × 5 à N = 50, dont 11,6 % « très probablement » ;
+- dans les tables bien remplies (attendu moyen ≥ 8), le bilan dit « un lien existe » dans 6,6 % des cas au plus (2 × 2, N = 50), « très probablement » dans 1,2 % au plus.
+
+L'a priori uniforme (Dirichlet(1) sur r × c probabilités) met beaucoup de masse sur des tables très déséquilibrées ; une table creuse, déséquilibrée par le hasard, y ressemble. La sensibilité de ce test à la concentration de la Dirichlet est connue : Good, I. J., & Crook, J. F. (1987). The robustness and sensitivity of the mixed-Dirichlet Bayesian test for "independence" in contingency tables. *The Annals of Statistics*, 15(2), 670-693. https://doi.org/10.1214/aos/1176350368.
+
+**Décision.** Une table est dite **creuse** selon la règle de Cochran, sous sa forme courante : plus de 20 % des cases d'effectif attendu inférieur à 5, ou une case sous 1 (Cochran, W. G. 1954. Some methods for strengthening the common χ² tests. *Biometrics*, 10(4), 417-451. https://doi.org/10.2307/3001616 ; la formulation d'origine est un peu plus souple, voir Kroonenberg et Verbeek 2018, *The American Statistician*, 72(2), 175-183). Dans une table creuse :
+- le soutien d'un lien est plafonné à « faible », comme m.bay plafonne déjà le soutien quand les variances diffèrent par case (D19) ; la probabilité reste affichée ;
+- le verdict devient « plutôt un lien, sans conclure » ; le récit (étape 2, « Prudence ajoutée ») et le bilan disent pourquoi ; la phrase de compte rendu ajoute « table creuse, soutien faible » ;
+- l'indépendance en tête n'est pas touchée : le défaut mesuré va dans le sens d'un lien.
+
+**Pourquoi cette règle et pas une autre.** Elle est connue des étudiants (c'est la condition du khi-deux) et se décide avant de regarder la réponse. Avec elle, le bilan dit « un lien existe » sous indépendance dans 6,6 % des tables au plus, et dans 0,8 % au plus des tables 3 × 4 et 4 × 5 (VALIDATION.md, § 3).
+
+**Coût mesuré.** Dans une table creuse, un vrai lien n'est jamais dit « existe » : sous un lien moyen en 3 × 4, la part de « oui » passe de 81 % à 0 % à N = 50, de 97 % à 30 % à N = 100, de 100 % à 98 % à N = 200 ; en 2 × 3 (lien fort), de 29 % à 17 % à N = 50, sans changement à N = 100. Le bilan dit alors « plutôt un lien, sans conclure », avec la probabilité.
+
+**Ajustement.** Pas de plafond : sous H0, P > 0,75 dans 6,4 % des cas au plus, même à N = 10 (5 modalités), et P > 0,95 dans 0,7 % au plus.
+
+**Suite possible, non faite.** Un a priori mieux adapté aux tables creuses (mélange sur la concentration, Good et Crook 1987) rendrait de la puissance. Il faudrait le coder à la main (pas de paquet établi) et le calibrer ; c'est une décision à part.
 
 ## G9. Validation : PRÉVUE, résultats dans VALIDATION.md
 

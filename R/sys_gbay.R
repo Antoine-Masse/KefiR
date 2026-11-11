@@ -465,6 +465,9 @@
 	emit <- .bay_block_emitter()
 	li <- .bay_lead_info(obj)
 	h <- li$h
+	# Sparse table: a link is at most weakly supported (DECISIONS, G10).
+	capped <- isTRUE(obj$sparse) && !h$null[1L] && li$sup$level > 2L
+	if (capped) li$sup <- .bay_support(0.7)
 	undecided <- li$open || li$sup$level <= 1L || h$posterior[1L] < 0.6
 	gof <- identical(obj$test, "gof")
 	lead_en <- if (undecided) paste0("undecided (", h$label_en[1L], ": ", .bay_pct(h$posterior[1L], "."), ")") else
@@ -480,7 +483,12 @@
 			paste0("Bilan de g.bay (", obj$label, ", N = ", obj$n, ") - ", lead_fr, "."))
 	}
 	v <- .gbay_verdict(obj, undecided)
+	if (capped && !undecided) v <- list(en = "Verdict: rather a link, without concluding.", fr = "Verdict : plut\u00f4t un lien, sans conclure.")
 	emit("fact", v$en, v$fr)
+	if (isTRUE(obj$sparse) && !h$null[1L]) {
+		emit("decide", "Caution: sparse table (Cochran's rule), where the uniform prior leans towards a link; the support of a link is capped at weak.",
+			"Prudence : table creuse (r\u00e8gle de Cochran), o\u00f9 l'a priori uniforme penche vers un lien ; le soutien d'un lien est plafonn\u00e9 \u00e0 faible.")
+	}
 	w_en <- max(nchar(h$label_en)); w_fr <- max(nchar(h$label_fr))
 	fit <- max(w_en, w_fr) + 32L <= .bay_width() - 12L
 	pad <- function(x, w) if (fit) paste0(x, strrep("\u00a0", w - nchar(x))) else x
@@ -519,7 +527,7 @@
 			.gbay_cell_lines(obj, emit, top = 3L, short = isTRUE(narrated))
 		}
 		if (isTRUE(narrated)) {
-			emit("note", "intervals and every cell at step 6 and in $cells.", "intervalles et toutes les cases \u00e0 l'\u00e9tape 6 et dans $cells.")
+			emit("note", if (gof) "intervals at step 6, every category in $cells." else "intervals at step 6, every cell in $cells.", if (gof) "intervalles \u00e0 l'\u00e9tape 6, toutes les modalit\u00e9s dans $cells." else "intervalles \u00e0 l'\u00e9tape 6, toutes les cases dans $cells.")
 		} else {
 			emit("note", if (gof) "ratio = proportion estimated / proportion given; [ ; ] = 95 % credible interval." else "ratio = cell / its value without a link; [ ; ] = 95 % credible interval.",
 				if (gof) "rapport = proportion estim\u00e9e / proportion donn\u00e9e ; [ ; ] = intervalle de cr\u00e9dibilit\u00e9 \u00e0 95 %." else "rapport = case / sa valeur sans lien ; [ ; ] = intervalle de cr\u00e9dibilit\u00e9 \u00e0 95 %.")
@@ -548,9 +556,9 @@
 				if (h$null[1L]) against_fr else "", ") ; g.bay {KefiR}, ", ct$fr, ". \u00bb"))
 	} else {
 		emit("note", paste0("for a report: \"", h$label_en[1L], " (posterior probability ", .bay_pct(h$posterior[1L], "."), "), Bayes factor ", bf_en,
-				if (!h$null[1L]) size_en else "", " (g.bay {KefiR}, ", ct$en, ").\""),
+				if (!h$null[1L]) size_en else "", if (capped) "; sparse table, weak support" else "", " (g.bay {KefiR}, ", ct$en, ").\""),
 			paste0("pour un compte rendu : \u00ab ", h$label_fr[1L], " (probabilit\u00e9 a posteriori ", .bay_pct(h$posterior[1L], ","), "), facteur de Bayes ", bf_fr,
-				if (!h$null[1L]) size_fr else "", " (g.bay {KefiR}, ", ct$fr, "). \u00bb"))
+				if (!h$null[1L]) size_fr else "", if (capped) " ; table creuse, soutien faible" else "", " (g.bay {KefiR}, ", ct$fr, "). \u00bb"))
 	}
 	if (length(obj$notes$en) && !isTRUE(narrated)) {
 		for (i in seq_along(obj$notes$en)) emit("fact", obj$notes$en[i], obj$notes$fr[i])
@@ -674,7 +682,18 @@
 		.bay_tell(story, paste0(small, " of ", length(E), if (gof) " categories" else " cells", " with an expected count under 5: the G test and the chi-squared would be approximate there (Williams' correction); the computation below is exact."),
 			paste0(small, " ", if (gof) "modalit\u00e9" else "case", if (small > 1L) "s" else "", " sur ", length(E), " d'effectif attendu inf\u00e9rieur \u00e0 5 : le test G et le khi-deux y seraient approximatifs (correction de Williams) ; le calcul ci-dessous est exact."))
 	}
-	.bay_tell(story, "small counts do not make the answer wrong, only less decisive.", "les petits effectifs ne faussent pas la r\u00e9ponse, ils la rendent moins tranch\u00e9e.", "note")
+	# Sparse table (Cochran's rule as commonly read: more than 20 % of the cells with an expected
+	# count under 5, or one under 1): the uniform prior leans towards a link there (DECISIONS, G10).
+	sparse <- !gof && (mean(E < 5) > 0.2 || any(E < 1))
+	if (sparse) {
+		.bay_step_result(story, "exact computation, sparse table: caution added", "calcul exact, table creuse : prudence ajout\u00e9e")
+		.bay_tell(story, "Caution added: sparse table (Cochran's rule). Here the uniform prior leans towards a link (up to 12 % of \"very probably a link\" measured under independence): a link can only be called weak.",
+			"Prudence ajout\u00e9e : table creuse (r\u00e8gle de Cochran). L'a priori uniforme y penche vers un lien (jusqu'\u00e0 12 % de \u00ab tr\u00e8s probablement un lien \u00bb mesur\u00e9s sous ind\u00e9pendance) : un lien ne pourra \u00eatre dit que faible.", "decide")
+		.bay_tell(story, "Cochran's rule: more than 20 % of the cells with an expected count under 5, or one under 1 (Cochran 1954). Measures: dev/gbay/VALIDATION.md.",
+			"R\u00e8gle de Cochran : plus de 20 % des cases d'effectif attendu inf\u00e9rieur \u00e0 5, ou une case sous 1 (Cochran 1954). Mesures : dev/gbay/VALIDATION.md.", "detail")
+	} else {
+		.bay_tell(story, "small counts do not make the answer wrong, only less decisive.", "les petits effectifs ne faussent pas la r\u00e9ponse, ils la rendent moins tranch\u00e9e.", "note")
+	}
 	if (correct_given) {
 		.bay_tell(story, "correct (Williams, Yates) is ignored: these corrections bring a statistic closer to its asymptotic law; the Bayes factor here needs none.",
 			"correct (Williams, Yates) est ignor\u00e9 : ces corrections rapprochent une statistique de sa loi asymptotique ; le facteur de Bayes ici n'en a pas besoin.", "note_first")
@@ -837,7 +856,7 @@
 		test = obj$test, names = nm, names_fr = nm_fr, resp = obj$resp, sampling = sampling, fixed = fixed, sampling_auto = auto && !gof,
 		table = tab, expected = E, p = if (gof) inp$p else NULL, cells = est$cells,
 		cramer_v = est$cramer_v, odds_ratio = est$odds_ratio, w = est$w,
-		sensitivity = sens, contradiction = FALSE, detail = isTRUE(detail),
+		sensitivity = sens, contradiction = FALSE, detail = isTRUE(detail), sparse = sparse,
 		priors = list(concentration = 1, prior_h1 = prior_h1, law = if (gof) "multinomial" else sampling),
 		method = if (gof) "Goodness of fit, Dirichlet-multinomial against a point (Good 1967)" else
 			paste0("Independence, contingencyTableBF (Gunel and Dickey 1974), ", .gbay_plan_words(sampling, fixed, nm[1L], nm[2L])$en),
