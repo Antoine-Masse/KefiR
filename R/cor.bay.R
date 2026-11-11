@@ -27,7 +27,7 @@
 #'   Bayesian Spearman of van Doorn et al. (2020).
 #'
 #' With `method = "auto"` (default), Kendall's tau is taken when a variable has a value
-#' beyond 3 interquartile ranges, when a point lies away from the cloud (robust distance), or
+#' beyond 3 interquartile ranges, when a pair has a Cook's distance above 1 (from 20 pairs), or
 #' when a variable has 7 distinct values or fewer; Pearson otherwise. No p-value chooses the
 #' method. The other method is computed too, as a cross-check: if both answer firmly and
 #' differently, the bilan does not decide.
@@ -69,7 +69,7 @@
 #'     \item{other}{The cross-check by the other method (`method = "auto"` only).}
 #'     \item{contradiction}{`TRUE` if both methods answer firmly and differently.}
 #'     \item{sensitivity}{Probability of the leading hypothesis over the priors, and verdict.}
-#'     \item{checks}{Far values, points away from the cloud, ties.}
+#'     \item{checks}{Far values, influential pairs, ties.}
 #'     \item{n, n_removed, alternative, priors, label, notes, call}{Description.}
 #'     \item{story}{The steps told, in English (`en`) and French (`fr`).}
 #'   }
@@ -185,7 +185,11 @@ cor.bay <- function(x, y = NULL, data = NULL, method = c("auto", "pearson", "ken
 		if (!anyNA(ol[c("plus", "minus")])) {
 			oh <- .corbay_hyp(ol, alternative, prior_h1, xn, yn)
 			other <- list(method = om, hypotheses = oh, log_bf10 = switch(alternative, two.sided = ol[["two"]], greater = ol[["plus"]], less = ol[["minus"]]))
-			contradiction <- !identical(oh$key[1L], lead) && hyp$posterior[1L] >= 0.75 && oh$posterior[1L] >= 0.75
+			# Kendall chosen because of pairs apart: Pearson is the method those pairs can carry,
+			# its disagreement is the reason of the choice, not a contradiction (DECISIONS, C9).
+			explained <- meth == "kendall" && any(c("far", "influence") %in% ch$why)
+			other$explained <- explained
+			contradiction <- !explained && !identical(oh$key[1L], lead) && hyp$posterior[1L] >= 0.75 && oh$posterior[1L] >= 0.75
 		}
 	}
 	sens <- if (isTRUE(sensitivity)) .corbay_sensitivity(meth, xv, yv, kappa, alternative, prior_h1, lead, xn, yn, lbf) else NULL

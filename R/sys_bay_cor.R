@@ -114,9 +114,8 @@
 # Checks on the data and choice of the method
 # ---------------------------------------------------------------------------
 
-# Far values per variable (Tukey's rule, 1.5 and 3 interquartile ranges), points away from
-# the cloud (robust distance from the minimum covariance determinant, beyond the 0.999
-# quantile of a chi-squared with 2 df), ties and distinct values. Descriptive only.
+# Far values per variable (Tukey's rule, 1.5 and 3 interquartile ranges), influential pairs
+# (Cook's distance), ties and distinct values. Descriptive only.
 .corbay_checks <- function(x, y, seed) {
 	tk <- function(v) {
 		q <- stats::quantile(v, c(0.25, 0.75), names = FALSE)
@@ -131,17 +130,20 @@
 		v < q[1L] - 3 * i | v > q[2L] + 3 * i
 	}
 	n <- length(x)
-	cloud <- NULL
-	if (n >= 10L) {
-		cloud <- tryCatch(.bay_with_seed(seed, {
-			cr <- MASS::cov.rob(cbind(x, y), method = "mcd")
-			d <- stats::mahalanobis(cbind(x, y), cr$center, cr$cov)
-			d > stats::qchisq(0.999, 2)
-		}), error = function(e) NULL)
+	# Influential pairs: Cook's distance above 1 in the regression of y on x or of x on y,
+	# sought from 20 pairs (DECISIONS, C3: a robust distance from MASS::cov.rob flagged 40 to
+	# 65 % of normal data sets; Cook's distance 4 % at n = 20, under 1 % from n = 30).
+	infl <- NULL
+	if (n >= 20L) {
+		infl <- tryCatch({
+			c1 <- stats::cooks.distance(stats::lm(y ~ x))
+			c2 <- stats::cooks.distance(stats::lm(x ~ y))
+			(is.finite(c1) & c1 > 1) | (is.finite(c2) & c2 > 1)
+		}, error = function(e) NULL)
 	}
-	biv <- if (is.null(cloud)) NA_integer_ else sum(cloud)
-	apart <- far(x) | far(y) | (if (is.null(cloud)) FALSE else cloud)
-	list(n = n, tk_x = tk(x), tk_y = tk(y), off_cloud = biv, apart = sum(apart),
+	biv <- if (is.null(infl)) NA_integer_ else sum(infl)
+	apart <- far(x) | far(y) | (if (is.null(infl)) FALSE else infl)
+	list(n = n, tk_x = tk(x), tk_y = tk(y), influential = biv, apart = sum(apart),
 		ties_x = 1 - length(unique(x)) / n, ties_y = 1 - length(unique(y)) / n,
 		k_x = length(unique(x)), k_y = length(unique(y)))
 }
@@ -151,7 +153,7 @@
 .corbay_choose <- function(ck) {
 	why <- character(0)
 	if (ck$tk_x[["far"]] + ck$tk_y[["far"]] > 0L) why <- c(why, "far")
-	if (isTRUE(ck$off_cloud > 0L)) why <- c(why, "cloud")
+	if (isTRUE(ck$influential > 0L)) why <- c(why, "influence")
 	if (min(ck$k_x, ck$k_y) <= 7L) why <- c(why, "scale")
 	list(method = if (length(why)) "kendall" else "pearson", why = why)
 }
@@ -282,15 +284,15 @@
 			ck$tk_x[["mild"]], " and ", ck$tk_y[["mild"]], " beyond 1.5)."),
 		paste0("Valeurs \u00e9loign\u00e9es : ", xn, " ", ck$tk_x[["far"]], ", ", yn, " ", ck$tk_y[["far"]], " au-del\u00e0 de 3 \u00e9carts interquartiles (",
 			ck$tk_x[["mild"]], " et ", ck$tk_y[["mild"]], " au-del\u00e0 de 1,5)."))
-	if (!is.na(ck$off_cloud)) {
-		.bay_tell(st, paste0("Points away from the cloud: ", ck$off_cloud, " (robust distance)."),
-			paste0("Points hors du nuage : ", ck$off_cloud, " (distance robuste)."), fun = "cov.rob() {MASS}")
+	if (!is.na(ck$influential)) {
+		.bay_tell(st, paste0("Influential pairs: ", ck$influential, " (Cook's distance above 1)."),
+			paste0("Paires influentes : ", ck$influential, " (distance de Cook au-del\u00e0 de 1)."), fun = "cooks.distance() {stats}")
 	} else {
-		.bay_tell(st, "Points away from the cloud: not sought under 10 pairs.",
-			"Points hors du nuage : non cherch\u00e9s sous 10 paires.")
+		.bay_tell(st, "Influential pairs: not sought under 20 pairs.",
+			"Paires influentes : non cherch\u00e9es sous 20 paires.")
 	}
-	.bay_tell(st, "Far values: Tukey's rule on each variable. Points away from the cloud: Mahalanobis distance from the minimum covariance determinant (MASS::cov.rob), beyond the 0.999 quantile of a chi-squared with 2 df.",
-		"Valeurs \u00e9loign\u00e9es : r\u00e8gle de Tukey sur chaque variable. Points hors du nuage : distance de Mahalanobis au d\u00e9terminant de covariance minimal (MASS::cov.rob), au-del\u00e0 du quantile 0,999 d'un khi-deux \u00e0 2 ddl.", "detail")
+	.bay_tell(st, "Far values: Tukey's rule on each variable. Influential pairs: Cook's distance above 1 in the regression of y on x or of x on y (Cook and Weisberg 1982).",
+		"Valeurs \u00e9loign\u00e9es : r\u00e8gle de Tukey sur chaque variable. Paires influentes : distance de Cook au-del\u00e0 de 1 dans la r\u00e9gression de y sur x ou de x sur y (Cook et Weisberg 1982).", "detail")
 	nf <- ck$apart
 	if (ck$n < 10L) {
 		.bay_tell(st, "Few pairs: the answer will lean on the starting point more than on the data.",
@@ -303,8 +305,8 @@
 .corbay_story_method <- function(st, method, auto, why, xn, yn) {
 	mw <- .corbay_method_words(method)
 	.bay_tell(st, "Choice of the method.", "Choix de la m\u00e9thode.", "step", fun = "cor.bay() {KefiR}")
-	why_en <- c(far = "far values", cloud = "points away from the cloud", scale = "a short scale (7 values or fewer)")
-	why_fr <- c(far = "valeurs \u00e9loign\u00e9es", cloud = "points hors du nuage", scale = "une \u00e9chelle courte (7 valeurs ou moins)")
+	why_en <- c(far = "far values", influence = "influential pairs", scale = "a short scale (7 values or fewer)")
+	why_fr <- c(far = "valeurs \u00e9loign\u00e9es", influence = "paires influentes", scale = "une \u00e9chelle courte (7 valeurs ou moins)")
 	if (auto) {
 		if (identical(method, "kendall")) {
 			.bay_tell(st, paste0("Seen at step 2: ", paste(why_en[why], collapse = ", "), "; a few values could carry Pearson's answer."),
@@ -312,8 +314,8 @@
 			.bay_tell(st, "Change of strategy: Kendall's tau, on the ranks, in place of Pearson's correlation.",
 				"Changement de strat\u00e9gie : tau de Kendall, sur les rangs, \u00e0 la place de la corr\u00e9lation de Pearson.", "decide")
 		} else {
-			.bay_tell(st, "Neither far values, nor points away from the cloud, nor a short scale.",
-				"Ni valeurs \u00e9loign\u00e9es, ni points hors du nuage, ni \u00e9chelle courte.")
+			.bay_tell(st, "Neither far values, nor influential pairs, nor a short scale.",
+				"Ni valeurs \u00e9loign\u00e9es, ni paires influentes, ni \u00e9chelle courte.")
 			.bay_tell(st, "Pearson's correlation, the most precise when no value stands apart.",
 				"Corr\u00e9lation de Pearson, la plus pr\u00e9cise quand aucune valeur ne se d\u00e9tache.", "decide")
 		}
@@ -327,8 +329,8 @@
 		}
 	}
 	.bay_tell(st, paste0("the method measures ", mw$what_en, "."), paste0("la m\u00e9thode mesure ", mw$what_fr, "."), "note_first")
-	.bay_tell(st, "Rule of method = \"auto\": Kendall's tau if a variable has a value beyond 3 interquartile ranges, if a point lies away from the cloud, or if a variable has 7 distinct values or fewer; Pearson otherwise. No p-value chooses the method.",
-		"R\u00e8gle de method = \u00ab auto \u00bb : tau de Kendall si une variable a une valeur au-del\u00e0 de 3 \u00e9carts interquartiles, si un point est hors du nuage, ou si une variable a 7 valeurs distinctes ou moins ; Pearson sinon. Aucune p-value ne choisit la m\u00e9thode.", "detail")
+	.bay_tell(st, "Rule of method = \"auto\": Kendall's tau if a variable has a value beyond 3 interquartile ranges, if a pair has a Cook's distance above 1 (from 20 pairs), or if a variable has 7 distinct values or fewer; Pearson otherwise. No p-value chooses the method.",
+		"R\u00e8gle de method = \u00ab auto \u00bb : tau de Kendall si une variable a une valeur au-del\u00e0 de 3 \u00e9carts interquartiles, si une paire a une distance de Cook au-del\u00e0 de 1 (d\u00e8s 20 paires), ou si une variable a 7 valeurs distinctes ou moins ; Pearson sinon. Aucune p-value ne choisit la m\u00e9thode.", "detail")
 	.bay_step_result(st, mw$en, mw$fr)
 }
 
@@ -375,6 +377,10 @@
 				.bay_pct(o$hypotheses$posterior[1L], "."), if (same) ", the same answer." else ", another answer."),
 			paste0("Contre-\u00e9preuve, ", ow$fr, " : ", tolower(substr(o$hypotheses$label_fr[1L], 1, 1)), substring(o$hypotheses$label_fr[1L], 2), " ",
 				.bay_pct(o$hypotheses$posterior[1L], ","), if (same) ", m\u00eame r\u00e9ponse." else ", autre r\u00e9ponse."), fun = ow$fun)
+		if (!same && isTRUE(o$explained)) {
+			.bay_tell(st, "Pearson's answer can be carried by the pairs apart seen at step 2; it is not kept.",
+				"La r\u00e9ponse de Pearson peut \u00eatre port\u00e9e par les paires \u00e0 part vues \u00e0 l'\u00e9tape 2 ; elle n'est pas retenue.", "decide")
+		}
 		if (isTRUE(obj$contradiction)) {
 			.bay_tell(st, "Caution added: the two methods answer firmly and differently; the bilan will not decide.",
 				"Prudence ajout\u00e9e : les deux m\u00e9thodes r\u00e9pondent nettement et diff\u00e9remment ; le bilan ne tranchera pas.", "decide")

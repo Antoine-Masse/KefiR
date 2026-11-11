@@ -2,7 +2,7 @@
 source("C:/Users/masse/Desktop/KefiR/KefiR/.claude/worktrees/feat-cor-bay-59ccb0/dev/corbay/scripts/proto.R")
 diag_flags <- function(x, y) {
 	far1 <- function(v) { q <- quantile(v, c(.25, .75), names = FALSE); i <- q[2] - q[1]; i > 0 && any(v < q[1] - 3 * i | v > q[2] + 3 * i) }
-	rob <- tryCatch({ set.seed(1); cr <- MASS::cov.rob(cbind(x, y), method = "mcd"); d <- mahalanobis(cbind(x, y), cr$center, cr$cov); any(d > qchisq(0.999, 2)) }, error = function(e) NA)
+	rob <- tryCatch(withr::with_preserve_seed({ set.seed(1); cr <- MASS::cov.rob(cbind(x, y), method = "mcd"); d <- mahalanobis(cbind(x, y), cr$center, cr$cov); any(d > qchisq(0.999, 2)) }), error = function(e) NA)
 	c(far = far1(x) || far1(y), biv = rob, ties = max(1 - length(unique(x)) / length(x), 1 - length(unique(y)) / length(y)))
 }
 gen <- list(

@@ -141,3 +141,18 @@ test_that("80 colonnes au plus, tabulation comptee 8, francais et anglais, et wi
 		}
 	}
 })
+
+test_that("paire influente (distance de Cook > 1) : Kendall, et le desaccord de Pearson n'est pas une contradiction", {
+	set.seed(7)
+	x <- rnorm(30); y <- 0.6 * x + 0.8 * rnorm(30)
+	x[30] <- 3; y[30] <- -3
+	r <- cor.bay(x, y, verbose = FALSE, sensitivity = FALSE, draws = 1000)
+	expect_identical(r$method, "kendall")
+	expect_true("influence" %in% r$why)
+	expect_true(isTRUE(r$other$explained))
+	expect_false(r$contradiction)
+	expect_gt(r$checks$influential, 0L)
+	# sous 20 paires, non cherchees
+	r2 <- cor.bay(x[c(1:15, 30)], y[c(1:15, 30)], verbose = FALSE, sensitivity = FALSE, draws = 1000)
+	expect_true(is.na(r2$checks$influential))
+})

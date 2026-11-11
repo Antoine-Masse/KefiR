@@ -73,7 +73,7 @@ and \code{error_pct}.}
 \item{other}{The cross-check by the other method (\code{method = "auto"} only).}
 \item{contradiction}{\code{TRUE} if both methods answer firmly and differently.}
 \item{sensitivity}{Probability of the leading hypothesis over the priors, and verdict.}
-\item{checks}{Far values, points away from the cloud, ties.}
+\item{checks}{Far values, influential pairs, ties.}
 \item{n, n_removed, alternative, priors, label, notes, call}{Description.}
 \item{story}{The steps told, in English (\code{en}) and French (\code{fr}).}
 }
@@ -108,7 +108,7 @@ Bayesian Spearman of van Doorn et al. (2020).
 }
 
 With \code{method = "auto"} (default), Kendall's tau is taken when a variable has a value
-beyond 3 interquartile ranges, when a point lies away from the cloud (robust distance), or
+beyond 3 interquartile ranges, when a pair has a Cook's distance above 1 (from 20 pairs), or
 when a variable has 7 distinct values or fewer; Pearson otherwise. No p-value chooses the
 method. The other method is computed too, as a cross-check: if both answer firmly and
 differently, the bilan does not decide.
