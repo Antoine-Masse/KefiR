@@ -6,7 +6,9 @@
 - **Audit.** Écarts de l'étape 6 tirés du mélange de lois (normale et Student), avec un garde-fou testé ; P(variance par case) affichée elle-même ; soutien de l'hypothèse globale sous un « oui » ; écart-type à 3 chiffres significatifs (D24, addendum).
 - **Choix de la suite** : calibrer le post-hoc au-delà de 8 groupes avant les queues lourdes avec sujets ou covariables. C'est une voie déjà livrée et jamais simulée ; une erreur y toucherait les utilisateurs dès aujourd'hui, alors que l'autre voie demande un moteur neuf. `agent_71` lancé : accord Gibbs-exact à 8 groupes, H0 à 10 et 12 groupes, deux paquets à 10 groupes.
 
-**Vérifié.** Tests bay (779).
+**Vérifié.** Tests bay (779) ; R CMD check sur 974f709 : Status OK. `agent_71` (VALIDATION §22) : aucune fausse paire sous H0 à 10 et 12 groupes ; Gibbs à 2,6 points du calcul exact en médiane ; pas de changement de méthode.
+
+**Suite proposée.** Queues lourdes avec sujets ou covariables (moteur neuf).
 
 ## Séance 16 : 11 novembre 2026, audit de 9c44239 et queues lourdes à plusieurs facteurs (D24)
 

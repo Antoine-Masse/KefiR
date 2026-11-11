@@ -898,3 +898,22 @@ Temps : 6 à 9 s pour un appel complet avec sensibilité (3 × 2, 2 × 2, split-
 | Effet de A, 0,8 | P(A) > 0,95 | 44 % | 64 % | 71 % | |
 
 Temps : environ 9 s par appel avec la sensibilité (2 × 2, N = 48).
+
+## 22. Post-hoc au-delà de 8 groupes, échantillonneur de Gibbs (D11, `agent_71`), 11 novembre
+
+n = 8 par groupe, 30 jeux par partie. Résultats : `scripts/resultats/agent_71_*.txt`.
+
+| Partie | Mesure | Résultat |
+|---|---|---:|
+| Accord, k = 8, Gibbs forcé contre calcul exact | écart maximal par jeu de P(différents), sur les 28 paires | médiane 2,6 points ; pire 6,1 |
+| idem | erreur de tirage annoncée (médiane de l'erreur Monte-Carlo) | 1,6 point (le récit dit « environ 4 points ») |
+| H0, k = 10 | jeux avec une paire à P ≥ 0,75 / ≥ 0,95 | 0 % / 0 % |
+| H0, k = 12 | idem | 0 % / 0 % |
+| Deux paquets de 5, écart 1, k = 10 | paires entre paquets dites différentes | 38 % |
+| idem | paires d'un même paquet dites différentes / semblables | 3 % / 8 % |
+
+**Lecture.**
+- Gibbs ne crée pas de fausses différences sous H0, même à 12 groupes (66 paires).
+- Son écart au calcul exact reste sous l'erreur annoncée pour une paire typique. Le pire écart d'un jeu, pris sur 28 paires, peut atteindre 6 points.
+- À deux paquets, les paires d'un même paquet restent surtout « non tranchées » : 8 % seulement sont dites « semblables » pour 8 valeurs par groupe. La puissance sur les paires est modeste (38 %), comme attendu sans correction ni gain de multiplicité.
+- **Décision.** Pas de changement de méthode. Le récit annonce une erreur de tirage d'environ 2 × l'erreur Monte-Carlo ; elle couvre la paire typique, et la note de VALIDATION dit qu'un écart de 6 points reste possible sur la pire paire d'un jeu.

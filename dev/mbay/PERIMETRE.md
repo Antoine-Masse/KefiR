@@ -333,7 +333,7 @@ Légende :
 | Plan de `m.test()` | m.bay | Moteur, décision | Limites ou reste à faire |
 |---|---|---|---|
 | 2 et k groupes, réponse continue | Couvert | 4 lois comparées (normale ou t, variances égales ou non), D6 | — |
-| Post-hoc à un facteur | Couvert | Regroupements, D11 ; Gibbs au-delà de 8 groupes | Calibration au-delà de 8 non simulée |
+| Post-hoc à un facteur | Couvert | Regroupements, D11 ; Gibbs au-delà de 8 groupes | Calibré (`agent_71`) : aucune fausse paire sous H0 à 10 et 12 groupes ; écart au calcul exact de 2,6 points en médiane |
 | Plusieurs facteurs, interactions | Couvert | `lmBF`, HOP, D2 ; variance commune ou par case moyennées, D19 | Lois t non calculées ; post-hoc D20 non calibré par simulation |
 | ANCOVA, pentes parallèles ou différentes, plusieurs covariables | Couvert | `lmBF`, covariable centrée, D16 | Normale à variance commune seule ; post-hoc à plusieurs facteurs D20 |
 | Apparié, 2 niveaux | Couvert | `ttestBF(paired)`, D15 | Normale seule |
