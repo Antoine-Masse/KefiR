@@ -56,6 +56,22 @@
 		paste0(h$label_en[1L], ": ", .bay_pct(h$posterior[1L], "."), " (", li$sup$en, ")")
 	lead_fr <- if (undecided) paste0("ind\u00e9cis (", h$label_fr[1L], " : ", .bay_pct(h$posterior[1L], ","), ")") else
 		paste0(h$label_fr[1L], " : ", .bay_pct(h$posterior[1L], ","), " (", li$sup$fr, ")")
+	# Several terms with at least one "yes" (audit of 9c44239, point 1): the title, the verdict
+	# and the report sentence lead with the answers per term, the global "at least one
+	# difference" comes second, and "undecided" is never said.
+	e <- obj$effects
+	term_lead <- FALSE
+	if (!is.null(e) && nrow(e) > 1L && !is.null(e$p_h0)) {
+		ta <- .bay_term_answers(obj)
+		term_lead <- any(!ta$open & ta$yes)
+		if (term_lead) {
+			tl_en <- paste0(e$term, " ", ta$short_en, " (", vapply(e$p_h1, .bay_pct, character(1), dec = "."), ")", collapse = ", ")
+			tl_fr <- paste0(e$term, " ", ta$short_fr, " (", vapply(e$p_h1, .bay_pct, character(1), dec = ","), ")", collapse = ", ")
+			lead_en <- tl_en
+			lead_fr <- tl_fr
+			undecided <- FALSE
+		}
+	}
 	if (isTRUE(narrated)) {
 		cat("\n")
 		emit("title", paste0(k, ") Bilan - ", lead_en, "."), paste0(k, ") Bilan - ", lead_fr, "."))
@@ -68,7 +84,13 @@
 	}
 	v <- .bay_verdict(obj)
 	first <- function(x) sub("^([^.]*\\.).*$", "\\1", x)
-	emit("fact", first(v$en), first(v$fr))
+	if (term_lead) {
+		yes_t <- e$term[!ta$open & ta$yes]
+		emit("fact", paste0("Verdict: a difference according to ", paste(yes_t, collapse = ", "), "; the other terms are below."),
+			paste0("Verdict : une diff\u00e9rence selon ", paste(yes_t, collapse = ", "), " ; les autres termes sont plus bas."))
+	} else {
+		emit("fact", first(v$en), first(v$fr))
+	}
 	w_en <- max(nchar(h$label_en)); w_fr <- max(nchar(h$label_fr))
 	# Padding in non-breaking spaces, which the folding keeps.
 	# Aligned only if the line still fits; otherwise, no padding.
@@ -122,7 +144,14 @@
 		terms_en <- paste0("; ", paste0(e$term, " ", st_en, " (", vapply(e$p_h1, .bay_pct, character(1), dec = "."), ")", collapse = ", "))
 		terms_fr <- paste0(" ; ", paste0(e$term, " ", st_fr, " (", vapply(e$p_h1, .bay_pct, character(1), dec = ","), ")", collapse = ", "))
 	}
-	if (undecided) {
+	if (term_lead) {
+		# Terms first, the global answer second (audit of 9c44239, point 1).
+		lb_any <- if (h$null[1L]) -li$lb else li$lb
+		emit("note", paste0("for a report: \"", sub("^; ", "", terms_en), "; at least one difference: ", .bay_pct(h$posterior[h1], "."),
+				", Bayes factor ", .bay_bf_txt(lb_any, "."), " (m.bay {KefiR}, ", ct$en, ").\""),
+			paste0("pour un compte rendu : \u00ab ", sub("^ ; ", "", terms_fr), " ; au moins une diff\u00e9rence : ", .bay_pct(h$posterior[h1], ","),
+				", facteur de Bayes ", .bay_bf_txt(lb_any, ","), " (m.bay {KefiR}, ", ct$fr, "). \u00bb"))
+	} else if (undecided) {
 		emit("note", paste0("for a report: \"The data do not settle it (probability of a difference ", .bay_pct(h$posterior[h1], "."), ", Bayes factor ", bf_en,
 				if (h$null[1L]) " in favour of no difference" else "", terms_en, "); m.bay {KefiR}, ", ct$en, ".\""),
 			paste0("pour un compte rendu : \u00ab Les donn\u00e9es ne permettent pas de conclure (probabilit\u00e9 d'une diff\u00e9rence ", .bay_pct(h$posterior[h1], ","), ", facteur de Bayes ", bf_fr,

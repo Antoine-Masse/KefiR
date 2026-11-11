@@ -185,14 +185,44 @@
 		.bay_step_result(story, "sensitivity not computed", "sensibilit\u00e9 non calcul\u00e9e")
 	}
 
-	.bay_tell(story, "Which responses differ", "Quelles r\u00e9ponses diff\u00e8rent", "step")
-	.bay_step_result(story, "by term, the form of the difference", "par terme, la forme de la diff\u00e9rence")
-	for (i in seq_len(nrow(eff))) {
+	# Step 6: each response read alone with the factorial engine (audit of 9c44239, point 2),
+	# as with one factor. Beyond 10 models per response, only the terms above 1/2 are read.
+	.bay_tell(story, "Which responses differ", "Quelles r\u00e9ponses diff\u00e8rent", "step", fun = "lmBF() {BayesFactor}")
+	few <- length(sp$models) > 10L
+	show <- if (few) which(eff$p_h1 > 0.5) else seq_len(nrow(eff))
+	per <- NULL
+	if (length(show)) {
+		pt <- vapply(seq_len(d), function(j) {
+			lbj <- .bay_fact_logbf(Y[, j], factors, sp, rscale, iterations, seed + 100L + j)$log_bf[, 1L]
+			ej <- .bay_fact_terms(sp, lbj, lp_base)
+			ej$p_h1[match(.bay_term_key(terms), .bay_term_key(ej$term))]
+		}, numeric(length(terms)))
+		pt <- matrix(pt, nrow = length(terms))
+		per <- data.frame(response = rep(colnames(Y), each = length(terms)), term = rep(terms, d), p_h1 = as.vector(pt),
+			stringsAsFactors = FALSE)
+		top <- which.max(pt[show[1L], ])
+		.bay_step_result(story, paste0(eff$term[show[1L]], " carried above all by ", colnames(Y)[top], " (", .bay_pct(pt[show[1L], top], "."), ")"),
+			paste0(eff$term[show[1L]], " port\u00e9 surtout par ", colnames(Y)[top], " (", .bay_pct(pt[show[1L], top], ","), ")"))
+		for (j in seq_len(d)) {
+			.bay_tell(story, paste0(colnames(Y)[j], " alone: ", paste0(terms[show], " ", vapply(pt[show, j], .bay_pct, character(1), dec = "."), collapse = ", "), "."),
+				paste0(colnames(Y)[j], " seule : ", paste0(terms[show], " ", vapply(pt[show, j], .bay_pct, character(1), dec = ","), collapse = ", "), "."))
+		}
+		if (few) {
+			.bay_tell(story, "Many models: only the terms above 50 % are read per response.",
+				"Beaucoup de mod\u00e8les : seuls les termes au-dessus de 50 % sont lus par r\u00e9ponse.", "decide")
+		}
+	} else {
+		.bay_step_result(story, "no term above 50 %, nothing to read per response", "aucun terme au-dessus de 50 %, rien \u00e0 lire par r\u00e9ponse")
+	}
+	for (i in show) {
 		.bay_tell(story, paste0(eff$term[i], ": if it acts, gaps that change from one response to another at ", .bay_pct(eff$p_changes[i], "."), "."),
 			paste0(eff$term[i], " : s'il agit, \u00e9carts qui changent d'une r\u00e9ponse \u00e0 l'autre \u00e0 ", .bay_pct(eff$p_changes[i], ","), "."))
 	}
-	.bay_tell(story, "to see which response carries a term, run m.bay() on that response alone.",
-		"pour voir quelle r\u00e9ponse porte un terme, lancer m.bay() sur cette r\u00e9ponse seule.", "note")
+	# Point 3 of the audit (agent_69, scenario Arep): the stacked model loses as much against
+	# Pillai with an effect spread over the responses as with an effect on one response, so no
+	# warning is tied to an effect carried by one response.
+	.bay_tell(story, "each response read alone (same model space and priors); the answers per term are those of step 5.",
+		"chaque r\u00e9ponse lue seule (m\u00eames mod\u00e8les et a priori) ; les r\u00e9ponses par terme sont celles de l'\u00e9tape 5.", "note")
 
 	p_any <- 1 - an$p_null
 	hyp <- data.frame(
@@ -209,6 +239,7 @@
 			}, character(1)), log_bf = lb[, 1L], posterior = an$posterior, prior = an$prior, stringsAsFactors = FALSE),
 		questions = list(en = paste0("Do the groups differ on at least one of ", resp_txt, ", term by term?"),
 			fr = paste0("Les groupes diff\u00e8rent-ils sur au moins une de ", resp_txt, ", terme par terme ?")),
+		responses = per,
 		correlations = R, unequal_correlations = uneq, sensitivity = sens, posthoc = NULL,
 		descriptive_stats = data.frame(cell = rep(levels(cl), d), response = rep(colnames(Y), each = nlevels(cl)),
 			mean = as.vector(apply(Y, 2L, function(v) tapply(v, cl, mean))), stringsAsFactors = FALSE),

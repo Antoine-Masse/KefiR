@@ -883,5 +883,6 @@ Temps : 6 à 9 s pour un appel complet avec sensibilité (3 × 2, 2 × 2, split-
 |---|---:|---:|---:|---:|---:|---:|
 | H0 | 1,7 % | 0 % | 0 % | 0 % | 0 % | 5,0 % |
 | Effet de A (0,8 sur y1) | 38,3 % | 18,3 % | 38,3 % | 16,7 % | 1,7 % | 76,7 % |
+| Effet de A réparti (0,45 sur les 3 réponses) | 16,7 % | 5,0 % | 16,7 % | 3,3 % | 1,7 % | 31,7 % |
 
-**Lecture.** Aucun faux « oui » fort sous H0 ; puissance prudente, comme à un facteur (D22). Temps médian 21 s sans sensibilité, sous la charge de deux simulations ; 50 à 70 s avec la sensibilité, ligne d'attente affichée. Le test des 80 colonnes et R CMD check (Status OK) portent sur 3135136.
+**Lecture.** Aucun faux « oui » fort sous H0 ; puissance prudente, comme à un facteur (D22). Le rapport m.bay / Pillai est le même avec l'effet sur une réponse (0,50) et réparti (0,53) : la perte ne tient pas à l'effet porté par une seule réponse. Temps médian 21 s sans sensibilité, sous la charge de deux simulations ; 50 à 70 s avec la sensibilité, ligne d'attente affichée. Le test des 80 colonnes et R CMD check (Status OK) portent sur 3135136.

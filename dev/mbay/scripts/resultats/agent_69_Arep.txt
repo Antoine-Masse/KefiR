@@ -1,0 +1,3 @@
+R version 4.6.1 (2026-06-24 ucrt)
+agent_69 : MANOVA 2 x 2, 3 reponses, n = 12 par case, scenario Arep, N = 60
+un terme P>.75 : 0.167 | P>.95 : 0.050 || A P>.75 : 0.167 | A P>.95 : 0.033 | B ou A:B P>.95 : 0.017 || Pillai A p<.05 : 0.317 | un terme p<.05 : 0.400 || temps median 18.6 s

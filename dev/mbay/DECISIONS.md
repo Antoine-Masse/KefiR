@@ -626,3 +626,16 @@ Demandé par la session parente dans l'ordre du PERIMETRE, avec trois points de 
 - Avec un effet de A de 0,8 sur une réponse, P(A) > 0,75 dans 38 % des jeux et > 0,95 dans 17 %, contre 77 % pour Pillai à p < 0,05. B ou A:B ne dépassent 0,95 que dans 1 jeu sur 60.
 
 **Refusés.** MANOVA avec covariables ou avec sujets.
+
+**Audit de 9c44239 par « KefiR officiel » (11 novembre) : calcul validé, trois retouches.**
+1. **Bilan mené par les termes, pour tous les plans à plusieurs termes** (`.bay_bilan_common`). Dès qu'un terme reçoit un « oui », trois choses changent :
+   - le titre donne les réponses par terme (« 7) Bilan - A oui (96,3 %), B non (19,4 %), A:B non (5,8 %) ») ;
+   - le verdict dit « une différence selon A ; les autres termes sont plus bas » ;
+   - la phrase de compte rendu commence par les termes, puis donne « au moins une différence : … ».
+   « Indécis » n'est alors jamais dit. Sans aucun « oui », le libellé global reste.
+2. **Lecture par réponse faite par m.bay.** À l'étape 6, chaque réponse est lue seule par le moteur factoriel (mêmes modèles, même a priori HOP). Au-delà de 10 modèles, seuls les termes au-dessus de 50 % sont lus, et le récit le dit. La lecture est dans `$responses` et dans le bilan.
+3. **Puissance : l'écart avec Pillai ne tient pas à l'effet porté par une seule réponse.** Mesure : `agent_69`, scénario Arep, même plan, effet de A de 0,45 réparti sur les 3 réponses.
+   - Effet sur une réponse : m.bay (P(A) > 0,75) / Pillai (p < 0,05) = 0,38 / 0,77 = 0,50.
+   - Effet réparti : 0,17 / 0,32 = 0,53.
+   - Le rapport est le même : c'est la prudence générale de P > 0,75 face à p < 0,05, comme sur les autres voies (D17, D21). La condition de l'avertissement n'est donc pas élargie.
+   - Reste l'avertissement de D22, mesuré : avec des corrélations très inégales, le modèle empilé peut manquer une différence portée par un contraste entre réponses corrélées.

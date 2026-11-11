@@ -49,3 +49,15 @@ test_that("MANOVA with two factors (D23): term answers, forms, story", {
 	expect_equal(sum(r$models$posterior), 1, tolerance = 1e-8)
 	expect_true(any(grepl("a1 x b1", txt, fixed = TRUE)))
 })
+
+test_that("several factors with a yes: the bilan leads with the terms, never undecided (audit of 9c44239)", {
+	set.seed(11)
+	d <- expand.grid(rep = 1:12, A = factor(c("a1", "a2")), B = factor(c("b1", "b2")))
+	d$u <- stats::rnorm(nrow(d)) + 1.3 * (d$A == "a2"); d$v <- stats::rnorm(nrow(d)); d$w <- stats::rnorm(nrow(d))
+	txt <- capture.output(r <- m.bay(cbind(u, v, w) ~ A * B, data = d, draws = 1000, sensitivity = FALSE))
+	ttl <- txt[grep("^7[)] Bilan", txt)]
+	expect_match(ttl, "^7[)] Bilan - A oui")
+	expect_false(any(grepl("indécis|undecided", txt)))
+	expect_true(any(grepl("u seule", txt, fixed = TRUE)))
+	expect_true(all(c("u", "v", "w") %in% r$responses$response))
+})

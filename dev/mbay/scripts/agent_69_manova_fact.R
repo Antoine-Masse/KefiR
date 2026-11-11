@@ -1,5 +1,5 @@
 # agent_69 : MANOVA a deux facteurs (D23), 2 x 2, 3 reponses (correlations 0,3), n = 12 par
-# case. Scenarios : H0, et effet de A de 0,8 sur une reponse. Part des jeux ou un terme est
+# case. Scenarios : H0, effet de A de 0,8 sur une reponse (A), effet de A de 0,45 sur les trois (Arep). Part des jeux ou un terme est
 # a P > .75 / > .95 (m.bay, sans sensibilite), et Pillai p < .05 sur ce terme.
 args <- commandArgs(TRUE)
 sc <- if (length(args) >= 1L) args[1L] else "H0"
@@ -12,7 +12,10 @@ r <- t(vapply(seq_len(N), function(i) {
 	d <- expand.grid(rep = 1:12, A = factor(c("a1", "a2")), B = factor(c("b1", "b2")))
 	R <- matrix(0.3, 3, 3); diag(R) <- 1
 	Y <- matrix(stats::rnorm(nrow(d) * 3), ncol = 3) %*% chol(R)
-	if (sc != "H0") Y[d$A == "a2", 1] <- Y[d$A == "a2", 1] + 0.8
+	if (sc == "A") Y[d$A == "a2", 1] <- Y[d$A == "a2", 1] + 0.8
+	# Same effect spread over the 3 responses (audit of 9c44239, point 3): does the gap with
+	# Pillai come from an effect carried by one response only?
+	if (sc == "Arep") Y[d$A == "a2", ] <- Y[d$A == "a2", ] + 0.45
 	d$y1 <- Y[, 1]; d$y2 <- Y[, 2]; d$y3 <- Y[, 3]
 	t0 <- proc.time()[["elapsed"]]
 	rr <- suppressMessages(m.bay(cbind(y1, y2, y3) ~ A * B, data = d, verbose = FALSE, sensitivity = FALSE, draws = 2000))

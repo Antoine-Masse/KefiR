@@ -227,7 +227,14 @@
 .bay_print_bilan_manova <- function(obj, detail = FALSE, narrated = FALSE) {
 	body <- function(emit, li, narrated) {
 		per <- obj$responses
-		if (!is.null(per)) {
+		if (!is.null(per) && !is.null(per$term)) {
+			# Several factors: for each term, its reading per response (D23).
+			for (t in unique(per$term)) {
+				s <- per$term == t
+				emit("fact", paste0(t, ", each response alone: ", paste0(per$response[s], " ", vapply(per$p_h1[s], .bay_pct, character(1), dec = "."), collapse = "; "), "."),
+					paste0(t, ", chaque r\u00e9ponse seule : ", paste0(per$response[s], " ", vapply(per$p_h1[s], .bay_pct, character(1), dec = ","), collapse = " ; "), "."))
+			}
+		} else if (!is.null(per)) {
 			emit("fact", paste0("Each response read alone: ", paste0(per$response, " ", vapply(per$p_h1, .bay_pct, character(1), dec = "."), collapse = "; "), "."),
 				paste0("Chaque r\u00e9ponse lue seule : ", paste0(per$response, " ", vapply(per$p_h1, .bay_pct, character(1), dec = ","), collapse = " ; "), "."))
 		}
