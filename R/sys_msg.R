@@ -14,3 +14,9 @@
         return(en)
     }
 }
+
+# Message anglais absent : NULL, vide ou NA. On affiche alors le francais.
+# (L'ancien test length(ang) == 1 remplacait TOUT message anglais d'une chaine.)
+.ang_missing <- function(ang) {
+  is.null(ang) || length(ang) == 0 || all(is.na(ang)) || !any(nzchar(ang))
+}

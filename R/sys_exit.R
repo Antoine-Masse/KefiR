@@ -1,5 +1,5 @@
 .exit <- function(ang = NULL, fr = NULL, verbose = TRUE, return = TRUE, code = NULL) {
-  if (is.null(ang) || length(ang) == 1) {
+  if (.ang_missing(ang)) {
     ang <- fr
   }
   if (verbose || return) {

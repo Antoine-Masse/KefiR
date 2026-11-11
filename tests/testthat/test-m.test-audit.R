@@ -49,3 +49,21 @@ test_that("b. modele mixte force (plan desequilibre) avec verbose = FALSE : pas 
   res <- audit_quiet(m.test(y ~ G * T + Error(id / T), data = d, plot = FALSE))
   expect_true("G:T" %in% res$value$effects$term)
 })
+
+test_that("f. un message anglais d'une seule chaine s'affiche en locale anglaise", {
+  old_ctype <- Sys.getlocale("LC_CTYPE")
+  withr::defer(Sys.setlocale("LC_CTYPE", old_ctype))
+  skip_if(identical(Sys.setlocale("LC_CTYPE", "C"), ""), "locale C indisponible")
+  expect_identical(.msg("en", "fr"), "en")
+  out <- utils::capture.output(.vbse("Hello", "Bonjour", verbose = TRUE, k = 0))
+  expect_match(out[1], "Hello")
+  expect_error(.exit("Stop here", "Arret ici"), "Stop here")
+  # ang absent ou vide : on retombe sur le francais
+  out <- utils::capture.output(.vbse("", "Bonjour", verbose = TRUE, k = 0))
+  expect_match(out[1], "Bonjour")
+  # bout en bout : m.test() parle anglais
+  set.seed(3)
+  res <- audit_quiet(m.test(rnorm(20), rep(c("A", "B"), 10), plot = FALSE))
+  expect_true(any(grepl("Fisher-Snedecor test", res$output, fixed = TRUE)))
+  expect_false(any(grepl("Test de Fisher-Snedecor", res$output, fixed = TRUE)))
+})
