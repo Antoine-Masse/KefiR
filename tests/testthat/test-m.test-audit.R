@@ -93,3 +93,16 @@ test_that("c. la confirmation de Levene porte sur les variances (Brown-Forsythe 
   expect_false(v[[1]])
   expect_true(any(grepl(.format_pval(p_median), out, fixed = TRUE)))
 })
+
+test_that("d. (1|id) donne des post-hocs apparies, comme Error(id/T)", {
+  set.seed(7)
+  n <- 15
+  d <- expand.grid(id = factor(1:n), T = factor(c("t1", "t2", "t3")))
+  u <- rnorm(n, 0, 3)
+  d$y <- 20 + u[as.integer(d$id)] + c(0, 0.8, 1.2)[as.integer(d$T)] + rnorm(nrow(d), 0, 0.7)
+  r_lmer <- audit_quiet(m.test(y ~ T + (1 | id), data = d, plot = FALSE, verbose = FALSE))$value
+  r_err <- audit_quiet(m.test(y ~ T + Error(id / T), data = d, plot = FALSE, verbose = FALSE))$value
+  expect_equal(r_lmer$p.value, r_err$p.value)
+  # t1-t2 : apparie p ~ 0,02 ; non apparie (ancien comportement) p = 1
+  expect_lt(r_lmer$p.value["t2", "t1"], 0.1)
+})

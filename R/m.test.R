@@ -661,6 +661,10 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 
         if (!is.null(data) && extracted_id %in% names(data)) {
           # Assigner id si non d\u00e9j\u00e0 d\u00e9fini
+          # Le BLOC 8 (id => paired) est d\u00e9j\u00e0 pass\u00e9 : sans cette ligne, l'analyse
+          # et les post-hocs restaient NON appari\u00e9s alors que l'annonce dit
+          # \u00ab mesures r\u00e9p\u00e9t\u00e9es \u00bb.
+          paired <- TRUE
           if (is.null(id)) {
             id <- extracted_id
             k <- .vbse(
