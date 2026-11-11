@@ -858,3 +858,19 @@ Temps : 6 à 9 s pour un appel complet avec sensibilité (3 × 2, 2 × 2, split-
 - Le terme sujet × condition est nécessaire : sans lui, 7 % de faux « oui » forts sous H0.
 - Avec lui, aucun faux « oui » fort, au prix d'une puissance prudente, comme sur les autres voies.
 - Temps par appel (sans sensibilité, N = 120) : médiane 4,3 s, maximum 6,1 s ; environ 5 s avec la sensibilité.
+
+## 19. MANOVA à un facteur : choix du moteur (D22, `agent_68`), 11 novembre
+
+3 groupes de 15 ; corrélations 0,3 entre réponses, sauf scénarios « cor » (0,8 entre y1 et y2, 0 ailleurs). 100 jeux par scénario. Résultats : `scripts/resultats/agent_68_*.txt`.
+
+| Scénario | Pillai p < 0,05 | A BFpack P > 0,75 / 0,95 | B BIC P > 0,75 / 0,95 | **C lmBF empilé** P > 0,75 / 0,95 |
+|---|---:|---:|---:|---:|
+| H0, d = 3 | 3 % | 0 / 0 % | 0 / 0 % | 2 / 0 % |
+| H0, d = 10 | 5 % | 0 / 0 % | 0 / 0 % | 3 / 0 % |
+| H0, corrélations inégales | 3 % | 0 / 0 % | 0 / 0 % | 1 / 0 % |
+| Effet 0,8 sur une réponse, d = 3 | 41 % | 6 / 2 % | 6 / 1 % | 16 / 4 % |
+| Effet 0,8 sur une réponse, d = 10 | 21 % | 0 / 0 % | 0 / 0 % | 6 / 2 % |
+| Effet 0,5 sur les 3 réponses | 27 % | 3 / 1 % | 2 / 1 % | 21 / 7 % |
+| Effet 0,8 sur y1, corrélée 0,8 à y2 | 84 % | 29 / 14 % | 23 / 13 % | 15 / 4 % |
+
+**Lecture.** C n'invente pas de différence, et il est le plus puissant, sauf quand l'effet passe par un contraste entre réponses corrélées : Pillai y exploite la covariance, C ne le peut pas. Un appel complet avec la sensibilité prend environ 15 s (3 réponses, N = 45).

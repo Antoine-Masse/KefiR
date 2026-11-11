@@ -74,7 +74,7 @@ test_that("plans pas encore valides : refus explicite", {
 	e <- transform(d, x = rnorm(36), y2 = rnorm(36), id = rep(1:12, 3), B = rep(c("u", "v"), 18),
 		b = rep(0:1, 18))
 	expect_identical(go(y ~ variete + x, data = e, posthoc = FALSE)$plan, "ancova")  # D16
-	expect_error(go(cbind(y, y2) ~ variete, data = e), "MANOVA")
+	expect_identical(go(cbind(y, y2) ~ variete, data = e)$plan, "manova")  # D22
 	# mesures repetees : acceptees depuis D15 (test-bay-repeated.R), les trois ecritures concordent
 	lb <- vapply(list(y ~ variete + Error(id/variete), y ~ variete + (1 | id), y ~ variete | id),
 		function(f) go(f, data = e)$effects$log_bf, numeric(1))

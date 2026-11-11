@@ -37,7 +37,9 @@
 		num <- regmatches(txt, regexpr("^[0-9]+\\. ", txt))
 		if (length(num)) cont <- paste0(cont, strrep(" ", nchar(num)))
 	}
-	avail <- max(20L, .bay_width() - .bay_vis(lead))
+	# The wider of the two indents sets the width, so that no folded line passes the limit
+	# (audit of D22: a numbered item went to 83 columns).
+	avail <- max(20L, .bay_width() - max(.bay_vis(lead), .bay_vis(cont)))
 	# French spacing and intervals are not split: non-breaking space before % : ; ! ? and
 	# inside guillemets and brackets, turned back into a space once folded.
 	nb <- "\u00a0"

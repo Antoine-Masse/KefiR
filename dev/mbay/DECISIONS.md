@@ -579,3 +579,32 @@ Demandé par la session parente dans l'ordre du PERIMETRE, avec trois points de 
 **Audit de 8ffb16a par « KefiR officiel » (10 novembre), deux retouches faites.**
 1. Les moyennes par niveau disent « 10 sujets x 3 répliques » (ou « x 3 mesures » pour un facteur entre sujets), au lieu de « n = 30 » qui faisait croire à 30 sujets.
 2. **Unité des écarts standardisés avec répliques : décidé.** C'est l'écart-type d'une mesure d'un sujet dans une condition, soit le résiduel (entre répliques) plus le terme sujet × condition : σ²(1 + Σ g_sujet×condition), tiré du postérieur de `lmBF`. C'est la variabilité qu'un expérimentateur attend d'une mesure une fois le sujet connu. Le résiduel seul la sous-estimerait et grossirait les écarts standardisés. Le bilan donne cet écart-type sous ce nom, et l'étape 6 y renvoie.
+
+## D22. MANOVA à un facteur : DÉCIDÉ ET FAIT (11 novembre), remplace la proposition D7
+
+**Demande** (PERIMETRE §7). Plusieurs réponses comparées ensemble entre groupes. D7 avait arrêté un moteur maison Normal-Inverse-Wishart : l'échelle de son a priori croissait avec le nombre de réponses.
+
+**Trois moteurs essayés** (`agent_68` ; 3 groupes de 15, 100 jeux par scénario, VALIDATION §19).
+- **A.** `BFpack::BF` sur `aov` multivarié : facteur de Bayes fractionnaire (Mulder et al. 2021, JSS 100(18)). Paquet établi, installé dans mbay-lib pour l'essai seulement.
+- **B.** BIC multivarié : loi normale à covariance libre, information unitaire (Kass et Raftery 1995).
+- **C.** `lmBF` sur les réponses standardisées et empilées, y ~ g * réponse + individu aléatoire (Rouder et al. 2012). « Au moins une différence » réunit g seul (même écart partout) et g + g:réponse (écarts qui changent d'une réponse à l'autre), à poids égaux.
+
+**Choix : C.**
+- C est le seul à garder de la puissance : effet réparti sur 3 réponses, P > 0,75 dans 21 % des jeux contre 3 % (A) et 2 % (B), Pillai p < 0,05 dans 27 %. À 10 réponses, A et B ne détectent plus rien.
+- Sous H0, C ne dépasse jamais 0,95 (0 % à d = 3 et d = 10) et reste à 1 à 3 % au-delà de 0,75.
+- Il repose sur BayesFactor, déjà employé partout, sans nouvelle dépendance.
+
+**Limite de C, mesurée.** L'effet individu suppose la même corrélation pour chaque paire de réponses (symétrie composée).
+- Avec des corrélations très inégales (0,8 / 0 / 0), C reste calibré sous H0 (1 % à P > 0,75).
+- Il perd en revanche de la puissance quand l'effet porte sur une réponse très corrélée à une autre : 15 % à P > 0,75, contre 84 % pour Pillai, qui exploite le contraste entre les deux réponses, et 29 % pour A.
+- Le risque est donc de manquer une différence, pas d'en inventer. Quand les corrélations s'écartent de plus de 0,5, le récit et le bilan disent qu'un « non » est à lire avec réserve. Pas de plafond sur un « oui ».
+
+**Lecture par réponse** (étape 6) : chaque réponse est lue seule, avec le moteur à un facteur à chances égales, pour voir où se trouve la différence. La réponse globale reste celle de l'étape 5.
+
+**Refusés.** MANOVA à plusieurs facteurs, avec covariables ou avec sujets.
+
+**Piste.** Moyenner C avec un moteur qui exploite la covariance (A ou B) quand les corrélations sont inégales, après calibration.
+
+**Audit de D22 par « KefiR officiel » (11 novembre), deux corrections faites avant le commit.**
+1. **Largeur.** Le repli d'un élément numéroté pouvait atteindre 83 colonnes (iris, noms de réponses longs) : la largeur disponible ne tenait pas compte du retrait de continuation. Corrigé à la source dans `.bay_wrap`, pour tous les plans : la largeur se calcule sur le plus large des deux retraits. iris est ajouté au test des 80 colonnes.
+2. **Noms du résultat.** La MANOVA a désormais `laws`, `models` et `questions`, comme les autres plans. La probabilité d'un effet s'appelle `prob_effect` partout, MANOVA comprise ; aucun plan n'a d'élément `p_h1` à la racine (il est dans `$effects$p_h1`).

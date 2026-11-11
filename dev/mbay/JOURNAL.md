@@ -1,5 +1,15 @@
 # Journal de m.bay
 
+## Séance 15 : 11 novembre 2026, audit de 8ffb16a et MANOVA à un facteur (D22)
+
+**Fait.**
+- **Audit de 8ffb16a.** « 10 sujets x 3 répliques » au lieu de « n = 30 » ; écarts standardisés sur l'écart-type d'une mesure d'un sujet dans une condition (résiduel + sujet × condition), décidé dans D21 (d36a62a).
+- **D22.** Trois moteurs comparés (BFpack, BIC, lmBF empilé). `R/sys_bay_manova.R` : récit en 7 étapes, lecture par réponse, bilan.
+
+**Vérifié.** `agent_68` (VALIDATION §19) ; `test-bay-manova.R` contre `lmBF` sur les données empilées ; tests bay.
+
+**Non fait.** MANOVA à plusieurs facteurs, avec covariables ou sujets.
+
 ## Séance 14 : 10 novembre 2026, audit de 23c941e et mesures répétées avec répliques (D21)
 
 **Fait.**

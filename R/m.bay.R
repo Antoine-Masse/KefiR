@@ -229,6 +229,11 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	input$ordinal <- identical(response, "ordinal") || identical(route, "ordinal")
 	input$ordinal_auto <- identical(route, "ordinal")
 	input$bounded <- identical(route, "bounded")
+	# Several responses (DECISIONS, D22): their own route, which tells its own plan.
+	if (identical(input$plan, "manova")) {
+		return(.bay_m_manova(input, call_expr, function() notes, note, prior_h1, rscale, sensitivity, draws, seed, detail, verbose,
+			return, story, posthoc))
+	}
 	# Step 1: the plan recognised, or refused and why.
 	.bay_story_plan(story, input)
 
@@ -602,6 +607,8 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 	if (told) .bay_story_replay(x$story)
 	if (identical(x$plan, "contingency")) {
 		.bay_print_bilan_cont(x, detail = detail, narrated = told)
+	} else if (identical(x$plan, "manova")) {
+		.bay_print_bilan_manova(x, detail = detail, narrated = told)
 	} else if (identical(x$plan, "ordinal")) {
 		.bay_print_bilan_ord(x, detail = detail, narrated = told)
 	} else if (identical(x$plan, "counts")) {

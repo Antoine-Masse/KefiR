@@ -52,7 +52,7 @@ test_that("changement de strategie dit : groupe constant (integrale divergente),
 	r <- m.bay(y ~ g, data = d, verbose = FALSE, draws = 1000)
 	fr <- paste(r$story$fr, collapse = " ")
 	expect_match(fr, "constant")
-	expect_match(gsub("\\s+", " ", fr), "Changement de stratégie.*valeur finie")
+	expect_match(gsub("\\s+", " ", fr), "Changement de strat\u00e9gie.*valeur finie")
 	expect_false("normal_het" %in% r$laws$law)
 	set.seed(1)
 	n <- 30
@@ -72,7 +72,7 @@ test_that("etape 3 : variances inegales annoncees, avec le groupe le plus disper
 	d <- data.frame(y = c(rnorm(15, 10, 2), rnorm(15, 11, 2), rnorm(15, 12, 6)), g = factor(rep(c("a", "b", "c"), each = 15)))
 	r <- m.bay(y ~ g, data = d, verbose = FALSE, draws = 1000, sensitivity = FALSE)
 	fr <- gsub("\\s+", " ", paste(r$story$fr, collapse = " ")); en <- gsub("\\s+", " ", paste(r$story$en, collapse = " "))
-	expect_match(fr, "Variances inégales probables.*c le plus dispers")
+	expect_match(fr, "Variances in\u00e9gales probables.*c le plus dispers")
 	expect_match(en, "Unequal variances probable.*c the most dispersed")
 })
 
@@ -99,9 +99,9 @@ test_that("session anglaise reelle : le recit sort en anglais", {
 })
 
 test_that("plan refuse : l'etape 1 le nomme avant le refus", {
-	# ANCOVA acceptee depuis D16 : un plan encore refuse, la MANOVA
-	d <- data.frame(y = rnorm(20), y2 = rnorm(20), g = factor(rep(1:2, 10)))
-	txt <- capture.output(expect_error(m.bay(cbind(y, y2) ~ g, data = d)))
+	# MANOVA a un facteur acceptee depuis D22 : un plan encore refuse, la MANOVA a deux facteurs
+	d <- data.frame(y = rnorm(20), y2 = rnorm(20), g = factor(rep(1:2, 10)), h = factor(rep(1:2, each = 10)))
+	txt <- capture.output(expect_error(m.bay(cbind(y, y2) ~ g * h, data = d)))
 	expect_true(any(grepl("^1[)] ", txt)))
 	expect_true(any(grepl("MANOVA", txt)))
 })
@@ -125,7 +125,7 @@ test_that("plusieurs facteurs : loi normale seule dite, meme squelette, un terme
 	expect_identical(capture.output(print(r, story = TRUE)), txt)
 })
 
-test_that("80 colonnes au plus, tabulation comptee 8 : 7 plans, francais et anglais, et width = 60", {
+test_that("80 colonnes au plus, tabulation comptee 8 : 8 plans, francais et anglais, et width = 60", {
 	set.seed(42)
 	d2 <- data.frame(y = c(rnorm(20, 10, 2), rnorm(20, 11.5, 2)), g = factor(rep(c("A", "B"), each = 20)))
 	d4 <- data.frame(y = c(rnorm(15, 10, 2), rnorm(15, 12, 2), rnorm(15, 10.5, 2), rnorm(15, 13, 2)), g = factor(rep(c("a", "b", "c", "d"), each = 15)))
@@ -143,7 +143,9 @@ test_that("80 colonnes au plus, tabulation comptee 8 : 7 plans, francais et angl
 	dj$germe <- factor(ifelse(rbinom(90, 1, c(.5, .5, .8)[dj$tr]) == 1, "oui", "non"))
 	cas <- list(function() m.bay(y ~ g, data = d2, draws = 1000), function() m.bay(y ~ g, data = d4, draws = 1000),
 		function() m.bay(y ~ A * B, data = d22), function() m.bay(y ~ t, data = dp, id = "id", paired = TRUE),
-		function() m.bay(y ~ t | id, data = dr), function() m.bay(y ~ g + x, data = da), function() m.bay(germe ~ tr, data = dj))
+		function() m.bay(y ~ t | id, data = dr), function() m.bay(y ~ g + x, data = da), function() m.bay(germe ~ tr, data = dj),
+		# MANOVA on iris (audit of D22): long response names in a numbered hypothesis.
+		function() m.bay(cbind(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width) ~ Species, data = iris, draws = 1000, sensitivity = FALSE))
 	vis <- function(x) nchar(gsub("\t", "        ", x, fixed = TRUE), type = "width")
 	old_loc <- Sys.getlocale("LC_CTYPE"); old_w <- getOption("width")
 	on.exit({ Sys.setlocale("LC_CTYPE", old_loc); options(width = old_w) }, add = TRUE)

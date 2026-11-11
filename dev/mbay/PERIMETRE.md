@@ -342,7 +342,8 @@ Légende :
 | Modèle mixte avec répliques par sujet et condition | Couvert | `lmBF`, sujet et sujet × condition aléatoires, D21 | Puissance prudente ; pentes aléatoires refusées |
 | Pentes aléatoires | Refusé | — | Stan (rstanarm) seulement |
 | ANCOVA appariée, MANCOVA, MANOVA répétée | Refusé | — | Non couverts par `m.test()` non plus |
-| MANOVA, 1 ou plusieurs facteurs | Refusé | — | Formule Normale-Inverse-Wishart prévue (D1) |
+| MANOVA, 1 facteur | Couvert | `lmBF` sur réponses standardisées empilées, D22 | Corrélations prises égales : peut manquer une différence portée par un contraste |
+| MANOVA, plusieurs facteurs, covariables ou sujets | Refusé | — | À faire |
 | Réponse binaire ou catégorielle, 1 facteur | Couvert | `contingencyTableBF`, D17 voie 1 | Plusieurs facteurs : refusé |
 | Comptages, 1 facteur | Couvert | Poisson et binomiale négative, BIC, D17 voie 2 | Plusieurs facteurs : refusé ; puissance modeste |
 | Réponse ordonnée (notation bornée), 1 facteur | Couvert | `polr`, BIC, D17 voie 3 | Cotes proportionnelles non testées ; plusieurs facteurs : refusé |
