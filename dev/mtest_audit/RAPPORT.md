@@ -144,7 +144,7 @@ La correction de fond serait d'appliquer Welch par défaut (t de Welch, F de Wel
 
 - `tests/testthat/test-m.test-audit.R` : 12 tests, 37 assertions. Chacun a été lancé sur le commit précédant sa correction (échec), puis après (succès).
 - Non-régression au dernier commit : `test-m.test.R` (20 tests), `test-manova.R` (22 tests, 17 s au lieu de plus de 6 min) et `test-valreg.R` (6 tests), 0 échec.
-- `R CMD check --no-manual --ignore-vignettes` (R 4.6.1, bibliothèque `mbay-lib`) sur dc74ae7 : 0 erreur, 0 avertissement, 2 NOTE (le dossier `.claude` inclus dans le build ; NEWS.md sans titre de version). Les deux sont corrigées au commit suivant : `^\.claude$` ajouté à `.Rbuildignore`, version 0.0.2.3 en titre de NEWS.md et dans DESCRIPTION. Les tests du check (`testthat.R`) passent.
+- `R CMD check --no-manual --ignore-vignettes` (R 4.6.1, bibliothèque `mbay-lib`) sur dc74ae7 : 0 erreur, 0 avertissement, 2 NOTE (le dossier `.claude` inclus dans le build ; NEWS.md sans titre de version). Les deux sont corrigées au commit suivant : `^\.claude$` ajouté à `.Rbuildignore`, version 0.0.2.3 en titre de NEWS.md et dans DESCRIPTION. Relancé sur 2a1e8b1 : **Status: OK** (0 erreur, 0 avertissement, 0 NOTE), tests `testthat.R` compris.
 
 ## Références
 
