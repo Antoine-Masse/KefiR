@@ -1,0 +1,3 @@
+R version 4.6.1 (2026-06-24 ucrt)
+agent_70 : 2 x 2, bruit t3, scenario H0, N = 100
+m.bay facteurs (normale) P(A)>.75 : 0.000 | >.95 : 0.000 || voie un facteur (4 lois) sur A P>.75 : 0.010 | >.95 : 0.000 | queues lourdes dites : 0.460 || aov p<.05 : 0.080 | aov rangs p<.05 : 0.060

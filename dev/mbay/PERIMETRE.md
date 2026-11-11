@@ -351,7 +351,7 @@ Légende :
 | Tests de rangs (Wilcoxon, Kruskal) | Non couvert, raisons D17 | — | Leurs cas sont repris par les voies 3 et par les lois t |
 | Covariable seule (régression) | Refusé | — | Hors `m.test()` |
 | Variances inégales à plusieurs facteurs | Couvert (entre groupes) | Moyenne des lois par case, D19 | Pas avec sujets ou covariables |
-| Lois t à plusieurs facteurs | Non couvert (annoncé) | — | À faire |
+| Lois t à plusieurs facteurs | Couvert (entre groupes) | Student à échelle commune moyennée avec les normales, D24 | Pas avec sujets ou covariables, ni en MANOVA |
 | Voie robuste ou Stan | Non couverte | — | rstanarm en Suggests (D1), non branché |
 
 **Temps typique sur un jeu de TP** (N ≈ 40, valeurs par défaut, `scripts/resultats/agent_63.txt`) :

@@ -179,11 +179,20 @@
 # log marginal of the null with the common variance, l_het (models x r) with one variance per
 # cell. Equal prior on the two laws, as with one factor. The model space and its prior are
 # those of the common variance: only the Bayes factors change.
-.bay_fl_combine <- function(log_bf_eq, eq0, l_het) {
+.bay_fl_combine <- function(log_bf_eq, eq0, l_het, l_t = NULL) {
 	l_eq <- log_bf_eq + eq0
+	# Equal prior on the laws (normal common variance, normal per cell, and t with D24): the
+	# constant log(number of laws) cancels in every ratio.
 	avg <- l_eq
 	avg[] <- .bay_lse2(as.vector(l_eq), as.vector(l_het))
+	if (!is.null(l_t)) avg[] <- .bay_lse2(as.vector(avg), as.vector(l_t))
 	list(log_bf = sweep(avg, 2L, avg[1L, ], "-"), l_eq = l_eq)
+}
+
+# P(law | data) for each law, the models weighted by their prior. l: list of vectors (models).
+.bay_fl_p_laws <- function(l, log_prior) {
+	a <- vapply(l, function(v) .bay_log_sum_exp(log_prior + v), numeric(1))
+	exp(a - .bay_log_sum_exp(a))
 }
 
 # P(one variance per cell | data), the models weighted by their prior.

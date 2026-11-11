@@ -722,7 +722,8 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 		if (dec == ".") " to " else " \u00e0 ", gsub(".", dec, format(signif(max(sds), 2), trim = TRUE), fixed = TRUE))
 	if (isTRUE(fa$het_used)) {
 		ph <- fa$p_het
-		.bay_step_result(story, "normal, common variance or one per cell, averaged", "normale, variance commune ou par case, moyenn\u00e9es")
+		.bay_step_result(story, if (is.na(fa$p_t)) "normal, common variance or one per cell, averaged" else "normal (common variance or one per cell) and Student t, averaged",
+			if (is.na(fa$p_t)) "normale, variance commune ou par case, moyenn\u00e9es" else "normale (variance commune ou par case) et Student, moyenn\u00e9es")
 		.bay_tell(story, paste0("Variances per cell: ", if (ph >= 0.75) "unequal probable" else if (ph <= 0.25) "equal probable" else "not settled",
 				" (", if (ph >= 0.75) .bay_pct(ph, ".") else if (ph <= 0.25) .bay_pct(1 - ph, ".") else paste("unequal at", .bay_pct(ph, ".")),
 				"); standard deviations from ", sd_rng("."), "."),
@@ -739,8 +740,19 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 			.bay_tell(story, "Both are kept: each answer weighs the common variance and one variance per cell by their probability.",
 				"Les deux sont gard\u00e9es : chaque r\u00e9ponse p\u00e8se la variance commune et une variance par case selon leur probabilit\u00e9.", "decide")
 		}
-		.bay_tell(story, "heavy tails are not computed with several factors yet.",
-			"les queues lourdes ne sont pas encore calcul\u00e9es \u00e0 plusieurs facteurs.", "note")
+		pt <- fa$p_t
+		if (is.na(pt)) {
+			.bay_tell(story, "heavy tails could not be computed here (too many ties or sampling failed).",
+				"les queues lourdes n'ont pas pu \u00eatre calcul\u00e9es ici (trop d'ex-aequo ou tirage en \u00e9chec).", "note")
+		} else {
+			# D24: a third law, Student t with a common scale, averaged with the two normal laws.
+			.bay_tell(story, paste0("Tails: ", if (pt >= 0.75) "heavy probable" else if (pt <= 0.25) "normal probable" else "not settled",
+					" (Student t law at ", .bay_pct(pt, "."), "); it is averaged with the normal laws too."),
+				paste0("Queues : ", if (pt >= 0.75) "lourdes probables" else if (pt <= 0.25) "normales probables" else "non tranch\u00e9es",
+					" (loi de Student \u00e0 ", .bay_pct(pt, ","), ") ; elle est moyenn\u00e9e elle aussi avec les lois normales."))
+			.bay_tell(story, "Heavy tails: Student t with a common scale, p(nu) = exp(-(nu - 2)), same priors on the effects (Cauchy of scale r); importance sampling around the mode (DECISIONS, D24).",
+				"Queues lourdes : Student \u00e0 \u00e9chelle commune, p(nu) = exp(-(nu - 2)), m\u00eames a priori sur les effets (Cauchy d'\u00e9chelle r) ; \u00e9chantillonnage d'importance autour du mode (DECISIONS, D24).", "detail")
+		}
 		.bay_tell(story, "One variance per cell: Dirichlet(1.5) on the proportions of precision of the cells (Dablander et al. 2024); effects on the scale of the harmonic mean of the cell variances; importance sampling (DECISIONS, D19).",
 			"Une variance par case : Dirichlet(1,5) sur les parts de pr\u00e9cision des cases (Dablander et al. 2024) ; effets \u00e0 l'\u00e9chelle de la moyenne harmonique des variances des cases ; \u00e9chantillonnage d'importance (DECISIONS, D19).", "detail")
 	} else {
@@ -951,20 +963,20 @@ print.mbay <- function(x, detail = isTRUE(x$detail), story = FALSE, ...) {
 	rownames(hyp) <- NULL
 	out <- list(
 		hypotheses = hyp, effects = fa$effects,
-		laws = if (isTRUE(fa$het_used)) data.frame(law = c("normal_eq", "normal_het"), posterior = c(1 - fa$p_het, fa$p_het), stringsAsFactors = FALSE) else NULL,
+		laws = if (isTRUE(fa$het_used)) { pt_ <- if (is.na(fa$p_t)) 0 else fa$p_t; data.frame(law = c("normal_eq", "normal_het", if (!is.na(fa$p_t)) "t_eq"), posterior = c(1 - fa$p_het - pt_, fa$p_het, if (!is.na(fa$p_t)) fa$p_t), stringsAsFactors = FALSE) } else NULL,
 		models = data.frame(model = vapply(fa$space$models, function(m) {
 				if (length(m)) paste(fa$space$terms[m], collapse = " + ") else "(null)"
 			}, character(1)), log_bf = fa$log_bf_models[, if (isTRUE(sensitivity)) 2L else 1L],
 			log_prior = fa$log_prior, stringsAsFactors = FALSE),
 		n_models = length(fa$space$models),
 		sensitivity = fa$sensitivity,
-		priors = list(rscale = rscale, model_prior = if (single) "prior_h1" else "HOP(1,1)", law = if (isTRUE(fa$het_used)) c("normal_eq", "normal_het") else "normal_eq", prior_h1 = if (single) prior_h1 else NULL),
+		priors = list(rscale = rscale, model_prior = if (single) "prior_h1" else "HOP(1,1)", law = if (isTRUE(fa$het_used)) c("normal_eq", "normal_het", if (!is.na(fa$p_t)) "t_eq") else "normal_eq", prior_h1 = if (single) prior_h1 else NULL),
 		posthoc = ph, n_subjects = fa$n_subjects,
 		questions = .bay_fact_questions(fa$effects$term, resp, adj = cov_names),
 		overlap = fa$overlap, cov_centres = fa$cov_centres,
 		cov_by_group = if (anc) sapply(input$covariates, function(v) tapply(v, interaction(input$factors, drop = TRUE), mean)) else NULL,
 		het_cells = if (exists("het_cells", inherits = FALSE)) het_cells else FALSE,
-		het_used = isTRUE(fa$het_used),
+		het_used = isTRUE(fa$het_used), p_t = fa$p_t,
 		contradiction = FALSE, heavy = FALSE, detail = isTRUE(detail),
 		descriptive_stats = fa$means, cell_means = local({
 			cl <- interaction(input$factors, sep = " x ", drop = TRUE)

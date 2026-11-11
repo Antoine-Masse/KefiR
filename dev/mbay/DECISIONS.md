@@ -639,3 +639,22 @@ Demandé par la session parente dans l'ordre du PERIMETRE, avec trois points de 
    - Effet réparti : 0,17 / 0,32 = 0,53.
    - Le rapport est le même : c'est la prudence générale de P > 0,75 face à p < 0,05, comme sur les autres voies (D17, D21). La condition de l'avertissement n'est donc pas élargie.
    - Reste l'avertissement de D22, mesuré : avec des corrélations très inégales, le modèle empilé peut manquer une différence portée par un contraste entre réponses corrélées.
+
+## D24. Queues lourdes à plusieurs facteurs entre groupes : DÉCIDÉ ET FAIT (11 novembre)
+
+**Défaut mesuré d'abord** (`agent_70`, 2 × 2, n = 12 par case, bruit de Student à 3 ddl). Avec un effet de A de 0,8, le moteur à plusieurs facteurs (normales, D19 compris) donne P(A) > 0,95 dans 44 % des jeux, contre 69 % pour la voie à un facteur avec lois t appliquée à A seul. Sous H0 : 0 %.
+
+**Correction** (`R/sys_bay_fact_t.R`). Une troisième loi, Student à échelle commune, est calculée pour chaque modèle héréditaire, puis moyennée à poids égaux avec les deux lois normales de D19, dans le facteur de Bayes de chaque modèle.
+- **Mesure commune.** Sur les effets, β_t/σ suit une loi de Cauchy multivariée d'échelle r (la Zellner-Siow de `lmBF`, g intégré). p(ν) = exp(-(ν - 2)), comme à un facteur. Les données sont standardisées comme dans `.bay_laws_stats`.
+- **Calcul.** Échantillonnage d'importance autour du mode (t multivariée, 4 ddl), 4000 tirages au moins ; les mêmes tirages servent aux trois r.
+- **Contrôles** (`test-bay-fact-t.R`).
+  - Le même code, avec la vraisemblance normale, redonne `lmBF` à 0,1 log près.
+  - Il redonne aussi la forme close du modèle nul de `sys_bay_laws`, une fois ajouté log 2 : `sys_bay_laws` pose 1/τ sur la précision, ce code 1/σ, et les deux mesures diffèrent d'un facteur 2.
+- **Conditions.** Celles de D19 (entre groupes, au moins 3 valeurs par case), plus `t_eq` admis par `.bay_laws_allowed` (exclu quand les ex-aequo sont trop nombreux). Un ESS sous 30 fait retirer la loi t, et le récit le dit.
+
+**Résultat** (`agent_70`, rejoué sur les 100 premiers jeux des mêmes graines ; VALIDATION §21).
+- Avec l'effet de A : P(A) > 0,95 passe de 44 % à 64 %, et P(A) > 0,75 de 70 % à 86 %. La voie à un facteur fait 71 % ; l'ANOVA sur rangs 96 % à p < 0,05.
+- Sous H0 : 0 % au-delà de 0,75 et de 0,95.
+- Une case à valeurs extrêmes peut aussi être lue comme « variance par case » : les deux lois se partagent alors les queues lourdes, sans changer la réponse.
+
+**Non fait.** Student avec une échelle par case ; queues lourdes avec sujets ou covariables, et en MANOVA.

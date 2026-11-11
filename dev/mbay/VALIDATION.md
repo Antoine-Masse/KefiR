@@ -886,3 +886,15 @@ Temps : 6 à 9 s pour un appel complet avec sensibilité (3 × 2, 2 × 2, split-
 | Effet de A réparti (0,45 sur les 3 réponses) | 16,7 % | 5,0 % | 16,7 % | 3,3 % | 1,7 % | 31,7 % |
 
 **Lecture.** Aucun faux « oui » fort sous H0 ; puissance prudente, comme à un facteur (D22). Le rapport m.bay / Pillai est le même avec l'effet sur une réponse (0,50) et réparti (0,53) : la perte ne tient pas à l'effet porté par une seule réponse. Temps médian 21 s sans sensibilité, sous la charge de deux simulations ; 50 à 70 s avec la sensibilité, ligne d'attente affichée. Le test des 80 colonnes et R CMD check (Status OK) portent sur 3135136.
+
+## 21. Queues lourdes à plusieurs facteurs (D24, `agent_70`), 11 novembre
+
+2 × 2, n = 12 par case, bruit t3 (écart-type 1). « Avant » : D19 seul, 150 jeux. « Après » : D24, les 100 premiers jeux des mêmes graines. Résultats : `scripts/resultats/agent_70_*_avant.txt` et `*_apres.txt`. Dans le fichier « après », la colonne « m.bay facteurs (normale) » désigne le moteur à plusieurs facteurs, Student compris.
+
+| Scénario | Mesure | Avant | Après | Voie à un facteur sur A | aov / aov sur rangs, p < 0,05 |
+|---|---|---:|---:|---:|---:|
+| H0 | P(A) > 0,95 | 0 % | 0 % | 0 % | 8 % / 6 % |
+| Effet de A, 0,8 | P(A) > 0,75 | 70 % | 86 % | 88 % | 84 % / 96 % |
+| Effet de A, 0,8 | P(A) > 0,95 | 44 % | 64 % | 71 % | |
+
+Temps : environ 9 s par appel avec la sensibilité (2 × 2, N = 48).

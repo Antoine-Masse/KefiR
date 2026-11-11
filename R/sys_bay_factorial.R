@@ -287,12 +287,21 @@
 	if (isTRUE(het)) {
 		# At least 4000 draws, so that the central answer does not move with draws below that.
 		fl <- .bay_fl_het_all(y, factors, sp, rs, min(max(4000L, as.integer(draws)), 20000L), seed + 104729L)
+		# Heavy tails (D24): Student t with a common scale, same measure, same models.
+		if (!fl$failed && "t_eq" %in% .bay_laws_allowed(fl$stats, "t_eq", 1.5)) {
+			ft <- .bay_ft_all(y, factors, sp, rs, min(max(4000L, as.integer(draws)), 20000L), seed + 130363L)
+			l_t <- matrix(t(vapply(ft, `[[`, numeric(length(rs)), "log_ml")), ncol = length(rs))
+			if (!anyNA(l_t) && all(is.finite(l_t)) && all(vapply(ft, `[[`, numeric(1), "ess") >= .bay_law_min_ess())) fl$l_t <- l_t
+		}
 		if (!fl$failed) {
-			cb <- .bay_fl_combine(bf$log_bf, fl$eq0, fl$l_het)
-			p_het <- .bay_fl_p_het(cb$l_eq[, 1L], fl$l_het[, 1L], lp)
+			cb <- .bay_fl_combine(bf$log_bf, fl$eq0, fl$l_het, fl$l_t)
+			p_laws <- .bay_fl_p_laws(c(list(cb$l_eq[, 1L], fl$l_het[, 1L]), if (!is.null(fl$l_t)) list(fl$l_t[, 1L])), lp)
+			p_het <- p_laws[2L]
+			p_t <- if (!is.null(fl$l_t)) p_laws[3L] else NA_real_
 			bf$log_bf <- cb$log_bf
 		}
 	}
+	if (!exists("p_t", inherits = FALSE)) p_t <- NA_real_
 	het_used <- !is.null(fl) && !fl$failed
 	eff <- .bay_fact_terms(sp, bf$log_bf[, 1L], lp)
 	# Same order as the formula.
@@ -312,7 +321,8 @@
 	if (any(multi) || (!is.null(id) && !paired) || !is.null(cov)) {
 		bf2 <- .bay_fact_logbf(y, factors, sp, rscale, iterations, seed, seeds = seed + 7919L, id = idr,
 			cov = cov, rconts = .bay_rcont())
-		if (het_used) bf2$log_bf <- .bay_fl_combine(bf2$log_bf, fl$eq0, fl$l_het[, 1L, drop = FALSE])$log_bf
+		if (het_used) bf2$log_bf <- .bay_fl_combine(bf2$log_bf, fl$eq0, fl$l_het[, 1L, drop = FALSE],
+			if (!is.null(fl$l_t)) fl$l_t[, 1L, drop = FALSE])$log_bf
 		e2 <- .bay_fact_terms(sp, bf2$log_bf[, 1L], lp)
 		p2 <- e2$p_h1[match(.bay_term_key(terms), .bay_term_key(e2$term))]
 		spread <- max(abs(p2 - eff$p_h1), abs(.bay_fact_null(bf2$log_bf[, 1L], lp) - p_null), na.rm = TRUE)
@@ -390,7 +400,7 @@
 		n_subjects = if (!is.null(id)) nlevels(id) else NA_integer_, terms = terms,
 		overlap = .bay_cov_overlap(input$covariates, interaction(factors, drop = TRUE)),
 		cov_centres = if (length(cov_names)) vapply(input$covariates, mean, numeric(1)) else NULL,
-		het_used = het_used, het_failed = !is.null(fl) && fl$failed, p_het = p_het,
+		het_used = het_used, het_failed = !is.null(fl) && fl$failed, p_het = p_het, p_t = p_t,
 		het_ess = if (!is.null(fl)) min(fl$ess) else NA_real_)
 }
 
@@ -530,8 +540,8 @@
 		mx_ <- identical(obj$plan, "mixed")
 		sd_en <- if (anc) "Residual standard deviation (covariates accounted for): " else if (mx_) "Standard deviation of one measure of a subject in a condition (replicates and subject x condition): " else if (rm_) "Residual standard deviation within subject: " else if (isTRUE(obj$sd_is_within)) "Within-cell standard deviation: " else "Residual standard deviation: "
 		sd_fr <- if (anc) "\u00c9cart-type r\u00e9siduel (covariables prises en compte) : " else if (mx_) "\u00c9cart-type d'une mesure d'un sujet dans une condition (r\u00e9pliques et sujet x condition) : " else if (rm_) "\u00c9cart-type r\u00e9siduel au sein des sujets : " else if (isTRUE(obj$sd_is_within)) "\u00c9cart-type au sein des cases : " else "\u00c9cart-type r\u00e9siduel : "
-		emit("fact", paste0(sd_en, .bay_fx(obj$sd_within, dg + 1L, "."), if (isTRUE(obj$het_used)) "; common variance or one per cell, averaged." else "; normal law with a common variance only."),
-			paste0(sd_fr, .bay_fx(obj$sd_within, dg + 1L, ","), if (isTRUE(obj$het_used)) " ; variance commune ou par case, moyenn\u00e9es." else " ; loi normale \u00e0 variance commune seule."))
+		emit("fact", paste0(sd_en, .bay_fx(obj$sd_within, dg + 1L, "."), if (isTRUE(obj$het_used) && isTRUE(!is.na(obj$p_t))) "; normal (common or per cell) and Student t, averaged." else if (isTRUE(obj$het_used)) "; common variance or one per cell, averaged." else "; normal law with a common variance only."),
+			paste0(sd_fr, .bay_fx(obj$sd_within, dg + 1L, ","), if (isTRUE(obj$het_used) && isTRUE(!is.na(obj$p_t))) " ; normale (commune ou par case) et Student, moyenn\u00e9es." else if (isTRUE(obj$het_used)) " ; variance commune ou par case, moyenn\u00e9es." else " ; loi normale \u00e0 variance commune seule."))
 		if (!is.null(ph) && isTRUE(ph$caution_overlap)) {
 			emit("decide", "the adjusted gaps compare the groups where some have few values of the covariate.",
 				"les \u00e9carts ajust\u00e9s comparent les groupes l\u00e0 o\u00f9 certains ont peu de valeurs de la covariable.")

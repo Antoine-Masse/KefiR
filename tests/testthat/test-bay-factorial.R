@@ -64,7 +64,7 @@ test_that("bilan multi-facteurs : court, loi annoncee, sensibilite, detail", {
 	court <- capture.output(print(r))
 	expect_lte(length(court), 40L)
 	txt <- gsub("\\s+", " ", paste(court, collapse = " "))
-	expect_match(txt, "variance commune|common variance")
+	expect_match(txt, "variance commune|common variance|commune ou par case|common or per cell")
 	expect_match(txt, "p-value")
 	expect_match(txt, "seul ou en interaction|alone or in interaction")
 	long <- paste(capture.output(print(r, detail = TRUE)), collapse = " ")
