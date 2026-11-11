@@ -200,13 +200,14 @@
         if (isTRUE(code)){
           cat("# Tests de Levene et Brown-Forsyth\n")
           cat("library(car)\n")
-          cat("leveneTest(x, g)\n")
-          cat("library(onewaytests)\n")
-          cat("bf.test(x~g, data=data.frame(x, 'g'=factor(g)))\n")
+          cat("leveneTest(x, g, center = mean)    # Levene\n")
+          cat("leveneTest(x, g, center = median)  # Brown-Forsythe (variances)\n")
         }
 
         # Test de Levene (bas\u00e9 sur la moyenne)
-        pvals <- suppressWarnings(car::leveneTest(x, g))[1, 3]
+        # car::leveneTest() centre par defaut sur la mediane (= Brown-Forsythe) :
+        # preciser center = mean pour le test de Levene proprement dit.
+        pvals <- suppressWarnings(car::leveneTest(x, g, center = mean))[1, 3]
 
         # Message de contr\u00f4le acad\u00e9mique avec num\u00e9rotation ASSOMPTION (si fournie)
         if (!is.null(assumption_label)) {
@@ -225,10 +226,10 @@
 
         if (pvals <= alpha) {
           # VARIANCE H\u00c9T\u00c9ROG\u00c8NE d\u00e9tect\u00e9e par Levene
-          ang <- paste0(sub_indent, "Levene test detects heteroscedasticity (heterogeneous variances).\n\t",
+          ang <- paste0(sub_indent, "Levene test [leveneTest(center = mean)] detects heteroscedasticity (heterogeneous variances).\n\t",
                         "\t==> p-value: ", .format_pval(pvals), ".\n\t",
                         "Note: Levene test may be affected by data asymmetry or outliers.")
-          fr <- paste0(sub_indent, "Le test de Levene met en \u00e9vidence une h\u00e9t\u00e9rosc\u00e9dasticit\u00e9 (variances h\u00e9t\u00e9rog\u00e8nes).\n\t",
+          fr <- paste0(sub_indent, "Le test de Levene [leveneTest(center = mean)] met en \u00e9vidence une h\u00e9t\u00e9rosc\u00e9dasticit\u00e9 (variances h\u00e9t\u00e9rog\u00e8nes).\n\t",
                        "\t==> p-value : ", .format_pval(pvals), ".\n\t",
                        "Note : Le test de Levene peut avoir \u00e9t\u00e9 fauss\u00e9 par une asym\u00e9trie des donn\u00e9es ou des outliers.")
           k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt=detail_cpt)
@@ -237,14 +238,17 @@
           # Test de Brown-Forsyth (plus robuste, bas\u00e9 sur la m\u00e9diane)
           # UNIQUEMENT si Levene a d\u00e9tect\u00e9 une h\u00e9t\u00e9rog\u00e9n\u00e9it\u00e9
           #========================================
-          pvals2 <- suppressWarnings(bf.test(x~g, data=data.frame(x, "g"=factor(g)), verbose=FALSE))$p.value
+          # Brown-Forsythe (1974) pour les VARIANCES = Levene centre sur la mediane.
+          # onewaytests::bf.test() est le Brown-Forsythe sur les MOYENNES : il ne
+          # disait rien des variances et ecartait a tort l'heteroscedasticite.
+          pvals2 <- suppressWarnings(car::leveneTest(x, g, center = median))[1, 3]
 
           if (pvals2 <= alpha) {
             # VARIANCE H\u00c9T\u00c9ROG\u00c8NE confirm\u00e9e par Brown-Forsyth
             check_variance <- FALSE
-            ang <- paste0(sub_indent, "Brown-Forsyth test confirms heteroscedasticity.\n\t",
+            ang <- paste0(sub_indent, "Brown-Forsythe test [leveneTest(center = median)] confirms heteroscedasticity.\n\t",
                           "\t==> p-value: ", .format_pval(pvals2), ".")
-            fr <- paste0(sub_indent, "Le test de Brown-Forsyth confirme l'h\u00e9t\u00e9rosc\u00e9dasticit\u00e9.\n\t",
+            fr <- paste0(sub_indent, "Le test de Brown-Forsythe [leveneTest(center = median)] confirme l'h\u00e9t\u00e9rosc\u00e9dasticit\u00e9.\n\t",
                          "\t==> p-value : ", .format_pval(pvals2), ".")
             k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt=detail_cpt)
 
@@ -255,10 +259,10 @@
           } else {
             # Brown-Forsyth ne confirme PAS \u2192 Levene probablement fauss\u00e9
             check_variance <- TRUE
-            ang <- paste0(sub_indent, "Brown-Forsyth test does NOT confirm heteroscedasticity.\n\t",
+            ang <- paste0(sub_indent, "Brown-Forsythe test [leveneTest(center = median)] does NOT confirm heteroscedasticity.\n\t",
                           "\t==> p-value: ", .format_pval(pvals2), ".\n\t",
                           "==> Variances considered homogeneous (Levene likely affected by asymmetry/outliers).")
-            fr <- paste0(sub_indent, "Le test de Brown-Forsyth ne confirme PAS l'h\u00e9t\u00e9rosc\u00e9dasticit\u00e9.\n\t",
+            fr <- paste0(sub_indent, "Le test de Brown-Forsythe [leveneTest(center = median)] ne confirme PAS l'h\u00e9t\u00e9rosc\u00e9dasticit\u00e9.\n\t",
                          "\t==> p-value : ", .format_pval(pvals2), ".\n\t",
                          "==> Variances consid\u00e9r\u00e9es comme homog\u00e8nes (Levene probablement fauss\u00e9 par asym\u00e9trie/outliers).")
             k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt=detail_cpt)
@@ -267,10 +271,10 @@
         } else {
           # VARIANCE HOMOG\u00c8NE selon Levene \u2192 PAS de test Brown-Forsyth
           check_variance <- TRUE
-          ang <- paste0(sub_indent, "Levene test [car::leveneTest()] shows homogeneous variances (homoscedasticity).\n\t",
+          ang <- paste0(sub_indent, "Levene test [leveneTest(center = mean)] shows homogeneous variances (homoscedasticity).\n\t",
                         "p-value: ", .format_pval(pvals), ".\n\t",
                         "Note: Levene test may be affected by data asymmetry or outliers.")
-          fr <- paste0(sub_indent, "Test de Levene [car::leveneTest()] - Variance homog\u00e8ne (homosc\u00e9dasticit\u00e9).\n\t",
+          fr <- paste0(sub_indent, "Test de Levene [leveneTest(center = mean)] - Variance homog\u00e8ne (homosc\u00e9dasticit\u00e9).\n\t",
                        "p-value : ", .format_pval(pvals), ".\n\t",
                        "Note : Le test de Levene peut avoir \u00e9t\u00e9 fauss\u00e9 par une asym\u00e9trie des donn\u00e9es ou des outliers.")
           k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt=detail_cpt)

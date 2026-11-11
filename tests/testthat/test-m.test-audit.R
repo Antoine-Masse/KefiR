@@ -78,3 +78,18 @@ test_that("e. m.test(formula = y ~ F, data = d) est accepte, comme m.test(y ~ F,
   expect_equal(audit_quiet(m.test(formula = f, data = d, return = FALSE))$value, ref)
   expect_equal(audit_quiet(m.test(formula = "y ~ F", data = d, return = FALSE))$value, ref)
 })
+
+test_that("c. la confirmation de Levene porte sur les variances (Brown-Forsythe = mediane)", {
+  set.seed(1)
+  n <- c(5, 5, 40)
+  x <- unlist(mapply(function(n, s) rnorm(n, 0, s), n, c(4, 4, 1)))
+  g <- factor(rep(c("A", "B", "C"), n))
+  p_mean <- car::leveneTest(x, g, center = mean)[1, 3]
+  p_median <- car::leveneTest(x, g, center = median)[1, 3]
+  expect_lt(p_mean, 0.05)
+  expect_lt(p_median, 0.05)
+  out <- utils::capture.output(v <- .variance(x, g, check_normality = FALSE, verbose = TRUE, k = 0))
+  # Les deux tests de variances concluent a l'heterogeneite : .variance() doit le suivre
+  expect_false(v[[1]])
+  expect_true(any(grepl(.format_pval(p_median), out, fixed = TRUE)))
+})
