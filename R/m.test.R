@@ -867,6 +867,14 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
     }
 
     # --- 9.5 : EXTRACTION x et g (AVANT modification Error) ---
+    # Plan apparie : trier par sujet (tri stable). pairwise.t.test(paired = TRUE)
+    # et wilcox.test(paired = TRUE) apparient PAR POSITION dans chaque groupe :
+    # des lignes non triees par sujet comparaient des sujets differents.
+    if (isTRUE(paired) && !is.null(id) && is.data.frame(data) && length(id) == 1 &&
+        id %in% names(data)) {
+      data <- data[order(data[[id]]), , drop = FALSE]
+    }
+
     # Extraire avec formule SANS modifications id/Error
     formula_for_extraction <- formula
 
@@ -1237,6 +1245,20 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 
   if (isTRUE(paired) && (has_error || (!is.null(id) && lev_g > 2))) {
     check_anova <- TRUE
+  }
+
+  # Appel m.test(x, g, id = ...) sans formule et plus de 2 modalites : l'analyse
+  # multi-facteurs exige une formule (sinon terms(NULL) plantait). On construit
+  # x ~ g + Error(id/g), donnees triees par sujet pour l'appariement des post-hocs.
+  if (is.null(formula) && isTRUE(check_anova) && isTRUE(paired) && !is.null(id) &&
+      is.data.frame(data) && id %in% names(data) && !is.data.frame(g) &&
+      is.numeric(x) && !is.matrix(x) && length(x) == nrow(data)) {
+    data$x <- x
+    data$g <- droplevels(factor(g))
+    data <- data[order(data[[id]]), , drop = FALSE]
+    x <- data$x
+    g <- data$g
+    formula <- stats::as.formula(paste0("x ~ g + Error(", id, "/g)"))
   }
 
   # --- ROUTAGE SP\u00c9CIAL POUR Error(facteur) ---

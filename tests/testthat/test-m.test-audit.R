@@ -118,3 +118,21 @@ test_that("g. la MANOVA non normale aboutit vite, par le Wilks sur les rangs", {
   expect_equal(r$global_pvalue, unname(ref))
   expect_lt(duree, 120)
 })
+
+test_that("h. mesures repetees : lignes non triees par sujet, post-hocs toujours apparies", {
+  set.seed(7)
+  n <- 15
+  d <- expand.grid(id = factor(1:n), T = factor(c("t1", "t2", "t3")))
+  u <- rnorm(n, 0, 3)
+  d$y <- 20 + u[as.integer(d$id)] + c(0, 0.8, 1.2)[as.integer(d$T)] + rnorm(nrow(d), 0, 0.7)
+  set.seed(1)
+  ds <- d[sample(nrow(d)), ]
+  ref <- stats::pairwise.t.test(d$y, d$T, paired = TRUE)$p.value
+  r_sorted <- audit_quiet(m.test(y ~ T + Error(id / T), data = d, plot = FALSE, verbose = FALSE))$value
+  r_shuffled <- audit_quiet(m.test(y ~ T + Error(id / T), data = ds, plot = FALSE, verbose = FALSE))$value
+  expect_equal(r_sorted$p.value, ref)
+  expect_equal(r_shuffled$p.value, ref)
+  # appel par vecteurs avec id, plus de 2 modalites : pas de plantage, memes post-hocs
+  r_vec <- audit_quiet(m.test(ds$y, ds$T, id = ds$id, plot = FALSE, verbose = FALSE))$value
+  expect_equal(unname(r_vec$p.value), unname(ref))
+})
