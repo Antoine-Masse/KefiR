@@ -20,15 +20,31 @@ make_split_plot <- function() {
   d
 }
 
+# p-value d'un terme intra-sujet corrigee de la sphericite, regle de Girden (1992),
+# calculee par car::Anova() sur le format large, sans passer par m.test()
+girden_ref <- function(d, term) {
+  w <- reshape(d[, c("id", "G", "T", "y")], idvar = c("id", "G"), timevar = "T", direction = "wide")
+  ycols <- grep("^y\\.", names(w), value = TRUE)
+  idata <- data.frame(T = factor(sub("^y\\.", "", ycols)))
+  fit <- lm(as.matrix(w[, ycols]) ~ G, data = w, contrasts = list(G = "contr.sum"))
+  sm <- summary(car::Anova(fit, idata = idata, idesign = ~T, type = 3), multivariate = FALSE)
+  adj <- sm$pval.adjustments
+  if (adj[term, "GG eps"] <= 0.75) adj[term, "Pr(>F[GG])"] else {
+    uni <- sm$univariate.tests
+    eps <- min(1, adj[term, "HF eps"])
+    pf(uni[term, "F value"], eps * uni[term, "num Df"], eps * uni[term, "den Df"], lower.tail = FALSE)
+  }
+}
+
 test_that("a. split-plot : l'interaction G:T est gardee, avec les p-values d'aov", {
   d <- make_split_plot()
   ref <- summary(aov(y ~ G * T + Error(id / T), data = d))
-  p_GT <- ref[["Error: id:T"]][[1]]["G:T", "Pr(>F)"]
   p_G <- ref[["Error: id"]][[1]]["G", "Pr(>F)"]
   res <- audit_quiet(m.test(y ~ G * T + Error(id / T), data = d, plot = FALSE))
   eff <- res$value$effects
   expect_true("G:T" %in% eff$term)
-  expect_equal(eff$p.value[eff$term == "G:T"], p_GT, tolerance = 1e-6)
+  # G:T est intra-sujet : p-value d'aov corrigee de la sphericite (correctif l)
+  expect_equal(eff$p.value[eff$term == "G:T"], girden_ref(d, "G:T"), tolerance = 1e-6)
   expect_equal(eff$p.value[eff$term == "G"], p_G, tolerance = 1e-6)
   # G est inter-sujet : il ne doit pas etre annonce comme intra-sujet
   expect_false(any(grepl("intra-sujet", res$output) & grepl("(s) : G", res$output, fixed = TRUE)))
@@ -165,4 +181,34 @@ test_that("k. non normal et variances heterogenes confirmees : Welch, pas Kruska
   expect_identical(res$value$method, "Welch ANOVA")
   expect_equal(res$value$global_pvalue, oneway.test(x ~ g)$p.value)
   expect_equal(audit_quiet(m.test(x, g, return = FALSE, boot = FALSE))$value, oneway.test(x ~ g)$p.value)
+})
+
+make_ar1 <- function(seed, n = 12, k = 6, rho = 0.9) {
+  set.seed(seed)
+  sig <- rho^abs(outer(1:k, 1:k, "-"))
+  y <- matrix(rnorm(n * k), n, k) %*% chol(sig)
+  d <- data.frame(id = factor(rep(1:n, k)), T = factor(rep(paste0("t", 1:k), each = n)),
+                  y = as.vector(y))
+  list(d = d, wide = y)
+}
+
+test_that("l. mesures repetees : p-value toujours corrigee de la sphericite (GG ou HF)", {
+  ar <- make_ar1(3)
+  d <- ar$d
+  k <- ncol(ar$wide); n <- nrow(ar$wide)
+  # Calcul independant : epsilon de Greenhouse-Geisser sur contrastes orthonormes
+  C <- stats::contr.poly(k)
+  S <- t(C) %*% stats::cov(ar$wide) %*% C
+  eps_gg <- sum(diag(S))^2 / ((k - 1) * sum(diag(S %*% S)))
+  aov_tab <- summary(aov(y ~ T + Error(id / T), data = d))[["Error: id:T"]][[1]]
+  f <- aov_tab["T", "F value"]
+  # Huynh-Feldt (Lecoutre) pour la regle de Girden
+  eps_hf <- min(1, ((n - 1) * (k - 1) * eps_gg - 2) / ((k - 1) * (n - 1 - (k - 1) * eps_gg)))
+  eps <- if (eps_gg <= 0.75) eps_gg else eps_hf
+  p_ref <- stats::pf(f, eps * (k - 1), eps * (k - 1) * (n - 1), lower.tail = FALSE)
+  res <- audit_quiet(m.test(y ~ T + Error(id / T), data = d, plot = FALSE, boot = FALSE))
+  expect_equal(res$value$effects$p.value[res$value$effects$term == "T"], p_ref, tolerance = 1e-6)
+  expect_equal(res$value$global_pvalue, p_ref, tolerance = 1e-6)
+  expect_true(any(grepl("Greenhouse-Geisser|Huynh-Feldt", res$output)))
+  expect_false(any(grepl("Aucune correction n.cessaire", res$output)))
 })

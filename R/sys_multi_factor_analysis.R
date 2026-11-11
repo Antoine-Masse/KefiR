@@ -2035,62 +2035,54 @@
               stop("Package {rlang} required for rstatix::anova_test()")
             }
 
-            # Extraire r\u00e9sultats sph\u00e9ricit\u00e9
+            # Extraire r\u00e9sultats sph\u00e9ricit\u00e9. Mauchly reste une INFORMATION :
+            # peu puissant avec peu de sujets, il ne d\u00e9cide plus de la correction.
+            # (Les anciennes affectations `<<-` \u00e9crivaient hors de la fonction :
+            # l'\u00e9tape de correction ne se d\u00e9clenchait jamais.)
+            sphericity_corrections <- .sphericity_corrected(anova_result)
             if (!is.null(anova_result$`Mauchly's Test for Sphericity`)) {
               mauchly_results <- anova_result$`Mauchly's Test for Sphericity`
               p_mauchly <- mauchly_results$p[1]
-
               if (!is.na(p_mauchly)) {
-                if (p_mauchly < alpha) {
-                  # Variable pour tracker violation sph\u00e9ricit\u00e9 (pour cr\u00e9er \u00e9tape s\u00e9par\u00e9e)
-                  sphericity_violated <<- TRUE
-
-                  k <- .vbse(
-                    paste0("==> Sphericity assumption VIOLATED (Mauchly's test p = ",
-                           .format_pval(p_mauchly), ")."),
-                    paste0("==> Hypoth\u00e8se de sph\u00e9ricit\u00e9 VIOL\u00c9E (test de Mauchly p = ",
-                           .format_pval(p_mauchly), ")."),
-                    verbose = verbose, code = code, k = k, cpt = "off"
-                  )
-
-                  # Extraire epsilon et corrections
-                  if (!is.null(anova_result$`Sphericity Corrections`)) {
-                    gg_eps <- anova_result$`Sphericity Corrections`$GGe[1]
-                    hf_eps <- anova_result$`Sphericity Corrections`$HFe[1]
-
-                    k <- .vbse(
-                      paste0("    Greenhouse-Geisser epsilon = ", round(gg_eps, 3),
-                             " (closer to 1 = less severe violation)."),
-                      paste0("    Epsilon de Greenhouse-Geisser = ", round(gg_eps, 3),
-                             " (plus proche de 1 = violation moins s\u00e9v\u00e8re)."),
-                      verbose = verbose, code = code, k = k, cpt = "off"
-                    )
-
-                    # Stocker pour \u00e9tape 9 (scope sup\u00e9rieur)
-                    sphericity_corrections <<- list(
-                      gg_eps = gg_eps,
-                      hf_eps = hf_eps,
-                      corrections = anova_result$`Sphericity Corrections`
-                    )
-                  }
-                } else {
-                  sphericity_violated <<- FALSE
-
-                  k <- .vbse(
-                    paste0("==> Sphericity assumption SATISFIED (Mauchly's test p = ",
-                           .format_pval(p_mauchly), ").\n",
-                           "\t--> No correction needed. Standard F-test degrees of freedom apply."),
-                    paste0("==> Hypoth\u00e8se de sph\u00e9ricit\u00e9 RESPECT\u00c9E (test de Mauchly p = ",
-                           .format_pval(p_mauchly), ").\n",
-                           "\t--> Aucune correction n\u00e9cessaire. Les degr\u00e9s de libert\u00e9 standard du test F s'appliquent."),
-                    verbose = verbose, code = code, k = k, cpt = "off"
-                  )
-                }
+                sphericity_violated <- p_mauchly < alpha
+                k <- .vbse(
+                  paste0("Mauchly's test p = ", .format_pval(p_mauchly),
+                         if (sphericity_violated) " (sphericity rejected)." else " (sphericity not rejected).", "\n\t",
+                         "Note: Mauchly's test has little power with few subjects; it does not decide the correction."),
+                  paste0("Test de Mauchly : p = ", .format_pval(p_mauchly),
+                         if (sphericity_violated) " (sph\u00e9ricit\u00e9 rejet\u00e9e)." else " (sph\u00e9ricit\u00e9 non rejet\u00e9e).", "\n\t",
+                         "Note : le test de Mauchly est peu puissant avec peu de sujets ; il ne d\u00e9cide pas de la correction."),
+                  verbose = verbose, code = code, k = k, cpt = "off"
+                )
               }
             } else {
               k <- .vbse(
                 "Note: Mauchly's test could not be performed (may require specific design structure).",
                 "Note : Le test de Mauchly n'a pas pu \u00eatre effectu\u00e9 (peut n\u00e9cessiter une structure de plan sp\u00e9cifique).",
+                verbose = verbose, code = code, k = k, cpt = "off"
+              )
+            }
+
+            if (!is.null(sphericity_corrections)) {
+              sph_lines_en <- sapply(seq_len(nrow(sphericity_corrections)), function(i) {
+                s <- sphericity_corrections[i, ]
+                paste0("    ", s$term, ": epsilon GG = ", round(s$GGe, 3), ", HF = ", round(s$HFe, 3),
+                       " --> ", s$method, " (epsilon = ", round(s$epsilon, 3), "), p = ",
+                       .format_pval(s$p_corrected), " (uncorrected: ", .format_pval(s$p_uncorrected), ")")
+              })
+              sph_lines_fr <- sapply(seq_len(nrow(sphericity_corrections)), function(i) {
+                s <- sphericity_corrections[i, ]
+                paste0("    ", s$term, " : epsilon GG = ", round(s$GGe, 3), ", HF = ", round(s$HFe, 3),
+                       " --> ", s$method, " (epsilon = ", round(s$epsilon, 3), "), p = ",
+                       .format_pval(s$p_corrected), " (non corrig\u00e9e : ", .format_pval(s$p_uncorrected), ")")
+              })
+              k <- .vbse(
+                paste0("==> Sphericity correction always applied to within-subject terms\n\t",
+                       "(Greenhouse-Geisser if epsilon <= 0.75, otherwise Huynh-Feldt; Girden, 1992):\n\t",
+                       paste(sph_lines_en, collapse = "\n\t")),
+                paste0("==> Correction de sph\u00e9ricit\u00e9 toujours appliqu\u00e9e aux termes intra-sujet\n\t",
+                       "(Greenhouse-Geisser si epsilon <= 0,75, sinon Huynh-Feldt ; Girden, 1992) :\n\t",
+                       paste(sph_lines_fr, collapse = "\n\t")),
                 verbose = verbose, code = code, k = k, cpt = "off"
               )
             }
@@ -2108,62 +2100,6 @@
             verbose = verbose, code = code, k = k, cpt = "off"
           )
         }
-      }
-      #----------------------------------------------------------------------
-
-      #----------------------------------------------------------------------
-      # \u00c9TAPE 9 (conditionnelle) : Application des corrections de sph\u00e9ricit\u00e9
-      #----------------------------------------------------------------------
-      if (sphericity_violated && !is.null(sphericity_corrections)) {
-        k <- .vbse(
-          paste0("Application of sphericity corrections [rstatix::anova_test()].\n",
-                 "    When sphericity is violated, degrees of freedom are adjusted to compensate.\n",
-                 "    Two main corrections exist:"),
-          paste0("Application des corrections de sph\u00e9ricit\u00e9 [rstatix::anova_test()].\n",
-                 "    Lorsque la sph\u00e9ricit\u00e9 est viol\u00e9e, les degr\u00e9s de libert\u00e9 sont ajust\u00e9s pour compenser.\n",
-                 "    Deux corrections principales existent :"),
-          verbose = verbose, code = code, k = k, cpt = "on"
-        )
-
-        # Greenhouse-Geisser (plus conservateur)
-        gg_eps <- sphericity_corrections$gg_eps
-        hf_eps <- sphericity_corrections$hf_eps
-
-        k <- .vbse(
-          paste0("    \u2022 Greenhouse-Geisser correction (conservative)\n",
-                 "        Epsilon = ", round(gg_eps, 3), "\n",
-                 "        Adjusted df multiplied by epsilon\n",
-                 "        ==> Use when epsilon < 0.75 (substantial violation)"),
-          paste0("    \u2022 Correction de Greenhouse-Geisser (conservatrice)\n",
-                 "        Epsilon = ", round(gg_eps, 3), "\n",
-                 "        ddl ajust\u00e9s multipli\u00e9s par epsilon\n",
-                 "        ==> \u00c0 utiliser si epsilon < 0,75 (violation substantielle)"),
-          verbose = verbose, code = code, k = k, cpt = "off"
-        )
-
-        k <- .vbse(
-          paste0("    \u2022 Huynh-Feldt correction (less conservative)\n",
-                 "        Epsilon = ", round(hf_eps, 3), "\n",
-                 "        Less adjustment than Greenhouse-Geisser\n",
-                 "        ==> Use when epsilon >= 0.75 (moderate violation)"),
-          paste0("    \u2022 Correction de Huynh-Feldt (moins conservatrice)\n",
-                 "        Epsilon = ", round(hf_eps, 3), "\n",
-                 "        Ajustement moindre que Greenhouse-Geisser\n",
-                 "        ==> \u00c0 utiliser si epsilon >= 0,75 (violation mod\u00e9r\u00e9e)"),
-          verbose = verbose, code = code, k = k, cpt = "off"
-        )
-
-        # Recommandation
-        recommended_correction <- if (gg_eps < 0.75) "Greenhouse-Geisser" else "Huynh-Feldt"
-        k <- .vbse(
-          paste0("==> Recommended correction for this data: ", recommended_correction, "\n",
-                 "    (ANOVA results will be reported with standard uncorrected p-values.\n",
-                 "     Corrected p-values should be examined in rstatix output if needed.)"),
-          paste0("==> Correction recommand\u00e9e pour ces donn\u00e9es : ", recommended_correction, "\n",
-                 "    (Les r\u00e9sultats ANOVA seront rapport\u00e9s avec les p-values standard non corrig\u00e9es.\n",
-                 "     Les p-values corrig\u00e9es doivent \u00eatre examin\u00e9es dans la sortie rstatix si n\u00e9cessaire.)"),
-          verbose = verbose, code = code, k = k, cpt = "off"
-        )
       }
       #----------------------------------------------------------------------
 
@@ -4366,6 +4302,12 @@
               if (any(effect_rows)) {
                 effects <- row_names[effect_rows]
                 p_values <- strata_table[effect_rows, "Pr(>F)"]
+                # Termes intra-sujet : p-value corrig\u00e9e de la sph\u00e9ricit\u00e9 (GG/HF)
+                if (exists("sphericity_corrections", inherits = FALSE) && !is.null(sphericity_corrections)) {
+                  p_values <- .apply_sphericity(
+                    data.frame(term = trimws(row_names[effect_rows]), p.value = p_values,
+                               stringsAsFactors = FALSE), sphericity_corrections)$p.value
+                }
 
                 # Identifier effets significatifs
                 sig_idx <- which(p_values < alpha & !is.na(p_values))
@@ -4557,6 +4499,11 @@
   # $effects et p-value globale : table du test r\u00e9ellement conduit, r\u00e8gle unique
   # (BP-031) : la p-value globale est celle du premier facteur de la formule
   effects_table <- .multi_effects_table(model, robust_results, formula, data, alpha)
+  # Mesures r\u00e9p\u00e9t\u00e9es par aov() + Error() : p-values intra-sujet corrig\u00e9es (GG/HF)
+  if (inherits(model, "aovlist") && is.null(robust_results$test_result) &&
+      exists("sphericity_corrections", inherits = FALSE)) {
+    effects_table <- .apply_sphericity(effects_table, sphericity_corrections)
+  }
   if (!is.null(effects_table)) {
     first_factor_pvalue <- .first_factor_pvalue(effects_table, formula)
     if (!is.na(first_factor_pvalue)) global_pvalue <- first_factor_pvalue
