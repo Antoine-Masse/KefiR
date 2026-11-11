@@ -13,10 +13,10 @@ gen <- list(
 	likert = function(n) list(x = sample(1:5, n, TRUE, c(.1, .2, .4, .2, .1)), y = sample(1:5, n, TRUE, c(.1, .2, .4, .2, .1))),
 	outlier = function(n) { x <- rnorm(n); y <- rnorm(n); x[n] <- 6; y[n] <- 6; list(x = x, y = y) }
 )
-args <- commandArgs(TRUE); R <- if (length(args)) as.integer(args[1]) else 400
+args <- commandArgs(TRUE); only <- if (length(args) > 1) strsplit(args[2], ",")[[1]] else NULL; sfx <- if (length(args) > 2) args[3] else ""; R <- if (length(args)) as.integer(args[1]) else 400
 res <- list()
 set.seed(2026)
-for (sc in names(gen)) for (n in c(10, 20, 50, 100)) {
+for (sc in if (is.null(only)) names(gen) else only) for (n in c(10, 20, 50, 100)) {
 	for (r in seq_len(R)) {
 		d <- gen[[sc]](n)
 		lp <- lbf_pearson(d$x, d$y); lk <- lbf_kendall(d$x, d$y); ls <- lbf_spearman(d$x, d$y)
@@ -31,4 +31,4 @@ for (sc in names(gen)) for (n in c(10, 20, 50, 100)) {
 }
 res <- do.call(rbind, res)
 dir.create("resultats", showWarnings = FALSE)
-saveRDS(res, "resultats/sim_h0.rds")
+saveRDS(res, paste0("resultats/sim_h0", sfx, ".rds"))

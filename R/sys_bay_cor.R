@@ -32,11 +32,24 @@
 
 .corbay_lbf_spearman <- function(x, y, kappa) .corbay_lbf_pearson(rank(x), rank(y), kappa)
 
-# Standardised Kendall statistic T* (van Doorn et al. 2018, eq. 6), from tau-b.
+# Standardised Kendall statistic T* (van Doorn et al. 2018, eq. 6) and the slope m of its mean,
+# T* ~ N(m tau, 1) (eq. 11, m = 3/2 sqrt(n)). With ties (DECISIONS, C4): S = tau-b
+# sqrt((n0 - n1)(n0 - n2)) is standardised by its variance under H0 corrected for ties (Kendall's
+# formula, that of cor.test with exact = FALSE), and m is scaled by the same ratio, so that the
+# parameter stays tau-b; without ties both are exactly those of the article. Measure: the
+# no-tie scaling gave T* a standard deviation of 1.2 under H0 on a 1 to 5 scale.
 .corbay_tstar <- function(x, y) {
 	n <- length(x)
-	tau <- suppressWarnings(stats::cor(x, y, method = "kendall"))
-	tau * (n * (n - 1) / 2) / sqrt(n * (n - 1) * (2 * n + 5) / 18)
+	taub <- suppressWarnings(stats::cor(x, y, method = "kendall"))
+	tx <- as.numeric(table(x)); ty <- as.numeric(table(y))
+	n0 <- n * (n - 1) / 2
+	n1 <- sum(tx * (tx - 1)) / 2; n2 <- sum(ty * (ty - 1)) / 2
+	v0 <- n * (n - 1) * (2 * n + 5) / 18
+	v <- (n * (n - 1) * (2 * n + 5) - sum(tx * (tx - 1) * (2 * tx + 5)) - sum(ty * (ty - 1) * (2 * ty + 5))) / 18 +
+		sum(tx * (tx - 1)) * sum(ty * (ty - 1)) / (2 * n * (n - 1)) +
+		(if (n > 2) sum(tx * (tx - 1) * (tx - 2)) * sum(ty * (ty - 1) * (ty - 2)) / (9 * n * (n - 1) * (n - 2)) else 0)
+	k <- sqrt((n0 - n1) * (n0 - n2))
+	c(ts = taub * k / sqrt(v), m = 1.5 * sqrt(n) * (k / sqrt(v)) / (n0 / sqrt(v0)))
 }
 
 # Prior on tau induced by a stretched beta of width kappa on rho (eq. 9).
@@ -47,18 +60,16 @@
 }
 
 # Integrand of the marginal likelihood under H1, scaled by the likelihood under H0 (eq. 13).
-.corbay_kendall_f <- function(ts, n, kappa) {
-	m <- 1.5 * sqrt(n)
+.corbay_kendall_f <- function(ts, m, kappa) {
 	l0 <- stats::dnorm(ts, 0, 1, log = TRUE)
 	function(t) exp(stats::dnorm(ts, m * t, 1, log = TRUE) - l0) * .corbay_prior_tau(t, kappa)
 }
 
 .corbay_lbf_kendall <- function(x, y, kappa) {
-	n <- length(x)
-	ts <- .corbay_tstar(x, y)
-	if (!is.finite(ts)) return(c(plus = NA_real_, minus = NA_real_, two = NA_real_, error_pct = NA_real_))
-	f <- .corbay_kendall_f(ts, n, kappa)
-	m <- 1.5 * sqrt(n)
+	tm <- .corbay_tstar(x, y)
+	ts <- tm[["ts"]]; m <- tm[["m"]]
+	if (!is.finite(ts) || !is.finite(m)) return(c(plus = NA_real_, minus = NA_real_, two = NA_real_, error_pct = NA_real_))
+	f <- .corbay_kendall_f(ts, m, kappa)
 	# The integrand is a narrow bump near T*/m for large n: the range is cut around it.
 	pk <- min(max(ts / m, -1), 1)
 	w <- 12 / m
@@ -177,9 +188,8 @@
 		})
 	} else {
 		n <- length(x)
-		ts <- .corbay_tstar(x, y)
-		f <- .corbay_kendall_f(ts, n, kappa)
-		m <- 1.5 * sqrt(n)
+		tm <- .corbay_tstar(x, y); ts <- tm[["ts"]]; m <- tm[["m"]]
+		f <- .corbay_kendall_f(ts, m, kappa)
 		pk <- min(max(ts / m, -1), 1)
 		lo <- max(-1, pk - 12 / m); hi <- min(1, pk + 12 / m)
 		if (identical(alternative, "greater")) lo <- max(lo, 0)

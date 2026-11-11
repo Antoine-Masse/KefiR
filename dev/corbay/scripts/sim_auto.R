@@ -2,7 +2,7 @@
 # under H0 and H1, against cor.test. Output: resultats/sim_auto.rds
 .libPaths(c("C:/Users/masse/Desktop/KefiR/mbay-lib", .libPaths()))
 suppressMessages(pkgload::load_all("C:/Users/masse/Desktop/KefiR/KefiR/.claude/worktrees/feat-cor-bay-59ccb0", quiet = TRUE))
-args <- commandArgs(TRUE); R <- if (length(args)) as.integer(args[1]) else 300
+args <- commandArgs(TRUE); only <- if (length(args) > 1) strsplit(args[2], ",")[[1]] else NULL; sfx <- if (length(args) > 2) args[3] else ""; R <- if (length(args)) as.integer(args[1]) else 300
 bvn <- function(n, rho) { x <- rnorm(n); list(x = x, y = rho * x + sqrt(1 - rho^2) * rnorm(n)) }
 ct <- function(v) as.integer(cut(v, c(-Inf, -1.28, -0.52, 0.52, 1.28, Inf)))
 gen <- list(
@@ -25,9 +25,9 @@ one <- function(x, y) {
 		cK = suppressWarnings(cor.test(x, y, method = "kendall")$p.value))
 }
 set.seed(31); res <- list()
-for (sc in names(gen)) for (rho in c(0, 0.3, 0.5)) for (n in c(10, 20, 50, 100)) {
+for (sc in if (is.null(only)) names(gen) else only) for (rho in c(0, 0.3, 0.5)) for (n in c(10, 20, 50, 100)) {
 	if (rho > 0 && n == 10) next
 	for (r in seq_len(R)) { d <- gen[[sc]](n, rho); res[[length(res) + 1]] <- cbind(sc = sc, rho = rho, n = n, one(d$x, d$y)) }
 	cat(sc, rho, n, "\n")
 }
-saveRDS(do.call(rbind, res), "resultats/sim_auto.rds")
+saveRDS(do.call(rbind, res), paste0("resultats/sim_auto", sfx, ".rds"))

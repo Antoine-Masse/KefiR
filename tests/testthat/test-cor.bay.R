@@ -26,7 +26,10 @@ test_that("Kendall : formule de van Doorn et al. 2018, a priori propre, cas limi
 	# kappa = 1 : a priori uniforme sur rho, donc pi/4 cos(pi tau / 2) sur tau (eq. 10)
 	expect_equal(.corbay_prior_tau(0.3, 1), pi / 4 * cos(pi * 0.3 / 2), tolerance = 1e-12)
 	# integrale par un autre chemin : grille fine, methode des trapezes
-	ts <- .corbay_tstar(d$x, d$y)
+	ts <- .corbay_tstar(d$x, d$y)[["ts"]]
+	# sans ex-aequo : exactement T* et la pente 3/2 racine(n) de l'article (eq. 6 et 11)
+	expect_equal(ts, cor(d$x, d$y, method = "kendall") * (30 * 29 / 2) / sqrt(30 * 29 * 65 / 18))
+	expect_equal(.corbay_tstar(d$x, d$y)[["m"]], 1.5 * sqrt(30))
 	n <- nrow(d)
 	g <- seq(-1, 1, length.out = 200001)
 	f <- exp(dnorm(ts, 1.5 * sqrt(n) * g, 1, log = TRUE) - dnorm(ts, 0, 1, log = TRUE)) * .corbay_prior_tau(g, 1/3)
@@ -155,4 +158,14 @@ test_that("paire influente (distance de Cook > 1) : Kendall, et le desaccord de 
 	# sous 20 paires, non cherchees
 	r2 <- cor.bay(x[c(1:15, 30)], y[c(1:15, 30)], verbose = FALSE, sensitivity = FALSE, draws = 1000)
 	expect_true(is.na(r2$checks$influential))
+})
+
+test_that("Kendall avec ex-aequo : T* = z de cor.test (variance corrigee des ex-aequo)", {
+	set.seed(8)
+	a <- sample(1:5, 40, TRUE); b <- sample(1:4, 40, TRUE)
+	z <- unname(suppressWarnings(cor.test(a, b, method = "kendall", exact = FALSE)$statistic))
+	expect_equal(.corbay_tstar(a, b)[["ts"]], z, tolerance = 1e-10)
+	# sans ex-aequo, z de cor.test et T* de van Doorn et al. coincident aussi
+	x <- rnorm(25); y <- rnorm(25)
+	expect_equal(.corbay_tstar(x, y)[["ts"]], unname(cor.test(x, y, method = "kendall", exact = FALSE)$statistic), tolerance = 1e-10)
 })
