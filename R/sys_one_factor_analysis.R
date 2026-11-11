@@ -796,7 +796,10 @@
 	    skew_hetero <- suppressWarnings(max(unlist(by(x, g, function(z)
 	      if (length(z) >= 3) abs(agricolae::skewness(z)) else NA_real_)), na.rm = TRUE))
 	    extreme_hetero <- exists("max_outliers_extrem") && isTRUE(max_outliers_extrem > 0.05)
-	    if (is.finite(skew_hetero) && skew_hetero < 2 && !extreme_hetero) {
+	    # Le F de Welch divise par chaque variance de groupe : pas de groupe constant
+	    var_hetero <- tapply(x, g, stats::var, na.rm = TRUE)
+	    if (is.finite(skew_hetero) && skew_hetero < 2 && !extreme_hetero &&
+	        all(is.finite(var_hetero) & var_hetero > 0)) {
 	      k <- .vbse(
 	        paste0("Heterogeneous variances confirmed, moderate asymmetry (max |skew| = ", round(skew_hetero, 2), ").\n\t",
 	               "Kruskal-Wallis and the classical ANOVA assume equal variances.\n\t",
