@@ -146,6 +146,50 @@ P(lien positif) > 0,75 et > 0,95 ; `cor.test` bilatéral à p < 0,05. P = Pearso
 - Échelle 1 à 5 (* : colonnes Kendall relancées après la correction des ex-aequo, `sim_power.R 300 likert _ties`) : Kendall corrigé est un peu moins puissant que Pearson bayésien (rho = 0,5, n = 50 : 60 % contre 65 à 67 % à P > 0,95). Sa puissance d'avant (81 %) venait de sa surconfiance. La règle garde Kendall sur les échelles courtes : il ne dépend que de l'ordre des notes, pas des écarts supposés entre elles, comme la voie ordinale de m.bay (D17) ; le prix est d'environ 5 points de puissance.
 - t3 bivariée : Pearson « trouve » plus souvent un lien faible que Kendall, mais sa calibration sous H0 sur ces données est à lire en §2 avant de s'en réjouir.
 
-## 6. La règle `auto` du paquet (`sim_auto.R`, 300 jeux par case)
+## 6. La règle `auto` du paquet (`sim_auto.R`, 300 jeux par case, code du paquet)
 
-(en cours)
+`sim_auto.R` appelle les fonctions du paquet (contrôles, choix, facteurs de Bayes, contre-épreuve), version finale de la règle (valeurs lointaines, distance de Cook dès 20 paires, échelle courte). Six scénarios lancés séparément (`sim_auto.R 300 <scénario> _v2_<scénario>`), sorties `sim_auto_v2_*.rds`. Données comme en §2 et §5, plus « t3 marges » (copule normale à marges t3) ; « paire aberrante » : sous H0 à (6, 6), sous H1 à (6, -6), contre le sens du lien. Colonnes : % de jeux où Kendall est choisi ; « un lien » à P > 0,75 et 0,95 (signe quelconque) ; « lien positif » à 0,95 ; « aucun lien » à 75 % ; `cor.test` à p < 0,05.
+
+| Données | rho | n | Kendall choisi | lien > 0,75 | lien > 0,95 | positif > 0,95 | aucun lien ≥ 0,75 | Pearson p < 0,05 | Kendall p < 0,05 |
+|---|---|---|---|---|---|---|---|---|---|
+| normales | 0 | 10 | 10,7 | 2,0 | 0,0 | 0,0 | 0,0 | 2,7 | 4,3 |
+| normales | 0 | 20 | 8,7 | 3,0 | 0,0 | 0,0 | 0,0 | 4,0 | 4,7 |
+| normales | 0 | 50 | 1,0 | 1,0 | 0,0 | 0,0 | 25,0 | 2,3 | 2,3 |
+| normales | 0 | 100 | 0,7 | 3,3 | 0,3 | 0,3 | 67,3 | 4,3 | 4,0 |
+| normales | 0,3 | 50 | 0,3 | 45,0 | 21,7 | 20,0 | 2,3 | 57,3 | 53,0 |
+| normales | 0,5 | 50 | 2,3 | 93,0 | 77,3 | 77,3 | 0,3 | 95,0 | 93,7 |
+| t3 bivariée | 0 | 10 | 31,7 | 4,3 | 0,0 | 0,0 | 0,0 | 12,3 | 7,7 |
+| t3 bivariée | 0 | 20 | 52,3 | 8,3 | 1,7 | 0,7 | 0,0 | 20,7 | 9,3 |
+| t3 bivariée | 0 | 50 | 76,0 | 6,0 | 0,3 | 0,0 | 12,0 | 28,3 | 9,0 |
+| t3 bivariée | 0 | 100 | 92,3 | 5,3 | 1,3 | 0,0 | 56,3 | 37,0 | 8,0 |
+| t3 bivariée | 0,3 | 50 | 77,3 | 43,3 | 19,3 | 18,7 | 2,7 | 54,7 | 51,3 |
+| t3 bivariée | 0,5 | 50 | 72,0 | 87,0 | 66,0 | 65,7 | 0,7 | 83,7 | 91,3 |
+| t3 marges | 0 | 20 | 59,0 | 2,7 | 0,0 | 0,0 | 0,0 | 4,0 | 4,7 |
+| t3 marges | 0 | 100 | 95,3 | 2,7 | 0,0 | 0,0 | 61,7 | 7,0 | 4,0 |
+| t3 marges | 0,3 | 50 | 77,0 | 43,7 | 16,3 | 16,3 | 1,7 | 50,7 | 53,0 |
+| t3 marges | 0,5 | 50 | 73,0 | 90,3 | 68,7 | 68,0 | 0,0 | 92,0 | 93,7 |
+| monotone | 0 | 50 | 99,0 | 1,0 | 0,0 | 0,0 | 11,0 | 4,3 | 2,3 |
+| monotone | 0,3 | 50 | 99,3 | 41,3 | 16,7 | 16,7 | 1,7 | 31,3 | 53,0 |
+| monotone | 0,5 | 50 | 99,0 | 90,3 | 67,7 | 67,3 | 0,0 | 58,7 | 93,7 |
+| échelle 1 à 5 | 0 | 20 | 100 | 3,0 | 0,0 | 0,0 | 0,0 | 4,3 | 5,0 |
+| échelle 1 à 5 | 0 | 100 | 100 | 2,7 | 0,3 | 0,3 | 43,3 | 4,0 | 3,7 |
+| échelle 1 à 5 | 0,3 | 50 | 100 | 35,3 | 12,3 | 11,7 | 0,0 | 49,3 | 45,7 |
+| échelle 1 à 5 | 0,5 | 50 | 100 | 86,0 | 59,3 | 58,3 | 0,0 | 89,3 | 89,7 |
+| paire aberrante | 0 | 10 | 91,7 | 8,7 | 0,3 | 0,3 | 0,0 | 95,3 | 7,3 |
+| paire aberrante | 0 | 20 | 100 | 5,0 | 0,0 | 0,0 | 0,0 | 98,0 | 8,0 |
+| paire aberrante | 0 | 50 | 100 | 1,7 | 0,0 | 0,0 | 14,0 | 96,0 | 5,7 |
+| paire aberrante | 0 | 100 | 100 | 2,0 | 0,7 | 0,7 | 60,7 | 87,0 | 3,7 |
+| paire aberrante | 0,3 | 100 | 100 | 56,7 | 25,0 | 25,0 | 5,7 | 5,0 | 69,3 |
+| paire aberrante | 0,5 | 50 | 100 | 76,7 | 42,3 | 41,3 | 0,0 | 7,7 | 85,7 |
+| paire aberrante | 0,5 | 100 | 100 | 98,3 | 96,0 | 96,0 | 0,0 | 10,7 | 99,3 |
+
+Table complète (66 cases) : `Rscript analyse_auto.R`.
+
+**Lecture.**
+- **Faux « oui » sous H0** : au plus **1,7 %** à P > 0,95 sur les six scénarios et les quatre tailles (t3 bivariée, n = 20), 0,7 % ailleurs ; au plus 8,7 % à P > 0,75 (paire aberrante, n = 10). `cor.test` de Pearson, sur les mêmes jeux, dit « significatif » dans 87 à 98 % des jeux à paire aberrante et 21 à 37 % des jeux t3 bivariés dès n = 20.
+- **t3 bivariée** : là où Pearson seul disait « oui » à P > 0,95 dans 10 à 11 % des jeux (§2), la règle ramène à 0,3 à 1,7 % : elle prend Kendall dans 52 à 92 % de ces jeux, et ceux qui restent à Pearson sont ceux dont les queues ne se voient pas.
+- **Données normales** : Kendall n'est choisi que dans 0,3 à 11 % des jeux (8,7 à 10,7 % sous 20 paires, par la règle des valeurs lointaines seule ; 1 % et moins ensuite). Avec l'ancien critère MCD, c'était 42 à 65 % (`sim_auto_mcd.rds`) : c'est la mesure qui a fait changer C3. La puissance est celle de Pearson bayésien (§5).
+- **Lien monotone courbe** : Kendall choisi dans 99 % des jeux ; puissance à P > 0,95 de 67,7 % à rho = 0,5, n = 50, contre 19 % pour Pearson seul (§5).
+- **Paire aberrante contre le sens du lien** : `cor.test` de Pearson ne voit plus le lien (5 à 11 %) ; cor.bay le retrouve (96 % à P > 0,95, rho = 0,5, n = 100).
+- **Contre-épreuve** : aucun désaccord compté (« contradiction », C9) dans les 66 cases. Les désaccords nets entre les deux méthodes existent (jusqu'à 49 % des jeux à paire aberrante, rho = 0,3, n = 100), mais toujours quand Kendall a été choisi à cause de paires à part : ils sont dits « expliqués », la réponse de Pearson n'est pas retenue, et le bilan tranche. Avant ce réglage, ces mêmes jeux auraient rendu le bilan « indécis » (37 à 58 % des cas, `sim_auto_mcd.rds`).
+- **Absence de lien** : « aucun lien » à 75 % n'apparaît qu'à partir de 50 paires (11 à 25 % des jeux sans lien), 100 paires (43 à 67 %) : conséquence voulue de kappa = 1/3 (§4).
