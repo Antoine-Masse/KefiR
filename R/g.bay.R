@@ -30,8 +30,15 @@
 #'   residuals. A cell is read when its interval excludes 1.
 #' - **Size**: Cramer's V a posteriori (Cohen's w for a goodness of fit). It is positive even
 #'   without a link: a size, not a proof.
-#' - **Small counts**: no minimum count, no correction (the computation is exact); small
-#'   counts make the answer less decisive, not wrong.
+#' - **Small counts**: no minimum count, no correction (the computation is exact). In a
+#'   goodness of fit, small counts make the answer less decisive, not wrong. In a sparse
+#'   table (Cochran's rule: more than 20 % of the cells with an expected count under 5, or
+#'   one under 1), the uniform prior leans towards a link (up to 12 % of false "very
+#'   probably" measured under independence): the support of a link is then capped at weak,
+#'   and the bilan says "rather a link, without concluding".
+#' - **Power**: for independence, close to the G test at P > 0.75; for a goodness of fit,
+#'   clearly lower (a point null against a spread alternative), in exchange for almost no
+#'   false "yes". Measures in dev/gbay/VALIDATION.md.
 #' - **Sensitivity**: the concentration of the Dirichlet (1, 2, 4; 1/2, 1, 2 for a goodness
 #'   of fit) and the starting chances (1 against 2 to 2 against 1) are varied.
 #'

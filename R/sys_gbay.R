@@ -725,7 +725,7 @@
 				why_fr <- "aucune des deux variables n'est d\u00e9sign\u00e9e comme explicative : un \u00e9chantillon de N, class\u00e9 deux fois"
 			}
 		} else {
-			if (identical(sampling, "indepMulti") && is.null(fixed)) fixed <- if (isTRUE(inp$resp)) "rows" else "rows"
+			if (identical(sampling, "indepMulti") && is.null(fixed)) fixed <- "rows"
 			if (!identical(sampling, "indepMulti")) fixed <- NULL
 			if (identical(sampling, "hypergeom") && !(nrow(tab) == 2L && ncol(tab) == 2L)) {
 				.gbay_err("The hypergeometric plan is available for 2 x 2 tables only (BayesFactor).",
