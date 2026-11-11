@@ -54,7 +54,13 @@ Pourquoi Kendall plutôt que Spearman comme voie robuste : Kendall a un test bay
 
 ## C6. Queues lourdes et valeurs éloignées : MESURÉ
 
-(chiffres : VALIDATION §2)
+Mesures par méthode (VALIDATION §2, 500 jeux par case) :
+- **Une paire aberrante sous H0** (normales indépendantes, une paire à (6, 6)) : Pearson bayésien dit « lien » à P > 0,95 dans 19 à 58 % des jeux (`cor.test` : 82 à 98 % à p < 0,05) ; Kendall dans 0,4 % au plus. C'est le cas que la règle 1 (valeur lointaine) attrape.
+- **t3 bivariée sous H0** (x et y non corrélés mais dépendants par une échelle commune) : Pearson à P > 0,95 dans 3 à 11 % des jeux, de plus en plus quand n croît ; Kendall 0,4 % au plus. Les marges t3 ont souvent des valeurs au-delà de 3 écarts interquartiles, donc la règle prend Kendall dans la plupart de ces jeux ; ce qu'il en reste est mesuré par `sim_auto.R` (VALIDATION §6).
+- **t3 indépendantes, log-normales** : toutes les méthodes restent sous 1,6 % à P > 0,95 ; Pearson n'y est pas trompé (sous indépendance, sa loi d'échantillonnage est robuste).
+- **Puissance** (§5) : Kendall perd 0 à 14 points sur des données normales, en gagne 20 à 50 sur un lien monotone courbe, et sur la t3 bivariée il passe devant Pearson dès rho = 0,5.
+
+Décision : la voie robuste est Kendall, choisie par la règle C3. **Pas de modèle t bivarié** : sa vraisemblance marginale n'existe dans aucun paquet établi utilisable sans Stan. Ce qui échappe à la règle (queues lourdes sans valeur au-delà de 3 écarts interquartiles ni paire influente) garde Pearson ; le taux de faux « oui » qui en résulte est mesuré en §6 plutôt que supposé.
 
 ## C7. Taille de l'échantillon : DÉCIDÉ
 

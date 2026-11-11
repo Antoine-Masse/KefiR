@@ -13,6 +13,43 @@ Lecture : « P > 0,95 » est le seuil d'un « soutien fort » et « P > 0,75 » 
 | Probabilités des trois hypothèses | formule fermée à partir des deux moitiés | 1e-10 (test `test-cor.bay.R`) |
 | A priori sur tau, kappa = 1 | pi/4 cos(pi tau / 2), éq. 10 de van Doorn et al. 2018 | 1e-12 (test) |
 
+## 2. Sous H0 : faux « oui » par méthode (`sim_h0.R`, 500 jeux par case)
+
+Aucun lien entre x et y. « Oui » = P(un lien, d'un signe ou de l'autre) au-delà du seuil. Données : normales indépendantes ; t à 3 ddl indépendantes ; **t3 bivariée** (x et y partagent une même échelle aléatoire : non corrélées mais dépendantes, le cas qui trompe Pearson) ; log-normales indépendantes ; échelle 1 à 5 indépendante ; normales avec **une paire aberrante** à (6, 6).
+
+| Données | n | Pearson P > 0,75 | P > 0,95 | Kendall P > 0,75 | P > 0,95 | Spearman P > 0,95 | `cor.test` Pearson p < 0,05 | Kendall p < 0,05 |
+|---|---|---|---|---|---|---|---|---|
+| normales | 10 | 2,6 | 0,0 | 2,4 | 0,0 | 0,2 | 5,2 | 6,4 |
+| normales | 20 | 2,0 | 0,2 | 3,0 | 0,0 | 0,4 | 4,4 | 5,6 |
+| normales | 50 | 3,4 | 0,2 | 2,6 | 0,0 | 0,2 | 5,4 | 6,2 |
+| normales | 100 | 2,2 | 0,0 | 2,4 | 0,2 | 0,2 | 5,4 | 4,6 |
+| t3 indépendantes | 10 | 3,4 | 0,2 | 1,2 | 0,0 | 0,0 | 6,4 | 6,0 |
+| t3 indépendantes | 20 | 4,4 | 0,2 | 4,4 | 0,6 | 0,8 | 6,0 | 5,8 |
+| t3 indépendantes | 50 | 2,6 | 0,2 | 3,0 | 0,2 | 0,2 | 4,6 | 5,6 |
+| t3 indépendantes | 100 | 2,8 | 0,0 | 1,4 | 0,0 | 0,0 | 5,4 | 5,4 |
+| **t3 bivariée** | 10 | 11,4 | 3,0 | 3,4 | 0,0 | 0,4 | 16,4 | 9,2 |
+| **t3 bivariée** | 20 | 15,0 | 5,6 | 3,6 | 0,4 | 0,6 | 19,2 | 5,8 |
+| **t3 bivariée** | 50 | 24,6 | 10,2 | 6,2 | 0,4 | 0,4 | 31,4 | 9,8 |
+| **t3 bivariée** | 100 | 21,4 | 11,2 | 3,8 | 0,4 | 0,4 | 28,6 | 7,8 |
+| log-normales | 10 | 2,8 | 0,6 | 2,0 | 0,0 | 0,2 | 4,8 | 5,2 |
+| log-normales | 20 | 4,2 | 1,2 | 2,6 | 0,2 | 0,2 | 5,2 | 5,2 |
+| log-normales | 50 | 4,2 | 1,6 | 3,0 | 0,0 | 0,0 | 5,8 | 6,0 |
+| log-normales | 100 | 2,6 | 1,2 | 1,4 | 0,0 | 0,0 | 4,2 | 5,6 |
+| échelle 1 à 5 * | 10 | 2,4 | 0,0 | 1,2 | 0,0 | 0,0 | 4,0 | 3,8 |
+| échelle 1 à 5 * | 20 | 2,4 | 0,0 | 2,6 | 0,0 | 0,0 | 5,2 | 4,8 |
+| échelle 1 à 5 * | 50 | 3,4 | 0,2 | 3,4 | 0,6 | 0,6 | 5,8 | 4,4 |
+| échelle 1 à 5 * | 100 | 1,2 | 0,2 | 1,6 | 0,2 | 0,2 | 4,2 | 4,0 |
+| **une paire aberrante** | 10 | 90,0 | 18,8 | 2,4 | 0,0 | 0,2 | 95,6 | 8,8 |
+| **une paire aberrante** | 20 | 95,6 | 57,2 | 4,8 | 0,2 | 0,4 | 98,0 | 7,0 |
+| **une paire aberrante** | 50 | 88,4 | 57,6 | 3,6 | 0,4 | 0,4 | 94,2 | 6,6 |
+| **une paire aberrante** | 100 | 68,0 | 33,6 | 2,4 | 0,2 | 0,0 | 81,6 | 5,2 |
+
+**Lecture.**
+- Sur des données bien faites (normales, t indépendantes, log-normales), aucune méthode ne dépasse 1,6 % de faux « oui » à P > 0,95, et 4,4 % à P > 0,75 ; la référence de m.bay est 0,7 % à P > 0,95 (D6, D26).
+- **t3 bivariée** : Pearson bayésien dit « oui » à P > 0,95 dans 10 à 11 % des jeux à n ≥ 50, comme `cor.test` (29 à 31 % à p < 0,05) : le modèle normal bivarié est faux et les deux le subissent. Kendall reste à 0,4 %. C'est la raison de la voie Kendall pour les queues lourdes ; ce que la règle `auto` en attrape est en §6.
+- **Une paire aberrante** : Pearson dit « oui » à P > 0,95 dans 19 à 58 % des jeux ; Kendall dans 0,4 % au plus.
+- **Échelle 1 à 5** (* : relancé après la correction des ex-aequo, `sim_h0.R 500 likert _ties`, autre tirage) : Kendall au plus 0,6 % à P > 0,95. **Avant la correction**, il montait à 8,0 % à P > 0,75 et 2,0 % à P > 0,95 (n = 100) : T* avait un écart-type de 1,2 sous H0 (DECISIONS, C4). Spearman sur rangs y est prudent mais perd de la puissance (§5).
+
 ## 3. Calibration sous l'a priori (`sim_power.R`, partie 2)
 
 Jeux tirés de l'a priori lui-même : moitié sans lien, moitié avec rho tiré de la bêta étirée (kappa = 1/3), données normales bivariées ; 1200 jeux par n. Si les probabilités annoncées sont justes, la fréquence d'un vrai lien dans chaque classe égale la probabilité annoncée. C'est exact par construction pour Pearson si le calcul est juste ; pour Kendall et Spearman sur rangs, c'est la mesure de l'approximation.
@@ -30,6 +67,22 @@ Jeux tirés de l'a priori lui-même : moitié sans lien, moitié avec rho tiré 
 | Spearman (rangs) | 50 | 0,281 / 0,288 | 0,487 / 0,519 | 0,697 / 0,713 | 0,963 / 0,962 |
 
 (annoncé / fréquence observée ; classes de 50 à 680 jeux, donc un écart de 0,03 à 0,05 est dans le bruit.) **Les trois méthodes sont calibrées dès n = 10**, y compris l'approximation normale de Kendall que l'article ne garantit qu'à partir de n = 10 sous H0.
+
+### Échelle 1 à 5 (`sim_calib_likert.R`, 1500 jeux par n) : Kendall, avant et après la correction des ex-aequo
+
+Couples normaux latents (rho tiré de l'a priori, ou 0) coupés en 5 classes ; « vrai lien » = rho latent non nul.
+
+| n | classe | avant : annoncé / observé | après : annoncé / observé |
+|---|---|---|---|
+| 20 | (0,6 ; 0,8] | 0,699 / 0,646 | 0,683 / 0,719 |
+| 20 | (0,8 ; 1] | 0,928 / 0,842 | 0,917 / 0,941 |
+| 50 | (0,6 ; 0,8] | 0,699 / 0,575 | 0,694 / 0,692 |
+| 50 | (0,8 ; 1] | 0,961 / 0,910 | 0,950 / 0,963 |
+| 100 | (0,4 ; 0,6] | 0,491 / 0,385 | 0,500 / 0,441 |
+| 100 | (0,6 ; 0,8] | 0,698 / 0,520 | 0,695 / 0,656 |
+| 100 | (0,8 ; 1] | 0,976 / 0,918 | 0,968 / 0,967 |
+
+Avant, Kendall était trop sûr d'un lien (0,70 annoncé pour 0,52 réel à n = 100) ; après, les écarts restent dans le bruit des classes (90 à 400 jeux), sauf peut-être (0,4 ; 0,6] à n = 100 (0,50 / 0,44, 177 jeux), à surveiller.
 
 ## 4. Largeur de l'a priori : kappa = 1/3 (choisi) contre kappa = 1 (JASP) (`sim_kappa.R`, 300 jeux par case, Pearson)
 
@@ -77,25 +130,21 @@ P(lien positif) > 0,75 et > 0,95 ; `cor.test` bilatéral à p < 0,05. P = Pearso
 | monotone | 0,5 | 20 | 21,7 | 2,7 | 45,3 | 13,0 | 19,7 | 32,7 | 59,0 | 59,3 |
 | monotone | 0,5 | 50 | 50,7 | 19,3 | 88,0 | 66,0 | 65,0 | 63,7 | 91,7 | 92,3 |
 | monotone | 0,5 | 100 | 71,7 | 43,0 | 99,0 | 96,3 | 96,7 | 82,3 | 99,7 | 99,7 |
-| échelle 1 à 5 | 0,2 | 20 | 6,7 | 1,3 | 13,0 | 3,0 | 1,3 | 13,0 | 10,7 | 10,3 |
-| échelle 1 à 5 | 0,2 | 50 | 14,7 | 2,3 | 25,0 | 7,7 | 2,3 | 20,7 | 20,7 | 21,0 |
-| échelle 1 à 5 | 0,2 | 100 | 28,3 | 10,7 | 44,3 | 21,3 | 9,3 | 44,0 | 41,7 | 41,7 |
-| échelle 1 à 5 | 0,3 | 20 | 14,3 | 0,7 | 24,3 | 6,0 | 1,3 | 23,0 | 22,7 | 22,7 |
-| échelle 1 à 5 | 0,3 | 50 | 36,0 | 10,3 | 47,3 | 24,7 | 10,3 | 45,3 | 44,0 | 43,0 |
-| échelle 1 à 5 | 0,3 | 100 | 65,7 | 38,0 | 78,0 | 57,0 | 34,7 | 77,0 | 75,7 | 75,3 |
-| échelle 1 à 5 | 0,5 | 20 | 44,7 | 14,7 | 57,0 | 25,3 | 14,7 | 54,3 | 52,0 | 52,7 |
-| échelle 1 à 5 | 0,5 | 50 | 85,7 | 67,0 | 93,0 | 80,7 | 64,3 | 92,3 | 91,7 | 91,3 |
-| échelle 1 à 5 | 0,5 | 100 | 98,7 | 94,7 | 99,3 | 97,3 | 97,3 | 99,7 | 99,3 | 99,3 |
+| échelle 1 à 5 * | 0,2 | 20 | 6,7 | 1,3 | 3,7 | 0,0 | 1,3 | 13,0 | 10,7 | 10,3 |
+| échelle 1 à 5 * | 0,2 | 50 | 14,7 | 2,3 | 16,3 | 3,7 | 2,3 | 20,7 | 20,7 | 21,0 |
+| échelle 1 à 5 * | 0,2 | 100 | 28,3 | 10,7 | 27,3 | 10,3 | 9,3 | 44,0 | 41,7 | 41,7 |
+| échelle 1 à 5 * | 0,3 | 20 | 14,3 | 0,7 | 11,3 | 0,7 | 1,3 | 23,0 | 22,7 | 22,7 |
+| échelle 1 à 5 * | 0,3 | 50 | 36,0 | 10,3 | 36,7 | 9,7 | 10,3 | 45,3 | 44,0 | 43,0 |
+| échelle 1 à 5 * | 0,3 | 100 | 65,7 | 38,0 | 66,0 | 38,7 | 34,7 | 77,0 | 75,7 | 75,3 |
+| échelle 1 à 5 * | 0,5 | 20 | 44,7 | 14,7 | 41,0 | 7,0 | 14,7 | 54,3 | 52,0 | 52,7 |
+| échelle 1 à 5 * | 0,5 | 50 | 85,7 | 67,0 | 88,0 | 60,3 | 64,3 | 92,3 | 91,7 | 91,3 |
+| échelle 1 à 5 * | 0,5 | 100 | 98,7 | 94,7 | 98,7 | 94,7 | 97,3 | 99,7 | 99,3 | 99,3 |
 
 **Lecture.**
 - Sur des données normales, « soutien modéré » (P > 0,75) se déclare un peu moins souvent que p < 0,05 (5 à 14 points de moins), « soutien fort » (P > 0,95) nettement moins : c'est un seuil plus exigeant, et l'a priori ramène les petits effets vers 0. Pearson bat Kendall de 0 à 14 points, comme attendu ([vanDoorn2018], fig. 4).
 - Lien monotone courbe : Kendall double ou triple la puissance de Pearson (rho = 0,5, n = 50 : 66 % contre 19 % à P > 0,95). La règle `auto` y prend Kendall (valeurs lointaines de exp(2 z)) : voir §6.
-- Échelle 1 à 5 : Kendall (tau-b) est le plus puissant des trois méthodes bayésiennes, et à P > 0,75 il dépasse `cor.test` de Pearson ; Spearman sur rangs perd le plus (ex-aequo). La règle prend Kendall.
+- Échelle 1 à 5 (* : colonnes Kendall relancées après la correction des ex-aequo, `sim_power.R 300 likert _ties`) : Kendall corrigé est un peu moins puissant que Pearson bayésien (rho = 0,5, n = 50 : 60 % contre 65 à 67 % à P > 0,95). Sa puissance d'avant (81 %) venait de sa surconfiance. La règle garde Kendall sur les échelles courtes : il ne dépend que de l'ordre des notes, pas des écarts supposés entre elles, comme la voie ordinale de m.bay (D17) ; le prix est d'environ 5 points de puissance.
 - t3 bivariée : Pearson « trouve » plus souvent un lien faible que Kendall, mais sa calibration sous H0 sur ces données est à lire en §2 avant de s'en réjouir.
-
-## 2. Sous H0 : faux « oui » (`sim_h0.R`, 500 jeux par case)
-
-(en cours)
 
 ## 6. La règle `auto` du paquet (`sim_auto.R`, 300 jeux par case)
 
