@@ -275,3 +275,12 @@ test_that("p. correction de sphericite appliquee au F du tableau aov affiche", {
   p_unc <- .format_pval(tab["temps", "Pr(>F)"])
   expect_true(any(grepl(paste0("non corrig\u00e9e : ", p_unc), res$output, fixed = TRUE)))
 })
+
+test_that("q. le recit du Welch cite le risque mesure (11 a 17 %)", {
+  set.seed(1)
+  n <- c(5, 5, 40)
+  x <- unlist(mapply(function(n, s) rnorm(n, 0, s), n, c(4, 4, 1)))
+  g <- factor(rep(c("A", "B", "C"), n))
+  res <- audit_quiet(m.test(x, g, plot = FALSE, boot = FALSE))
+  expect_true(any(grepl("environ 11 \u00e0 17 %", res$output, fixed = TRUE)))
+})
