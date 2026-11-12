@@ -1,0 +1,5 @@
+R version 4.6.1 (2026-06-24 ucrt)
+agent_78 : contingence, scenario m32_eff, N = 1000 tables
+ancien (Gunel-Dickey) BF>20 : 363/1000 = 0.3630 [0.3338 ; 0.3933] | BF>3 : 613/1000 = 0.6130 [0.5824 ; 0.6427]
+nouveau (log-lineaire BIC) BF>20 : 193/1000 = 0.1930 [0.1697 ; 0.2186] | BF>3 : 371/1000 = 0.3710 [0.3416 ; 0.4014]
+khi-deux p<.05 : 726/1000 = 0.7260 [0.6975 ; 0.7527]

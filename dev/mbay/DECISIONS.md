@@ -748,3 +748,31 @@ Rapport : `relecture/lisibilite_2026-11-11/AUDIT.md` (13 plans, plus une variant
 - **Seuils des termes.** Une seule règle pour les termes et les paires : « oui » ≥ 75 %, « non » ≤ 25 %, « plutôt oui » ou « plutôt non » entre les deux. Un terme à 66 % n'est plus dit « oui ».
 - **Qualificatif de soutien.** Il suit l'échelle du facteur de Bayes imprimée dans le bilan, et non plus la probabilité a posteriori. À a priori 1/2, les deux coïncident (0,75 ↔ 3 ; 0,95 ↔ 20 ; 0,993 ↔ 150, D14). Avec l'a priori HOP d'une interaction (16,7 %), elles divergeaient, et le lecteur voyait « soutien faible » pour un facteur de Bayes de 9,7.
 - **Facteur ordonné.** Une réponse `ordered()` à plus de deux modalités prend la voie ordinale (un facteur ou plusieurs entre groupes), et non la voie multinomiale.
+
+## D30. Tableaux de contingence : contingencyTableBF REMPLACÉ par le log-linéaire (11 novembre, audit de l'expert)
+
+**Défaut.** `contingencyTableBF` (Gunel et Dickey, multinomiales indépendantes, lignes fixées) donne de faux « oui » sous indépendance : son a priori traite les marges différemment sous H0 et sous H1. Mesuré dans `agent_78` sur 1000 tables par scénario, à cotes égales : en 4 × 5 avec N = 50, BF > 20 dans 3,0 % des tables à marges égales (Wilson [2,1 ; 4,3] %) et 0,8 % à marges aléatoires. La session parente mesurait 2,7 % sur 300 tables.
+
+**Consigne, la même pour g.bay.** Le facteur de Bayes d'une différence de proportions entre groupes est celui de l'interaction groupe × réponse d'un modèle log-linéaire : −BIC/2 de `glm(poisson)` avec et sans le terme `g:réponse`, avec l'information unitaire d'un individu (n = N, nombre total d'observations), comme en D25.
+- Forme close : log BF = G²/2 − (df/2) log N, avec df = (R − 1)(C − 1) sur les lignes et colonnes non vides.
+- C'est aussi la différence de −BIC/2 de la régression multinomiale individuelle de la réponse sur le groupe. Les deux contrôles sont dans `test-bay-contingency.R`.
+- Le post-hoc emploie le même facteur de Bayes sur le tableau fusionné de chaque regroupement. Les écarts restent tirés de la loi a posteriori de Dirichlet uniforme de chaque groupe.
+- La sensibilité porte sur les chances de départ seules : l'information unitaire n'a pas d'échelle à faire varier.
+
+**Résultats** (`agent_78`, VALIDATION §28).
+
+| Scénario | Ancien, BF > 20 | Nouveau, BF > 20 | Khi-deux p < 0,05 |
+|---|---:|---:|---:|
+| 4 × 5, N = 50, marges égales, H0 | 3,0 % | 0 % [0 ; 0,38] | 4,3 % |
+| 4 × 5, N = 50, marges aléatoires, H0 | 0,8 % | 0 % [0 ; 0,38] | 4,7 % |
+| 2 × 2, 20 par groupe, H0 | 0,7 % | 0,4 % [0,16 ; 1,0] | 1,7 % |
+| 3 × 2, 30 par groupe, H0 | 0,8 % | 0,2 % [0,05 ; 0,7] | 5,0 % |
+| 3 × 2, p = (0,5 ; 0,5 ; 0,8) | 36,3 % | 19,3 % | 72,6 % |
+| 4 × 5, 25 par groupe, une ligne décalée | 14,7 % | 0 % | 34,3 % |
+
+**Prix, dit franchement.** La puissance baisse, et beaucoup dans les grands tableaux à petit N : la pénalité de (R − 1)(C − 1) × log N l'emporte. En 4 × 5 à N = 100, rien n'est détecté. C'est la prudence de l'information unitaire. Une piste : un a priori de Dirichlet commun aux deux hypothèses, sur les cellules du tableau (multinomiale conjointe), qui ne traite pas les marges différemment. Il sera à mesurer avant tout usage.
+
+**Compte rendu contre verdict (audit de l'expert, 11 novembre) : corrigé.** Données : formes différentes, moyennes égales, n = 400. Les lois à queues lourdes (ou à variances par groupe) donnent une différence des centres à 80 ou 98 %, la loi normale une différence des moyennes à 7 %. Le verdict disait « non tranché », le titre et le compte rendu « x diffère selon g ». Désormais, dès que centres et moyennes se contredisent :
+- le titre du bilan dit « non tranché (…) » ;
+- le compte rendu dit sur quoi porte la différence : « Les données ne permettent pas de conclure : les centres des groupes diffèrent (…), mais pas leurs moyennes (… sous la loi normale) ; les groupes diffèrent par leur forme ou leur dispersion plutôt que par leur moyenne ».
+Testé (`test-bay-story.R`). Au passage, l'estimation de la ligne d'attente croît en racine de N, et non plus linéairement (250 s annoncées pour 2 groupes de 400).

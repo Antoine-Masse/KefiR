@@ -1,21 +1,34 @@
 # m.bay : reponse binaire ou categorielle a un facteur, tableau de contingence (D17, voie 1).
 
-test_that("forme close = contingencyTableBF (multinomiales independantes, lignes fixees)", {
+# Reference (D30): interaction of a log-linear model, -BIC/2 with n = N, from glm(poisson).
+.ref_ll <- function(tab) {
+	d <- as.data.frame(as.table(tab))
+	m1 <- stats::glm(Freq ~ Var1 * Var2, family = stats::poisson(), data = d)
+	m0 <- stats::glm(Freq ~ Var1 + Var2, family = stats::poisson(), data = d)
+	(stats::deviance(m0) - stats::deviance(m1)) / 2 - (stats::df.residual(m0) - stats::df.residual(m1)) / 2 * log(sum(tab))
+}
+
+test_that("D30 : facteur de Bayes = interaction log-lineaire glm(poisson) et regression multinomiale individuelle", {
 	for (s in 1:4) {
 		set.seed(s)
 		R <- c(2, 3, 3, 4)[s]; C <- c(2, 2, 3, 3)[s]
-		tab <- matrix(rpois(R * C, 12), R, C)
-		for (a in c(1, 2, 3)) expect_equal(.bay_cont_lbf(tab, a), .bay_cont_bf_pkg(tab, a), tolerance = 1e-6)
+		tab <- matrix(rpois(R * C, 12) + 1L, R, C)
+		expect_equal(.bay_cont_lbf(tab), .ref_ll(tab), tolerance = 1e-8)
+		if (requireNamespace("nnet", quietly = TRUE)) {
+			ind <- data.frame(g = factor(rep(row(tab), tab)), y = factor(rep(col(tab), tab)))
+			b1 <- BIC(nnet::multinom(y ~ g, data = ind, trace = FALSE)); b0 <- BIC(nnet::multinom(y ~ 1, data = ind, trace = FALSE))
+			expect_equal(.bay_cont_lbf(tab), (b0 - b1) / 2, tolerance = 1e-4)
+		}
 	}
 })
 
-test_that("m.bay : BF et probabilite egaux a contingencyTableBF ; 0/1, facteur, texte et logique donnent le meme resultat", {
+test_that("m.bay : BF et probabilite egaux au log-lineaire ; 0/1, facteur, texte et logique donnent le meme resultat", {
 	set.seed(41)
 	d <- data.frame(g = factor(rep(c("a", "b", "c"), each = 30)))
 	d$y01 <- rbinom(90, 1, c(.5, .5, .8)[d$g])
 	r <- m.bay(y01 ~ g, data = d, verbose = FALSE, sensitivity = FALSE)
 	expect_identical(r$plan, "contingency")
-	ref <- .bay_cont_bf_pkg(table(d$g, d$y01), 1)
+	ref <- .ref_ll(table(d$g, d$y01))
 	expect_equal(r$effects$log_bf, ref, tolerance = 1e-10)
 	expect_equal(r$prob_effect, 1 / (1 + exp(-ref)), tolerance = 1e-10)
 	d$yf <- factor(d$y01, labels = c("non", "oui"))
@@ -24,16 +37,16 @@ test_that("m.bay : BF et probabilite egaux a contingencyTableBF ; 0/1, facteur, 
 	for (v in c("yf", "yt", "yl")) {
 		expect_equal(m.bay(stats::as.formula(paste(v, "~ g")), data = d, verbose = FALSE, sensitivity = FALSE, posthoc = FALSE)$effects$log_bf, ref, tolerance = 1e-10)
 	}
-	expect_true(any(grepl("contingencyTableBF", r$story$fr)))
+	expect_true(any(grepl("log-lin", r$story$fr)))
 	expect_true(any(grepl("khi-deux", r$story$fr)))
 })
 
-test_that("post-hoc : BF d'un regroupement = contingencyTableBF du tableau fusionne ; paires par la loi unique", {
+test_that("post-hoc : BF d'un regroupement = log-lineaire du tableau fusionne ; paires par la loi unique", {
 	set.seed(5)
 	tab <- matrix(c(12, 18, 12, 18, 6, 24), 3, 2, byrow = TRUE, dimnames = list(c("a", "b", "c"), c("n", "o")))
 	ph <- .bay_cont_posthoc(tab, 1, 0.5, 4000, 1L)
 	pa <- .bay_partitions(3)
-	lb <- vapply(pa, function(p) if (max(p) == 1L) 0 else .bay_cont_bf_pkg(rowsum(tab, p), 1), numeric(1))
+	lb <- vapply(pa, function(p) if (max(p) == 1L) 0 else .ref_ll(rowsum(tab, p)), numeric(1))
 	pri <- ifelse(vapply(pa, max, integer(1)) == 1L, 0.5, 0.125)
 	post <- pri * exp(lb); post <- post / sum(post)
 	hand <- c(sum(post[vapply(pa, function(p) p[1] != p[2], logical(1))]), sum(post[vapply(pa, function(p) p[1] != p[3], logical(1))]),

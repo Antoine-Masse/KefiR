@@ -993,3 +993,7 @@ n = 8 par groupe, 30 jeux par partie. Résultats : `scripts/resultats/agent_71_*
 | Normal, variances égales, H0 | 3,0 % | 0 % | 6,0 % | 5,5 % | 1,5 % | 0 % |
 
 **Lecture.** Les queues lourdes n'ajoutent pas de faux « oui » avec des sujets. Les variances inégales en ajoutent (3 %), et la prudence les retire de l'affichage, au prix de toute affirmation forte dans ce cas. La correction (moyenne des lois) est à faire.
+
+## 28. Tableaux de contingence, ancien et nouveau moteur (D30, `agent_78`), 11 novembre
+
+1000 tables par scénario, intervalle de Wilson à 95 %. Résultats complets : `scripts/resultats/agent_78_*.txt` (BF > 20 et BF > 3, ancien et nouveau, khi-deux). Le tableau est dans DECISIONS, D30.

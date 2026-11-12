@@ -40,7 +40,7 @@
 	switch(obj$plan,
 		oneway = list(en = "comparison of noise laws, Rouder et al. 2012", fr = "comparaison de lois du bruit, Rouder et al. 2012"),
 		paired = list(en = "Bayesian paired t test, Rouder et al. 2009", fr = "test t appari\u00e9 bay\u00e9sien, Rouder et al. 2009"),
-		contingency = list(en = "Gunel and Dickey 1974", fr = "Gunel et Dickey 1974"),
+		contingency = list(en = "log-linear model, BIC approximation, Raftery 1995", fr = "mod\u00e8le log-lin\u00e9aire, approximation BIC, Raftery 1995"),
 		ordinal = list(en = "proportional odds, MASS::polr, BIC approximation", fr = "cotes proportionnelles, MASS::polr, approximation BIC"),
 		counts = list(en = "Poisson and negative binomial, BIC approximation, Raftery 1995", fr = "Poisson et binomiale n\u00e9gative, approximation BIC, Raftery 1995"),
 		discrete_fact = if (identical(obj$kind, "ordinal")) list(en = "proportional odds, MASS::polr, BIC approximation, HOP prior", fr = "cotes proportionnelles, MASS::polr, approximation BIC, a priori HOP") else if (identical(obj$kind, "binary")) list(en = "logistic regression, BIC approximation, HOP prior, Raftery 1995", fr = "r\u00e9gression logistique, approximation BIC, a priori HOP, Raftery 1995") else
@@ -56,7 +56,9 @@
 	pct <- function(p) .bay_pct(p, dc)
 	k <- if (!is.null(obj$story$k)) obj$story$k + 1L else 7L
 	# Undecided: the title does not assert the leading hypothesis (relecture apres, point 1).
-	undecided <- li$open || li$sup$level <= 1L || h$posterior[1L] < 0.6
+	# The verdict and the report follow the same rule (audit of the expert, 11 November): a
+	# contradiction between the centres and the means is not settled.
+	undecided <- li$open || li$sup$level <= 1L || h$posterior[1L] < 0.6 || isTRUE(obj$contradiction)
 	lead_en <- if (undecided) paste0("not settled (", h$label_en[1L], ": ", .bay_pct(h$posterior[1L], "."), ")") else
 		paste0(h$label_en[1L], ": ", .bay_pct(h$posterior[1L], "."), " (", li$sup$en, ")")
 	lead_fr <- if (undecided) paste0("non tranch\u00e9 (", h$label_fr[1L], " : ", .bay_pct(h$posterior[1L], ","), ")") else
@@ -157,7 +159,15 @@
 		terms_en <- paste0("; ", paste0(e$term, " ", st_en, " (", vapply(e$p_h1, .bay_pct, character(1), dec = "."), ")", collapse = ", "))
 		terms_fr <- paste0(" ; ", paste0(e$term, " ", st_fr, " (", vapply(e$p_h1, .bay_pct, character(1), dec = ","), ")", collapse = ", "))
 	}
-	if (term_lead) {
+	if (isTRUE(obj$contradiction) && !is.null(obj$p_normal)) {
+		# Centres and means disagree (heavy tails win): the report says on what the difference
+		# bears, and follows the verdict (audit of the expert, 11 November).
+		pc <- h$posterior[h1]
+		emit("note", paste0("for a report: \"The data do not settle it: the centres of the groups differ (", .bay_pct(pc, "."),
+				", heavy-tailed laws), but not their means (", .bay_pct(obj$p_normal, "."), " under the normal law); the groups differ by their shape or spread rather than their mean (m.bay {KefiR}, ", ct$en, ").\""),
+			paste0("pour un compte rendu : \u00ab Les donn\u00e9es ne permettent pas de conclure : les centres des groupes diff\u00e8rent (", .bay_pct(pc, ","),
+				", lois \u00e0 queues lourdes), mais pas leurs moyennes (", .bay_pct(obj$p_normal, ","), " sous la loi normale) ; les groupes diff\u00e8rent par leur forme ou leur dispersion plut\u00f4t que par leur moyenne (m.bay {KefiR}, ", ct$fr, "). \u00bb"))
+	} else if (term_lead) {
 		# Terms first, the global answer second (audit of 9c44239, point 1).
 		lb_any <- if (h$null[1L]) -li$lb else li$lb
 		emit("note", paste0("for a report: \"", sub("^; ", "", terms_en), "; at least one difference: ", .bay_pct(h$posterior[h1], "."),

@@ -467,7 +467,7 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	# group: laws with the sensitivity about 0.55 k^2 + 4 s, half without; post-hoc by draws
 	# beyond 8 groups about 1.1 k s (audit of 8c0523a).
 	k_g <- st$k
-	est <- (0.55 * k_g^2 + 4) * (if (isTRUE(sensitivity)) 1 else 0.5) * max(1, st$N / (10 * k_g)) +
+	est <- (0.55 * k_g^2 + 4) * (if (isTRUE(sensitivity)) 1 else 0.5) * max(1, sqrt(st$N / (10 * k_g))) +
 		(if (isTRUE(posthoc) && k_g > .bay_posthoc_max_groups()) 1.1 * k_g else 0)
 	if (isTRUE(verbose) && est > 25) {
 		message(.msg(paste0("Computing the laws of the noise for ", k_g, " groups", if (isTRUE(posthoc) && k_g > .bay_posthoc_max_groups()) " and the groupings by draws" else "", ", about ", 10 * ceiling(est / 10), " s..."),
@@ -688,7 +688,7 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 			nu = "nu - 2 ~ Exp(1)"),
 		questions = list(en = paste0("Does ", input$response_name, " differ according to ", shown, "?"),
 			fr = paste0(input$response_name, " diff\u00e8re-t-il selon ", shown, " ?")),
-		contradiction = contradiction, heavy = heavy, p_tails = p_t, posthoc = ph, detail = isTRUE(detail),
+		contradiction = contradiction, p_normal = p_normal, heavy = heavy, p_tails = p_t, posthoc = ph, detail = isTRUE(detail),
 		descriptive_stats = desc, prob_effect = ans$p_h1,
 		largest_gap = (max(desc$mean) - min(desc$mean)) / (st$unit * max(abs(st$y_raw))),
 		method = "Averaged over sampling laws", plan = input$plan,

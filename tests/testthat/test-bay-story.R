@@ -179,3 +179,15 @@ test_that("80 colonnes au plus, tabulation comptee 8 : 8 plans, francais et angl
 		}
 	}
 })
+
+test_that("centres and means disagree: title, verdict and report all not settled, and say what differs (expert audit)", {
+	set.seed(1)
+	n <- 400
+	d <- data.frame(g = factor(rep(c("A", "B"), each = n)), x = c(stats::rnorm(n), stats::rexp(n) - 1))
+	txt <- capture.output(r <- m.bay(x ~ g, data = d, draws = 2000, posthoc = FALSE, sensitivity = FALSE))
+	skip_if_not(isTRUE(r$contradiction))
+	all <- gsub("[[:space:]]+", " ", paste(txt, collapse = " "))
+	expect_match(all, "Bilan - non tranch", fixed = TRUE)
+	expect_match(all, "ne permettent pas de conclure : les centres des groupes", fixed = TRUE)
+	expect_false(grepl("compte rendu : \u00ab x diff\u00e8re selon g", all, fixed = TRUE))
+})

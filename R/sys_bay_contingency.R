@@ -1,18 +1,20 @@
 # sys_bay_contingency.R
 # One factor and a binary or categorical response (DECISIONS, D17, way 1): the Bayesian
 # counterpart of the chi-squared and G tests of m.test().
-#   Whether the proportions differ: contingencyTableBF() [BayesFactor], independent
-#     multinomials with the group margin fixed (Gunel and Dickey 1974), uniform Dirichlet
-#     prior of concentration a on the proportions of each group. Exact, no draws.
+#   Whether the proportions differ: the interaction group x response of a log-linear model,
+#     by -BIC/2 with the unit information of one individual (n = N), DECISIONS, D30. It
+#     replaced contingencyTableBF (Gunel and Dickey 1974), whose prior treated the margins
+#     differently under H0 and H1 (false "yes" under independence, audit of 11 November).
 #   Which groups differ: the partitions of D11; the Bayes factor of a grouping is that of the
-#     same model on the merged table. Under this prior it is a ratio of Dirichlet-multinomial
-#     marginal likelihoods, prod over blocks DM(n_b; a) / DM(n; a), identical to
-#     contingencyTableBF (test-bay-contingency.R), computed here in closed form.
+#     same model on the merged table.
 #   How much: draws from the Dirichlet posterior of each group; two categories: difference of
 #     proportions and log odds ratio; more: total variation distance (half the sum of the
 #     absolute differences of proportions).
 #
 # References.
+#   Raftery, A. E. (1995). Bayesian model selection in social research. Sociological
+#     Methodology, 25, 111-163 (BIC of log-linear models, n = number of individuals).
+#   For the history of this route (no longer used):
 #   Gunel, E., & Dickey, J. (1974). Bayes factors for independence in contingency tables.
 #     Biometrika, 61(3), 545-557.
 #   Jamil, T., Ly, A., Morey, R. D., Love, J., Marsman, M., & Wagenmakers, E.-J. (2017).
@@ -23,13 +25,24 @@
 # cancels in every Bayes factor below.
 .bay_ldm <- function(n, a) lgamma(sum(a)) - lgamma(sum(a) + sum(n)) + sum(lgamma(a + n) - lgamma(a))
 
-# Log Bayes factor "each row its own proportions" against "the same proportions", rows fixed.
-# Prior of contingencyTableBF (checked to 1e-6, test-bay-contingency.R): each row Dirichlet(a)
-# under H1; the common proportions Dirichlet(R (a - 1) + 1) under H0, so a >= 1. At a = 1 both
-# are uniform, and the Bayes factor of a grouping of the rows is that of the merged table.
+# Log Bayes factor "each row its own proportions" against "the same proportions" (D30, audit
+# of the expert of 11 November). The interaction group x response of a log-linear model, by
+# -BIC/2 with the unit information of one individual (n = N; Raftery 1995), as in D25:
+#   log BF = G2 / 2 - df / 2 log N,  G2 = 2 sum o log(o / e),  df = (R - 1)(C - 1)
+# with R and C the rows and columns that are not empty. It is the -BIC/2 difference of the
+# multinomial logistic regression of the response on the group (test-bay-contingency.R).
+# Replaces contingencyTableBF (Gunel-Dickey, rows fixed), whose prior treats the margins
+# differently under H0 and H1 and gave false "yes" under independence (2.7 % of BF > 20 on
+# 4 x 5 tables, N = 50). conc is kept in the signature and has no role.
 .bay_cont_lbf <- function(tab, conc = 1) {
-	C <- ncol(tab); R <- nrow(tab)
-	sum(apply(tab, 1L, .bay_ldm, a = rep(conc, C))) - .bay_ldm(colSums(tab), rep(R * (conc - 1) + 1, C))
+	tab <- tab[rowSums(tab) > 0, colSums(tab) > 0, drop = FALSE]
+	N <- sum(tab)
+	if (nrow(tab) < 2L || ncol(tab) < 2L) return(0)
+	e <- outer(rowSums(tab), colSums(tab)) / N
+	pos <- tab > 0
+	g2 <- 2 * sum(tab[pos] * log(tab[pos] / e[pos]))
+	df <- (nrow(tab) - 1) * (ncol(tab) - 1)
+	g2 / 2 - df / 2 * log(N)
 }
 
 .bay_cont_bf_pkg <- function(tab, conc = 1) {
@@ -132,15 +145,15 @@
 
 	.bay_tell(story, "Starting point (priors)", "Point de d\u00e9part (a priori)", "step")
 	.bay_step_result(story, paste0(.bay_pct(prior_h1, "."), " chance of a difference"), paste0(.bay_pct(prior_h1, ","), " de chances d'une diff\u00e9rence"))
-	.bay_tell(story, "In each group, every set of proportions equally likely in advance.",
-		"Dans chaque groupe, toutes les proportions sont \u00e9galement possibles d'avance.")
+	.bay_tell(story, "prior on the differences of proportions: worth one observation (unit information), no scale to choose.",
+		"a priori sur les \u00e9carts de proportions : le poids d'une seule observation (information unitaire), sans \u00e9chelle \u00e0 choisir.", "note")
 	.bay_tell(story, "these values are not tuned on the data; step 5 varies them.",
 		"ces valeurs ne sont pas ajust\u00e9es sur les donn\u00e9es ; l'\u00e9tape 5 les fait varier.", "note")
-	.bay_tell(story, "Prior: uniform Dirichlet on the proportions of each group (Gunel and Dickey 1974, independent multinomials, group sizes fixed).",
-		"A priori : Dirichlet uniforme sur les proportions de chaque groupe (Gunel et Dickey 1974, multinomiales ind\u00e9pendantes, effectifs des groupes fix\u00e9s).", "detail")
+	.bay_tell(story, "Log-linear model: interaction group x response, -BIC/2 with n = N (Raftery 1995; DECISIONS, D30). Replaces contingencyTableBF, whose prior treated the margins differently under the two hypotheses.",
+		"Mod\u00e8le log-lin\u00e9aire : interaction groupe x r\u00e9ponse, -BIC/2 avec n = N (Raftery 1995 ; DECISIONS, D30). Remplace contingencyTableBF, dont l'a priori traitait les marges diff\u00e9remment sous les deux hypoth\u00e8ses.", "detail")
 
-	.bay_tell(story, "Solidity of the answer", "Solidit\u00e9 de la r\u00e9ponse", "step", fun = "contingencyTableBF() {BayesFactor}")
-	lb <- .bay_cont_bf_pkg(tab, 1)
+	.bay_tell(story, "Solidity of the answer", "Solidit\u00e9 de la r\u00e9ponse", "step", fun = c("log-linear model, BIC {KefiR}", "mod\u00e8le log-lin\u00e9aire, BIC {KefiR}"))
+	lb <- .bay_cont_lbf(tab)
 	p_h1 <- .bay_cont_prob(lb, prior_h1)
 	inv_en <- if (lb < 0) paste0(", i.e. ", .bay_bf_txt(-lb, "."), " in favour of no difference") else ""
 	inv_fr <- if (lb < 0) paste0(", soit ", .bay_bf_txt(-lb, ","), " en faveur de l'absence de diff\u00e9rence") else ""
@@ -150,11 +163,9 @@
 	.bay_tell(story, "Precision: exact computation, without draws.", "Pr\u00e9cision : calcul exact, sans tirage.")
 	sens <- NULL
 	if (isTRUE(sensitivity)) {
-		# Concentration of the prior: 1 (uniform), 2 and 4 (proportions expected less extreme);
-		# contingencyTableBF refuses a < 1, its prior under H0 being Dirichlet(R (a - 1) + 1).
-		concs <- c(1, 2, 4); phs <- c(1 / 3, 1 / 2, 2 / 3)
-		lbs <- vapply(concs, function(a) .bay_cont_bf_pkg(tab, a), numeric(1))
-		grid <- outer(lbs, phs, function(l, p) .bay_cont_prob(l, p))
+		# Unit information: no scale to vary; the starting chances only (D30).
+		concs <- 1; phs <- c(1 / 3, 1 / 2, 2 / 3)
+		grid <- matrix(vapply(phs, function(p) .bay_cont_prob(lb, p), numeric(1)), 1L)
 		lead_h1 <- p_h1 >= 0.5
 		rng <- range(if (lead_h1) grid else 1 - grid)
 		verdict <- .bay_sensitivity_verdict(max(p_h1, 1 - p_h1), rng)
@@ -164,10 +175,8 @@
 		.bay_step_result(story, paste0("Bayes factor ", .bay_bf_txt(lb, "."), ", ", stb$en), paste0("facteur de Bayes ", .bay_bf_txt(lb, ","), ", ", stb$fr))
 		.bay_tell(story, paste0("Sensitivity: the leading answer ", .bay_range_txt(rng)$en, "."),
 			paste0("Sensibilit\u00e9 : la r\u00e9ponse en t\u00eate ", .bay_range_txt(rng)$fr, "."))
-		.bay_tell(story, "what varies is the expected spread of the proportions and the starting chances (1 against 2 to 2 against 1).",
-			"on fait varier l'\u00e9talement attendu des proportions et les chances de d\u00e9part (1 contre 2 \u00e0 2 contre 1).", "note")
-		.bay_tell(story, "Sensitivity: concentration a of the Dirichlet 1, 2 and 4, crossed with the prior odds 1:2, 1:1, 2:1.",
-			"Sensibilit\u00e9 : concentration a de la Dirichlet 1, 2 et 4, crois\u00e9e avec les cotes a priori 1:2, 1:1, 2:1.", "detail")
+		.bay_tell(story, "what varies is the starting chances (1 against 2 to 2 against 1); no scale to vary with unit information.",
+			"on fait varier les chances de d\u00e9part (1 contre 2 \u00e0 2 contre 1) ; pas d'\u00e9chelle \u00e0 faire varier avec l'information unitaire.", "note")
 		if (identical(verdict, "changes")) {
 			.bay_tell(story, "Caution added: the answer can reverse; it will be called not settled.",
 				"Prudence ajout\u00e9e : la r\u00e9ponse peut s'inverser ; elle sera dite non tranch\u00e9e.", "decide")
@@ -198,9 +207,9 @@
 		effects = data.frame(term = fac, bf10 = exp(lb), log_bf = lb, p_h1 = p_h1, p_h0 = 1 - p_h1, prior_h1 = prior_h1,
 			analogue = "chi-squared / G test", stringsAsFactors = FALSE),
 		table = tab, proportions = prop.table(tab, 1L), sensitivity = sens, posthoc = ph_obj,
-		priors = list(concentration = 1, prior_h1 = prior_h1, law = "multinomial"),
+		priors = list(effects = "unit information (BIC, n = N)", prior_h1 = prior_h1, law = "multinomial"),
 		contradiction = FALSE, heavy = FALSE, detail = isTRUE(detail), prob_effect = p_h1,
-		method = "Contingency table, independent multinomials (BayesFactor, Gunel and Dickey 1974)", plan = "contingency",
+		method = "Contingency table, log-linear model, interaction by BIC (unit information, n = N)", plan = "contingency",
 		label = input$label, n = sum(tab), notes = get_notes(), call = call_expr)
 	class(out) <- "mbay"
 	out$story <- .bay_story_lines(story)
@@ -231,12 +240,12 @@
 	.bay_bilan_common(obj, narrated, body)
 	if (!isTRUE(detail)) return(invisible(obj))
 	say <- .bay_detail_head(obj)
-	say("Prior: in each group, uniform Dirichlet(1) on the proportions under a difference; under none, common proportions Dirichlet(R (a - 1) + 1) (contingencyTableBF, Gunel and Dickey 1974; Jamil et al. 2017).",
-		"A priori : dans chaque groupe, Dirichlet(1) uniforme sur les proportions s'il y a une diff\u00e9rence ; sinon proportions communes Dirichlet(R (a - 1) + 1) (contingencyTableBF, Gunel et Dickey 1974 ; Jamil et al. 2017).")
-	say("Sensitivity: concentration a of the Dirichlet from 1 to 4, crossed with the starting chances.",
-		"Sensibilit\u00e9 : concentration a de la Dirichlet de 1 \u00e0 4, crois\u00e9e avec les chances de d\u00e9part.")
-	say("Gaps: difference of the proportions (log odds ratio in $posthoc$pairs$delta) or total gap of the proportions; groupings in closed form (Dirichlet-multinomial).",
-		"\u00c9carts : diff\u00e9rence des proportions (log du rapport de cotes dans $posthoc$pairs$delta) ou \u00e9cart total des proportions ; regroupements en forme close (Dirichlet-multinomiale).")
+	say("Bayes factor: interaction group x response of a log-linear model, -BIC/2 with n = N (unit information; Raftery 1995; DECISIONS, D30).",
+		"Facteur de Bayes : interaction groupe x r\u00e9ponse d'un mod\u00e8le log-lin\u00e9aire, -BIC/2 avec n = N (information unitaire ; Raftery 1995 ; DECISIONS, D30).")
+	say("Sensitivity: the starting chances, from 1 against 2 to 2 against 1.",
+		"Sensibilit\u00e9 : les chances de d\u00e9part, de 1 contre 2 \u00e0 2 contre 1.")
+	say("Gaps: difference of the proportions (log odds ratio in $posthoc$pairs$delta) or total gap of the proportions, from the uniform Dirichlet posterior of each group; groupings by the same log-linear Bayes factor on the merged table.",
+		"\u00c9carts : diff\u00e9rence des proportions (log du rapport de cotes dans $posthoc$pairs$delta) ou \u00e9cart total des proportions, d'apr\u00e8s la loi a posteriori de Dirichlet uniforme de chaque groupe ; regroupements par le m\u00eame facteur de Bayes log-lin\u00e9aire sur le tableau fusionn\u00e9.")
 	invisible(obj)
 }
 
