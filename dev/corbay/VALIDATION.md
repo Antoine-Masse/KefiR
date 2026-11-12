@@ -2,7 +2,7 @@
 
 R 4.6.1, BayesFactor 0.9.12-4.8, bayestestR 0.20.0, Windows 11, 11 novembre 2026. Scripts dans `scripts/`, sorties dans `scripts/resultats/` (`.rds`, `.log`). `proto.R` recopie les calculs du paquet sans le récit (pour aller vite) ; `sim_auto.R` appelle le code du paquet lui-même. Tous les taux sont des pourcentages de jeux simulés.
 
-**R CMD check** (`--no-manual --ignore-vignettes`, suite de tests complète de KefiR comprise) sur le code de 06ad49b, puis de b80858d (vocabulaire aligné sur m.bay, estimation sous l'a priori du test en détail ; 5a8a005 ne touche que `dev/`) : **Status OK** (seule information : xref vers `ez`, absent de mbay-lib, comme pour m.bay). Tests de cor.bay : `tests/testthat/test-cor.bay.R`, 99 assertions.
+**R CMD check** (`--no-manual --ignore-vignettes`, suite de tests complète de KefiR comprise) sur le code de 06ad49b, puis de b80858d et de bc55232 (règle de famille pour l'estimation, « si un lien existe » dans le compte rendu, Kendall avec l'éq. 14) : **Status OK** (seule information : xref vers `ez`, absent de mbay-lib, comme pour m.bay). Tests de cor.bay : `tests/testthat/test-cor.bay.R`, 100 assertions.
 
 Lecture : « P > 0,95 » est le seuil d'un « soutien fort » et « P > 0,75 » celui d'un « soutien modéré » (même échelle que m.bay). Ce ne sont pas des seuils de p-value ; la comparaison avec `cor.test` à p < 0,05 est donnée pour situer, pas pour égaler.
 
