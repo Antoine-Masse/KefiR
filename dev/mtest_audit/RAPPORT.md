@@ -7,11 +7,36 @@ Rien n'est poussé. Ni master, ni `m.bay`, ni les branches `feat/m.bay`, cor.bay
 
 **Mesure du temps.** Un appel `m.test()` sur 50 observations coûte environ 1 s avec `boot = FALSE` et 47 s avec la valeur par défaut `boot = TRUE`, même quand `return = FALSE` ne demande qu'une p-value (machine partagée, 8 cœurs). Les simulations utilisent donc `boot = FALSE`. La section 3 vérifie que `boot` ne change pas la p-value globale.
 
+## Synthèse
+
+Quatorze défauts, tous reproduits sur des données construites pour l'occasion, puis corrigés, chacun avec son commit et son test (a à g : audits de m.bay ; h à k : cet audit ; l à n : relecture de l'expert indépendant). Rien n'est fusionné : la fusion vers master revient à Antoine.
+
+| | Défaut | Avant | Après | Ce que voit l'étudiant |
+|---|---|---|---|---|
+| a | Split-plot : interaction G:T retirée sans message | `$effects` = G, T ; G:T (p = 0,030) absente | G, T, G:T ; G identique à `aov`, G:T corrigée de la sphéricité (l) | l'interaction apparaît ; G est annoncé inter-sujet |
+| b | Modèle mixte avec `verbose = FALSE` | plantage | résultat | — |
+| c | Confirmation de Levene par un test de **moyennes** (`bf.test`) | n = 5/5/40, sd = 4/4/1 sous H0 : 38,5 % de faux positifs | 18 % (puis 10,5 % avec k) | Brown-Forsythe sur les variances ; l'ANOVA classique n'est plus retenue dans ce cas |
+| d | `(1\|id)` analysé comme groupes indépendants | t1-t2 p = 1 | p = 0,024 (= `Error(id/T)`) | post-hocs appariés |
+| e | `m.test(formula = y ~ F, data = d)` refusé | erreur | accepté | — |
+| f | Messages toujours en français | hors locale française : tout en français | en anglais | rien en locale française |
+| g | MANOVA non normale | plus de 6 min (MCD, 3000 tirages) | moins d'1 s ; 4,9 à 5,5 % sous H0 | `$method` = « Robust MANOVA (Wilks, ranks) » |
+| h | Mesures répétées, lignes non triées par sujet | post-hocs entre sujets différents (p = 1 au lieu de 0,024) ; `m.test(x, g, id)` k > 2 plantait | identique aux données triées | post-hocs justes quel que soit l'ordre des lignes |
+| i | Post-hocs du split-plot appariant des sujets de groupes différents | toutes les comparaisons à p ≈ 1 | `emmeans` sur `lmer` (B t1-B t3 p = 0,018) | nouvelle étape « comparaisons par emmeans » |
+| j | Lettres d'une interaction en modèle mixte | « A » trois fois | « A t1 » | cellules nommées |
+| k | Kruskal-Wallis sous hétéroscédasticité confirmée | 21 % (calcul direct) ; hetero_c 18 % | F de Welch : hetero_c 10,5 % | Welch au lieu de Kruskal-Wallis dans ce cas |
+| l | Mesures répétées : p-value jamais corrigée de la sphéricité | voir § l | voir § l | p corrigée GG/HF toujours ; Mauchly en information |
+| m | Welch annoncé « robuste » | récit trop affirmatif | « le choix le moins fragile », avec un avertissement pour les petits groupes asymétriques | message plus prudent |
+| n | Résultat RM sans mention de la correction | « (p=0.22) » | « (p=0.22, corrigée de Greenhouse-Geisser) » | lien explicite avec l'étape de sphéricité |
+
+**Format des nombres.** m.test écrit partout les p-values et les epsilons avec un point décimal (`.format_pval()`, `round()`), y compris en français. Les nouveaux messages gardent le point, par cohérence avec le reste de la sortie. m.bay utilise la virgule : à harmoniser plus tard si Antoine le souhaite.
+
+**Points ouverts** (§ 4) : Welch par défaut sans test préalable de variance (décision d'Antoine) ; lenteur de `return = FALSE` ; `$global_pvalue` = premier terme en plan multi-facteurs.
+
 ## 1. Défauts signalés par les audits de m.bay (a à g)
 
 | | Défaut | Reproduit ? | Avant | Après | Commit |
 |---|---|---|---|---|---|
-| a | Split-plot `y ~ G*T + Error(id/T)` : interaction retirée sans message | Oui | `aov` : G:T p = 0,030 ; `$effects` : G et T seulement (lmer `y ~ G + T + (1\|id)`) | `$effects` = G, T, G:T, p-values identiques à `aov` (écart < 1e-6) | a9ddfcb |
+| a | Split-plot `y ~ G*T + Error(id/T)` : interaction retirée sans message | Oui | `aov` : G:T p = 0,030 ; `$effects` : G et T seulement (lmer `y ~ G + T + (1\|id)`) | `$effects` = G, T, G:T, p-values identiques à `aov` (écart < 1e-6) ; depuis l, T et G:T sont corrigées de la sphéricité | a9ddfcb |
 | b | Plantage avec `verbose = FALSE` | Oui | « $ operator is invalid for atomic vectors » | pas d'erreur | 573aa2c |
 | c | `bf.test` (Brown-Forsythe sur les **moyennes**) pour confirmer Levene | Oui | Levene p = 0,00017 puis `bf.test` p = 0,93 : variances « homogènes », ANOVA classique | Brown-Forsythe sur les variances (`leveneTest(center = median)`) | 50e4411 |
 | d | Post-hocs non appariés avec `(1\|id)` | Oui | t1-t2 : p = 1 (non apparié, `pool.sd`) | p = 0,024, identique à `Error(id/T)` | d3e1c55 |
@@ -94,7 +119,49 @@ Une fois c corrigé, l'hétéroscédasticité est bien détectée, mais le « di
 | normales | 50,4 % | 21,0 % | 9,6 % | 5,1 % |
 | exponentielles centrées | 50,4 % | 33,3 % | 21,5 % | 17,2 % |
 
-Décision : quand l'hétéroscédasticité est confirmée (Levene puis Brown-Forsythe) sur des données non normales, avec k > 2, une asymétrie modérée (max |skew| < 2), sans outlier extrême ni groupe constant, `m.test` applique le F de Welch, suivi de post-hocs t sans variance commune (comme la branche normale hétéroscédastique). C'est le mieux calibré des quatre, et il est recommandé par Delacre et al. (2019). Les autres cas gardent l'arbre existant (`med1way`, `t1way`, Kruskal-Wallis). Le premier essai échouait avec un groupe constant (test existant « un groupe constant ne fait pas planter l'analyse ») : la bascule exige maintenant des variances toutes positives (dc74ae7).
+Décision : quand l'hétéroscédasticité est confirmée (Levene puis Brown-Forsythe) sur des données non normales, avec k > 2, une asymétrie modérée (max |skew| < 2), sans outlier extrême ni groupe constant, `m.test` applique le F de Welch, suivi de post-hocs t sans variance commune (comme la branche normale hétéroscédastique). C'est le mieux calibré des quatre (Delacre et al., 2019).
+
+**Ce n'est pas un test robuste.** Avec de petits groupes asymétriques, le Welch reste fragile :
+- ligne « exponentielles centrées » du tableau : 17,2 % de rejets sous H0 ;
+- même plan, à l'intérieur de `m.test` (scénario hetero_c2, section 3) : 14,4 % ;
+- relecture de l'expert indépendant, non refaite ici : avec 5 valeurs par groupe et une asymétrie de 1,4 à 1,75, Welch rejette 11 % des fois et Kruskal-Wallis 27 %.
+
+Le récit ne dit donc plus « robuste à une non-normalité modérée ». Il dit « le choix le moins fragile ici » et avertit que, avec environ 5 valeurs par groupe asymétriques, le risque de faux positif reste au-dessus d'alpha (commit du correctif m, ci-dessous).
+
+**Précision sur le message du commit 88f493d.** La parenthèse « 17 / 21.5 / 33 % with skewed data » se lit ainsi : plan n = 5/5/40, sd = 4/4/1, données exponentielles centrées, N = 1000 ; F de Welch 17,2 %, `t1way` 21,5 %, Kruskal-Wallis 33,3 %. Ce sont les trois tests de la ligne « exponentielles centrées » du tableau ci-dessus. Les autres cas gardent l'arbre existant (`med1way`, `t1way`, Kruskal-Wallis). Le premier essai échouait avec un groupe constant (test existant « un groupe constant ne fait pas planter l'analyse ») : la bascule exige maintenant des variances toutes positives (dc74ae7).
+
+### l. Sphéricité jamais corrigée (signalé par l'expert indépendant)
+
+L'ANOVA à mesures répétées (`aov()` + `Error()`) rendait toujours la p-value du F **non corrigé**. Quand Mauchly rejetait, la sortie décrivait les corrections de Greenhouse-Geisser et de Huynh-Feldt, puis écrivait « Les résultats ANOVA seront rapportés avec les p-values standard non corrigées ». Pire, cette étape ne pouvait pas se déclencher : les drapeaux étaient posés par `<<-` à l'intérieur d'un `tryCatch()`, ce qui écrit hors de la fonction. Avec peu de sujets, Mauchly est peu puissant, et la sortie affirmait souvent « sphéricité RESPECTÉE, aucune correction nécessaire ».
+
+Correction (a00440c) :
+- les termes intra-sujet reçoivent **toujours** une p-value corrigée : Greenhouse-Geisser si son epsilon est ≤ 0,75, Huynh-Feldt (plafonné à 1) sinon (Girden, 1992) ;
+- les epsilons sont recalculés exactement par `car::Anova()` sur le plan de `rstatix` (qui les arrondit à 3 décimales : écart de 1e-4 sur p sinon) ;
+- la p-value corrigée alimente le récit, `$effects` et la p-value globale ;
+- Mauchly reste affiché comme information, avec la mention de sa faible puissance ;
+- le test a (split-plot) compare maintenant G:T à la p-value corrigée.
+
+Complément (5d4f7c2, correctif n) : la ligne de résultat le rappelle, « Aucun effet significatif de T (p=0.609, corrigée de Greenhouse-Geisser) », pour que l'étudiant fasse le lien avec l'étape de sphéricité.
+
+L'expert indépendant a validé a00440c sur ses données (12 sujets × 6 temps, AR(1) ρ = 0,9) : ε GG = 0,361, identique à son calcul à la main ; p corrigée = 0,215, identique à `rstatix` p[GG] ; non corrigée 0,158.
+
+Exemple du test l (12 sujets × 6 temps, AR(1) ρ = 0,9, graine 3) : ε GG = 0,481, Mauchly p = 0,019. F non corrigé p = 0,731 ; Greenhouse-Geisser p = 0,609. La référence est recalculée indépendamment (contrastes orthonormés, formule de l'epsilon).
+
+Calibration sous H0 (12 sujets × 6 temps, 1000 jeux par scénario, `sim_sph.R`) :
+
+| Mesure | Avant (master + a–k) | Après (a00440c) |
+|---|---|---|
+| AR(1) ρ = 0,9 : `m.test`, 1000 jeux | **8,1 %** (F non corrigé d'`aov` : 9,7 %) | **non mesuré ici**, voir ci-dessous |
+| Symétrie composée (sphéricité vraie) : contrôle | non mesuré | non mesuré |
+| Expert indépendant, AR(1) ρ = 0,9, 2000 jeux | F non corrigé : 8,7 % | Greenhouse-Geisser : 4,5 % |
+
+**Mesure « après » non faite.** La simulation (`sim_sph.R`, 1000 jeux par scénario) a été interrompue deux fois : d'abord par la fin d'une session, puis par la saturation de la machine (0 Go libre sur 7,9 Go, 35 processus R). La règle commune aux sessions interdit ensuite toute simulation de plus d'une minute tant que la mémoire libre reste sous 1 Go. L'effet attendu est celui que l'expert a mesuré (8,7 % → 4,5 %), car la p-value de `m.test` est maintenant exactement la p-value de Greenhouse-Geisser ou de Huynh-Feldt (test l, et validation de l'expert sur ses données : p = 0,215 = `rstatix` p[GG]). **À relancer** sur un seul cœur quand la machine sera libre :
+
+```
+Rscript dev/mtest_audit/sim_sph.R <worktree> 1000 sph_after.rds 1 ar1 cs
+```
+
+(L'écart entre `m.test` à 8,1 % et le F d'`aov` à 9,7 % avant correction vient des jeux que l'arbre envoyait sur une autre voie, par exemple non paramétrique.)
 
 ## 3. Taux de faux positifs sous H0
 
@@ -142,14 +209,15 @@ La correction de fond serait d'appliquer Welch par défaut (t de Welch, F de Wel
 
 ## 5. Vérifications
 
-- `tests/testthat/test-m.test-audit.R` : 12 tests, 37 assertions. Chacun a été lancé sur le commit précédant sa correction (échec), puis après (succès).
-- Non-régression au dernier commit : `test-m.test.R` (20 tests), `test-manova.R` (22 tests, 17 s au lieu de plus de 6 min) et `test-valreg.R` (6 tests), 0 échec.
-- `R CMD check --no-manual --ignore-vignettes` (R 4.6.1, bibliothèque `mbay-lib`) sur dc74ae7 : 0 erreur, 0 avertissement, 2 NOTE (le dossier `.claude` inclus dans le build ; NEWS.md sans titre de version). Les deux sont corrigées au commit suivant : `^\.claude$` ajouté à `.Rbuildignore`, version 0.0.2.3 en titre de NEWS.md et dans DESCRIPTION. Relancé sur 2a1e8b1 : **Status: OK** (0 erreur, 0 avertissement, 0 NOTE), tests `testthat.R` compris.
+- `tests/testthat/test-m.test-audit.R` : 15 tests, 46 assertions, 0 échec au dernier commit. Chacun a été lancé sur le commit précédant sa correction (échec), puis après (succès).
+- Non-régression au dernier commit : `test-m.test.R` (20 tests), `test-manova.R` (22 tests, 17 s au lieu de plus de 6 min) et `test-valreg.R` (6 tests) : 0 échec, 0 erreur (5d4f7c2).
+- `R CMD check --no-manual --ignore-vignettes` (R 4.6.1, bibliothèque `mbay-lib`). Sur dc74ae7 : 2 NOTE (le dossier `.claude` inclus dans le build ; NEWS.md sans titre de version), corrigées au commit suivant. Sur 2a1e8b1 : Status: OK. Au dernier commit (l, m, n) : **non relancé**. Le check du 12 novembre a été tué par la saturation mémoire (« fatal error status code 4 » au chargement, sans message). La règle commune impose d'attendre que le verrou `VERROU_CHECK.txt` soit libre et que la mémoire libre dépasse 1 Go (0,08 Go au moment d'arrêter). À relancer.
 
 ## Références
 
 - Brown, M. B., & Forsythe, A. B. (1974). Robust tests for the equality of variances. *Journal of the American Statistical Association*, 69(346), 364–367.
 - Delacre, M., Lakens, D., & Leys, C. (2017). Why psychologists should by default use Welch's t-test instead of Student's t-test. *International Review of Social Psychology*, 30(1), 92–101.
 - Delacre, M., Leys, C., Mora, Y. L., & Lakens, D. (2019). Taking parametric assumptions seriously: Arguments for the use of Welch's F-test instead of the classical F-test in one-way ANOVA. *International Review of Social Psychology*, 32(1), 13.
+- Girden, E. R. (1992). *ANOVA: Repeated measures*. Sage University Paper Series on Quantitative Applications in the Social Sciences, 84. Newbury Park, CA: Sage.
 - Nath, R., & Pavur, R. (1985). A new statistic in the one-way multivariate analysis of variance. *Computational Statistics & Data Analysis*, 2(4), 297–315.
 - Zimmerman, D. W. (2004). A note on preliminary tests of equality of variances. *British Journal of Mathematical and Statistical Psychology*, 57(1), 173–181.
