@@ -73,7 +73,7 @@ pairwise <- function(x, g, type = "mean", alpha = 0.05, control = c(),
 		NemenyTest <- function(x,g) {
 			# Sujet = rang d'apparition dans son groupe : juste que les lignes soient
 			# rangees par groupe ou par sujet (audit s, novembre 2026).
-			id <- factor(ave(seq_along(g), g, FUN = seq_along))
+			id <- factor(stats::ave(seq_along(g), g, FUN = seq_along))
 			result <- frdAllPairsNemenyiTest(x~g|id)
 			return(result)
 		}
@@ -455,7 +455,7 @@ pairwise <- function(x, g, type = "mean", alpha = 0.05, control = c(),
 		} else {
 			# Sujet = rang d'apparition dans son groupe (et non rep(1:n, k), qui
 			# supposait les lignes rangees par groupe ; m.test les trie par sujet).
-			id <- factor(ave(seq_along(g), g, FUN = seq_along))
+			id <- factor(stats::ave(seq_along(g), g, FUN = seq_along))
 			result <- frdAllPairsNemenyiTest(x~g|id)
 		}
 		g <- reorder_groups(x, g, ind_control,median)

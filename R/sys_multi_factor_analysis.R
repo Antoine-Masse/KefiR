@@ -231,7 +231,7 @@
       # intra-sujet) mélangeait des quantités d'échelles différentes et faisait
       # conclure à une non-normalité sévère sur des données normales.
       res <- tryCatch({
-        pr <- suppressWarnings(proj(model))
+        pr <- suppressWarnings(stats::proj(model))
         low <- pr[[length(pr)]]
         if (!"Residuals" %in% colnames(low)) stop("no residual column")
         as.numeric(low[, "Residuals"])
