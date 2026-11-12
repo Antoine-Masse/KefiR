@@ -229,3 +229,9 @@ Scripts :
 **Lecture.** Les marges neutres à a = 3 sont le seul moteur qui tienne les deux critères à la fois : moins de 1 % de faux lien fort sous H0, au plus 5 % d'indépendance forte sous un lien modéré. Leur puissance vaut 73 à 100 % de celle du test G. La table de l'audit (12 11 6 / 9 10 14 / 7 12 19) passe de « indépendantes : 99,6 % (soutien très fort) » (BIC) à « indécis » (indépendance 53,9 %, BF 1,17, sensibilité 31 % à 80 %).
 
 Les § 9 (BIC) et 2 à 4 (ancien moteur, partie indépendance) ne décrivent plus le moteur actuel. L'ajustement (§ 2) et l'estimation (§ 5, 6) n'ont pas changé.
+
+## 11. R CMD check sur 605a2c1 (12 novembre)
+
+`R CMD check --no-manual --ignore-vignettes --no-tests` : **Status: 1 NOTE**. Il s'agit de la même NOTE NEWS.md qu'au § 8 : l'en-tête posé par m.bay, présent depuis c8e8976. Code, documentation et exemples sont OK.
+
+La suite complète n'a pas été relancée. Elle passait sur 1ecbda5 (§ 8), et depuis seuls `R/g.bay.R`, `R/sys_gbay.R`, `man/g.bay.Rd` et `tests/testthat/test-gbay.R` ont changé (`git diff 1ecbda5 -- R/ tests/`). `test-gbay.R` passe en entier sur 605a2c1 : 166 attentes, 0 échec.
