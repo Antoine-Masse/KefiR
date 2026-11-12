@@ -1,5 +1,18 @@
 # Journal de m.bay
 
+## Séance 21 : 11 et 12 novembre 2026, audits de l'expert : tables (D30), discret (D31), recalibrations
+
+**Fait.**
+- **Tables.** Le moteur de Gunel-Dickey est d'abord remplacé par le BIC log-linéaire (D30). Ce BIC se montre trop prudent, et il est remplacé à son tour par la Dirichlet-multinomiale à marges neutres, a = 2, commune avec g.bay (G12), aux mêmes nombres à 1e-10 près.
+- **Compte rendu.** Il suit le verdict quand les centres et les moyennes se contredisent.
+- **Recalibrations sous H0 sur 1000 jeux** avec intervalle de Wilson, pour D23, D25, D26 et D27 : de 0,2 à 0,5 % à P > 0,95.
+- **D31.** Le facteur de Bayes de déviance à g de Zellner-Siow (r = √2/4) remplace le BIC à plusieurs facteurs (`agent_80`).
+- Règle commune aux cinq sessions : une simulation à la fois, R CMD check sous verrou.
+
+**Vérifié.** R CMD check sur 1723a3d : Status OK (sous verrou, libéré à la fin).
+
+**Non fait.** Comptages et ordinal à un facteur encore au BIC (à basculer après mesure). Variances par condition avec sujets : correction (D28). La réunion des branches et le push reviennent à Antoine.
+
 ## Séance 20 : 11 novembre 2026, sujets (D28), cotes proportionnelles, aide et NEWS
 
 **Fait.**
