@@ -30,11 +30,12 @@ Dix-huit points, tous reproduits sur des données construites pour l'occasion, p
 | o | Plan en tranches déséquilibré (5 + 9 sujets) | plantage « Les variables explicatives… ne correspondent pas aux colonnes de g » | ANOVA à mesures répétées `aov()` + `Error()` ; grp identique à `aov` | le cas banal de TP aboutit ; la sortie signale les groupes inégaux |
 | p | F corrigés de type III, tableau `aov` séquentiel | 5 + 9 sujets : « non corrigée » = type III (temps F = 3,17, p = 0,036) alors que le tableau affiche F = 5,14 (p = 0,0046) | ε appliqué aux F et ddl du tableau `aov` affiché | p non corrigée et p corrigée cohérentes avec le tableau |
 | r | p globale d'un modèle à plusieurs termes = p du premier facteur (décision d'Antoine, 12 novembre) | plan en tranches 7 + 7 : 0,104 (grp) alors que temps p = 0,042 | min(1, 3 × 0,0421) = 0,126 (Bonferroni sur la plus petite p) | `$global_pvalue` et `return = FALSE` changent dès qu'il y a plusieurs termes ; le récit donne le calcul |
+| s | Mesures répétées : normalité testée sur un mélange de résidus de strates (**non corrigé**, § s) | données normales AR(1) : 577 jeux sur 1000 envoyés vers Friedman ; `m.test` 6,7 % sous H0 | — (correction proposée) | des données normales partent en non paramétrique ; `$method` faux ; post-hocs en échec |
 | q | Risque du Welch mal chiffré | « environ 10 à 17 % » | « environ 11 à 17 % », sources citées dans le code | chiffre exact |
 
 **Format des nombres.** m.test écrit partout les p-values et les epsilons avec un point décimal (`.format_pval()`, `round()`), y compris en français. Les nouveaux messages gardent le point, par cohérence avec le reste de la sortie. m.bay utilise la virgule : à harmoniser plus tard si Antoine le souhaite.
 
-**Points ouverts** (§ 4) : Welch par défaut sans test préalable de variance (décision d'Antoine) ; lenteur de `return = FALSE` ; mesure sous H0 après la correction de sphéricité et `R CMD check` final, en attente de mémoire libre.
+**Points ouverts** (§ 4) : **défaut s à corriger en priorité** (normalité des résidus en mesures répétées) ; Welch par défaut sans test préalable de variance (décision d'Antoine) ; lenteur de `return = FALSE` ; la mesure sous H0 après la correction de sphéricité et le `R CMD check` final sont faits (12 novembre).
 
 ## 1. Défauts signalés par les audits de m.bay (a à g)
 
@@ -156,19 +157,28 @@ Exemple du test l (12 sujets × 6 temps, AR(1) ρ = 0,9, graine 3) : ε GG = 0,4
 
 Calibration sous H0 (12 sujets × 6 temps, 1000 jeux par scénario, `sim_sph.R`) :
 
-| Mesure | Avant (master + a–k) | Après (a00440c) |
+| Mesure | Avant (cff6685) | Après (0beb8ad) |
 |---|---|---|
-| AR(1) ρ = 0,9 : `m.test`, 1000 jeux | **8,1 %** (F non corrigé d'`aov` : 9,7 %) | **non mesuré ici**, voir ci-dessous |
-| Symétrie composée (sphéricité vraie) : contrôle | non mesuré | non mesuré |
+| AR(1) ρ = 0,9 : `m.test`, 1000 jeux | **8,1 %** | **6,7 %** |
+| AR(1) : F non corrigé d'`aov` (référence) | 9,7 % | 9,7 % |
+| AR(1) : règle GG/HF de Girden appliquée seule, calcul direct par `car` (référence) | — | **5,3 %** |
+| Symétrie composée (sphéricité vraie) : `m.test`, 1000 jeux | 4,8 % | 3,1 % |
+| Symétrie composée : F non corrigé d'`aov` | 4,7 % | 4,7 % |
 | Expert indépendant, AR(1) ρ = 0,9, 2000 jeux | F non corrigé : 8,7 % | Greenhouse-Geisser : 4,5 % |
 
-**Mesure « après » non faite.** La simulation (`sim_sph.R`, 1000 jeux par scénario) a été interrompue deux fois : d'abord par la fin d'une session, puis par la saturation de la machine (0 Go libre sur 7,9 Go, 35 processus R). La règle commune aux sessions interdit ensuite toute simulation de plus d'une minute tant que la mémoire libre reste sous 1 Go. L'effet attendu est celui que l'expert a mesuré (8,7 % → 4,5 %), car la p-value de `m.test` est maintenant exactement la p-value de Greenhouse-Geisser ou de Huynh-Feldt (test l, et validation de l'expert sur ses données : p = 0,215 = `rstatix` p[GG]). **À relancer** sur un seul cœur quand la machine sera libre :
+Mesures du 12 novembre 2026, un seul processus (`sim_sph.R` avec `workers = 1`), avant = cff6685, après = 0beb8ad ; 12 sujets × 6 temps, données **normales**. Écart-type Monte-Carlo ≈ 0,7 point autour de 5 %.
 
-```
-Rscript dev/mtest_audit/sim_sph.R <worktree> 1000 sph_after.rds 1 ar1 cs
-```
+**Lecture.** La correction de sphéricité fait ce qu'elle doit : appliquée seule, la règle de Girden rejette 5,3 % sous AR(1) (le F non corrigé, 9,7 %). Mais `m.test` reste à 6,7 %, parce que **577 jeux sur 1000 ne passent pas par l'ANOVA** : l'arbre les juge « non-normalité sévère » et les envoie vers le test de Friedman, alors que les données sont normales. C'est le défaut s ci-dessous, indépendant de la sphéricité. Sous symétrie composée (sphéricité vraie), la correction rend `m.test` un peu conservateur (3,1 %), ce qui est attendu de Greenhouse-Geisser avec ε estimé.
 
-(L'écart entre `m.test` à 8,1 % et le F d'`aov` à 9,7 % avant correction vient des jeux que l'arbre envoyait sur une autre voie, par exemple non paramétrique.)
+### s. Normalité des résidus en mesures répétées : résidus de strates mélangés (trouvé, **non corrigé**)
+
+Trouvé pendant la mesure ci-dessus, le 12 novembre ; non corrigé parce que la consigne était de rendre le rapport final et de s'arrêter. **À corriger en priorité** : ce défaut touche des étudiants dès que leurs données ont des mesures répétées.
+
+- **Cause** (`R/sys_multi_factor_analysis.R`, `get_residuals()`, vers la ligne 224). Pour un modèle `aov()` avec `Error()`, la fonction essaie `dae::residuals.aovlist()`. Le paquet `dae` n'est pas installé (ni dans DESCRIPTION) : le repli `unlist(lapply(model, residuals))` concatène les « résidus » de toutes les strates. On obtient 1 valeur pour la strate de la constante (la moyenne générale projetée), 11 pour la strate sujets, 60 pour la strate intra-sujet. Ces nombres n'ont ni la même échelle ni le même sens.
+- **Effet mesuré** (jeu 1, données normales AR(1)) : asymétrie 2,62, aplatissement 12,99 sur ce mélange ; m.test affiche « Skewness = −2.746, Kurtosis = 11.044 », conclut à une « non-normalité sévère » et applique Friedman (p = 0,869 au lieu de 0,623 par Greenhouse-Geisser). Les résidus de la seule strate intra-sujet, `proj(model)[["id:T"]][, "Residuals"]`, sont normaux : asymétrie −0,07, aplatissement 3,10, Shapiro p = 0,96.
+- **Fréquence** : 577 jeux normaux sur 1000 basculent ainsi vers Friedman.
+- **Effets secondaires observés sur la même voie** : `$method` affiche « Parametric ANOVA/t-test » alors que le test est Friedman ; les post-hocs de Nemenyi échouent (« not an unreplicated complete block design ») ; le récit dit « Variances homogènes » pour un plan intra-sujet pur.
+- **Correction proposée** : pour un `aovlist`, tester la normalité sur les résidus de la strate d'erreur la plus basse (intra-sujet), `proj(model)[[length(proj(model))]][, "Residuals"]`, ou sur `residuals(lm(y ~ termes + id))`, qui leur sont équivalents en plan complet ; retirer la dépendance implicite à `dae`. Puis refaire `sim_sph.R` : `m.test` devrait rejoindre les 5,3 % de la règle seule.
 
 ## 3. Taux de faux positifs sous H0
 
@@ -234,7 +244,7 @@ L'expert a vu plus de 10 minutes pour deux appels avec `boot = FALSE`. Mesuré s
 
 - `tests/testthat/test-m.test-audit.R` : 19 tests, 58 assertions, 0 échec au dernier commit (b824ef0). Chacun a été lancé sur le commit précédant sa correction (échec), puis après (succès).
 - Non-régression au dernier commit : `test-m.test.R` (20 tests), `test-manova.R` (22 tests, 17 s au lieu de plus de 6 min) et `test-valreg.R` (6 tests) : 0 échec, 0 erreur (b824ef0).
-- `R CMD check --no-manual --ignore-vignettes` (R 4.6.1, bibliothèque `mbay-lib`). Sur dc74ae7 : 2 NOTE (le dossier `.claude` inclus dans le build ; NEWS.md sans titre de version), corrigées au commit suivant. Sur 2a1e8b1 : Status: OK. Au dernier commit (l, m, n) : **non relancé**. Le check du 12 novembre a été tué par la saturation mémoire (« fatal error status code 4 » au chargement, sans message). La règle commune impose d'attendre que le verrou `VERROU_CHECK.txt` soit libre et que la mémoire libre dépasse 1 Go (0,08 Go au moment d'arrêter). À relancer.
+- `R CMD check --no-manual --ignore-vignettes` (R 4.6.1, bibliothèque `mbay-lib`). Sur dc74ae7 : 2 NOTE (le dossier `.claude` inclus dans le build ; NEWS.md sans titre de version), corrigées au commit suivant. Sur 2a1e8b1 : Status: OK. Un essai du 12 novembre au matin a été tué par la saturation mémoire (« fatal error status code 4 »). **Check final sur 0beb8ad, 12 novembre 12 h 40, sous le verrou `VERROU_CHECK.txt` (libéré à la fin) : Status: OK**, 0 erreur, 0 avertissement, 0 NOTE, tests `testthat.R` compris.
 
 ## Références
 

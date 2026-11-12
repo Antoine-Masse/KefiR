@@ -18,17 +18,25 @@ one <- function(i, scen) {
   a <- summary(aov(y ~ T + Error(id / T), data = d))[["Error: id:T"]][[1]]["T", "Pr(>F)"]
   c(i = i, p_mtest = as.numeric(p[1]), p_aov = a)
 }
-cl <- parallel::makeCluster(workers)
-parallel::clusterExport(cl, c("lib", "pkg", "gen", "one"))
-invisible(parallel::clusterEvalQ(cl, { .libPaths(c(lib, .libPaths()))
-  suppressMessages(devtools::load_all(pkg, quiet = TRUE)) }))
+# workers = 1 : un seul processus, sans cluster (machine partagee)
+if (workers > 1) {
+  cl <- parallel::makeCluster(workers)
+  parallel::clusterExport(cl, c("lib", "pkg", "gen", "one"))
+  invisible(parallel::clusterEvalQ(cl, { .libPaths(c(lib, .libPaths()))
+    suppressMessages(devtools::load_all(pkg, quiet = TRUE)) }))
+  run <- function(scen) parallel::parLapply(cl, seq_len(N), one, scen = scen)
+} else {
+  .libPaths(c(lib, .libPaths()))
+  suppressMessages(devtools::load_all(pkg, quiet = TRUE))
+  run <- function(scen) lapply(seq_len(N), one, scen = scen)
+}
 res <- list()
 for (scen in scens) {
-  r <- as.data.frame(do.call(rbind, parallel::parLapply(cl, seq_len(N), one, scen = scen)))
+  r <- as.data.frame(do.call(rbind, run(scen)))
   r$scen <- scen
   res[[scen]] <- r
   saveRDS(do.call(rbind, res), out)
   cat(scen, ": m.test", round(100 * mean(r$p_mtest < 0.05, na.rm = TRUE), 1), "%  aov non corrige",
       round(100 * mean(r$p_aov < 0.05), 1), "%  NA", sum(is.na(r$p_mtest)), "\n")
 }
-parallel::stopCluster(cl)
+if (workers > 1) parallel::stopCluster(cl)
