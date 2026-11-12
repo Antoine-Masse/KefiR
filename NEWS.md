@@ -1,4 +1,24 @@
-# KefiR 0.0.2.2.9000 (development, branch feat/m.bay)
+# KefiR 0.0.3.0
+
+## New: `cor.bay()`, the Bayesian counterpart of `cor.test()`
+
+`cor.bay()` takes the inputs of `cor.test()` (`x`, `y`, or `~ x + y` with `data`; `method`;
+`alternative`; `conf.level`) and gives the posterior probability of a positive link, a
+negative link and no link, with the Bayes factor, the strength of the link with a credible
+interval, and a sentence ready for a report. No p-value. It tells the analysis in the steps
+of `m.bay()` (plan, checks, method, starting point, solidity, strength, bilan), in French or
+English, within 80 columns.
+
+* Pearson: `BayesFactor::correlationBF()`, stretched beta prior (Ly et al. 2016).
+* Kendall: the Bayesian tau of van Doorn et al. (2018), with the same prior carried over.
+* Spearman on request: Pearson's Bayesian test on the ranks.
+* `method = "auto"` takes Kendall when a value is far (beyond 3 interquartile ranges), a point
+  has a Cook's distance above 1, or a variable has 7 distinct values or fewer; Pearson otherwise.
+  The other method is computed as a cross-check.
+* Priors set in advance, never on the data; sensitivity over the width of the prior and the
+  starting odds.
+
+Choices and measures: `dev/corbay/DECISIONS.md` and `dev/corbay/VALIDATION.md`.
 
 ## New: `m.bay()`, the Bayesian counterpart of `m.test()`
 
