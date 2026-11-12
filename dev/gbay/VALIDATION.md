@@ -248,3 +248,5 @@ Scripts : `scripts/sim_a2_a3.R` (sous H0, et médiane a priori de V) et `scripts
 Décision (DECISIONS, G12) : a = 2, par la règle de la session parente (a = 3 seulement s'il tient 1 % sous H0 partout). Le coût est l'« indépendance forte » à tort jusqu'à 7,3 % sous un lien V = 0,2 à N = 100 ; il reste un point ouvert.
 
 Tableaux du § 10 pour a = 2 (`sim_neutral.out`, colonnes `a2_`) : sous H0 sur la grille de 24 scénarios, P > 0,95 dans 0,7 % au plus. Puissance à V = 0,2 et N = 200 : 60 à 74 %, contre 81 à 90 % au test G.
+
+**R CMD check sur 90583a7** (`--no-manual --ignore-vignettes --no-tests`, sous le verrou commun `VERROU_CHECK.txt`) : **Status: 1 NOTE**, la NOTE NEWS.md préexistante (§ 8). `test-gbay.R` passe en entier sur 90583a7.
