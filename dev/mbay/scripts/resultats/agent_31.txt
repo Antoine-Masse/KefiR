@@ -1,0 +1,10 @@
+R version 4.6.1 (2026-06-24 ucrt) ; BayesFactor 0.9.12.4.8 ; N = 200 par case ; graine 20261131
+A priori : heredite P(A:B)=0,125, P(A)=0,5 ; uniforme P(A:B)=0,2, P(A)=0,6
+
+n=10/case f=0.00 | P(A:B)>0,5 : heredite 0.005, uniforme 0.005 | >0,95 : 0.000, 0.000 | mediane : 0.022, 0.042 | P(A role)>0,5 : 0.095, 0.130 | aov A:B p<0,05 : 0.040
+n=10/case f=0.25 | P(A:B)>0,5 : heredite 0.045, uniforme 0.115 | >0,95 : 0.000, 0.010 | mediane : 0.053, 0.095 | P(A role)>0,5 : 0.205, 0.275 | aov A:B p<0,05 : 0.340
+n=10/case f=0.50 | P(A:B)>0,5 : heredite 0.375, uniforme 0.510 | >0,95 : 0.125, 0.185 | mediane : 0.351, 0.511 | P(A role)>0,5 : 0.530, 0.695 | aov A:B p<0,05 : 0.855
+n=25/case f=0.00 | P(A:B)>0,5 : heredite 0.000, uniforme 0.005 | >0,95 : 0.000, 0.000 | mediane : 0.010, 0.020 | P(A role)>0,5 : 0.070, 0.100 | aov A:B p<0,05 : 0.045
+n=25/case f=0.25 | P(A:B)>0,5 : heredite 0.180, uniforme 0.225 | >0,95 : 0.025, 0.025 | mediane : 0.079, 0.144 | P(A role)>0,5 : 0.265, 0.325 | aov A:B p<0,05 : 0.715
+n=25/case f=0.50 | P(A:B)>0,5 : heredite 0.930, uniforme 0.955 | >0,95 : 0.720, 0.790 | mediane : 0.990, 0.995 | P(A role)>0,5 : 0.960, 0.980 | aov A:B p<0,05 : 1.000
+n=50/case f=0.00 | P(A:B)>0,5 : heredite 0.000, uniforme 0.000 | >0,95 : 0.000, 0.000 | mediane : 0.005, 0.010 | P(A role)>0,5 : 0.035, 0.040 | aov A:B p<0,05 : 0.065

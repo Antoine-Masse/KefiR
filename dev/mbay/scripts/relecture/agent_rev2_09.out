@@ -1,0 +1,11 @@
+n_i = 2e+05 : h0 -747600.623 en 0.17 s 
+n_i = 4e+05 : h0 -1495183.51 en 0.03 s 
+n_i = 6e+05 : h0 -2242765.823 en 0.12 s 
+n_i = 8e+05 : h0 -2990347.9 en 0.22 s 
+--- ulp : variance nulle exacte, moyennes a 1 ulp, y quasi constant
+[1] Inf
+attr(,"signal")
+[1] "zero_residual"
+Message d'avis :
+Variance résiduelle nulle : log BF fixé à Inf. 
+n=(30,30,2) d=100 REF 3D -4.460295  IS -4.436132 

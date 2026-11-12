@@ -1,0 +1,26 @@
+=== B2. d/s 1e8, 1e10, code seul
+ratio 1e+07 m -0.00866 0.00866 -6.451e-17 ss 2.7e-17 2.7e-17 27 
+ code logBF 151.1588 H1 220.9657 err 0.04206402 
+ large H1 224.6323 
+ratio 1e+08 m -0.00866 0.00866 -6.451e-17 ss 2.7e-19 2.7e-19 27 
+ code ERREUR valeur manquante là où TRUE / FALSE est requis 
+ large H1 254.5659 
+ratio 1e+10 m -0.00866 0.00866 -6.451e-17 ss 2.7e-23 2.7e-23 27 
+ code ERREUR valeur manquante là où TRUE / FALSE est requis 
+ large H1 314.4331 
+Messages d'avis :
+1: Dans log(Q) : Production de NaN
+2: Dans log(Q) : Production de NaN
+
+=== C. Pilote et pas (normal_het H1)
+k=8 (10x7,3) d=1e3         H1 code -148.87282 (ess 463 err 0.041, 0.1s) large -148.85763 diff +1.52e-02
+k=20 n=3, d=30             H1 code -104.52055 (ess 416 err 0.048, 1.1s) large -104.50315 diff +1.74e-02
+k=30 n=2, sd 1             H1 code -82.42055 (ess 470 err 0.040, 0.5s) large -82.43010 diff -9.55e-03
+k=20 n=10 sd varies        H1 code -43.77393 (ess 33 err 0.174, 1.7s) large -43.96100 diff -1.87e-01
+k=2 N=2e5 d=.01            H1 code -261493.84565 (ess 443 err 0.016, 0.3s) large -261493.84565 diff +2.33e-10
+k=5 n=1e4 d=3 sd var       H1 code -37066.86512 (ess 326 err 0.033, 0.1s) large -37066.88166 diff -1.65e-02
+
+=== D. Invariances
+base -31.1147 -31.9631 err 0.0087 0.0096 
+y->-y -31.1147 -31.9631 
+etiquettes -31.1248 -31.9611 

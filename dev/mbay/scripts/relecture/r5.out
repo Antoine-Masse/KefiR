@@ -1,0 +1,56 @@
+=== 1. Interaction moyenne : P(A:B) sous 1/2 => A lu sans interaction ; retrait implicite
+Analysis of Variance Table
+
+Response: y
+          Df Sum Sq Mean Sq F value  Pr(>F)  
+A          1  0.605  0.6054  0.6332 0.43047  
+B          1  3.711  3.7105  3.8806 0.05516 .
+A:B        1  4.753  4.7533  4.9712 0.03092 *
+Residuals 44 42.071  0.9562                  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+ P(A:B | A,B)=0.690 (donc pas d'alerte si <.5) ; P(A apparie)=0.266 ; P(A uniforme 5)=0.447 ; P(A Chipman)=0.327
+
+=== 2. Calibration 2 groupes, n=30/gr, p annonce JZS r=.707 pi=.5, sous d'autres mondes (20000 jeux)
+ Monde defaut (pi=.5, Cauchy .707) :
+        [0,0.25] (0.25,0.5] (0.5,0.75] (0.75,0.9] (0.9,0.95] (0.95,1]
+annonce    0.221      0.334      0.615      0.827      0.927    0.996
+realise    0.220      0.332      0.617      0.832      0.955    0.994
+eff     7000.000   5627.000   1495.000    802.000    380.000 4696.000
+ pi=.5, delta~N(0,.2^2) (effets petits) :
+        [0,0.25] (0.25,0.5] (0.5,0.75] (0.75,0.9] (0.9,0.95] (0.95,1]
+annonce    0.221      0.333      0.604      0.819      0.925    0.976
+realise    0.450      0.518      0.624      0.706      0.779    0.853
+eff     9743.000   7767.000   1713.000    494.000    140.000  143.000
+ pi=.1, delta~N(0,.5^2) (criblage, peu de vrais effets) :
+         [0,0.25] (0.25,0.5] (0.5,0.75] (0.75,0.9] (0.9,0.95] (0.95,1]
+annonce     0.221      0.329      0.605      0.819      0.925    0.986
+realise     0.053      0.087      0.204      0.458      0.611    0.903
+eff     10494.000   7382.000   1332.000    384.000    108.000  300.000
+ pi=.9, delta~N(0,3^2) (procede, gros effets) :
+        [0,0.25] (0.25,0.5] (0.5,0.75] (0.75,0.9] (0.9,0.95]  (0.95,1]
+annonce    0.221      0.342      0.620      0.829      0.927     0.998
+realise    0.459      0.632      0.862      0.972      0.989     1.000
+eff     1923.000   2005.000    901.000    685.000    357.000 14129.000
+
+=== 3. Apparie : ttestBF sur differences vs lmBF A+id vs id, meme echelle r
+        tt    lm     p
+[1,] 0.252 0.322 0.539
+[2,] 0.651 0.755 0.121
+[3,] 0.515 0.613 0.168
+[4,] 2.005 2.167 0.029
+[5,] 0.621 0.719 0.129
+[6,] 0.813 0.930 0.090
+
+=== 4. Moyenne des P sur grille r x cotes pour un jeu limite : la grille conclut-elle ?
+ p aov 0.00635  BF(r/2,r,2r) 6.634 7.574 5.612 
+      [,1]  [,2]  [,3]
+[1,] 0.624 0.869 0.964
+[2,] 0.654 0.883 0.968
+[3,] 0.584 0.849 0.957
+ Seuil BF pour 'stable' sur cotes 1:4..4:1 : BF>4 ou BF<1/4 ; plancher BF a n=45 (F=0)=0.164 ; a n=15 (F=0, 5/gr)=.310 => jamais 'stable pour non' a 5/gr
+
+=== 5. Covariable forte : meme effet brut, sigma change, ROPE et P
+ Sans x : sd=5.55 delta=0.027 P(T)=0.195 ; avec x : sd=0.52 delta=0.291 P(T|x)=0.219
+
+FIN

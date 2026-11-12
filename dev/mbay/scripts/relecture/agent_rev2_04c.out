@@ -1,0 +1,15 @@
+=== E. Ajout de groupes identiques, duplication
+ 0 groupes ajoutes au centre : log_bf hetero   1.094  zs   1.346
+ 1 groupes ajoutes au centre : log_bf hetero   0.384  zs   0.653
+ 2 groupes ajoutes au centre : log_bf hetero  -0.254  zs   0.051
+ 5 groupes ajoutes au centre : log_bf hetero  -1.780  zs  -1.374
+10 groupes ajoutes au centre : log_bf hetero  -3.614  zs  -3.067
+20 groupes ajoutes au centre : log_bf hetero  -6.161  zs  -5.408
+Doubler chaque observation (n=10->20, memes moyennes, SS*2+) : 3.917223 
+=== F. k grand : troncature a gauche de la grille (F ~ 1, r = 1, n grand)
+k=50 n_i=1000 r=0.5 : H1 code 50.779 bornes larges 50.779 ecart 0.000
+k=100 n_i=1000 r=0.5 : H1 code 127.535 bornes larges 127.535 ecart 0.000
+k=100 n_i=1000 r=1 : H1 code 76.257 bornes larges 76.258 ecart 0.001
+k=200 n_i=1000 r=0.5 : H1 code 305.008 bornes larges 305.055 ecart 0.048
+k=200 n_i=1000 r=1 : H1 code 210.016 bornes larges 214.101 ecart 4.085
+k=500 n_i=1000 r=1 : H1 code 615.273 bornes larges 686.357 ecart 71.084

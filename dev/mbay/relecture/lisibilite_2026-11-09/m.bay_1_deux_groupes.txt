@@ -1,0 +1,37 @@
+1) Plan reconnu : un facteur, g, à 2 groupes (A, B) ; N = 40.
+	--> Une seule question : y a-t-il une différence de y selon g ? Aucun test préalable ne choisit la méthode : les formes du bruit seront comparées, pas choisies.
+2) Contrôles des données.
+	==> Effectifs : 20 par groupe (2 groupes, N = 40).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur groupe : 0 sur 40 au-delà de 1,5 écart interquartile, 0 au-delà de 3. [Tukey, quantile() {stats}]
+	--> Rien à retirer : les 4 formes du bruit restent en lice.
+3) Point de départ (a priori), fixé avant de voir les données.
+	==> 50,0 % de chances qu'une différence existe (pile ou face : la méthode ne prend pas parti) ; taille attendue r = 0,5 (échelle « medium » de Rouder et al. 2012) ; chacune des 4 formes du bruit part à 25,0 %.
+	--> Ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les fait varier pour voir si la réponse tient.
+4) Comparaison des formes du bruit (la façon dont les valeurs s'écartent du centre de leur groupe : normale ou à queues lourdes, variances égales ou non). [m.bay() {KefiR}, échantillonnage d'importance]
+	==> Probabilités a posteriori : normale, variances égales 51,9 % ; normale, variances inégales 22,2 % ; queues lourdes, variances égales 17,7 % ; queues lourdes, variances inégales 8,2 %.
+	==> Variances : les données penchent vers des variances égales sans trancher (inégales à 30,4 % ; écarts-types A 2,63 contre B 2,22).
+	--> Les formes normales sont les plus probables (74,1 %) : la réponse porte surtout sur les moyennes.
+	--> Aucune forme n'est choisie : la réponse de chacune est pondérée par sa probabilité.
+5) Facteur de Bayes et précision numérique. [m.bay() {KefiR}]
+	==> Facteur de Bayes, différence contre absence : 0,354 (proche de 1 : les données départagent à peine les deux).
+	==> Imprécision du calcul par simulation : environ 0,61 % sur le facteur de Bayes, sans effet sur la conclusion (ce n'est pas un risque d'erreur).
+	==> Sensibilité : taille attendue r de 0,25 à 1, chances de départ d'une différence de 1 contre 2 à 2 contre 1, répartition des variances entre groupes. « Aucune différence de y selon g » va alors de 48,0 % à 90,9 %. [m.bay() {KefiR}]
+	--> Prudence ajoutée : l'hypothèse en tête peut s'inverser selon le point de départ ; la conclusion ne l'affirmera pas.
+6) Quels groupes diffèrent, et de combien. [lmBF(), posterior() {BayesFactor}, hdi() {bayestestR}]
+	==> Écart estimé B - A = 0,42 [-0,91 ; 1,8], soit 0,18 [-0,36 ; 0,75] écart-type.
+	Écart estimé : médiane a posteriori, légèrement ramenée vers zéro par l'a priori, donc un peu plus petite que l'écart observé de l'étape 7. Crochets : intervalle de crédibilité à 95 %, si une différence existe (la valeur s'y trouve avec 95 % de probabilité ; ce n'est pas un intervalle de confiance).
+7) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
+	Verdict : indécis. Les données ne permettent de conclure ni à une différence, ni à son absence.
+	Probabilité de chaque hypothèse, compte tenu des données et du point de départ :
+	  1. Aucune différence de y selon g : 73,9 % (non tranché par les données)
+	     Repose sur la petitesse de l'écart entre moyennes (observé : B - A = 0,6, soit 0,24 écart-type commun au sein des groupes) : les données sont à peine plus probables (2,82 fois) sans différence qu'avec une différence de l'ordre attendu (r = 0,5).
+	  2. y diffère selon g              : 26,1 %
+	     Contre elle : ces données sont à peine plus probables (2,82 fois) sans différence ; elle tient surtout à son a priori (50,0 %), abaissé par les données.
+	  Selon le point de départ, la probabilité de l'hypothèse 1 va de 48,0 % à 90,9 % : l'ordre peut s'inverser.
+	Taille de l'écart, s'il existe (écart estimé : médiane a posteriori, et intervalle de crédibilité à 95 % ; delta en écart-type) :
+	  B - A = 0,42 [-0,91 ; 1,8], delta = 0,18 [-0,36 ; 0,75].
+	Moyennes observées (description de l'échantillon ; ce bilan ne dit pas quels groupes diffèrent) :
+	  A = 10,4 (n = 20) ; B = 11,0 (n = 20).
+	Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend de la façon dont l'étude a été menée (tirage au sort, ordre, opérateur).
+	Formes du bruit, a priori en détail, mode de lecture : print(resultat, detail = TRUE).

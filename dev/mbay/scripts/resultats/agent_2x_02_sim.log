@@ -1,0 +1,30 @@
+Error in integrate(marginal.g.oneWay, lower = 0, upper = Inf, F = F, N = N,  : 
+  roundoff error is detected in the extrapolation table
+18:12:37 E1 pi 0.5 k 3 n 10 s 11 replis 1 
+Error in integrate(marginal.g.oneWay, lower = 0, upper = Inf, F = F, N = N,  : 
+  roundoff error is detected in the extrapolation table
+Error in integrate(marginal.g.oneWay, lower = 0, upper = Inf, F = F, N = N,  : 
+  roundoff error is detected in the extrapolation table
+Error in integrate(marginal.g.oneWay, lower = 0, upper = Inf, F = F, N = N,  : 
+  roundoff error is detected in the extrapolation table
+Error in integrate(marginal.g.oneWay, lower = 0, upper = Inf, F = F, N = N,  : 
+  roundoff error is detected in the extrapolation table
+18:12:47 E1 pi 0.5 k 3 n 30 s 10 replis 4 
+18:13:17 E1 pi 0.5 k 2 n 10 s 31 replis 0 
+18:13:46 E1 pi 0.5 k 2 n 30 s 29 replis 0 
+18:13:57 E1 pi 0.2 k 3 n 10 s 10 replis 0 
+Error in integrate(marginal.g.oneWay, lower = 0, upper = Inf, F = F, N = N,  : 
+  roundoff error is detected in the extrapolation table
+Error in integrate(marginal.g.oneWay, lower = 0, upper = Inf, F = F, N = N,  : 
+  roundoff error is detected in the extrapolation table
+18:14:05 E1 pi 0.2 k 3 n 30 s 8 replis 2 
+18:14:27 E1 pi 0.2 k 2 n 10 s 22 replis 0 
+18:15:09 E1 pi 0.2 k 2 n 30 s 42 replis 0 
+18:18:57 E2 normal fini 
+18:20:40 E2 non-normal fini 
+18:22:12 heterosc fini 
+18:23:24 BUDGET E3 3 100 0 
+18:23:24 BUDGET E3 3 100 0.5 
+18:23:24 BUDGET E3 2 30 0 
+18:23:24 BUDGET E3 2 30 0.5 
+18:23:24 FINI s= 659 

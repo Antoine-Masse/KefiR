@@ -1,0 +1,11 @@
+regulier                                       code -50.202006 ref -50.201615 ecart -3.91e-04 
+3 pics eloignes, sd .01                        code -1148.895322 ref -1148.895322 ecart 7.73e-12 
+3 pics 1e6 sigmas                              code -157.162722 ref -157.162722 ecart 5.68e-13 
+3 pics 1e12 sigmas                             code -295.317827 ref -295.317827 ecart -1.00e-11 
+3 pics 1e15 sigmas                             code -364.395380 ref -364.395380 ecart 1.46e-09 
+3 pics 1e18 sigmas                             code -430.865190 ref -433.472933 ecart 2.61e+00 
+n=2, 2 ; 1e8                                   code -38.332665 ref -38.332665 ecart 9.81e-12 
+n=2,2 ; 1e16                                   code -74.956265 ref -75.174026 ecart 2.18e-01 
+sd tres inegaux 1e-6 / 1e6                     code 214.826222 ref 214.826222 ecart 3.52e-12 
+sd tres inegaux 1e-12 / 1 gap 1                code 211.090150 ref 211.090150 ecart -6.25e-13 
+grand N 1e6 x3 gap 1                           code -5402544.669880 ref -5402544.669880 ecart 0.00e+00 

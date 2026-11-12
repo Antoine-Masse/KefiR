@@ -1,0 +1,19 @@
+(a0) par loi, y=(3x5 | 1..5)
+normal_eq                          logBF    -0.71 P(H1) 0.3299 err   0.00% | lois: normal_eq=1.000 | logBF/loi: -0.7
+normal_het                         logBF   -92.56 P(H1) 0.0000 err 141.40% | lois: normal_het=1.000 | logBF/loi: -92.6
+t_eq                               logBF    -0.89 P(H1) 0.2914 err   3.71% | lois: t_eq=1.000 | logBF/loi: -0.9
+t_het ERREUR: valeur manquante là où TRUE / FALSE est requis 
+(a1) normal_het seul : log_ml selon le nombre de tirages
+S=1000 seed=1 H0 21.241 (rel_se 0.993 ess 1) H1 25.959 (rel_se 1.000 ess 1) logBF 4.718
+S=1000 seed=2 H0 7.912 (rel_se 0.836 ess 1) H1 59.430 (rel_se 1.000 ess 1) logBF 51.519
+S=4000 seed=1 H0 59.575 (rel_se 1.000 ess 1) H1 40.340 (rel_se 0.746 ess 2) logBF -19.234
+S=4000 seed=2 H0 39.299 (rel_se 0.998 ess 1) H1 158.214 (rel_se 1.000 ess 1) logBF 118.916
+        law hypothesis   r    log_ml rel_se ess
+1 normal_eq         H0 0.5 -13.20633      0  NA
+2 normal_eq         H1 0.5 -13.91483      0  NA
+
+(b) quasi-egalites : 3+eps (toutes lois)
+eps=1                              logBF    -0.80 P(H1) 0.3108 err   0.86% | lois: normal_eq=0.431 normal_het=0.252 t_eq=0.189 t_het=0.128 | logBF/loi: -0.7 -0.7 -1.0 -1.0
+eps=0.1                            logBF    -0.77 P(H1) 0.3170 err   2.08% | lois: normal_eq=0.030 normal_het=0.530 t_eq=0.050 t_het=0.390 | logBF/loi: -0.7 -0.7 -0.9 -0.8
+eps=0.01                           logBF    -0.73 P(H1) 0.3243 err   2.16% | lois: normal_eq=0.002 normal_het=0.526 t_eq=0.003 t_het=0.469 | logBF/loi: -0.7 -0.7 -0.9 -0.7
+eps=0.0001                         logBF    -0.76 P(H1) 0.3183 err   2.55% | lois: normal_eq=0.000 normal_het=0.508 t_eq=0.000 t_het=0.492 | logBF/loi: -0.7 -0.7 -0.9 -0.8

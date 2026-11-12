@@ -1,0 +1,4 @@
+H0 4,4,1 N 300 P>.95 0 IC 0 0.012 P>.5 0.1466667 
+cas 10 10 1 1 0  fonction -0.7968 err% 0.076  coord -0.7972 
+cas 6 20 3 1 1  fonction 0.1864 err% 0.035  coord 0.1864 
+cas 4 4 2 1 2  fonction -0.284 err% 0.101  coord -0.2838 

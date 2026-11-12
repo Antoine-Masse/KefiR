@@ -1,0 +1,81 @@
+H0 normale k=9 groupes coupe=5,4,8,3,6
+  coupe : P=0.3238 logBF=-0.74 lois 0.97/0.012/0.017/0.001 (12s)
+  entier: P=0.3244 logBF=-0.73 lois 0.97/0.012/0.018/0.001 (15s)
+  ecart logBF (coupe-entier)=-0.00 ; log(k/5)=0.59
+  logBF/loi coupe -0.74/-0.52/-0.91/-0.81 ; entier -0.74/-0.52/-0.75/-0.65
+H0 normale k=12 groupes coupe=6,1,4,8,5
+  coupe : P=0.2929 logBF=-0.88 lois 0.94/0.008/0.051/0.001 (19s)
+  entier: P=0.2958 logBF=-0.87 lois 0.936/0.008/0.055/0.001 (29s)
+  ecart logBF (coupe-entier)=-0.01 ; log(k/5)=0.88
+  logBF/loi coupe -0.84/-1.06/-1.79/-1.75 ; entier -0.84/-1.06/-1.34/-1.36
+H0 t3 k=12 groupes coupe=8,12,6,5,4
+  coupe : P=0.2816 logBF=-0.94 lois 0.578/0.081/0.318/0.024 (31s)
+  entier: P=0.3003 logBF=-0.85 lois 0.563/0.079/0.334/0.025 (44s)
+  ecart logBF (coupe-entier)=-0.09 ; log(k/5)=0.88
+  logBF/loi coupe -0.93/-0.75/-1.01/-0.89 ; entier -0.93/-0.75/-0.76/-0.57
+un groupe decale 1,5 ; t3 k=12 groupes coupe=12,11,9,7,1
+  coupe : P=0.9486 logBF=2.91 lois 0/0/0.968/0.032 (30s)
+  entier: P=0.9447 logBF=2.84 lois 0/0/0.962/0.038 (45s)
+  ecart logBF (coupe-entier)=0.08 ; log(k/5)=0.88
+  logBF/loi coupe 1.59/-0.06/3.08/0.96 ; entier 1.59/-0.06/3.01/1.01
+  g01   g02   g03   g04   g05   g06   g07   g08   g09   g10   g11   g12 
+ 1.92  1.92  1.95  1.85  1.94  1.87 -0.15 -0.06 -0.15  0.10 -0.28  1.25 
+aberrants+g12 decale, lois t k=12 groupes coupe=11,9,7,8,10
+  coupe : P=0.9315 logBF=2.61 lois 0.889/0.111 (20s)
+  entier: P=1.0000 logBF=12.21 lois 0.967/0.033 (38s)
+  ecart logBF (coupe-entier)=-9.60 ; log(k/5)=0.88
+  logBF/loi coupe 4.77/-0.2 ; entier 14.42/8.92
+Messages d'avis :
+1: Dans stats::dcauchy(parts$th_loc[, 2L], 0, scale, log = TRUE) :
+  Production de NaN
+2: Dans stats::dcauchy(parts$th_loc[, 2L], 0, scale, log = TRUE) :
+  Production de NaN
+3: Dans stats::dcauchy(parts$th_loc[, 2L], 0, scale, log = TRUE) :
+  Production de NaN
+4: Dans stats::dcauchy(parts$th_loc[, 2L], 0, scale, log = TRUE) :
+  Production de NaN
+5: Dans stats::dcauchy(parts$th_loc[, 2L], 0, scale, log = TRUE) :
+  Production de NaN
+6: Dans stats::dcauchy(parts$th_loc[, 2L], 0, scale, log = TRUE) :
+  Production de NaN
+7: Dans stats::dcauchy(parts$th_loc[, 2L], 0, scale, log = TRUE) :
+  Production de NaN
+aberrants+g12 decale, 4 lois k=12 groupes coupe=11,9,7,8,10
+  coupe : P=0.9315 logBF=2.61 lois 0/0/0.889/0.111 (85s)
+  entier: P=1.0000 logBF=12.21 lois 0/0/0.967/0.033 (99s)
+  ecart logBF (coupe-entier)=-9.60 ; log(k/5)=0.88
+  logBF/loi coupe -1.55/4.66/4.77/-0.2 ; entier -1.55/4.66/14.42/8.92
+Messages d'avis :
+1: Dans stats::dcauchy(parts$th_loc[, 2L], 0, scale, log = TRUE) :
+  Production de NaN
+2: Dans stats::dcauchy(parts$th_loc[, 2L], 0, scale, log = TRUE) :
+  Production de NaN
+3: Dans stats::dcauchy(parts$th_loc[, 2L], 0, scale, log = TRUE) :
+  Production de NaN
+4: Dans stats::dcauchy(parts$th_loc[, 2L], 0, scale, log = TRUE) :
+  Production de NaN
+5: Dans stats::dcauchy(parts$th_loc[, 2L], 0, scale, log = TRUE) :
+  Production de NaN
+6: Dans stats::dcauchy(parts$th_loc[, 2L], 0, scale, log = TRUE) :
+  Production de NaN
+7: Dans stats::dcauchy(parts$th_loc[, 2L], 0, scale, log = TRUE) :
+  Production de NaN
+ g01  g02  g03  g04  g05  g06  g07  g08  g09  g10  g11  g12 
+3.17 2.95 3.93 3.13 2.80 3.65 2.99 2.34 3.63 2.67 3.62 0.02 
+g12 tres serre, ecart modeste k=12 groupes coupe=4,2,10,8,12
+  coupe : P=0.2421 logBF=-1.14 lois 0.84/0.021/0.13/0.009 (92s)
+  entier: P=0.2498 logBF=-1.10 lois 0.831/0.021/0.139/0.01 (112s)
+  ecart logBF (coupe-entier)=-0.04 ; log(k/5)=0.88
+  logBF/loi coupe -1.07/-0.91/-1.71/-1.25 ; entier -1.07/-0.91/-1.31/-1.05
+H0 normale k=16 groupes coupe=14,10,5,2,3
+  coupe : P=0.2652 logBF=-1.02 lois 0.974/0.026 (29s)
+  entier: P=0.2670 logBF=-1.01 lois 0.972/0.028 (34s)
+  ecart logBF (coupe-entier)=-0.01 ; log(k/5)=1.16
+  logBF/loi coupe -1.01/-1.27 ; entier -1.01/-0.9
+--- continuite k=8/k=9 : un groupe de plus sous H0
+k=9 k=9 groupes coupe=7,1,9,4,5
+  coupe : P=0.1155 logBF=-2.04 lois 1 (2s)
+  entier: P=0.1712 logBF=-1.58 lois 1 (3s)
+  ecart logBF (coupe-entier)=-0.46 ; log(k/5)=0.59
+  logBF/loi coupe -2.04 ; entier -1.58
+k=8 sans g09 : logBF -1.541521 

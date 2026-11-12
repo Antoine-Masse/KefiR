@@ -1,0 +1,129 @@
+############ PLAN : notes15num ############
+
+== Donnees (head) ==
+  recette note
+1      R1    2
+2      R1    4
+3      R1    2
+4      R1    2
+5      R1    2
+6      R1    2
+n = 45 
+
+============ m.test ============
+m.test(note ~ recette, data = d) 
+
+1) Plus de deux groupes.
+2) ASSOMPTION 1/3 : Contrôle de l'indépendance - vérifiez que les observations entre les groupes sont indépendantes.
+	Vérifiez que :
+	  • Pas de mesures répétées
+	  • Pas d'effet cluster
+	  • Pas d'effets report [influence sur l'ordre des mesures]
+3) Ajustement du modèle ANOVA [aov()].
+4) ASSOMPTION 2/3 : Contrôle ACADÉMIQUE de la normalité des résidus du modèle ANOVA.
+	Shapiro-Wilk [shapiro.test()]
+	==> Les résidus sont non-normaux (p-value : 0.017).
+	--> Les contrôles de la variance devront être plus exigeants (Levene au lieu de Bartlett).
+5) ASSOMPTION 3/3 : Contrôle ACADÉMIQUE de l'homogénéité de la variance des groupes.
+	Test de Levene [car::leveneTest()] - Variance homogène (homoscédasticité).
+	p-value : 0.07.
+	Note : Le test de Levene peut avoir été faussé par une asymétrie des données ou des outliers.
+	--> L'homogénéité de la variance invite à un contrôle plus tolérant de la normalité.
+6) Contrôle plus tolérant de la normalité en cas d'homoscédasticité :
+	Contrôle de la normalité des résidus avec tolérance si n>15.
+	==> Skewness <=2 et Kurtosis <=7.
+	==> Les résidus présentent une normalité acceptable.
+	--> Conservation de l'ANOVA classique (situation paramétrique).
+7) DIAGNOSTIC optionnel pour garantir la fiabilité de la lecture de l'ANOVA :
+	a) Aucun outlier détecté sur les résidus.
+	b) Diagnostic d'influence (distance de Cook) :
+		==> 4 observations influentes détectées.
+		(8.9% dépassent seuil 4/n = 0.0889).
+	c) Normalité diagnostique par groupe :
+		Contrôle de la normalité avec tolérance variable selon la taille des groupes.
+		Skewness/Kurtosis ≤1/4.5 (n≥20) ; ≤1.5/5 (n≥30) ; ≤2/6.5 (n≥50).
+		==> Au moins un des groupes présente une non-normalité trop extrême.
+	--> Recommandation : Tenir compte de ces diagnostics lors de l'interprétation.
+		Les outliers et points influents peuvent affecter la fiabilité de l'analyse.
+8) ANOVA à un facteur [aov()].
+	Résultat : p = 0.00013 (< alpha).
+	==> Différences de moyennes significatives entre groupes.
+9) Posthoc - Tests post-hoc sur groupes normaux.
+	a) Posthoc - Analyse des différences de moyennes par bootstrap [pairwise.boot() de {KefiR}].
+	b) Posthoc - Test de Student [pairwise.t.test(pool.sd=TRUE)].
+		Attention ! Le bootstrap détecte des faiblesses dans la signification des résultats.
+	c) Posthoc - Test conservateur de Scheffé [scheffe.test() of {agricolae}].
+	d) Posthoc - Test conservateur de Tukey [HSD.test() of {agricolae}].
+	e) Posthoc - Test puissant de Newman-Keuls [SNK.test() of {agricolae}].
+	f) Posthoc - Test puissant de Waller-Duncan [waller.test() of {agricolae}].
+
+m.test() - version 02 bêta 2026 - envoyer ce bilan à antoine.masse@u-bordeaux.fr en cas d'anomalie.
+
+[m.test : OK - 2 s]
+
+============ m.bay ============
+m.bay(note ~ recette, data = d) 
+
+1) Plan reconnu : un facteur, recette, à 3 groupes (R1, R2, R3) ; N = 45.
+	--> Une question : les valeurs de note diffèrent-elles selon recette ?
+	Note : valeurs ordonnées : seul compte leur ordre (modèle ordinal).
+2) Contrôles des données - valeurs gardées comme catégories ordonnées.
+	--> Changement de stratégie : échelle de notation bornée (5 valeurs, de
+	    1 à 5) : modèle ordinal au lieu des lois continues.
+	==> Effectifs : 15 par groupe (N = 45).
+	--> Aucune valeur retirée.
+3) Loi des données [polr() {MASS}] - cotes proportionnelles (logit cumulatif).
+	==> Seul compte l'ordre des valeurs, pas leurs écarts.
+	==> Cotes proportionnelles plausibles (99,8 %, contre un modèle où
+	    chaque niveau a ses propres effets).
+4) Point de départ (a priori) - 50,0 % de chances d'une différence.
+	==> A priori sur les effets : le poids d'une seule observation
+	    (information unitaire).
+	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
+	       fait varier.
+5) Solidité de la réponse - facteur de Bayes 166, l'ordre ne change pas.
+	==> Facteur de Bayes : 166.
+	==> Précision : forme close, sans tirage.
+	==> Sensibilité : la réponse en tête va de 98,8 % à 99,7 %.
+	--> L'ordre ne change pas.
+	Note : les chances de départ vont de 1 contre 2 à 2 contre 1.
+6) Quels groupes diffèrent, et de combien [polr() {MASS}] - R1 = R2 < R3 en tête
+   (58,5 %).
+	==> Si une différence existe, regroupements en tête : R1 = R2 < R3
+	    (58,5 %) ; R1 < R2 < R3 (35,0 %) ; R1 < R2 = R3 (6,5 %).
+	==> R1/R2 : différents à 41,2 % ; R2/R1 = 3,14 [0,80 ; 12,31].
+	==> R1/R3 : différents à 99,1 % ; R3/R1 = 21,13 [4,50 ; 99,15].
+	==> R2/R3 : différents à 92,8 % ; R3/R2 = 6,72 [1,57 ; 28,84].
+	Note : rapport des cotes cumulées, au-delà de 1 pour des valeurs plus
+	       hautes dans le second groupe ; [ ; ] = intervalle à 95 % ;
+	       1 = pas de différence.
+	Note : toutes les paires sont jugées ensemble, sans correction à la
+	       Tukey, et ne peuvent pas se contredire.
+
+7) Bilan - note diffère selon recette : 99,4 % (soutien très fort).
+	==> Verdict : une différence existe très probablement.
+	==> Probabilité de chaque hypothèse :
+	    1. note diffère selon recette : 99,4 % (soutien très fort)
+	    2. Aucune différence de note selon recette : 0,6 %
+	==> Selon le point de départ : 98,8 % à 99,7 % ; l'ordre ne change pas.
+	Note : les données sont 166 fois plus probables sous l'hypothèse 1 que
+	       sous la 2 (facteur de Bayes ; 1 à 3 faible, 3 à 20 modéré, 20 à
+	       150 fort, au-delà très fort).
+
+	==> Différents : R1/R3 (fort) ; R2/R3 (modéré).
+	==> Non tranchés : R1/R2.
+	==> Si une différence existe, regroupement le plus probable :
+	    R1 = R2 < R3 (58,5 %).
+	Note : différents à partir de 75 % de probabilité, semblables jusqu'à
+	       25 %, sinon non tranchés ; écarts chiffrés à l'étape 6.
+
+	==> Médianes observées : R1 = 2,0 ; R2 = 3,0 ; R3 = 4,0 (moyennes 2,5 ;
+	    3,1 ; 4,1).
+	Note : pour un compte rendu : « note diffère selon recette (probabilité
+	       a posteriori 99,4 %), facteur de Bayes 166 (m.bay {KefiR}, cotes
+	       proportionnelles, MASS::polr, approximation BIC). »
+	Note : probabilités d'hypothèses, pas des p-values ; ni l'importance, ni
+	       la cause d'une différence ; la méthode avec print(resultat,
+	       detail = TRUE).
+
+[m.bay : OK - 2.5 s]

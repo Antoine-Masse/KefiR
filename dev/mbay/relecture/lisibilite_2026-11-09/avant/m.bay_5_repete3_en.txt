@@ -1,0 +1,47 @@
+1) Plan recognised: repeated measures on 15 subjects, t (3 levels, within subject); N = 45.
+	--> One question: is there a difference in y according to t, each subject compared with itself?
+2) Checks on the data.
+	==> Subjects: 15; measured in every condition within subject: 15.
+	Values far from their condition are sought once each subject's own level is removed.
+	==> Sizes: 15 per condition (3 conditions, N = 45).
+	==> Ties: none.
+	==> Values far from their condition: 2 of 45 beyond 1.5 interquartile ranges, 0 beyond 3. [Tukey, quantile() {stats}]
+	--> No value is removed.
+3) Shape of the noise.
+	==> Repeated measures: each subject keeps its own level (random subject effect, present in every model compared, "no difference" included).
+	==> A random subject effect assumes that all conditions are equally correlated within a subject (compound symmetry); this is not tested here (m.test() checks sphericity with Mauchly's test).
+	==> Only the normal law is computed: heavy tails and unequal variances between conditions are not validated for subjects yet, so they are not compared.
+	--> No value lies far enough to put the normal law in doubt at first sight; it is not tested against the others.
+4) Starting point (priors), set by the method before seeing the data.
+	==> 50 % chance that a difference exists (heads or tails: the method takes no side); expected size r = 0.5 per term (Zellner-Siow).
+	--> Subjects: random effect of scale 1 (Rouder et al. 2012), in every model; each answer is read against the model with the subjects only.
+	--> These values are not fitted on the data; step 5 varies them to see whether the answer holds.
+5) Bayes factors of the 2 models. [lmBF(whichRandom = id) {BayesFactor}]
+	==> Bayes factor, difference against none: 2270.
+	==> Precision: computed again with another seed, the probabilities move by at most 0.00045 percentage point(s), negligible.
+	==> Sensitivity: r from 0.25 to 1, crossed with starting chances of a difference from 1 against 2 to 2 against 1. [m.bay() {KefiR}]
+	--> No term changes side.
+6) Which conditions differ, and by how much. [lmBF(whichRandom = id), posterior() {BayesFactor}, hdi() {bayestestR}]
+	==> Most probable groupings (5 compared): T1 < T2 < T3 (76.5 %); T1 = T2 < T3 (18.1 %); T1 < T2 = T3 (5.3 %).
+	==> T1 and T2: different at 81.8 %; estimated gap T2 - T1 = 0.97 [0.2; 1.8], i.e. 0.88 [0.14; 1.6] residual SD within subject.
+	==> T1 and T3: different at 99.9 %; estimated gap T3 - T1 = 2.2 [1.3; 3], i.e. 2 [0.92; 2.9] residual SD within subject.
+	==> T2 and T3: different at 94.6 %; estimated gap T3 - T2 = 1.2 [0.33; 1.9], i.e. 1.1 [0.24; 1.8] residual SD within subject.
+	Estimated gap: posterior median, pulled slightly towards zero by the prior. Brackets: 95 % credible interval, if a difference exists (the value lies there with 95 % probability; not a confidence interval).
+	--> All pairs come from one single law over the groupings: no correction pair by pair is needed, and the answers cannot contradict each other.
+7) Conclusion: the hypotheses ranked, what each one rests on, its support.
+	Verdict: a difference very probably exists. This says neither that it matters nor why; the pairs are below.
+	  y differs according to t: > 99.9 % (very strong support); No difference in y according to t: < 0.1 %.
+	Answer (yes, no or not settled; probability of a yes given the data and the starting point, and its prior):
+	  Difference in y according to t? Yes, very strong support (probability of a yes > 99.9 %, prior 50.0 %).
+	     Rests on the data, which multiply its odds (yes against no) by 2270 (Bayes factor).
+	  The answer does not change side when r or the starting chances change.
+	Which conditions differ (normal law, random subject effect; probability, then estimated gap and 95 % credible interval):
+	  T1 / T2: different, moderate support (different at 81.8 %); estimated gap T2 - T1 = 0.97 [0.2; 1.8], delta = 0.88 [0.14; 1.6].
+	  T1 / T3: different, very strong support (different at 99.9 %); estimated gap T3 - T1 = 2.2 [1.3; 3], delta = 2 [0.92; 2.9].
+	  T2 / T3: different, moderate support (different at 94.6 %); estimated gap T3 - T2 = 1.2 [0.33; 1.9], delta = 1.1 [0.24; 1.8].
+	  Most probable grouping: T1 < T2 < T3 (76.5 %).
+	Observed means per factor (description of the sample):
+	  t: T1 = 20.1 (n = 15); T2 = 21.2 (n = 15); T3 = 22.5 (n = 15)
+	  Residual standard deviation within subject (each subject's own level removed): 1.1.
+	These are probabilities of hypotheses, not p-values: no threshold of 5 % applies. Whether a difference has a cause depends on how the study was run (randomisation, order, operator).
+	Bayes factors, priors in detail, how to read: print(result, detail = TRUE).

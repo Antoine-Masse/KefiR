@@ -1,0 +1,15 @@
+Temps 400 jeux : 30.6 s (77 ms/jeu)
+
+H0 : P(H1|D) quantiles 5/25/50/75/95 = 0.146 / 0.168 / 0.209 / 0.307 / 0.552
+  P>0.5 : 0.070 ; P>0.95 : 0.010 ; P<0.05 : 0.000 ; p<0.05 aov : 0.040
+
+Effet d=0.5 (moyennes -0.5, 0, +0.5) : P(H1|D) quantiles 5/25/50/75/95 = 0.218 / 0.447 / 0.777 / 0.939 / 0.997
+  P>0.5 : 0.720 ; P>0.95 : 0.235 ; P<0.05 : 0.000 ; p<0.05 aov : 0.660
+
+IC binomiaux 95 % (P>0.5 sous H0) : 0.039 0.115  ; p<0.05 sous H0 : 0.017 0.077 
+IC 95 % sous effet : P>0.5 : 0.652 0.781  ; P>0.95 : 0.178 0.3  ; p<0.05 : 0.59 0.725 
+Correlation rang(P, -p) sous effet : 1 
+Seuil de p correspondant a P=0.5 (valeurs voisines) : 0.084 
+Seuil de p correspondant a P=0.95 : 0.00193 
+
+FIN

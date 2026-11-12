@@ -1,0 +1,9 @@
+
+Plan 10,10,10,10,10,10,10,3  k= 8  n_s= 3  exposant prevu  -2 
+d=5 (132s, Welch p=1.9e-06, zs=11) logBF     0.64 P(H1) 0.6540 err   4.23% | lois: normal_eq=0.039 normal_het=0.899 t_eq=0.011 t_het=0.051 | logBF/loi: 10.5 0.5 2.7 0.9
+d=50 (37s, Welch p=3.4e-26, zs=139) logBF     0.88 P(H1) 0.7058 err   5.27% | lois: normal_eq=0.000 normal_het=0.941 t_eq=0.000 t_het=0.059 | logBF/loi: 138.8 0.9 7.2 1.2
+d=1000 (33s, Welch p=2.4e-52, zs=331) logBF     0.69 P(H1) 0.6658 err   6.16% | lois: normal_eq=0.000 normal_het=0.975 t_eq=0.000 t_het=0.025 | logBF/loi: 331.0 0.7 11.1 -0.2
+d=100000 (202s, Welch p=2.2e-92, zs=626) logBF     0.58 P(H1) 0.6408 err   5.22% | lois: normal_eq=0.000 normal_het=0.984 t_eq=0.000 t_het=0.016 | logBF/loi: 625.7 0.6 16.3 -3.2
+
+Plan 10,10,10,10,10,10,10,10,10,5  k= 10  n_s= 5  exposant prevu  -2 
+d=5 (332s, Welch p=6.2e-11, zs=30) logBF     3.85 P(H1) 0.9792 err   4.25% | lois: normal_eq=0.061 normal_het=0.619 t_eq=0.057 t_het=0.263 | logBF/loi: 30.4 3.4 13.5 6.1

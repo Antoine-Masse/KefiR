@@ -1,0 +1,75 @@
+1) Plan reconnu : mesures répétées sur 15 sujets, t (3 niveaux, intra-sujet) ;
+   N = 45.
+	--> Une question : y diffère-t-il selon t, chaque sujet comparé à
+	    lui-même ?
+2) Contrôles des données [quantile() {stats}] - rien à retirer.
+	==> Sujets : 15 ; complets : 15.
+	==> Effectifs : 15 par condition (N = 45).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur condition : 2 au-delà de 1,5 écart
+	    interquartile, 0 au-delà de 3 (sur 45).
+	--> Aucune valeur retirée.
+	Note : valeurs éloignées cherchées une fois retiré le niveau propre de
+	       chaque sujet.
+3) Forme du bruit - normale, seule.
+	==> Mesures répétées : chaque sujet garde son niveau propre.
+	--> Aucune valeur éloignée ne met d'emblée la loi normale en doute.
+	Note : conditions supposées également corrélées au sein d'un sujet (non
+	       testé ; m.test() contrôle la sphéricité).
+	Note : queues lourdes et variances inégales ne sont pas encore validées
+	       avec des sujets.
+4) Point de départ (a priori) - 50,0 % de chances d'une différence.
+	==> Taille attendue r = 0,5.
+	==> Chaque sujet garde son niveau propre, dans tous les modèles,
+	    « aucune différence » compris.
+	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
+	       fait varier.
+5) Solidité de la réponse [lmBF() {BayesFactor}] - facteur de Bayes 2270,
+   l'ordre ne change pas.
+	==> Facteur de Bayes : 2270 (les données favorisent une différence).
+	==> Précision du calcul : < 0,1 point sur les probabilités, négligeable.
+	==> Sensibilité : la réponse en tête va de 99,9 % à > 99,9 %.
+	--> La réponse ne change pas de côté.
+	Note : r va de 0,25 à 1, les chances de départ de 1 contre 2 à 2 contre
+	       1.
+6) Quelles conditions diffèrent, et de combien [lmBF(), posterior()
+   {BayesFactor}, hdi() {bayestestR}] - T1 < T2 < T3 en tête (76,6 %).
+	==> Si une différence existe, regroupements en tête : T1 < T2 < T3
+	    (76,6 %) ; T1 = T2 < T3 (18,1 %) ; T1 < T2 = T3 (5,3 %).
+	==> T1/T2 : différents à 81,8 % ; T2 - T1 = 1,0 [0,2 ; 1,8], soit 0,88
+	    écart-type résiduel au sein des sujets.
+	==> T1/T3 : différents à 99,9 % ; T3 - T1 = 2,2 [1,3 ; 3,0], soit 1,96
+	    écart-type résiduel au sein des sujets.
+	==> T2/T3 : différents à 94,6 % ; T3 - T2 = 1,2 [0,3 ; 1,9], soit 1,07
+	    écart-type résiduel au sein des sujets.
+	Note : [ ; ] = intervalle de crédibilité à 95 % (95 % de chances d'y
+	       trouver l'écart).
+	Note : l'écart estimé est un peu plus petit que l'écart observé, par
+	       prudence avec les petits échantillons.
+
+7) Bilan - y diffère selon t : > 99,9 % (soutien très fort).
+	==> Verdict : une différence existe très probablement.
+	==> Probabilité de chaque hypothèse :
+	    1. y diffère selon t              : > 99,9 % (soutien très fort)
+	    2. Aucune différence de y selon t : < 0,1 %
+	==> Selon le point de départ : 99,9 % à > 99,9 % ; l'ordre ne change
+	    pas.
+	Note : les données sont 2270 fois plus probables sous l'hypothèse 1 que
+	       sous la 2 (facteur de Bayes ; 1 à 3 faible, 3 à 20 modéré, 20 à
+	       150 fort, au-delà très fort).
+
+	==> Différents : T1/T2, T2/T3 (modéré) ; T1/T3 (très fort).
+	==> Si une différence existe, regroupement le plus probable :
+	    T1 < T2 < T3 (76,6 %).
+	Note : différents à partir de 75 % de probabilité, semblables jusqu'à
+	       25 %, sinon non tranchés ; écarts chiffrés à l'étape 6.
+
+	==> Moyennes observées, t : T1 = 20,1 ; T2 = 21,2 ; T3 = 22,5 (n = 15).
+	==> Écart-type résiduel au sein des sujets : 1,05 ; loi normale à
+	    variance commune seule.
+	Note : pour un compte rendu : « y diffère selon t (probabilité a
+	       posteriori > 99,9 %), facteur de Bayes 2270 (m.bay {KefiR},
+	       BayesFactor, Rouder et al. 2012). »
+	Note : probabilités d'hypothèses, pas des p-values ; ni l'importance, ni
+	       la cause d'une différence ; la méthode avec print(resultat,
+	       detail = TRUE).

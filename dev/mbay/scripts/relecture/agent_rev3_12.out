@@ -1,0 +1,37 @@
+--- ordinaire
+3 groupes ordinaires                     NaN grille 0 / 10000 ; NaN ancien 0 ; max|ecart| 4.26e-14 ; ecart > 1 : 0 ; ecart max vers le haut 4.26e-14
+--- th extremes (alr jusqu'a +- 40, +- 300)
+3 groupes, alr +-10                      NaN grille 0 / 10000 ; NaN ancien 0 ; max|ecart| 8.53e-14 ; ecart > 1 : 0 ; ecart max vers le haut 5.68e-14
+3 groupes, alr +-40                      NaN grille 0 / 10000 ; NaN ancien 0 ; max|ecart| 2.27e-13 ; ecart > 1 : 0 ; ecart max vers le haut 2.27e-13
+3 groupes, alr +-300                     NaN grille 0 / 10000 ; NaN ancien 0 ; max|ecart| 9.09e-13 ; ecart > 1 : 0 ; ecart max vers le haut 9.09e-13
+--- groupe a variance nulle, moyenne non nulle, tirages du melange defensif
+n=(10,10), g1 constant                   NaN grille 0 / 40000 ; NaN ancien 0 ; max|ecart| 1.92e-13 ; ecart > 1 : 0 ; ecart max vers le haut 1.07e-13
+--- rapports d/s croissants, tirages du melange defensif
+d/s=100                                  NaN grille 0 / 40000 ; NaN ancien 0 ; max|ecart| 9.95e-14 ; ecart > 1 : 0 ; ecart max vers le haut 5.68e-14
+d/s=10000                                NaN grille 0 / 40000 ; NaN ancien 0 ; max|ecart| 1.71e-13 ; ecart > 1 : 0 ; ecart max vers le haut 1.14e-13
+d/s=1e+06                                NaN grille 0 / 40000 ; NaN ancien 0 ; max|ecart| 1.71e-13 ; ecart > 1 : 0 ; ecart max vers le haut 1.71e-13
+d/s=1e+07                                NaN grille 0 / 40000 ; NaN ancien 0 ; max|ecart| 2.27e-13 ; ecart > 1 : 0 ; ecart max vers le haut 1.71e-13
+d/s=1e+08                                NaN grille 0 / 40000 ; NaN ancien 0 ; max|ecart| 2.27e-13 ; ecart > 1 : 0 ; ecart max vers le haut 1.71e-13
+d/s=1e+09                                NaN grille 0 / 40000 ; NaN ancien 0 ; max|ecart| 2.27e-13 ; ecart > 1 : 0 ; ecart max vers le haut 1.99e-13
+d/s=1e+10                                NaN grille 0 / 40000 ; NaN ancien 0 ; max|ecart| 2.27e-13 ; ecart > 1 : 0 ; ecart max vers le haut 1.71e-13
+--- effet sur m.bay : erreurs brutes
+n=(10,10) g1 constant a 5, seed 1 : ERREUR valeur manquante là où TRUE / FALSE est requis 
+n=(10,10) g1 constant a 5, seed 2 : P=1.0000 err=45.60% lois=normal_eq=0.000 t_eq=1.000
+n=(10,10) g1 constant a 5, seed 3 : P=1.0000 err=141.17% lois=normal_eq=0.000 t_eq=0.000 t_het=1.000
+Messages d'avis :
+1: Dans log(Q) : Production de NaN
+2: Dans log(Q) : Production de NaN
+3: Dans log(Q) : Production de NaN
+n=(10,10) g1 constant a 3, seed 1 : ERREUR valeur manquante là où TRUE / FALSE est requis 
+n=(10,10) g1 constant a 3, seed 2 : ERREUR valeur manquante là où TRUE / FALSE est requis 
+n=(10,10) g1 constant a 3, seed 3 : ERREUR valeur manquante là où TRUE / FALSE est requis 
+y=3x5|1..5 (toutes lois) : ERREUR valeur manquante là où TRUE / FALSE est requis 
+y=1,1,1,1,2,3 : ERREUR valeur manquante là où TRUE / FALSE est requis 
+Message d'avis :
+Dans log(Q) : Production de NaN
+d/s=1e+06 m.bay : P=1.0000 err=65.41% lois=normal_eq=0.000 normal_het=1.000 t_eq=0.000 t_het=0.000
+d/s=1e+08 m.bay : ERREUR valeur manquante là où TRUE / FALSE est requis 
+d/s=1e+10 m.bay : ERREUR valeur manquante là où TRUE / FALSE est requis 
+Messages d'avis :
+1: Dans log(Q) : Production de NaN
+2: Dans log(Q) : Production de NaN

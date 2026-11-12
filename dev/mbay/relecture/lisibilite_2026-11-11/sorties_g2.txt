@@ -1,0 +1,116 @@
+############ PLAN : g2 ############
+
+== Donnees (head) ==
+       g    y
+1 temoin 11.3
+2 temoin 13.1
+3 temoin 10.7
+4 temoin 12.4
+5 temoin 12.6
+6 temoin 14.3
+n = 20 
+
+============ m.test ============
+m.test(y ~ g, data = d) 
+
+1) Deux groupes.
+2) ASSOMPTION 1/3 : Contrôle de l'indépendance - vérifiez que les observations entre les groupes sont indépendantes.
+	Vérifiez que :
+	  • Pas de mesures répétées
+	  • Pas d'effet cluster
+	  • Pas d'effets report [influence sur l'ordre des mesures]
+3) Détection outliers [identify_outliers() {rstatix}]
+	Résultat : 10% outliers (maximum dans un groupe, non extrêmes)
+	==> Valeurs à surveiller, mais non excessives
+4) Contrôle de normalité - Sélection du test selon la taille des groupes.
+	Shapiro-Wilk (<=50), Jarque-Bera (<=500), ou skewness/kurtosis (>500).
+	Test utilisé : shapiro.test
+	Note : les p-value sont comparées à un alpha corrigé (Sidak) de 0.025.
+	==> Tous les groupes sont normaux. (p-value min : 0.95)
+5) Test de Fisher-Snedecor [var.test()] - Variances homogènes (p = 0.11).
+6) Test de Student [t.test()] - Différences non significatives entre les groupes. p-value : 0.13
+
+m.test() - version 02 bêta 2026 - envoyer ce bilan à antoine.masse@u-bordeaux.fr en cas d'anomalie.
+
+[m.test : OK - 0.2 s]
+
+============ m.bay ============
+m.bay(y ~ g, data = d) 
+
+1) Plan reconnu : un facteur, g, à 2 groupes (temoin, traite) ; N = 20.
+	--> Une question : y diffère-t-il selon g ?
+	Note : aucun test préalable ne choisit la méthode ; les formes du bruit
+	       sont comparées.
+2) Contrôles des données [quantile() {stats}] - rien à retirer.
+	==> Effectifs : 10 par groupe (N = 20).
+	==> Ex-aequo : 10 % des valeurs répètent une valeur déjà vue.
+	==> Valeurs éloignées de leur groupe : 1 au-delà de 1,5 écart
+	    interquartile, 0 au-delà de 3 (sur 20).
+	--> Aucune valeur retirée : les formes à queues lourdes sont là pour ce
+	    genre de valeurs.
+3) Formes du bruit [m.bay() {KefiR}] - normale, variances inégales en tête
+   (33,7 %).
+	==> Probabilités : normale, variances inégales 33,7 % ; normale,
+	    variances égales 26,3 % ; queues lourdes, variances égales 21,6 % ;
+	    queues lourdes, variances inégales 18,4 %.
+	==> Variances : les données penchent vers des variances inégales sans
+	    trancher (inégales à 52,1 %).
+	--> La réponse porte surtout sur les moyennes (formes normales :
+	    60,1 %).
+	Note : la forme du bruit est la façon dont les valeurs s'écartent dans
+	       leur groupe ; les queues lourdes, des valeurs éloignées plus
+	       fréquentes que sous la loi normale.
+	Note : aucune forme n'est choisie ; chaque réponse est pondérée par sa
+	       probabilité.
+4) Point de départ (a priori) - 50,0 % de chances d'une différence (pile ou
+   face).
+	==> Taille attendue r = 0,5 ; chaque forme du bruit part à 25,0 %.
+	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
+	       fait varier.
+5) Solidité de la réponse [m.bay() {KefiR}] - facteur de Bayes 0,821, l'ordre
+   peut s'inverser.
+	==> Facteur de Bayes : 0,821, soit 1,22 en faveur de l'absence de
+	    différence (proche de 1 : les données départagent à peine les deux).
+	==> Précision du calcul : environ 1,0 % sur le facteur de Bayes,
+	    négligeable.
+	==> Sensibilité : « Aucune différence de y selon g » va de 33,7 % à
+	    77,8 %.
+	--> Prudence ajoutée : l'hypothèse en tête peut s'inverser ; le bilan ne
+	    l'affirmera pas.
+	Note : le facteur de Bayes dit combien de fois les données sont plus
+	       probables avec une différence que sans.
+	Note : r va de 0,25 à 1, les chances de départ de 1 contre 2 à 2 contre
+	       1, la répartition des variances varie.
+6) Quels groupes diffèrent, et de combien [lmBF(), posterior() {BayesFactor},
+   hdi() {bayestestR}] - traite - temoin = 0,8 [-0,5 ; 2,2].
+	==> Écart estimé traite - temoin = 0,8 [-0,5 ; 2,2], soit 0,49
+	    écart-type.
+	Note : [ ; ] = intervalle de crédibilité à 95 % (95 % de chances d'y
+	       trouver l'écart).
+	Note : l'écart estimé est ramené vers 0 par l'a priori, surtout quand
+	       les groupes sont petits.
+
+7) Bilan - indécis (Aucune différence de y selon g : 54,9 %).
+	==> Verdict : indécis.
+	==> Probabilité de chaque hypothèse :
+	    1. Aucune différence de y selon g : 54,9 % (non tranché)
+	    2. y diffère selon g              : 45,1 %
+	--> Selon le point de départ : 33,7 % à 77,8 % ; l'ordre peut
+	    s'inverser, non tranché.
+	Note : les données sont 1,22 fois plus probables sous l'hypothèse 1 que
+	       sous la 2 (facteur de Bayes ; 1 à 3 faible, 3 à 20 modéré, 20 à
+	       150 fort, au-delà très fort).
+
+	==> Écart estimé traite - temoin : 0,8 [-0,5 ; 2,2] (étape 6).
+
+	==> Moyennes observées : temoin = 12,5 ; traite = 13,6 (n = 10 par
+	    groupe).
+	==> Écarts-types : temoin = 1,1 ; traite = 2,0.
+	Note : pour un compte rendu : « Les données ne permettent pas de
+	       conclure (probabilité d'une différence 45,1 %, facteur de Bayes
+	       1,22 en faveur de l'absence de différence) ; m.bay {KefiR},
+	       comparaison de lois du bruit, Rouder et al. 2012. »
+	Note : probabilités d'hypothèses, pas des p-values ; la méthode avec
+	       print(resultat, detail = TRUE).
+
+[m.bay : OK - 4.7 s]

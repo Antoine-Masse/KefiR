@@ -1,0 +1,202 @@
+### Cas A : dosage selon le laboratoire, variances inegales (3 labos, 15 dosages chacun, ecarts-types 1, 1, 3)
+> m.bay(dosage ~ labo, data = d)
+
+1) Plan reconnu : un facteur, labo, à 3 groupes (L1, L2, L3) ; N = 45.
+	--> Une seule question : y a-t-il une différence de dosage selon labo ? Aucun test préalable ne choisit la méthode : les formes du bruit seront comparées, pas choisies.
+2) Contrôles des données.
+	==> Effectifs : 15 par groupe (3 groupes, N = 45).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur groupe : 2 sur 45 au-delà de 1,5 écart interquartile, 0 au-delà de 3. [Tukey, quantile() {stats}]
+	--> Aucune valeur n'est retirée : les 4 formes du bruit restent en lice, et celles à queues lourdes sont là pour ce genre de valeurs.
+3) Point de départ (a priori), fixé avant de voir les données.
+	==> 50,0 % de chances qu'une différence existe (pile ou face : la méthode ne prend pas parti) ; taille attendue r = 0,5 (échelle « medium » de Rouder et al. 2012) ; chacune des 4 formes du bruit part à 25,0 %.
+	==> Avec plus de 2 groupes, deux formes de différence partent à égalité : tous les groupes peuvent différer, ou un seul groupe s'écarte.
+	--> Ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les fait varier pour voir si la réponse tient.
+4) Comparaison des formes du bruit (la façon dont les valeurs s'écartent du centre de leur groupe : normale ou à queues lourdes, variances égales ou non). [m.bay() {KefiR}, échantillonnage d'importance]
+	==> Probabilités a posteriori : queues lourdes, variances inégales 65,3 % ; normale, variances inégales 34,1 % ; queues lourdes, variances égales 0,5 % ; normale, variances égales < 0,1 %.
+	==> Variances inégales probables (99,5 %) : le groupe L3 est le plus dispersé (écart-type L3 2,82 contre L2 0,767).
+	--> Aucune variance commune n'est imposée : chaque groupe garde sa dispersion dans la comparaison.
+	--> Les queues lourdes sont les plus probables (65,9 %), pas assez pour ne parler que des centres (la méthode demande 95,0 % de probabilité) : la réponse mêle moyennes et centres (centre : la valeur typique d'un groupe, proche de sa médiane).
+	--> Aucune forme n'est choisie : la réponse de chacune est pondérée par sa probabilité.
+5) Facteur de Bayes et précision numérique. [m.bay() {KefiR}]
+	==> Facteur de Bayes, différence contre absence : 10^4 (les données favorisent une différence).
+	==> Imprécision du calcul par simulation : environ 1,5 % sur le facteur de Bayes, sans effet sur la conclusion (ce n'est pas un risque d'erreur).
+	==> Sensibilité : taille attendue r de 0,25 à 1, chances de départ d'une différence de 1 contre 2 à 2 contre 1, répartition des variances entre groupes. « dosage diffère selon labo » va alors de > 99,9 % à > 99,9 %. [m.bay() {KefiR}]
+	--> La réponse ne dépend pas de ces choix.
+6) Quels groupes diffèrent, et de combien. [lmBF(), posterior() {BayesFactor}, hdi() {bayestestR}]
+	==> Regroupements les plus probables (5 comparés) : L1 = L3 < L2 (62,0 %) ; L1 < L3 < L2 (24,8 %) ; L1 = L3 = L2 (7,8 %).
+	==> L1 et L2 : différents à 91,3 % ; écart estimé L2 - L1 = 1,8 [0,59 ; 3,2], soit 1 [0,26 ; 1,8] écart-type.
+	==> L1 et L3 : différents à 30,2 % ; écart estimé L3 - L1 = 0,39 [-0,8 ; 1,6], soit 0,22 [-0,4 ; 0,92] écart-type.
+	==> L2 et L3 : différents à 87,6 % ; écart estimé L3 - L2 = -1,4 [-2,7 ; -0,16], soit -0,78 [-1,5 ; -0,052] écart-type.
+	Écart estimé : médiane a posteriori, légèrement ramenée vers zéro par l'a priori, donc un peu plus petite que l'écart observé de l'étape 7. Crochets : intervalle de crédibilité à 95 %, si une différence existe (la valeur s'y trouve avec 95 % de probabilité ; ce n'est pas un intervalle de confiance).
+	--> Toutes les paires viennent d'une seule loi sur les regroupements : aucune correction paire par paire n'est nécessaire, et les réponses ne peuvent pas se contredire.
+	--> Ces paires supposent un bruit normal à variance commune, ce que l'étape 4 n'a pas trouvé : les lire avec réserve.
+7) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
+	Verdict : une différence existe très probablement. Cela ne dit ni qu'elle est importante, ni pourquoi ; les paires sont plus bas.
+	Probabilité de chaque hypothèse, compte tenu des données et du point de départ :
+	  1. dosage diffère selon labo              : > 99,9 % (soutien très fort)
+	     Repose sur l'ensemble des écarts entre groupes, le plus grand entre médianes, proches des centres comparés (observé : L2 - L1 = 2,3 ; écart des moyennes 2,2) : les données sont 10^4 fois plus probables avec une différence que sans.
+	  2. Aucune différence de dosage selon labo : < 0,1 %
+	     Contre elle : ces données sont 10^4 fois plus probables avec une différence.
+	  Inchangé quel que soit le point de départ (toujours > 99,9 %).
+	Quels groupes diffèrent (loi normale à variance commune ; probabilité, puis écart estimé et intervalle de crédibilité à 95 %) :
+	  L1 / L2 : différents, soutien modéré (différents à 91,3 %) ; écart estimé L2 - L1 = 1,8 [0,59 ; 3,2], delta = 1 [0,26 ; 1,8].
+	  L1 / L3 : semblables, soutien faible (différents à 30,2 %) ; écart estimé L3 - L1 = 0,39 [-0,8 ; 1,6], delta = 0,22 [-0,4 ; 0,92].
+	  L2 / L3 : différents, soutien modéré (différents à 87,6 %) ; écart estimé L3 - L2 = -1,4 [-2,7 ; -0,16], delta = -0,78 [-1,5 ; -0,052].
+	  Regroupement le plus probable : L1 = L3 < L2 (62,0 %).
+	  À lire avec réserve : ces paires supposent un bruit normal à variance commune, ce que la comparaison des formes du bruit n'a pas trouvé.
+	Moyennes observées (description de l'échantillon) :
+	  L1 = 19,5 (n = 15) ; L2 = 21,7 (n = 15) ; L3 = 20,0 (n = 15).
+	Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend de la façon dont l'étude a été menée (tirage au sort, ordre, opérateur).
+	Formes du bruit, a priori en détail, mode de lecture : print(resultat, detail = TRUE).
+
+### Cas B : 4 groupes de 12, moyennes vraies 0 ; 0,1 ; 1 ; 1,1
+> m.bay(y ~ g, data = d)
+
+1) Plan reconnu : un facteur, g, à 4 groupes (a, b, c, d) ; N = 48.
+	--> Une seule question : y a-t-il une différence de y selon g ? Aucun test préalable ne choisit la méthode : les formes du bruit seront comparées, pas choisies.
+2) Contrôles des données.
+	==> Effectifs : 12 par groupe (4 groupes, N = 48).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur groupe : 1 sur 48 au-delà de 1,5 écart interquartile, 0 au-delà de 3. [Tukey, quantile() {stats}]
+	--> Aucune valeur n'est retirée : les 4 formes du bruit restent en lice, et celles à queues lourdes sont là pour ce genre de valeurs.
+3) Point de départ (a priori), fixé avant de voir les données.
+	==> 50,0 % de chances qu'une différence existe (pile ou face : la méthode ne prend pas parti) ; taille attendue r = 0,5 (échelle « medium » de Rouder et al. 2012) ; chacune des 4 formes du bruit part à 25,0 %.
+	==> Avec plus de 2 groupes, deux formes de différence partent à égalité : tous les groupes peuvent différer, ou un seul groupe s'écarte.
+	--> Ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les fait varier pour voir si la réponse tient.
+4) Comparaison des formes du bruit (la façon dont les valeurs s'écartent du centre de leur groupe : normale ou à queues lourdes, variances égales ou non). [m.bay() {KefiR}, échantillonnage d'importance]
+	==> Probabilités a posteriori : normale, variances égales 74,6 % ; normale, variances inégales 16,2 % ; queues lourdes, variances égales 7,6 % ; queues lourdes, variances inégales 1,7 %.
+	==> Variances égales probables (82,1 %).
+	--> Les formes normales sont les plus probables (90,8 %) : la réponse porte surtout sur les moyennes.
+	--> Aucune forme n'est choisie : la réponse de chacune est pondérée par sa probabilité.
+5) Facteur de Bayes et précision numérique. [m.bay() {KefiR}]
+	==> Facteur de Bayes, différence contre absence : 4,34 (les données favorisent une différence).
+	==> Imprécision du calcul par simulation : environ 0,3 % sur le facteur de Bayes, sans effet sur la conclusion (ce n'est pas un risque d'erreur).
+	==> Sensibilité : taille attendue r de 0,25 à 1, chances de départ d'une différence de 1 contre 2 à 2 contre 1, répartition des variances entre groupes. « y diffère selon g » va alors de 59,6 % à 89,7 %. [m.bay() {KefiR}]
+	--> L'ordre tient ; seul le degré de soutien (faible, modéré, fort) peut changer.
+6) Quels groupes diffèrent, et de combien. [lmBF(), posterior() {BayesFactor}, hdi() {bayestestR}]
+	==> Regroupements les plus probables (15 comparés) : a = b < c = d (39,4 %) ; a < b < c = d (14,9 %) ; a = b < c < d (13,6 %).
+	==> a et b : différents à 29,7 % ; écart estimé b - a = 0,18 [-0,62 ; 1], soit 0,15 [-0,55 ; 0,86] écart-type.
+	==> a et c : différents à 82,4 % ; écart estimé c - a = 0,97 [0,089 ; 1,8], soit 0,84 [0,014 ; 1,6] écart-type.
+	==> a et d : différents à 83,1 % ; écart estimé d - a = 0,99 [0,15 ; 1,9], soit 0,87 [0,089 ; 1,7] écart-type.
+	==> b et c : différents à 78,7 % ; écart estimé c - b = 0,79 [-0,036 ; 1,7], soit 0,69 [-0,072 ; 1,5] écart-type.
+	==> b et d : différents à 79,4 % ; écart estimé d - b = 0,82 [0,012 ; 1,7], soit 0,72 [0,0081 ; 1,5] écart-type.
+	==> c et d : différents à 27,2 % ; écart estimé d - c = 0,04 [-0,75 ; 0,85], soit 0,035 [-0,66 ; 0,75] écart-type.
+	Écart estimé : médiane a posteriori, légèrement ramenée vers zéro par l'a priori, donc un peu plus petite que l'écart observé de l'étape 7. Crochets : intervalle de crédibilité à 95 %, si une différence existe (la valeur s'y trouve avec 95 % de probabilité ; ce n'est pas un intervalle de confiance).
+	--> Toutes les paires viennent d'une seule loi sur les regroupements : aucune correction paire par paire n'est nécessaire, et les réponses ne peuvent pas se contredire.
+7) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
+	Verdict : une différence existe probablement. Cela ne dit ni qu'elle est importante, ni pourquoi ; les paires sont plus bas.
+	Probabilité de chaque hypothèse, compte tenu des données et du point de départ :
+	  1. y diffère selon g              : 81,3 % (soutien modéré)
+	     Repose sur l'ensemble des écarts entre groupes, le plus grand entre moyennes (observé : d - a = 1,337, soit 1,18 écart-type commun au sein des groupes) : les données sont 4,34 fois plus probables avec une différence que sans.
+	  2. Aucune différence de y selon g : 18,7 %
+	     Contre elle : ces données sont 4,34 fois plus probables avec une différence.
+	  Selon le point de départ, la probabilité de l'hypothèse 1 va de 59,6 % à 89,7 % ; l'ordre ne change pas.
+	Quels groupes diffèrent (loi normale à variance commune ; probabilité, puis écart estimé et intervalle de crédibilité à 95 %) :
+	  a / b : semblables, soutien faible (différents à 29,7 %) ; écart estimé b - a = 0,18 [-0,62 ; 1], delta = 0,15 [-0,55 ; 0,86].
+	  a / c : différents, soutien modéré (différents à 82,4 %) ; écart estimé c - a = 0,97 [0,089 ; 1,8], delta = 0,84 [0,014 ; 1,6].
+	  a / d : différents, soutien modéré (différents à 83,1 %) ; écart estimé d - a = 0,99 [0,15 ; 1,9], delta = 0,87 [0,089 ; 1,7].
+	  b / c : différents, soutien modéré (différents à 78,7 %) ; écart estimé c - b = 0,79 [-0,036 ; 1,7], delta = 0,69 [-0,072 ; 1,5].
+	  b / d : différents, soutien modéré (différents à 79,4 %) ; écart estimé d - b = 0,82 [0,012 ; 1,7], delta = 0,72 [0,0081 ; 1,5].
+	  c / d : semblables, soutien faible (différents à 27,2 %) ; écart estimé d - c = 0,04 [-0,75 ; 0,85], delta = 0,035 [-0,66 ; 0,75].
+	  Regroupement le plus probable : a = b < c = d (39,4 %).
+	Moyennes observées (description de l'échantillon) :
+	  a = -0,372 (n = 12) ; b = -0,140 (n = 12) ; c = 0,916 (n = 12) ; d = 0,965 (n = 12).
+	Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend de la façon dont l'étude a été menée (tirage au sort, ordre, opérateur).
+	Formes du bruit, a priori en détail, mode de lecture : print(resultat, detail = TRUE).
+
+### Cas C : 9 groupes de 10 (deux niveaux vrais), regroupements explores par tirage
+> m.bay(y ~ g, data = d, sensitivity = FALSE)
+
+1) Plan reconnu : un facteur, g, à 9 groupes (a, b, c, d, e, f, g, h, i) ; N = 90.
+	--> Une seule question : y a-t-il une différence de y selon g ? Aucun test préalable ne choisit la méthode : les formes du bruit seront comparées, pas choisies.
+2) Contrôles des données.
+	==> Effectifs : 10 par groupe (9 groupes, N = 90).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur groupe : 3 sur 90 au-delà de 1,5 écart interquartile, 0 au-delà de 3. [Tukey, quantile() {stats}]
+	--> Aucune valeur n'est retirée : les 4 formes du bruit restent en lice, et celles à queues lourdes sont là pour ce genre de valeurs.
+3) Point de départ (a priori), fixé avant de voir les données.
+	==> 50,0 % de chances qu'une différence existe (pile ou face : la méthode ne prend pas parti) ; taille attendue r = 0,5 (échelle « medium » de Rouder et al. 2012) ; chacune des 4 formes du bruit part à 25,0 %.
+	==> Avec plus de 2 groupes, deux formes de différence partent à égalité : tous les groupes peuvent différer, ou un seul groupe s'écarte.
+	--> Ces valeurs ne sont pas ajustées sur les données ; leur influence n'est pas contrôlée (sensitivity = FALSE).
+4) Comparaison des formes du bruit (la façon dont les valeurs s'écartent du centre de leur groupe : normale ou à queues lourdes, variances égales ou non). [m.bay() {KefiR}, échantillonnage d'importance]
+	==> Probabilités a posteriori : normale, variances égales 90,1 % ; queues lourdes, variances égales 8,0 % ; normale, variances inégales 1,7 % ; queues lourdes, variances inégales 0,2 %.
+	==> Variances égales probables (98,1 %).
+	--> Les formes normales sont les plus probables (91,8 %) : la réponse porte surtout sur les moyennes.
+	--> Aucune forme n'est choisie : la réponse de chacune est pondérée par sa probabilité.
+5) Facteur de Bayes et précision numérique. [m.bay() {KefiR}]
+	==> Facteur de Bayes, différence contre absence : 42,2 (les données favorisent une différence).
+	==> Imprécision du calcul par simulation : environ 0,26 % sur le facteur de Bayes, sans effet sur la conclusion (ce n'est pas un risque d'erreur).
+	==> Sensibilité aux a priori non calculée (sensitivity = FALSE).
+	--> La conclusion n'est pas éprouvée contre d'autres points de départ.
+6) Quels groupes diffèrent, et de combien. [lmBF(), posterior() {BayesFactor}, hdi() {bayestestR}]
+	--> Changement de stratégie : 21 147 regroupements possibles, trop pour les calculer tous (plus de 8 groupes) ; ils sont explorés par tirage (échantillonneur de Gibbs, Gopalan et Berry 1998), 2 000 tours ; les probabilités portent une erreur de tirage d'environ 4 point(s).
+	==> Regroupements les plus probables (749 visités) : e = a = i = g < c = h = d = b = f (7,6 %) ; e = a = i = g = c < h = d = b = f (3,7 %) ; e = a = i < g = c = h = d = b = f (3,5 %).
+	==> e et f : différents à 96,2 % ; écart estimé f - e = 1,4 [0,48 ; 2,2], soit 1,4 [0,5 ; 2,4] écart-type.
+	==> d et e : différents à 94,8 % ; écart estimé e - d = -1 [-1,9 ; -0,25], soit -1,1 [-1,9 ; -0,21] écart-type.
+	==> b et e : différents à 94,3 % ; écart estimé e - b = -1,1 [-1,8 ; -0,21], soit -1,1 [-1,9 ; -0,21] écart-type.
+	==> a et f : différents à 94,2 % ; écart estimé f - a = 1,1 [0,36 ; 2], soit 1,1 [0,3 ; 2] écart-type.
+	==> e et h : différents à 93,2 % ; écart estimé h - e = 1 [0,22 ; 1,9], soit 1 [0,23 ; 1,9] écart-type.
+	==> f et i : différents à 93,0 % ; écart estimé i - f = -1 [-1,8 ; -0,22], soit -1 [-1,9 ; -0,19] écart-type.
+	==> a et d : différents à 91,7 % ; écart estimé d - a = 0,8 [0,05 ; 1,6], soit 0,81 [0,015 ; 1,7] écart-type.
+	==> a et b : différents à 90,8 % ; écart estimé b - a = 0,82 [0,054 ; 1,6], soit 0,82 [0,015 ; 1,6] écart-type.
+	==> a et h : différents à 90,1 % ; écart estimé h - a = 0,76 [0,012 ; 1,5], soit 0,77 [0,021 ; 1,6] écart-type.
+	==> d et i : différents à 89,6 % ; écart estimé i - d = -0,72 [-1,6 ; 0,053], soit -0,73 [-1,6 ; 0,081] écart-type.
+	==> b et i : différents à 89,3 % ; écart estimé i - b = -0,74 [-1,6 ; 0,022], soit -0,75 [-1,6 ; 0,047] écart-type.
+	==> h et i : différents à 87,9 % ; écart estimé i - h = -0,69 [-1,5 ; 0,071], soit -0,7 [-1,5 ; 0,067] écart-type.
+	==> f et g : différents à 82,0 % ; écart estimé g - f = -0,81 [-1,6 ; -0,028], soit -0,81 [-1,7 ; -0,023] écart-type.
+	==> c et e : différents à 81,9 % ; écart estimé e - c = -0,76 [-1,5 ; -0,0076], soit -0,77 [-1,6 ; 0,013] écart-type.
+	==> a et c : différents à 77,1 % ; écart estimé c - a = 0,52 [-0,2 ; 1,3], soit 0,52 [-0,24 ; 1,3] écart-type.
+	==> g et h : différents à 76,0 % ; écart estimé h - g = 0,47 [-0,32 ; 1,2], soit 0,47 [-0,32 ; 1,2] écart-type.
+	==> b et g : différents à 75,9 % ; écart estimé g - b = -0,52 [-1,3 ; 0,25], soit -0,53 [-1,3 ; 0,25] écart-type.
+	==> d et g : différents à 75,6 % ; écart estimé g - d = -0,51 [-1,3 ; 0,18], soit -0,51 [-1,4 ; 0,2] écart-type.
+	==> c et i : différents à 74,2 % ; écart estimé i - c = -0,43 [-1,2 ; 0,33], soit -0,43 [-1,3 ; 0,31] écart-type.
+	==> c et g : différents à 60,9 % ; écart estimé g - c = -0,21 [-1 ; 0,5], soit -0,21 [-1,1 ; 0,48] écart-type.
+	==> c et f : différents à 57,0 % ; écart estimé f - c = 0,59 [-0,13 ; 1,4], soit 0,59 [-0,18 ; 1,4] écart-type.
+	==> e et g : différents à 56,5 % ; écart estimé g - e = 0,54 [-0,22 ; 1,3], soit 0,54 [-0,24 ; 1,3] écart-type.
+	==> a et g : différents à 51,0 % ; écart estimé g - a = 0,29 [-0,42 ; 1], soit 0,29 [-0,44 ; 1,1] écart-type.
+	==> c et d : différents à 50,6 % ; écart estimé d - c = 0,29 [-0,46 ; 1,1], soit 0,29 [-0,49 ; 1] écart-type.
+	==> c et h : différents à 50,5 % ; écart estimé h - c = 0,25 [-0,54 ; 0,98], soit 0,25 [-0,47 ; 1,1] écart-type.
+	Les 11 autres paires penchent vers semblables (différentes à moins de 50 %) ; toutes les paires : $posthoc$pairs.
+	Écart estimé : médiane a posteriori, légèrement ramenée vers zéro par l'a priori, donc un peu plus petite que l'écart observé de l'étape 7. Crochets : intervalle de crédibilité à 95 %, si une différence existe (la valeur s'y trouve avec 95 % de probabilité ; ce n'est pas un intervalle de confiance).
+	--> Toutes les paires viennent d'une seule loi sur les regroupements : aucune correction paire par paire n'est nécessaire, et les réponses ne peuvent pas se contredire.
+7) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
+	Verdict : une différence existe très probablement. Cela ne dit ni qu'elle est importante, ni pourquoi ; les paires sont plus bas.
+	Probabilité de chaque hypothèse, compte tenu des données et du point de départ :
+	  1. y diffère selon g              : 97,7 % (soutien fort)
+	     Repose sur l'ensemble des écarts entre groupes, le plus grand entre moyennes (observé : f - e = 1,87, soit 1,91 écart-type commun au sein des groupes) : les données sont 42,2 fois plus probables avec une différence que sans.
+	  2. Aucune différence de y selon g : 2,3 %
+	     Contre elle : ces données sont 42,2 fois plus probables avec une différence.
+	Quels groupes diffèrent (loi normale à variance commune ; probabilité, puis écart estimé et intervalle de crédibilité à 95 %) :
+	  e / f : différents, soutien fort (différents à 96,2 %) ; écart estimé f - e = 1,4 [0,48 ; 2,2], delta = 1,4 [0,5 ; 2,4].
+	  d / e : différents, soutien modéré (différents à 94,8 %) ; écart estimé e - d = -1 [-1,9 ; -0,25], delta = -1,1 [-1,9 ; -0,21].
+	  b / e : différents, soutien modéré (différents à 94,3 %) ; écart estimé e - b = -1,1 [-1,8 ; -0,21], delta = -1,1 [-1,9 ; -0,21].
+	  a / f : différents, soutien modéré (différents à 94,2 %) ; écart estimé f - a = 1,1 [0,36 ; 2], delta = 1,1 [0,3 ; 2].
+	  e / h : différents, soutien modéré (différents à 93,2 %) ; écart estimé h - e = 1 [0,22 ; 1,9], delta = 1 [0,23 ; 1,9].
+	  f / i : différents, soutien modéré (différents à 93,0 %) ; écart estimé i - f = -1 [-1,8 ; -0,22], delta = -1 [-1,9 ; -0,19].
+	  a / d : différents, soutien modéré (différents à 91,7 %) ; écart estimé d - a = 0,8 [0,05 ; 1,6], delta = 0,81 [0,015 ; 1,7].
+	  a / b : différents, soutien modéré (différents à 90,8 %) ; écart estimé b - a = 0,82 [0,054 ; 1,6], delta = 0,82 [0,015 ; 1,6].
+	  a / h : différents, soutien modéré (différents à 90,1 %) ; écart estimé h - a = 0,76 [0,012 ; 1,5], delta = 0,77 [0,021 ; 1,6].
+	  d / i : différents, soutien modéré (différents à 89,6 %) ; écart estimé i - d = -0,72 [-1,6 ; 0,053], delta = -0,73 [-1,6 ; 0,081].
+	  b / i : différents, soutien modéré (différents à 89,3 %) ; écart estimé i - b = -0,74 [-1,6 ; 0,022], delta = -0,75 [-1,6 ; 0,047].
+	  h / i : différents, soutien modéré (différents à 87,9 %) ; écart estimé i - h = -0,69 [-1,5 ; 0,071], delta = -0,7 [-1,5 ; 0,067].
+	  f / g : différents, soutien modéré (différents à 82,0 %) ; écart estimé g - f = -0,81 [-1,6 ; -0,028], delta = -0,81 [-1,7 ; -0,023].
+	  c / e : différents, soutien modéré (différents à 81,9 %) ; écart estimé e - c = -0,76 [-1,5 ; -0,0076], delta = -0,77 [-1,6 ; 0,013].
+	  a / c : différents, soutien modéré (différents à 77,1 %) ; écart estimé c - a = 0,52 [-0,2 ; 1,3], delta = 0,52 [-0,24 ; 1,3].
+	  g / h : différents, soutien modéré (différents à 76,0 %) ; écart estimé h - g = 0,47 [-0,32 ; 1,2], delta = 0,47 [-0,32 ; 1,2].
+	  b / g : différents, soutien modéré (différents à 75,9 %) ; écart estimé g - b = -0,52 [-1,3 ; 0,25], delta = -0,53 [-1,3 ; 0,25].
+	  d / g : différents, soutien modéré (différents à 75,6 %) ; écart estimé g - d = -0,51 [-1,3 ; 0,18], delta = -0,51 [-1,4 ; 0,2].
+	  c / i : différents, soutien faible (différents à 74,2 %) ; écart estimé i - c = -0,43 [-1,2 ; 0,33], delta = -0,43 [-1,3 ; 0,31].
+	  c / g : différents, soutien faible (différents à 60,9 %) ; écart estimé g - c = -0,21 [-1 ; 0,5], delta = -0,21 [-1,1 ; 0,48].
+	  c / f : non tranché (différents à 57,0 %) ; écart estimé f - c = 0,59 [-0,13 ; 1,4], delta = 0,59 [-0,18 ; 1,4].
+	  e / g : non tranché (différents à 56,5 %) ; écart estimé g - e = 0,54 [-0,22 ; 1,3], delta = 0,54 [-0,24 ; 1,3].
+	  a / g : non tranché (différents à 51,0 %) ; écart estimé g - a = 0,29 [-0,42 ; 1], delta = 0,29 [-0,44 ; 1,1].
+	  c / d : non tranché (différents à 50,6 %) ; écart estimé d - c = 0,29 [-0,46 ; 1,1], delta = 0,29 [-0,49 ; 1].
+	  c / h : non tranché (différents à 50,5 %) ; écart estimé h - c = 0,25 [-0,54 ; 0,98], delta = 0,25 [-0,47 ; 1,1].
+	  Les 11 autres paires penchent vers semblables ; toutes les paires : $posthoc$pairs.
+	  Regroupements explorés par tirage (plus de 8 groupes) : environ 4 point(s) d'erreur de tirage.
+	  Regroupement le plus probable : e = a = i = g < c = h = d = b = f (7,6 %).
+	Moyennes observées (description de l'échantillon) :
+	  a = -0,22 (n = 10) ; b = 0,91 (n = 10) ; c = 0,49 (n = 10) ; d = 0,90 (n = 10) ; e = -0,55 (n = 10) ; f = 1,31 (n = 10) ; g = 0,19 (n = 10) ; h = 0,83 (n = 10) ; i = -0,11 (n = 10).
+	Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend de la façon dont l'étude a été menée (tirage au sort, ordre, opérateur).
+	Formes du bruit, a priori en détail, mode de lecture : print(resultat, detail = TRUE).

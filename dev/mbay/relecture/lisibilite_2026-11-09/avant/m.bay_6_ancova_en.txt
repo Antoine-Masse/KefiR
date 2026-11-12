@@ -1,0 +1,46 @@
+1) Plan recognised: analysis of covariance, g (3 groups), covariate(s) x; N = 45.
+	--> Question: does y differ according to g once x is accounted for?
+2) Checks on the data.
+	Values far from their group are sought on what the covariates do not explain.
+	==> Sizes: 15 per group (3 groups, N = 45).
+	==> Ties: none.
+	==> Values far from their group: 6 of 45 beyond 1.5 interquartile ranges, 1 beyond 3. [Tukey, quantile() {stats}]
+	==> Covariate x: common range of the groups from 1.15 to 9.03; it holds at least 80.0 % of each group (t2 the least).
+	--> Covariate(s) centred on their mean (x = 4.71): the groups are compared at this value, inside the data, not at 0 (Aiken and West 1991).
+	--> No value is removed.
+3) Shape of the noise.
+	==> Only the normal law with a common variance is computed, and the covariate acts in a straight line (linearity not tested): heavy tails, unequal variances and curvature are not validated with covariates yet.
+	--> 1 value(s) lie beyond 3 interquartile ranges once the covariates are accounted for: read the answer with caution.
+4) Starting point (priors), set by the method before seeing the data.
+	==> 50 % chance that a difference exists (heads or tails: the method takes no side); expected size r = 0.5 per term (Zellner-Siow).
+	--> Covariate(s) x: in every model, "no difference" included; slope prior of Cauchy scale sqrt(2)/4 (rscaleCont, the "medium" of BayesFactor), shared with its interactions with a factor; each answer is read against the model with the covariates only.
+	--> These values are not fitted on the data; step 5 varies them to see whether the answer holds.
+5) Bayes factors of the 2 models. [lmBF() {BayesFactor}]
+	==> Bayes factor, difference against none: 599000.
+	==> Precision: computed again with another seed, the probabilities move by at most 9.1e-08 percentage point(s), negligible.
+	==> Sensitivity: r (and rscaleCont with it) from 0.25 to 1, crossed with starting chances of a difference from 1 against 2 to 2 against 1. [m.bay() {KefiR}]
+	--> No term changes side.
+6) Which groups differ, and by how much. [lmBF(), posterior() {BayesFactor}, hdi() {bayestestR}]
+	==> Most probable groupings (5 compared): t1 < t2 = t3 (69.6 %); t1 < t2 < t3 (30.4 %); t1 = t2 < t3 (< 0.1 %).
+	==> t1 and t2: different at > 99.9 %; estimated gap t2 - t1 = 2.9 [1.8; 4.1], i.e. 1.9 [1.1; 2.8] residual SD (covariates accounted for).
+	==> t1 and t3: different at > 99.9 %; estimated gap t3 - t1 = 3.7 [2.6; 4.9], i.e. 2.4 [1.5; 3.4] residual SD (covariates accounted for).
+	==> t2 and t3: different at 30.4 %; estimated gap t3 - t2 = 0.78 [-0.31; 1.9], i.e. 0.51 [-0.24; 1.2] residual SD (covariates accounted for).
+	Estimated gap: posterior median, pulled slightly towards zero by the prior. Brackets: 95 % credible interval, if a difference exists (the value lies there with 95 % probability; not a confidence interval).
+	--> All pairs come from one single law over the groupings: no correction pair by pair is needed, and the answers cannot contradict each other.
+7) Conclusion: the hypotheses ranked, what each one rests on, its support.
+	Verdict: a difference very probably exists. This says neither that it matters nor why; the pairs are below.
+	  y differs according to g, at equal x: > 99.9 % (very strong support); No difference in y according to g: < 0.1 %.
+	Answer (yes, no or not settled; probability of a yes given the data and the starting point, and its prior):
+	  Difference in y according to g, at equal x? Yes, very strong support (probability of a yes > 99.9 %, prior 50.0 %).
+	     Rests on the data, which multiply its odds (yes against no) by 10^6 (Bayes factor).
+	  The answer does not change side when r or the starting chances change.
+	Which groups differ at the mean of the covariates (normal law; probability, then adjusted gap and 95 % credible interval):
+	  t1 / t2: different, very strong support (different at > 99.9 %); estimated gap t2 - t1 = 2.9 [1.8; 4.1], delta = 1.9 [1.1; 2.8].
+	  t1 / t3: different, very strong support (different at > 99.9 %); estimated gap t3 - t1 = 3.7 [2.6; 4.9], delta = 2.4 [1.5; 3.4].
+	  t2 / t3: alike, weak support (different at 30.4 %); estimated gap t3 - t2 = 0.78 [-0.31; 1.9], delta = 0.51 [-0.24; 1.2].
+	  Most probable grouping: t1 < t2 = t3 (69.6 %).
+	Raw observed means per factor (not adjusted; mean covariate per group, x : t1 = 4.34; t2 = 4.95; t3 = 4.83):
+	  g: t1 = 7.4 (n = 15); t2 = 11.0 (n = 15); t3 = 11.7 (n = 15)
+	  Residual standard deviation (covariates accounted for): 1.5.
+	These are probabilities of hypotheses, not p-values: no threshold of 5 % applies. Whether a difference has a cause depends on how the study was run (randomisation, order, operator).
+	Bayes factors, priors in detail, how to read: print(result, detail = TRUE).

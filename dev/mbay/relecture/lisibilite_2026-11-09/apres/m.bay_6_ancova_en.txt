@@ -1,0 +1,79 @@
+1) Plan recognised: analysis of covariance, g (3 groups), covariate(s) x;
+   N = 45.
+	--> Question: does y differ according to g once x is accounted for?
+2) Checks on the data [quantile() {stats}] - 1 far value, kept.
+	==> Sizes: 15 per group (N = 45).
+	==> Ties: none.
+	==> Values far from their group: 6 beyond 1.5 interquartile ranges, 1
+	    beyond 3 (of 45).
+	==> Covariate x: common range 1.15 to 9.03, at least 80.0 % of each
+	    group.
+	--> Covariate centred on its mean (x = 4.71): groups compared at this
+	    value.
+	--> No value is removed.
+	Note: far values sought on what the covariates do not explain.
+3) Shape of the noise - normal with a common variance, only.
+	==> The covariate acts in a straight line (linearity not tested).
+	--> 1 value lies beyond 3 interquartile ranges: read the answer with
+	    caution.
+	Note: heavy tails, unequal variances and curvature are not validated
+	      with covariates yet.
+4) Starting point (priors) - 50.0 % chance of a difference.
+	==> Expected size r = 0.5.
+	==> x is in every model; each answer is read against the covariates
+	    alone.
+	Note: these values are not tuned on the data; step 5 varies them.
+5) Solidity of the answer [lmBF() {BayesFactor}] - Bayes factor 10^6, the order
+   does not change.
+	==> Bayes factor: 10^6 (the data favour a difference).
+	==> Precision of the computation: < 0.1 point on the probabilities,
+	    negligible.
+	==> Sensitivity: the leading answer goes from > 99.9 % to > 99.9 %.
+	--> The answer does not change side.
+	Note: r goes from 0.25 to 1 (rscaleCont with it), the starting chances
+	      from 1 against 2 to 2 against 1.
+6) Which groups differ, and by how much [lmBF(), posterior() {BayesFactor},
+   hdi() {bayestestR}] - t1 < t2 = t3 ahead (69.6 %).
+	==> If a difference exists, leading groupings: t1 < t2 = t3 (69.6 %);
+	    t1 < t2 < t3 (30.4 %); t1 = t2 < t3 (< 0.1 %).
+	==> t1/t2: different at > 99.9 %; t2 - t1 = 2.9 [1.8; 4.1], i.e. 1.93
+	    residual SD (covariates accounted for).
+	==> t1/t3: different at > 99.9 %; t3 - t1 = 3.7 [2.6; 4.9], i.e. 2.43
+	    residual SD (covariates accounted for).
+	==> t2/t3: different at 30.4 %; t3 - t2 = 0.8 [-0.3; 1.9], i.e. 0.51
+	    residual SD (covariates accounted for).
+	Note: [ ; ] = 95 % credible interval (95 % chance that the gap lies
+	      there).
+	Note: the estimated gap is a little smaller than the observed one, by
+	      caution with small samples.
+
+7) Bilan - y differs according to g, at equal x: > 99.9 % (very strong support).
+	==> Verdict: a difference very probably exists.
+	==> Probability of each hypothesis:
+	    1. y differs according to g, at equal x : > 99.9 % (very strong
+	    support)
+	    2. No difference in y according to g    : < 0.1 %
+	==> Whatever the starting point: > 99.9 %; the order does not change.
+	Note: the data are 10^6 times more probable under hypothesis 1 than
+	      under 2 (Bayes factor; 1 to 3 weak, 3 to 20 moderate, 20 to 150
+	      strong, beyond very strong).
+
+	==> Different: t1/t2, t1/t3 (very strong).
+	==> Not settled: t2/t3.
+	==> If a difference exists, most probable grouping: t1 < t2 = t3
+	    (69.6 %).
+	Note: different from 75 % of probability, alike up to 25 %, otherwise
+	      not settled; gaps in figures at step 6.
+
+	==> Raw means, g: t1 = 7.4; t2 = 11.0; t3 = 11.7 (n = 15).
+	==> Mean x per group: t1 = 4.34; t2 = 4.95; t3 = 4.83.
+	==> x is in every model, so the groups are compared at equal x; its own
+	    effect is not the question asked.
+	==> Residual standard deviation (covariates accounted for): 1.48; normal
+	    law with a common variance only.
+	Note: for a report: "y differs according to g, at equal x (posterior
+	      probability > 99.9 %), Bayes factor 10^6 (m.bay {KefiR},
+	      BayesFactor, Rouder et al. 2012)."
+	Note: probabilities of hypotheses, not p-values; neither the size nor
+	      the cause of a difference; the method with print(result,
+	      detail = TRUE).

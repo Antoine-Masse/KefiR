@@ -1,0 +1,10 @@
+--- g recycle
+g longueur 15 pour 30 y : n=30 groupes=16,14 P=0.234
+g longueur 10 pour 30 y : n=30 groupes=15,15 P=0.289
+g longueur 7 pour 30 y : ERREUR le tableau de remplacement a 7 lignes, le tableau remplacé en a 30 
+--- Origine du NaN : groupe ex-aequo, t
+h1= FALSE  het= FALSE  :  -12.499 0.032 497 
+h1= TRUE  het= FALSE  :  -13.418 0.036 435 
+h1= FALSE  het= TRUE  :  valeur manquante là où TRUE / FALSE est requis 
+h1= TRUE  het= TRUE  :  valeur manquante là où TRUE / FALSE est requis 
+--- Crash t sur plans simples, sans ex-aequo : balayage de petits plans

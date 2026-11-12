@@ -1,0 +1,124 @@
+     model     p        
+[1,] ""        "0.33333"
+[2,] "A"       "0.16667"
+[3,] "B"       "0.16667"
+[4,] "A+B"     "0.16667"
+[5,] "A+B+A:B" "0.16667"
+max |HOP - hand| 3 factors: 6.938894e-18  sum: 1 
+   term  prior_h1
+1     A 0.5000000
+2     B 0.5000000
+3     C 0.5000000
+4   A:B 0.1666667
+5   A:C 0.1666667
+6   B:C 0.1666667
+7 A:B:C 0.0312500
+
+===== base y~A*B =====
+  term      p_h1  prior_h1     log_bf
+1    A 0.8545120 0.5000000  1.7704371
+2    B 0.4506048 0.5000000 -0.1982273
+3  A:B 0.2217051 0.1666667  0.3536804
+p_null 0.1209798  n_models 5 
+        model     log_bf log_prior
+1      (null)  0.0000000 -1.098612
+2           A  1.9576169 -1.791759
+3           B -0.9034688 -1.791759
+4       A + B  1.2175612 -1.791759
+5 A + B + A:B  1.2988717 -1.791759
+                    bf        error
+A            1.9576169 3.200469e-08
+B           -0.9034688 1.123959e-04
+A:B         -0.2171895 9.159269e-05
+A + B        1.2083939 7.042105e-03
+A + A:B      1.9847582 2.187762e-03
+B + A:B     -1.0698380 3.805655e-03
+A + B + A:B  1.3363230 7.209822e-03
+seed intact: TRUE  repro: TRUE 
+no seed before -> exists after: FALSE 
+sens TRUE vs FALSE central p_h1:
+          [,1]      [,2]      [,3]
+[1,] 0.8545120 0.4506048 0.2217051
+[2,] 0.8542439 0.4495923 0.2289342
+     [,1]     [,2]       [,3]     [,4]     [,5]
+[1,]    0 1.957617 -0.9034688 1.217561 1.298872
+[2,]    0 1.957617 -0.9034688 1.174331 1.329117
+draws 2000 vs 4000 vs 9000 identical: TRUE TRUE 
+error_pct: 1.09382 
+
+===== B*A =====
+  term      p_h1  prior_h1     log_bf
+1    B 0.4499526 0.5000000 -0.2008624
+2    A 0.8543393 0.5000000  1.7690484
+3  B:A 0.2215437 0.1666667  0.3527451
+p_null 0.1211234  n_models 5 
+
+===== A+B+A:B =====
+  term      p_h1  prior_h1     log_bf
+1    A 0.8545120 0.5000000  1.7704371
+2    B 0.4506048 0.5000000 -0.1982273
+3  A:B 0.2217051 0.1666667  0.3536804
+p_null 0.1209798  n_models 5 
+
+===== A+B+B:A =====
+  term      p_h1  prior_h1     log_bf
+1    A 0.8545120 0.5000000  1.7704371
+2    B 0.4506048 0.5000000 -0.1982273
+3  A:B 0.2217051 0.1666667  0.3536804
+p_null 0.1209798  n_models 5 
+
+===== x,g df =====
+  term      p_h1 prior_h1     log_bf
+1    A 0.8519487      0.5  1.7499677
+2    B 0.4409253      0.5 -0.2374078
+p_null 0.1231113  n_models 4 
+x ~ A + B 
+
+===== A:B only =====
+ERROR: Une interaction demande tous ses termes d'ordre inférieur dans la formule (écrire A * B) : A:B. 
+
+===== A + A:B =====
+ERROR: Une interaction demande tous ses termes d'ordre inférieur dans la formule (écrire A * B) : A:B. 
+
+===== A/B =====
+ERROR: Une interaction demande tous ses termes d'ordre inférieur dans la formule (écrire A * B) : A:B. 
+
+===== backtick additive =====
+ERROR: invalid model formula in ExtractVars 
+
+===== backtick interaction =====
+ERROR: undefined columns selected 
+
+===== x,g df with odd names =====
+  term      p_h1 prior_h1     log_bf
+1 my A 0.8519487      0.5  1.7499677
+2  B-2 0.4409253      0.5 -0.2374078
+p_null 0.1231113  n_models 4 
+
+===== factor named y =====
+  term      p_h1  prior_h1     log_bf
+1    y 0.8545120 0.5000000  1.7704371
+2    B 0.4506048 0.5000000 -0.1982273
+3  y:B 0.2217051 0.1666667  0.3536804
+p_null 0.1209798  n_models 5 
+sd_within 1.101509 
+
+===== factor named .y =====
+  term      p_h1  prior_h1     log_bf
+1   .y 0.8545120 0.5000000  1.7704371
+2    B 0.4506048 0.5000000 -0.1982273
+3 .y:B 0.2217051 0.1666667  0.3536804
+p_null 0.1209798  n_models 5 
+
+===== factors named f2 f1 =====
+   term      p_h1  prior_h1     log_bf
+1    f2 0.8545120 0.5000000  1.7704371
+2    f1 0.4506048 0.5000000 -0.1982273
+3 f2:f1 0.2217051 0.1666667  0.3536804
+p_null 0.1209798  n_models 5 
+compare with A*B:
+  term      p_h1  prior_h1     log_bf
+1    A 0.8545120 0.5000000  1.7704371
+2    B 0.4506048 0.5000000 -0.1982273
+3  A:B 0.2217051 0.1666667  0.3536804
+p_null 0.1209798  n_models 5 

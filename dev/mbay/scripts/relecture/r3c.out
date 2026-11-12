@@ -1,0 +1,19 @@
+
+=== 1. ROPE : verite exactement nulle (f=0), puis f=.03 (negligeable), puis f=.2 (hors ROPE). 40 jeux/cellule, medianes
+ a   n/gr  f_vrai  P(H1|D)  P(f<.05|D,H1)  P(ROPE|D)=P0+P1*.   med f post | H1
+
+=== 4. Non-normalite ; une branche unique gaussienne (niveau 1)
+ Sans aberrant, moyennes -1,0,1 : 0.9944 1e-04 4e-04 
+ Une valeur aberrante +30 (groupe 1) : 0.1682 0.7448 0.003 
+                   oui  fort   non  medP   p05 kw05
+lognorm_effet_raw 0.27 0.015 0.265 0.351 0.175 0.49
+lognorm_effet_log 0.51 0.075 0.170 0.513 0.410 0.41
+t2_H0             0.05 0.000 0.620 0.218 0.025 0.04
+                           oui  fort   non  medP  p05  kw05
+hetero_H0_petit_grand_sd 0.575 0.255 0.130 0.611 0.52 0.235
+hetero_H0_inverse        0.000 0.000 0.905 0.207 0.00 0.000
+
+=== 5. Sphericite violee : T=6, n=20, AR1(.95) ; H0 vraie ; BF intercept aleatoire
+ P>.5 : 0.083 ; P>.95 : 0.017 ; p<.05 non corrige : NA ; med P : 0.069 (120 rep)
+
+FIN

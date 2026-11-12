@@ -1,0 +1,27 @@
+=== A. Groupe sans rapport : pair 1-2 a t ~ 9.5 (n=20, d=3 sigma), groupe 3 etale d'un facteur S
+S=       1  arith log_bf   17.672 (BF 4.73e+07) err% 0.07 ess 19824 n  20000 | geom   17.657 ess 19838
+S=      10  arith log_bf   17.248 (BF 3.1e+07) err% 0.13 ess 19391 n  20000 | geom   17.371 ess 19888
+S=     100  arith log_bf   15.422 (BF 4.99e+06) err% 0.23 ess 18135 n  20000 | geom   17.864 ess 19482
+S=    1000  arith log_bf   13.126 (BF 5.02e+05) err% 0.23 ess 18108 n  20000 | geom   17.556 ess 19179
+S=   10000  arith log_bf   10.824 (BF 5.02e+04) err% 0.23 ess 18108 n  20000 | geom   16.917 ess 19043
+S=   1e+06  arith log_bf    6.218 (BF 502) err% 0.23 ess 18108 n  20000 | geom   15.419 ess 18998
+Reference k=2, groupes 1 et 2 seuls : log_bf 17.169
+=== B. Eloigner un petit groupe : BF en fonction de d, a SS fixes (n_small, k)
+n=(2,2) 
+               d=3     d=10    d=30   d=100  d=1000 d=10000 d=1e+06
+arith         0.08     0.55    0.87    1.11    1.44    1.72    2.26
+geom          0.11     0.52    0.72    0.79    0.90    0.70    0.40
+zs            0.44     1.49    2.52    3.70    5.99    8.29   12.90
+ess_arith 16975.01 12390.11 7249.97 3632.32 2973.87 2004.55   40.83
+n=(1000,2) 
+               d=3     d=10    d=30   d=100  d=1000 d=10000  d=1e+06
+arith         0.48     0.86    1.11    1.31    1.59    1.84     2.59
+geom          0.51     0.81    0.92    0.97    1.06    0.94     0.56
+zs            5.92    85.57  506.96 1512.70 3788.77 6088.80 10689.37
+ess_arith 16696.75 10456.78 5583.92 2568.71 1927.86 1213.23    20.16
+n=(3,3) 
+               d=3     d=10    d=30   d=100  d=1000 d=10000 d=1e+06
+arith         0.57     1.87    3.00    4.21    6.53    8.82   13.43
+geom          0.57     1.75    2.79    3.96    6.23    8.53   13.14
+zs            1.17     4.08    7.28   10.88   17.78   24.69   38.51
+ess_arith 17908.46 12057.57 8800.35 6086.80 2382.24 3246.09 3255.83

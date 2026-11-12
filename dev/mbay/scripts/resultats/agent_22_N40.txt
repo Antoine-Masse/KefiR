@@ -1,0 +1,45 @@
+R version 4.6.1 (2026-06-24 ucrt) ; BayesFactor 0.9.12.4.8 ; graine 20261240 
+N total 40 ; jeux faits 300 sur 300 ; arret budget : FALSE ; duree 586 s ; 1.954 s/jeu
+Statut des jeux :
+
+ ok 
+300 
+Erreur BayesFactor (colonne error, proportionnelle) : mediane par jeu des medianes 0.0182 ; maximum sur tous jeux et modeles 0.891 ; q99 du max par jeu 0.705 
+
+Taux par jeu d'au moins un terme au-dessus du seuil
+ apparie   P>0.50 : 0.603 [0.546 ; 0.659] (181/300)
+ apparie   P>0.75 : 0.170 [0.129 ; 0.217] (51/300)
+ apparie   P>0.95 : 0.017 [0.005 ; 0.038] (5/300)
+ uniforme  P>0.50 : 0.487 [0.429 ; 0.545] (146/300)
+ uniforme  P>0.75 : 0.143 [0.106 ; 0.188] (43/300)
+ uniforme  P>0.95 : 0.010 [0.002 ; 0.029] (3/300)
+ heredite  P>0.50 : 0.253 [0.205 ; 0.307] (76/300)
+ heredite  P>0.75 : 0.040 [0.021 ; 0.069] (12/300)
+ heredite  P>0.95 : 0.000 [0.000 ; 0.012] (0/300)
+ aov p<0,05 au moins une fois : 0.347 [0.293 ; 0.403] (104/300) ; par terme 0.0595 
+
+P(terme|D) par terme : moyenne et taux P>0,5 ; a priori de la loi
+                   A      B      C    A:B    A:C    B:C  A:B:C
+apriori       0.5000 0.5000 0.5000 0.5000 0.5000 0.5000 0.5000
+moyenne       0.3281 0.3220 0.3314 0.3732 0.3783 0.3791 0.4147
+mediane       0.2750 0.2690 0.2724 0.3216 0.3225 0.3304 0.3773
+taux_P_sup_05 0.1100 0.0933 0.1100 0.1133 0.1167 0.1267 0.1900
+ ^ apparie 
+                   A      B      C    A:B    A:C    B:C  A:B:C
+apriori       0.7368 0.7368 0.7368 0.3158 0.3158 0.3158 0.0526
+moyenne       0.4354 0.4257 0.4370 0.0924 0.1001 0.0949 0.0069
+mediane       0.3902 0.3729 0.3886 0.0680 0.0678 0.0699 0.0034
+taux_P_sup_05 0.2500 0.2300 0.2400 0.0100 0.0233 0.0067 0.0000
+ ^ uniforme 
+                   A      B      C    A:B    A:C    B:C  A:B:C
+apriori       0.5000 0.5000 0.5000 0.1250 0.1250 0.1250 0.0078
+moyenne       0.3119 0.3023 0.3145 0.0351 0.0408 0.0363 0.0007
+mediane       0.2571 0.2520 0.2576 0.0236 0.0240 0.0247 0.0003
+taux_P_sup_05 0.1000 0.0833 0.1100 0.0033 0.0000 0.0000 0.0000
+ ^ heredite 
+
+Nombre moyen de termes P>0,5 (apparie) : 0.86 
+
+P(modele nul | D) : a priori uniforme 0.0526 ; heredite 0.125 
+ uniforme  mediane 0.2587 ; decile bas 0.0964 ; moyenne 0.2442
+ heredite  mediane 0.3396 ; decile bas 0.1548 ; moyenne 0.3156

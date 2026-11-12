@@ -1,0 +1,138 @@
+############ PLAN : g4 ############
+
+== Donnees (head) ==
+  souche    y
+1      A 20.5
+2      A 22.0
+3      A 16.6
+4      A 25.0
+5      A 23.1
+6      A 23.0
+n = 32 
+
+============ m.test ============
+m.test(y ~ souche, data = d) 
+
+1) Plus de deux groupes.
+2) ASSOMPTION 1/3 : Contrôle de l'indépendance - vérifiez que les observations entre les groupes sont indépendantes.
+	Vérifiez que :
+	  • Pas de mesures répétées
+	  • Pas d'effet cluster
+	  • Pas d'effets report [influence sur l'ordre des mesures]
+3) Détection outliers [identify_outliers() {rstatix}]
+	Résultat : 12.5% outliers (maximum dans un groupe, non extrêmes)
+	==> Valeurs à surveiller, mais non excessives
+4) Ajustement du modèle ANOVA [aov()].
+5) ASSOMPTION 2/3 : Contrôle ACADÉMIQUE de la normalité des résidus du modèle ANOVA.
+	Shapiro-Wilk [shapiro.test()]
+	==> Les résidus sont normaux (p-value : 0.84).
+6) ASSOMPTION 3/3 : Contrôle ACADÉMIQUE de l'homogénéité de la variance des groupes.
+	Test de Bartlett [bartlett.test()] - Variances homogènes (p = 0.81).
+7) ANOVA à un facteur [aov()].
+	Résultat : p = 0.00094 (< alpha).
+	==> Différences de moyennes significatives entre groupes.
+8) Posthoc - Tests post-hoc sur groupes normaux.
+	a) Posthoc - Analyse des différences de moyennes par bootstrap [pairwise.boot() de {KefiR}].
+	b) Posthoc - Test de Student [pairwise.t.test(pool.sd=TRUE)].
+		Attention ! Le bootstrap détecte des faiblesses dans la signification des résultats.
+	c) Posthoc - Test conservateur de Scheffé [scheffe.test() of {agricolae}].
+	d) Posthoc - Test conservateur de Tukey [HSD.test() of {agricolae}].
+	e) Posthoc - Test puissant de Newman-Keuls [SNK.test() of {agricolae}].
+	f) Posthoc - Test puissant de Waller-Duncan [waller.test() of {agricolae}].
+
+m.test() - version 02 bêta 2026 - envoyer ce bilan à antoine.masse@u-bordeaux.fr en cas d'anomalie.
+
+[m.test : OK - 1.5 s]
+
+============ m.bay ============
+m.bay(y ~ souche, data = d) 
+
+1) Plan reconnu : un facteur, souche, à 4 groupes (A, B, C, D) ; N = 32.
+	--> Une question : y diffère-t-il selon souche ?
+	Note : aucun test préalable ne choisit la méthode ; les formes du bruit
+	       sont comparées.
+2) Contrôles des données [quantile() {stats}] - rien à retirer.
+	==> Effectifs : 8 par groupe (N = 32).
+	==> Ex-aequo : 6,2 % des valeurs répètent une valeur déjà vue.
+	==> Valeurs éloignées de leur groupe : 1 au-delà de 1,5 écart
+	    interquartile, 0 au-delà de 3 (sur 32).
+	--> Aucune valeur retirée : les formes à queues lourdes sont là pour ce
+	    genre de valeurs.
+3) Formes du bruit [m.bay() {KefiR}] - normale, variances égales en tête
+   (68,8 %).
+	==> Probabilités : normale, variances égales 68,8 % ; queues lourdes,
+	    variances égales 14,3 % ; normale, variances inégales 12,6 % ;
+	    queues lourdes, variances inégales 4,2 %.
+	==> Variances égales probables (83,1 %).
+	--> La réponse porte surtout sur les moyennes (formes normales :
+	    81,5 %).
+	Note : la forme du bruit est la façon dont les valeurs s'écartent dans
+	       leur groupe ; les queues lourdes, des valeurs éloignées plus
+	       fréquentes que sous la loi normale.
+	Note : aucune forme n'est choisie ; chaque réponse est pondérée par sa
+	       probabilité.
+4) Point de départ (a priori) - 50,0 % de chances d'une différence (pile ou
+   face).
+	==> Taille attendue r = 0,5 ; chaque forme du bruit part à 25,0 %.
+	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
+	       fait varier.
+5) Solidité de la réponse [m.bay() {KefiR}] - facteur de Bayes 40, l'ordre ne
+   change pas.
+	==> Facteur de Bayes : 40 (les données favorisent une différence).
+	==> Précision du calcul : environ 0,5 % sur le facteur de Bayes,
+	    négligeable.
+	==> Sensibilité : « y diffère selon souche » va de 92,8 % à 98,9 %.
+	--> L'ordre ne change pas ; seul le degré de soutien peut changer.
+	Note : le facteur de Bayes dit combien de fois les données sont plus
+	       probables avec une différence que sans.
+	Note : r va de 0,25 à 1, les chances de départ de 1 contre 2 à 2 contre
+	       1, la répartition des variances varie.
+6) Quels groupes diffèrent, et de combien [lmBF(), posterior() {BayesFactor},
+   hdi() {bayestestR}] - B = A = C < D en tête (59,7 %).
+	==> Si une différence existe, regroupements en tête : B = A = C < D
+	    (59,7 %) ; B < A = C < D (12,4 %) ; B = A < C < D (11,7 %).
+	==> A/B : différents à 26,7 % ; B - A = -0,9 [-3,5 ; 1,5], soit -0,33
+	    écart-type.
+	==> A/C : différents à 26,6 % ; C - A = 0,4 [-2,0 ; 2,8], soit 0,14
+	    écart-type.
+	==> A/D : différents à 96,3 % ; D - A = 3,7 [1,0 ; 6,3], soit 1,36
+	    écart-type.
+	==> B/C : différents à 31,2 % ; C - B = 1,3 [-1,2 ; 3,9], soit 0,47
+	    écart-type.
+	==> B/D : différents à 97,2 % ; D - B = 4,6 [1,7 ; 7,4], soit 1,71
+	    écart-type.
+	==> C/D : différents à 95,2 % ; D - C = 3,3 [0,7 ; 6,0], soit 1,22
+	    écart-type.
+	Note : [ ; ] = intervalle de crédibilité à 95 % (95 % de chances d'y
+	       trouver l'écart).
+	Note : l'écart estimé est ramené vers 0 par l'a priori, surtout quand
+	       les groupes sont petits.
+
+7) Bilan - y diffère selon souche : 97,6 % (soutien fort).
+	==> Verdict : une différence existe très probablement.
+	==> Probabilité de chaque hypothèse :
+	    1. y diffère selon souche : 97,6 % (soutien fort)
+	    2. Aucune différence de y selon souche : 2,4 %
+	==> Selon le point de départ : 92,8 % à 98,9 % ; l'ordre ne change pas.
+	Note : les données sont 40 fois plus probables sous l'hypothèse 1 que
+	       sous la 2 (facteur de Bayes ; 1 à 3 faible, 3 à 20 modéré, 20 à
+	       150 fort, au-delà très fort).
+
+	==> Différents : A/D, B/D, C/D (fort).
+	==> Non tranchés : A/B, A/C, B/C.
+	==> Si une différence existe, regroupement le plus probable :
+	    B = A = C < D (59,7 %).
+	Note : différents à partir de 75 % de probabilité, semblables jusqu'à
+	       25 %, sinon non tranchés ; écarts chiffrés à l'étape 6.
+
+	==> Moyennes observées : A = 21,6 ; B = 20,5 ; C = 22,1 ; D = 26,3
+	    (n = 8 par groupe).
+	==> Écarts-types : A = 2,5 ; B = 2,7 ; C = 3,1 ; D = 2,2.
+	Note : pour un compte rendu : « y diffère selon souche (probabilité a
+	       posteriori 97,6 %), facteur de Bayes 40 (m.bay {KefiR},
+	       comparaison de lois du bruit, Rouder et al. 2012). »
+	Note : probabilités d'hypothèses, pas des p-values ; ni l'importance, ni
+	       la cause d'une différence ; la méthode avec print(resultat,
+	       detail = TRUE).
+
+[m.bay : OK - 13 s]

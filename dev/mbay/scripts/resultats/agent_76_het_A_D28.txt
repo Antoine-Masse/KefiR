@@ -1,0 +1,3 @@
+R version 4.6.1 (2026-06-24 ucrt)
+agent_76 : sujets, 15 x 3, scenario het_A, N = 200
+m.bay P(cond)>.75 : 0.155 | >.95 : 0.035 || ANOVA MR p<.05 : 0.230 | Friedman p<.05 : 0.420 || prudence D28 declenchee : 0.950 | oui fort affiche (P>.95 sans plafond) : 0.000

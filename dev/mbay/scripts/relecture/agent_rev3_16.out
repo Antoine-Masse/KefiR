@@ -1,0 +1,54 @@
+y~temps, wt='temps' sans id : plan=oneway P=0.280 groupes=t1/t2 (15,15) label=y ~ temps
+y~temps, within='temps' sans id : plan=oneway P=0.280 groupes=t1/t2 (15,15) label=y ~ temps
+y~temps, id='id' : ERREUR m.bay() ne traite pas encore données appariées : ce plan n'est pas validé (utiliser m.test()). 
+t.test apparie p = 2.654068e-06 ; non apparie p = 0.4716618 
+y~I(dose>2) : plan=oneway P=0.171 groupes=1/2/5 (10,10,10) label=y ~ I(dose > 2)
+y~ifelse(dose>2,'a','b') : plan=oneway P=0.171 groupes=1/2/5 (10,10,10) label=y ~ ifelse(dose > 2, "a", "b")
+y~dose : plan=oneway P=0.171 groupes=1/2/5 (10,10,10) label=y ~ dose
+g longueur 15 pour y 30 : plan=oneway P=0.283 groupes=a/b (16,14) label=x ~ g
+g NaN/Inf : plan=oneway P=0.155 groupes=1/2/5/Inf (10,10,10,1) label=x ~ g
+y avec 1e200 : ERREUR valeur manquante là où TRUE / FALSE est requis 
+y*1e-200 : ERREUR valeur manquante là où TRUE / FALSE est requis 
+Messages d'avis :
+1: Dans stats::rgamma(S, a[i], rate = b[i]) : Production de NAs
+2: Dans stats::rgamma(S, a[i], rate = b[i]) : Production de NAs
+3: Dans stats::rgamma(S, a[i], rate = b[i]) : Production de NAs
+4: Dans stats::rgamma(S, a[i], rate = b[i]) : Production de NAs
+5: Dans stats::rgamma(S, a[i], rate = b[i]) : Production de NAs
+6: Dans stats::rgamma(S, a[i], rate = b[i]) : Production de NAs
+draws=1 : ERREUR l'argument est de longueur nulle 
+u=1e-5 : ERREUR valeur manquante là où TRUE / FALSE est requis 
+y~temps, temps hors data : ERREUR colonnes non définies sélectionnées 
+--- prior_h1=.2 : cotes reelles et annoncees
+[1] "1:16" "1:4"  "1:1" 
+  Variés dans la sensibilité : r de 0,25 à 1, cotes 1:4 à 4:1, Dirichlet 0,5 à 4,5, bruit imposé normal ou non. 
+--- laws='normal_eq' : priors annonces
+  Bruit : chacune des 1 formes part à égalité ; rapports de précision Dirichlet(1,5) ; queues lourdes nu - 2 ~ Exp(1).
+  Variés dans la sensibilité : r de 0,25 à 1, cotes 1:4 à 4:1, Dirichlet 0,5 à 4,5, bruit imposé normal ou non.
+--- temps defaut, k=2 n=20 ; k=8 n=10 (draws=4000, sensibilite)
+4.141846 secs 
+Bilan de m.bay : x ~ g (N = 73)
+Hypothèses, de la plus probable à la moins probable :
+  1. g agit sur x           : 64,7 % (soutien faible)
+  2. Aucun effet de g sur x : 35,3 %
+  Les données ne tranchent pas : selon les a priori, cette probabilité va de 24,6 % à > 99,9 % et l'hypothèse en tête change.
+Réponses par terme :
+  g a-t-il un effet ? Oui 64,7 %, non 35,3 % (a priori 50,0 % ; facteur de Bayes 1,83).
+Forme du bruit, comparée et non choisie (probabilités a posteriori) :
+  normale, variances inégales 96,0 % ; queues lourdes, variances inégales 4,0 % ; normale, variances égales < 0,1 % ; queues lourdes, variances égales < 0,1 %.
+A priori, fixés d'avance :
+  Effet : 50,0 % avant de voir les données. Taille d'un effet : échelle r = 0,5 sur l'écart standardisé.
+  Bruit : chacune des 4 formes part à égalité ; rapports de précision Dirichlet(1,5) ; queues lourdes nu - 2 ~ Exp(1).
+  Variés dans la sensibilité : r de 0,25 à 1, cotes 1:4 à 4:1, Dirichlet 0,5 à 4,5, bruit imposé normal ou non.
+Comment lire :
+  Une probabilité est ici celle d'une hypothèse, sachant les données et les a priori ci-dessus.
+  Le facteur de Bayes dit de combien les données déplacent les cotes. Il ne dépend pas des cotes a priori.
+  Ni l'un ni l'autre n'est une p-value : une p-value est la probabilité de données au moins aussi extrêmes s'il n'y avait pas d'effet.
+  Soutien : faible sous 75 %, modéré sous 95 %, fort sous 99,3 %, puis très fort.
+Avertissements :
+  Beaucoup de groupes et un très petit : si ce groupe est à l'écart, la réponse globale est prudente, car cet écart peut aussi se lire comme une plus grande variance.
+  Précision numérique faible : erreur sur le facteur de Bayes d'environ 3.9 %.
+34.69102 secs 
+ normal_eq normal_het       t_eq      t_het 
+ 1.0000000  0.6478268  0.9999832  0.6290535 
+k=6 n_s=3 d=1000 : P= 0.8363081  Welch p= 1.389748e-53  note ?  FALSE 

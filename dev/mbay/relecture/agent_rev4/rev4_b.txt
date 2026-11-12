@@ -1,0 +1,165 @@
+
+===== aliased A + C =====
+  term      p_h1 prior_h1 error_pct
+1    A 0.6823053      0.5 0.5050684
+2    C 0.6823053      0.5 0.5050684
+p_null 0.0699581  n_models 4  notes:  
+
+===== A + N (N determines A) =====
+  term      p_h1 prior_h1 error_pct
+1    A 0.7582805      0.5 0.8323904
+2    N 0.6658634      0.5 0.8323904
+p_null 0.07357869  n_models 4  notes:  
+
+===== empty cell additive =====
+  term      p_h1 prior_h1 error_pct
+1    A 0.8310575      0.5 0.8685776
+2    B 0.4537229      0.5 0.8685776
+p_null 0.1324521  n_models 4  notes:  
+
+===== one per cell A*B =====
+ERROR: Aucun degré de liberté résiduel pour le modèle complet : il faut moins de termes. 
+
+===== one per cell A+B =====
+  term      p_h1 prior_h1 error_pct
+1    A 0.6470684      0.5 0.6650674
+2    B 0.4480155      0.5 0.6650674
+p_null 0.2773958  n_models 4  notes:  
+
+===== one per cell + 1 A*B =====
+  term      p_h1  prior_h1 error_pct
+1    A 0.7526647 0.5000000  4.084177
+2    B 0.4700651 0.5000000  4.084177
+3  A:B 0.2032777 0.1666667  4.084177
+p_null 0.1984185  n_models 5  notes:  
+
+===== unbalanced =====
+  term      p_h1  prior_h1 error_pct
+1    A 0.5153045 0.5000000  1.093601
+2    B 0.4382560 0.5000000  1.093601
+3  A:B 0.1017440 0.1666667  1.093601
+p_null 0.3428558  n_models 5  notes:  
+
+===== numeric B 3 values =====
+  term      p_h1  prior_h1 error_pct
+1    A 0.8545120 0.5000000   1.09382
+2    B 0.4506048 0.5000000   1.09382
+3  A:B 0.2217051 0.1666667   1.09382
+p_null 0.1209798  n_models 5  notes:  
+
+===== NA =====
+  term      p_h1  prior_h1 error_pct
+1    A 0.7965750 0.5000000  1.076521
+2    B 0.3815032 0.5000000  1.076521
+3  A:B 0.1706983 0.1666667  1.076521
+p_null 0.1738372  n_models 5  notes: 2 observation(s) with missing values removed. 
+
+===== A*B*C =====
+   term        p_h1  prior_h1 error_pct
+1     A 0.601078070 0.5000000  21.79412
+2     B 0.727093629 0.5000000  21.79412
+3     C 0.126002030 0.5000000  21.79412
+4   A:B 0.487950326 0.1666667  21.79412
+5   A:C 0.024476487 0.1666667  21.79412
+6   B:C 0.044830669 0.1666667  21.79412
+7 A:B:C 0.002991378 0.0312500  21.79412
+p_null 0.2141255  n_models 19  notes: Numerical precision is low: error on a Bayes factor up to 22 %. Try a larger draws. 
+utilisateur     système      écoulé 
+       3.79        0.15        4.81 
+
+===== A*B + C =====
+  term      p_h1  prior_h1 error_pct
+1    A 0.6428744 0.5000000  3.404882
+2    B 0.7567238 0.5000000  3.404882
+3    C 0.2274380 0.5000000  3.404882
+4  A:B 0.5343172 0.1666667  3.404882
+p_null 0.1892742  n_models 10  notes:  
+
+===== A*B*C - A:B:C =====
+  term       p_h1  prior_h1 error_pct
+1    A 0.60377348 0.5000000  21.79412
+2    B 0.72893759 0.5000000  21.79412
+3    C 0.13190741 0.5000000  21.79412
+4  A:B 0.49141011 0.1666667  21.79412
+5  A:C 0.03106785 0.1666667  21.79412
+6  B:C 0.05128450 0.1666667  21.79412
+p_null 0.2126787  n_models 18  notes: Numerical precision is low: error on a Bayes factor up to 22 %. Try a larger draws. 
+
+===== pure crossover =====
+  term      p_h1  prior_h1 error_pct
+1    A 0.9995395 0.5000000  5.876265
+2    B 0.9995444 0.5000000  5.876265
+3  A:B 0.9994559 0.1666667  5.876265
+p_null 0.0003929768  n_models 5  notes: Numerical precision is low: error on a Bayes factor up to 5.9 %. Try a larger draws. 
+sd_within reported: 1.603477  cell-means sd: 1.129736  additive sd: 1.603477 
+Bilan de m.bay : y ~ A + B + A:B (N = 40, plusieurs facteurs)
+Verdict : une différence existe très probablement. Cela ne dit ni qu'elle est importante, ni quels groupes diffèrent, ni pourquoi.
+  y diffère selon au moins un facteur : > 99,9 % (soutien très fort) ; Aucune différence de y selon A, B : < 0,1 %.
+Réponse par terme, probabilité compte tenu des données et du point de départ (a priori entre crochets) :
+  y diffère-t-il selon A, seul ou en interaction ? Oui > 99,9 % [50,0 %], oui avec soutien très fort.
+  y diffère-t-il selon B, seul ou en interaction ? Oui > 99,9 % [50,0 %], oui avec soutien très fort.
+  Les écarts selon A varient-ils avec B (A:B) ? Oui > 99,9 % [16,7 %], oui avec soutien très fort.
+  Aucune réponse ne change de côté quand r ou la loi sur les modèles change.
+Moyennes observées par facteur (description ; ce bilan ne dit pas quels niveaux diffèrent) :
+  A : a1 = 0,138 (n = 20) ; a2 = -0,003 (n = 20)
+  B : b1 = -0,062 (n = 20) ; b2 = 0,197 (n = 20)
+  Écart-type au sein des cases : 1,603.
+Forme du bruit : normale à variance commune seulement. À plusieurs facteurs, queues lourdes et variances inégales ne sont pas encore comparées.
+Point de départ, fixé par la méthode avant de voir les données : taille attendue r = 0,5 ; une interaction n'entre qu'avec ses facteurs ; une chance sur deux par facteur, les interactions moins probables ([] ci-dessus).
+Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend du protocole (tirage au sort, ordre, opérateur).
+Avertissements :
+  Précision numérique faible : erreur sur un facteur de Bayes jusqu'à 5,9 %. Essayer un draws plus grand.
+Facteurs de Bayes, a priori en détail, mode de lecture : print(resultat, detail = TRUE).
+
+===== big effect =====
+  term       p_h1  prior_h1 error_pct
+1    A 1.00000000 0.5000000  3.322058
+2    B 0.27849558 0.5000000  3.322058
+3  A:B 0.07426187 0.1666667  3.322058
+p_null 2.688549e-17  n_models 5  notes:  
+Bilan de m.bay : y ~ A + B + A:B (N = 48, plusieurs facteurs)
+Verdict : une différence existe très probablement. Cela ne dit ni qu'elle est importante, ni quels groupes diffèrent, ni pourquoi.
+  y diffère selon au moins un facteur : > 99,9 % (soutien très fort) ; Aucune différence de y selon A, B : < 0,1 %.
+Réponse par terme, probabilité compte tenu des données et du point de départ (a priori entre crochets) :
+  y diffère-t-il selon A, seul ou en interaction ? Oui > 99,9 % [50,0 %], oui avec soutien très fort.
+  y diffère-t-il selon B, seul ou en interaction ? Oui 27,8 % [50,0 %], non avec soutien faible.
+  Les écarts selon A varient-ils avec B (A:B) ? Oui 7,4 % [16,7 %], non avec soutien modéré.
+  Aucune réponse ne change de côté quand r ou la loi sur les modèles change.
+Moyennes observées par facteur (description ; ce bilan ne dit pas quels niveaux diffèrent) :
+  A : a1 = 2,83 (n = 16) ; a2 = 6,60 (n = 16) ; a3 = 8,83 (n = 16)
+  B : b1 = 6,06 (n = 24) ; b2 = 6,11 (n = 24)
+  Écart-type au sein des cases : 1,04.
+Forme du bruit : normale à variance commune seulement. À plusieurs facteurs, queues lourdes et variances inégales ne sont pas encore comparées.
+Point de départ, fixé par la méthode avant de voir les données : taille attendue r = 0,5 ; une interaction n'entre qu'avec ses facteurs ; une chance sur deux par facteur, les interactions moins probables ([] ci-dessus).
+Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend du protocole (tirage au sort, ordre, opérateur).
+Facteur de Bayes par terme (de combien les données déplacent les cotes du terme) :
+  A 10^17 ; B 0,386 ; A:B 0,401.
+A priori en détail :
+  Effets : a priori de Zellner-Siow (Cauchy) d'échelle r = 0,5, un par terme (Rouder et al. 2012), calculés par le paquet BayesFactor.
+  Modèles : 5 modèles respectant l'hérédité ; une proportion ~ Beta(1,1) par ordre d'interaction (Taylor-Rodriguez et al. 2016, HOP), qui corrige du nombre de termes. Aucune différence du tout : 33,3 % a priori.
+  Variés dans la sensibilité : r de 0,25 à 1 ; loi sur les modèles : HOP, 1/2 par terme (Chipman 1996), uniforme.
+    A : > 99,9 % à > 99,9 %
+    B : 8,1 % à 41,9 %
+    A:B : 1,1 % à 15,1 %
+Comment lire :
+  La probabilité d'un facteur inclut les modèles où il agit en interaction : elle répond à « le facteur joue-t-il un rôle », pas à « son effet moyen est-il nul ».
+  Une p-value est la probabilité de données au moins aussi extrêmes s'il n'y avait pas de différence : ni l'un ni l'autre ci-dessus.
+  term      p_h1 prior_h1 error_pct
+1    A 0.1841602      0.5  1.018237
+2    B 0.1573742      0.5  1.018237
+p_null 0.7210025  n_models 4  notes:  
+Bilan de m.bay : y ~ A + B (N = 60, plusieurs facteurs)
+Verdict : plutôt pas de différence, sans conclure. Cela ne prouve pas que les groupes sont équivalents.
+  Aucune différence de y selon A, B : 72,1 % (soutien faible) ; y diffère selon au moins un facteur : 27,9 %.
+Réponse par terme, probabilité compte tenu des données et du point de départ (a priori entre crochets) :
+  y diffère-t-il selon A, seul ou en interaction ? Oui 18,4 % [50,0 %], non avec soutien modéré.
+  y diffère-t-il selon B, seul ou en interaction ? Oui 15,7 % [50,0 %], non avec soutien modéré.
+Moyennes observées par facteur (description ; ce bilan ne dit pas quels niveaux diffèrent) :
+  A : a1 = 0,315 (n = 30) ; a2 = 0,117 (n = 30)
+  B : b1 = 0,206 (n = 30) ; b2 = 0,226 (n = 30)
+  Écart-type au sein des cases : 0,997.
+Forme du bruit : normale à variance commune seulement. À plusieurs facteurs, queues lourdes et variances inégales ne sont pas encore comparées.
+Point de départ, fixé par la méthode avant de voir les données : taille attendue r = 0,5 ; une interaction n'entre qu'avec ses facteurs ; une chance sur deux par facteur, les interactions moins probables ([] ci-dessus).
+Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend du protocole (tirage au sort, ordre, opérateur).
+Facteurs de Bayes, a priori en détail, mode de lecture : print(resultat, detail = TRUE).
+return FALSE: 0.8790202 

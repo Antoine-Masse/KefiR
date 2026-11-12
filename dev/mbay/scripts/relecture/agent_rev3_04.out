@@ -1,0 +1,97 @@
+--- plans apparies / intra
+y~temps, id='id'                         ERREUR: m.bay() ne traite pas encore données appariées : ce plan n'est pas validé (utiliser m.test()).
+y~temps, id=d$id                         ERREUR: m.bay() ne traite pas encore données appariées : ce plan n'est pas validé (utiliser m.test()).
+y~temps, paired=TRUE                     ERREUR: m.bay() ne traite pas encore données appariées : ce plan n'est pas validé (utiliser m.test()).
+x,g, paired=TRUE                         ERREUR: m.bay() ne traite pas encore données appariées : ce plan n'est pas validé (utiliser m.test()).
+y~temps, wt='temps' sans id              plan=oneway n=30 label=y ~ temps P=0.287 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.6 %.
+y~temps, within='temps' sans id          plan=oneway n=30 label=y ~ temps P=0.287 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.6 %.
+'y',data, wt='temps' sans g              plan=oneway n=30 label=y ~ temps P=0.287 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.6 %.
+'y','temps', wt='temps'                  plan=oneway n=30 label=y ~ temps P=0.287 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.6 %.
+y~temps, between='temps'                 plan=oneway n=30 label=y ~ temps P=0.287 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.6 %.
+y~temps+Error(id)                        ERREUR: m.bay() ne traite pas encore données appariées : ce plan n'est pas validé (utiliser m.test()).
+y~temps|id                               ERREUR: m.bay() ne traite pas encore données appariées : ce plan n'est pas validé (utiliser m.test()).
+y~temps+(1|id)                           ERREUR: m.bay() ne traite pas encore données appariées : ce plan n'est pas validé (utiliser m.test()).
+y~(1|id)                                 ERREUR: Aucun facteur à tester : il faut au moins une variable de groupement.
+y~temps+(1|id/temps)                     ERREUR: colonnes non définies sélectionnées
+y~temps+(1|id:temps)                     ERREUR: colonnes non définies sélectionnées
+x,g, id=1 sans data                      ERREUR: colonnes non définies sélectionnées
+id=NA                                    ERREUR: colonnes non définies sélectionnées
+id vect avec NA                          ERREUR: m.bay() ne traite pas encore données appariées : ce plan n'est pas validé (utiliser m.test()).
+--- predicteurs transformes (all.vars)
+y~I(dose>2)                              plan=oneway n=30 label=y ~ I(dose > 2) P=0.172 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.1 %.
+y~(dose>2)                               plan=oneway n=30 label=y ~ dose > 2 P=0.172 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.1 %.
+y~factor(dose>2)                         plan=oneway n=30 label=y ~ factor(dose > 2) P=0.172 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.1 %.
+y~dose                                   plan=oneway n=30 label=y ~ dose P=0.172 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.1 %.
+y~log(dose)                              plan=oneway n=30 label=y ~ log(dose) P=0.172 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.1 %.
+y~cut(xc,3)                              ERREUR: m.bay() ne traite pas encore covariables : ce plan n'est pas validé (utiliser m.test()).
+y~ifelse(dose>2,'a','b')                 plan=oneway n=30 label=y ~ ifelse(dose > 2, "a", "b") P=0.172 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.1 %.
+y~substr(temps,1,1) (constant)           plan=oneway n=30 label=y ~ substr(temps, 1, 1) P=0.287 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.6 %.
+y~interaction(temps,dose)                ERREUR: m.bay() ne traite pas encore plusieurs facteurs : ce plan n'est pas validé (utiliser m.test()).
+y~temps:dose                             ERREUR: m.bay() ne traite pas encore plusieurs facteurs : ce plan n'est pas validé (utiliser m.test()).
+y~0+temps                                plan=oneway n=30 label=y ~ temps P=0.287 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.6 %.
+y~temps-1                                plan=oneway n=30 label=y ~ temps P=0.287 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.6 %.
+y~.                                      ERREUR: Variable(s) introuvable(s) dans les données : ..
+y~xc (continu)                           ERREUR: m.bay() ne traite pas encore covariables : ce plan n'est pas validé (utiliser m.test()).
+y~offset(dose)+temps                     ERREUR: m.bay() ne traite pas encore plusieurs facteurs : ce plan n'est pas validé (utiliser m.test()).
+y~temps+temps                            plan=oneway n=30 label=y ~ temps P=0.287 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.6 %.
+--- noms, formes
+y~`my var`                               plan=oneway n=30 label=y ~ `my var` P=0.287 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.6 %.
+d$y~d$`my var`                           plan=oneway n=30 label=y ~ `my var` P=0.287 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.6 %.
+log(y+10)~temps                          plan=oneway n=30 label=log(y + 10) ~ temps P=0.235 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 7.5 %.
+y+xc~temps                               plan=oneway n=30 label=y + xc ~ temps P=0.279 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 3.7 %.
+y~temps, temps hors data                 ERREUR: colonnes non définies sélectionnées
+y~F (absente, base::F)                   ERREUR: colonnes non définies sélectionnées
+y~t (absent, fonction base)              ERREUR: colonnes non définies sélectionnées
+x,'temps' sans data                      ERREUR: Le facteur .g a moins de 2 niveaux.
+y=character                              ERREUR: La réponse doit être numérique. Pour une réponse binaire ou catégorielle, la coder en nombres.
+y facteur                                ERREUR: La réponse doit être numérique. Pour une réponse binaire ou catégorielle, la coder en nombres.
+g longueur differente                    ERREUR: Le facteur .g a moins de 2 niveaux.
+g liste                                  ERREUR: 'type' (list) de l'argument incorrect
+g matrice 2 col                          ERREUR: le tableau de remplacement a 60 lignes, le tableau remplacé en a 30
+g data.frame 1 col avec data             plan=oneway n=30 label=y ~ v P=0.287 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.6 %.
+g data.frame 2 col                       ERREUR: m.bay() ne traite pas encore plusieurs facteurs : ce plan n'est pas validé (utiliser m.test()).
+x matrice 1 col                          plan=oneway n=30 label=Y ~ g P=0.287 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.6 %.
+g logique                                plan=oneway n=30 label=x ~ g P=0.247 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.5 %.
+g NaN/Inf                                plan=oneway n=31 label=x ~ g P=0.155 notes=1 observation(s) avec valeurs manquantes retirée(s). / Très petit(s) groupe(s) (n < 3), conservé(s) : Inf. Leur variance est mal connue. / Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.5 %.
+g numerique peu repete (5 niv., n=7)     ERREUR: m.bay() ne traite pas encore covariables : ce plan n'est pas validé (utiliser m.test()).
+g 0.1+0.2 et 0.3                         ERREUR: Le facteur .g a moins de 2 niveaux.
+y Inf                                    ERREUR: y contient des valeurs infinies.
+y NaN                                    plan=oneway n=29 label=x ~ g P=0.291 notes=1 observation(s) avec valeurs manquantes retirée(s). / Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.7 %.
+y 3 valeurs                              plan=oneway n=30 label=x ~ g P=0.257 notes=La réponse semble discrète : les lois normale et t ne sont ici qu'une approximation. / Précision numérique faible : erreur sur le facteur de Bayes d'environ 0.8 %.
+NA dans colonne non utilisee             plan=oneway n=30 label=y ~ temps P=0.287 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.6 %.
+draws=0                                  ERREUR: l'argument est de longueur nulle
+draws=1                                  ERREUR: l'argument est de longueur nulle
+  [warning] NAs introduits lors de la conversion automatique 
+draws='a'                                ERREUR: second argument 'size' incorrect
+seed=NA                                  ERREUR: la valeur d'initialisation fournie n'est pas un entier correct
+maxcat                                   ERREUR: m.bay() ne traite pas encore covariables : ce plan n'est pas validé (utiliser m.test()).
+r=1e-300                                 ERREUR: 'from' doit être un nombre fini
+r=1e300                                  ERREUR: 'from' doit être un nombre fini
+u=1e-5                                   ERREUR: valeur manquante là où TRUE / FALSE est requis
+u=1e5                                    plan=oneway n=30 label=x ~ g P=0.293 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.7 %.
+y*1e200                                  ERREUR: valeur manquante là où TRUE / FALSE est requis
+  [warning] Production de NAs 
+  [warning] Production de NAs 
+  [warning] Production de NAs 
+  [warning] Production de NAs 
+  [warning] Production de NAs 
+  [warning] Production de NAs 
+y*1e-200                                 ERREUR: valeur manquante là où TRUE / FALSE est requis
+y avec 1e200                             ERREUR: valeur manquante là où TRUE / FALSE est requis
+y offset 1e12                            plan=oneway n=30 label=x ~ g P=0.287 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.6 %.
+laws='normal_eq'                         plan=oneway n=30 label=x ~ g P=0.296 notes=
+laws=NULL                                ERREUR: laws doit être parmi normal_eq, normal_het, t_eq, t_het.
+control                                  plan=oneway n=30 label=x ~ g P=0.287 notes=Argument(s) sans effet ici, ignoré(s) : control. / Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.6 %.
+--- petits groupes
+y=1,2,4,7 g=1112                         plan=oneway n=4 label=x ~ g P=0.577 notes=Très petit(s) groupe(s) (n < 3), conservé(s) : 2. Leur variance est mal connue. / Précision numérique faible : erreur sur le facteur de Bayes d'environ 3.6 %.
+y=1,2,4,7 g=1123                         ERREUR: m.bay() ne traite pas encore covariables : ce plan n'est pas validé (utiliser m.test()).
+y=1,2,4,7,9 g=11233                      ERREUR: m.bay() ne traite pas encore covariables : ce plan n'est pas validé (utiliser m.test()).
+y=0,0,1 g=112                            ERREUR: Réponse binaire : sa loi propre n'est pas encore validée, les lois normale et t ne s'appliquent pas.
+y=0,1,2 g=112                            plan=oneway n=3 label=x ~ g P=0.493 notes=Très petit(s) groupe(s) (n < 3), conservé(s) : 1, 2. Leur variance est mal connue. / Précision numérique faible : erreur sur le facteur de Bayes d'environ 3.3 %.
+y=1,1,2,3 g=1122                         plan=oneway n=4 label=x ~ g P=0.646 notes=Très petit(s) groupe(s) (n < 3), conservé(s) : 1, 2. Leur variance est mal connue. / Précision numérique faible : erreur sur le facteur de Bayes d'environ 4.1 %.
+y=1,1,1,1,2,3 g=111122                   ERREUR: valeur manquante là où TRUE / FALSE est requis
+y=1,1,5,5,3,4 g=112233                   plan=oneway n=6 label=x ~ g P=0.810 notes=Très petit(s) groupe(s) (n < 3), conservé(s) : 1, 2, 3. Leur variance est mal connue. / Précision numérique faible : erreur sur le facteur de Bayes d'environ 2.8 %.
+y=1,2,3,10 g=1112                        plan=oneway n=4 label=x ~ g P=0.719 notes=Très petit(s) groupe(s) (n < 3), conservé(s) : 2. Leur variance est mal connue. / Précision numérique faible : erreur sur le facteur de Bayes d'environ 4.8 %.
+y=1,2,3,1000 g=1112                      plan=oneway n=4 label=x ~ g P=0.995 notes=Très petit(s) groupe(s) (n < 3), conservé(s) : 2. Leur variance est mal connue. / Précision numérique faible : erreur sur le facteur de Bayes d'environ 5.2 %.
+y=1,1.00000000000001,5,6 g=1122          plan=oneway n=4 label=x ~ g P=0.787 notes=Très petit(s) groupe(s) (n < 3), conservé(s) : 1, 2. Leur variance est mal connue. / Précision numérique faible : erreur sur le facteur de Bayes d'environ 3.9 %.
+y=1,1.00000000000001,1.00000000000002,5,6,7 g=111222 plan=oneway n=6 label=x ~ g P=0.975 notes=Précision numérique faible : erreur sur le facteur de Bayes d'environ 4.4 %.

@@ -1,0 +1,89 @@
+1) Plan reconnu : un facteur, g, à 4 groupes (a, b, c, d) ; N = 60.
+	--> Une question : y diffère-t-il selon g ?
+	Note : aucun test préalable ne choisit la méthode ; les formes du bruit
+	       sont comparées.
+2) Contrôles des données [quantile() {stats}] - 1 valeur éloignée, gardée.
+	==> Effectifs : 15 par groupe (N = 60).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur groupe : 1 au-delà de 1,5 écart
+	    interquartile, 1 au-delà de 3 (sur 60).
+	--> Aucune valeur retirée : les formes à queues lourdes sont là pour ce
+	    genre de valeurs.
+3) Formes du bruit [m.bay() {KefiR}] - normale, variances égales en tête
+   (67,2 %).
+	==> Probabilités : normale, variances égales 67,2 % ; queues lourdes,
+	    variances égales 23,1 % ; normale, variances inégales 6,7 % ; queues
+	    lourdes, variances inégales 3,0 %.
+	==> Variances égales probables (90,3 %).
+	--> La réponse porte surtout sur les moyennes (formes normales :
+	    73,9 %).
+	Note : la forme du bruit est la façon dont les valeurs s'écartent dans
+	       leur groupe ; les queues lourdes, des valeurs éloignées plus
+	       fréquentes que sous la loi normale.
+	Note : aucune forme n'est choisie ; chaque réponse est pondérée par sa
+	       probabilité.
+4) Point de départ (a priori) - 50,0 % de chances d'une différence (pile ou
+   face).
+	==> Taille attendue r = 0,5 ; chaque forme du bruit part à 25,0 %.
+	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
+	       fait varier.
+5) Solidité de la réponse [m.bay() {KefiR}] - facteur de Bayes 623, l'ordre ne
+   change pas.
+	==> Facteur de Bayes : 623 (les données favorisent une différence).
+	==> Précision du calcul : environ 0,7 % sur le facteur de Bayes,
+	    négligeable.
+	==> Sensibilité : « y diffère selon g » va de 99,5 % à > 99,9 %.
+	--> L'ordre ne change pas.
+	Note : le facteur de Bayes dit combien de fois les données sont plus
+	       probables avec une différence que sans.
+	Note : r va de 0,25 à 1, les chances de départ de 1 contre 2 à 2 contre
+	       1, la répartition des variances varie.
+6) Quels groupes diffèrent, et de combien [lmBF(), posterior() {BayesFactor},
+   hdi() {bayestestR}] - a = c < b = d en tête (58,7 %).
+	==> Si une différence existe, regroupements en tête : a = c < b = d
+	    (58,7 %) ; a = c < b < d (21,4 %) ; a < c < b = d (14,3 %).
+	==> a/b : différents à 99,4 % ; b - a = 2,0 [0,6 ; 3,3], soit 1,07
+	    écart-type.
+	==> a/c : différents à 19,5 % ; c - a = 0,0 [-1,2 ; 1,3], soit 0,02
+	    écart-type.
+	==> a/d : différents à 99,8 % ; d - a = 2,5 [1,2 ; 3,8], soit 1,37
+	    écart-type.
+	==> b/c : différents à 99,3 % ; c - b = -2,0 [-3,2 ; -0,5], soit -1,06
+	    écart-type.
+	==> b/d : différents à 26,8 % ; d - b = 0,5 [-0,6 ; 1,9], soit 0,29
+	    écart-type.
+	==> c/d : différents à 99,8 % ; d - c = 2,5 [1,2 ; 3,9], soit 1,35
+	    écart-type.
+	Note : [ ; ] = intervalle de crédibilité à 95 % (95 % de chances d'y
+	       trouver l'écart).
+	Note : l'écart estimé est un peu plus petit que l'écart observé, par
+	       prudence avec les petits échantillons.
+
+7) Bilan - y diffère selon g : 99,8 % (soutien très fort).
+	==> Verdict : une différence existe très probablement.
+	==> Probabilité de chaque hypothèse :
+	    1. y diffère selon g              : 99,8 % (soutien très fort)
+	    2. Aucune différence de y selon g : 0,2 %
+	==> Selon le point de départ : 99,5 % à > 99,9 % ; l'ordre ne change
+	    pas.
+	Note : les données sont 623 fois plus probables sous l'hypothèse 1 que
+	       sous la 2 (facteur de Bayes ; 1 à 3 faible, 3 à 20 modéré, 20 à
+	       150 fort, au-delà très fort).
+
+	==> Différents : a/b, a/d, b/c, c/d (très fort).
+	==> Semblables : a/c (modéré).
+	==> Non tranchés : b/d.
+	==> Si une différence existe, regroupement le plus probable :
+	    a = c < b = d (58,7 %).
+	Note : différents à partir de 75 % de probabilité, semblables jusqu'à
+	       25 %, sinon non tranchés ; écarts chiffrés à l'étape 6.
+
+	==> Moyennes observées : a = 10,2 ; b = 12,5 ; c = 10,3 ; d = 13,1
+	    (n = 15 par groupe).
+	==> Écarts-types : a = 1,7 ; b = 2,1 ; c = 1,6 ; d = 1,9.
+	Note : pour un compte rendu : « y diffère selon g (probabilité a
+	       posteriori 99,8 %), facteur de Bayes 623 (m.bay {KefiR},
+	       comparaison de lois du bruit, Rouder et al. 2012). »
+	Note : probabilités d'hypothèses, pas des p-values ; ni l'importance, ni
+	       la cause d'une différence ; la méthode avec print(resultat,
+	       detail = TRUE).

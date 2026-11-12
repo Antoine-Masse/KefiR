@@ -1,0 +1,9 @@
+k=8 (10x7,3) d=1e3     ecart marginale -4.00e-15 ; ligne max (poids>1e-6) 7.25e-12 ; toutes lignes 7.25e-12
+k=20 n=3, d=30         ecart marginale +4.44e-15 ; ligne max (poids>1e-6) 2.84e-14 ; toutes lignes 2.84e-14
+k=30 n=2, sd 1         ecart marginale +5.77e-15 ; ligne max (poids>1e-6) 1.42e-14 ; toutes lignes 2.84e-14
+k=20 n=10 sd varies    ecart marginale +2.80e-14 ; ligne max (poids>1e-6) 2.84e-14 ; toutes lignes 2.27e-13
+k=50 n=5 d=5           ecart marginale -2.78e-15 ; ligne max (poids>1e-6) 1.14e-13 ; toutes lignes 1.14e-13
+k=2 N=2e6 d=.01        ecart marginale +3.39e-10 ; ligne max (poids>1e-6) 1.86e-09 ; toutes lignes 1.86e-09
+k=5 n=1e4 d=3          ecart marginale -3.76e-12 ; ligne max (poids>1e-6) 2.91e-11 ; toutes lignes 5.82e-11
+(2,30) d=1e4           ecart marginale -1.35e-14 ; ligne max (poids>1e-6) 5.68e-14 ; toutes lignes 8.29e-11
+(10,10,10) d/s=1e5     ecart marginale -1.34e-05 ; ligne max (poids>1e-6) 3.96e-05 ; toutes lignes 4.26e-05

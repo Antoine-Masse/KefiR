@@ -1,0 +1,211 @@
+############ PLAN : ancova ############
+
+== Donnees (head) ==
+  regime poids0 poids
+1     R1    224   255
+2     R1    241   272
+3     R1    253   277
+4     R1    276   310
+5     R1    252   274
+6     R1    258   277
+n = 30 
+
+============ m.test ============
+m.test(poids ~ regime + poids0, data = d) 
+
+1) Structure du modèle : ANCOVA classique (pas d'interaction facteur×covariable)
+	Pentes parallèles assumées (homogénéité des pentes de régression)
+		Facteurs : regime
+		Covariables : poids0
+	==> Vérifications complètes des assomptions (5 assomptions).
+2) ASSOMPTION 1/5 : Indépendance des observations
+	C'est une assomption de PLAN qui ne peut pas être testée statistiquement.
+	Vérifiez que :
+	  • Pas de mesures répétées (chaque observation d'un sujet différent)
+	  • Pas d'effets cluster (observations non groupées/emboîtées)
+	  • Pas d'effets report (ordre des mesures n'influence pas les résultats)
+3) Ajustement du modèle ANCOVA à 1 facteur(s) [lm()]
+	Formule : poids ~ regime + poids0
+	Contrastes : contr.sum (codage effets pour estimations non biaisées)
+	==> Modèle ajusté avec succès (n=30, résidus calculés)
+	    Type de Sommes de Carrés sélectionné : Type III [car::Anova(type='III')]
+	Note sur l'ordre des termes :
+		Le Type III ne dépend pas de l'ordre des termes : ce résultat reste valable tel quel.
+	(Facultatif, pour un test séquentiel de Type I : poids ~ poids0 + regime.)
+4) DIAGNOSTIC : Test indépendance covariables-facteurs [approche robuste]
+	Teste si chaque covariable diffère selon niveaux facteurs
+	Méthode : Pour chaque combinaison covariable × facteur :
+	  1. Tester normalité covariable par groupes de chaque facteur
+	  2. Tester homogénéité variances [var.test() ou bartlett.test()]
+	  3. Sélectionner test approprié :
+	     • Normal + variances homogènes : ANOVA [aov() sur 1 facteur]
+	     • Normal + variances inégales : Welch ANOVA [oneway.test()]
+	     • Non-normal : Kruskal-Wallis [kruskal.test()]
+	==> Toutes covariables indépendantes des niveaux facteurs (tous p >= 0.05)
+	    Assomption d'indépendance des covariables RESPECTÉE
+5) DIAGNOSTIC : Influence sur le Modèle [Distance de Cook, Leverage, DFBETAS]
+	Détecte observations ayant impact fort sur coefficients de régression (β)
+	Seuils : Cook = 0.133 (critique si > 1), Leverage = 0.267
+	==> 4 observation(s) dépassent seuil(s) :
+	    Leverage seul: 1, DFBETAS seul: 2, Cook + DFBETAS: 1
+	    Toutes Cook < 1 (aucune préoccupation critique)
+	==> Modèle robuste aux observations individuelles
+6) ASSOMPTION 2/5 : Normalité des résidus (contrôle ACADÉMIQUE)
+	Sélection du test selon taille échantillon :
+	  • n ≤ 50 : Shapiro-Wilk [shapiro.test() {stats}]
+	  • 50 < n ≤ 500 : Jarque-Bera [jb.norm.test() {KefiR}]
+	  • n > 500 : Skewness/Kurtosis [{KefiR}]
+	Test utilisé : [shapiro.test() {stats}]
+	Shapiro-Wilk [shapiro.test()]
+	==> Les résidus sont normaux (p-value : 0.12).
+7) ASSOMPTION 3/5 : Homoscédasticité (contrôle ACADÉMIQUE)
+	IMPORTANT : Test sur INTERACTION DES FACTEURS UNIQUEMENT (pas les covariables)
+	Justification : Les covariables sont continues => homogénéité testée sur groupes facteurs uniquement
+	Test utilisé : [bartlett.test() {stats}] (sélectionné selon résultat normalité)
+	  • Résidus normaux : Bartlett [bartlett.test() {stats}]
+	  • Résidus non-normaux : Levene [leveneTest() {car}]
+		==> Variances homogènes (p >= 0.05).
+8) ASSOMPTION 4/5 : Linéarité de la relation Variable Dépendante ~ covariable
+	Test : Inclure terme quadratique I(covariable²) et vérifier significativité [lm() avec I(covariable^2)].
+	Si terme quadratique significatif => relation non-linéaire.
+	  'poids0' : p du terme quadratique = 0.83 (linéaire)
+	==> Relations linéaires confirmées
+9) ASSOMPTION 5/5 : Homogénéité des pentes de régression
+	Test : interaction facteur:covariable doit être NON-significative [lm() + anova()]
+	Si significative => pentes de régression différentes entre groupes (violation).
+	  regime × poids0: p = 0.77 (homogène)
+	==> Pentes homogènes confirmées (droites régression parallèles)
+10) Poursuite avec ANCOVA paramétrique (assomptions respectées)
+	==> Affichage du bilan :
+
+Anova Table (Type III tests)
+
+Response: poids
+             Sum Sq Df  F value    Pr(>F)    
+(Intercept)    11.8  1   0.2246 0.6395356    
+regime       1055.5  2  10.0224 0.0005934 ***
+poids0      10033.4  1 190.5409 1.773e-13 ***
+Residuals    1369.1 26                       
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+		Effets significatifs détectés :
+	  Facteurs : regime
+	  Covariables : poids0
+11) COMPARAISONS POST-HOC POUR ANCOVA [{emmeans}]
+	Les post-hocs ANCOVA comparent les MOYENNES AJUSTÉES, pas les moyennes brutes.
+	Moyennes ajustées = réponse attendue quand les covariables sont à leur moyenne.
+	Cela contrôle les effets des covariables et fournit des comparaisons équitables.
+
+	Modèle : poids ~ regime + poids0
+	Facteur analysé : regime (3 groupes)
+	Covariables : poids0
+	Méthode d'ajustement : tukey
+	Seuil de significativité : α = 0.05
+
+	Moyennes ajustées (aux moyennes des covariables) :
+ group adjusted_mean       SE lower.CL upper.CL
+    R1      271.5759 2.300372 266.8475 276.3044
+    R2      281.6404 2.352303 276.8052 286.4756
+    R3      285.6837 2.322197 280.9103 290.4570
+
+
+	Comparaisons par paires (ajustement tukey) :
+ contrast   estimate       SE df   t_ratio      p_value
+  R1 - R2 -10.064433 3.315378 26 -3.035682 0.0144273620
+  R1 - R3 -14.107725 3.251083 26 -4.339393 0.0005459182
+  R2 - R3  -4.043292 3.360715 26 -1.203105 0.4619941034
+
+	=> Différences significatives détectées :
+	   R1 - R2 (p = 0.014)
+	   R1 - R3 (p = 0.00055)
+
+
+m.test() - version 02 bêta 2026 - envoyer ce bilan à antoine.masse@u-bordeaux.fr en cas d'anomalie.
+
+[m.test : OK - 0.4 s]
+
+============ m.bay ============
+m.bay(poids ~ regime + poids0, data = d) 
+
+1) Plan reconnu : analyse de covariance, regime (3 groupes), covariable(s)
+   poids0 ; N = 30.
+	--> Question : poids diffère-t-il selon regime une fois poids0 pris en
+	    compte ?
+2) Contrôles des données [quantile() {stats}] - rien à retirer.
+	==> Effectifs : 10 par groupe (N = 30).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur groupe : 3 au-delà de 1,5 écart
+	    interquartile, 0 au-delà de 3 (sur 30).
+	==> Covariable poids0 : étendue commune 224 à 264, au moins 70,0 % de
+	    chaque groupe.
+	--> Covariable centrée sur sa moyenne (poids0 = 247) : groupes comparés
+	    à cette valeur.
+	--> Aucune valeur retirée.
+	Note : valeurs éloignées cherchées sur ce que les covariables
+	       n'expliquent pas.
+3) Forme du bruit - normale à variance commune, seule.
+	==> La covariable agit en ligne droite (linéarité non testée).
+	--> Aucune valeur éloignée ne met d'emblée la loi normale en doute.
+	Note : queues lourdes, variances inégales et courbure ne sont pas encore
+	       validées avec des covariables.
+4) Point de départ (a priori) - 50,0 % de chances d'une différence.
+	==> Taille attendue r = 0,5.
+	==> poids0 est dans tous les modèles ; chaque réponse se lit contre les
+	    covariables seules.
+	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
+	       fait varier.
+5) Solidité de la réponse [lmBF() {BayesFactor}] - facteur de Bayes 44, l'ordre
+   ne change pas.
+	==> Facteur de Bayes : 44 (les données favorisent une différence).
+	==> Précision du calcul : < 0,1 point sur les probabilités, négligeable.
+	==> Sensibilité : la réponse en tête va de 93,1 % à 99,0 %.
+	--> La réponse ne change pas de côté.
+	Note : r va de 0,25 à 1 (rscaleCont avec lui), les chances de départ de
+	       1 contre 2 à 2 contre 1.
+6) Quels groupes diffèrent, et de combien [lmBF(), posterior() {BayesFactor},
+   hdi() {bayestestR}] - R1 < R2 = R3 en tête (62,0 %).
+	==> Si une différence existe, regroupements en tête : R1 < R2 = R3
+	    (62,0 %) ; R1 < R2 < R3 (33,0 %) ; R1 = R2 < R3 (4,6 %).
+	==> R1/R2 : différents à 92,6 % ; R2 - R1 = 8 [2 ; 15], soit 1,09
+	    écart-type résiduel (covariables prises en compte).
+	==> R1/R3 : différents à 96,7 % ; R3 - R1 = 12 [4 ; 19], soit 1,56
+	    écart-type résiduel (covariables prises en compte).
+	==> R2/R3 : différents à 36,8 % ; R3 - R2 = 3 [-3 ; 10], soit 0,46
+	    écart-type résiduel (covariables prises en compte).
+	Note : [ ; ] = intervalle de crédibilité à 95 % (95 % de chances d'y
+	       trouver l'écart).
+	Note : l'écart estimé est ramené vers 0 par l'a priori, surtout quand
+	       les groupes sont petits.
+
+7) Bilan - poids diffère selon regime, à même poids0 : 97,8 % (soutien fort).
+	==> Verdict : une différence existe très probablement.
+	==> Probabilité de chaque hypothèse :
+	    1. poids diffère selon regime, à même poids0 : 97,8 % (soutien fort)
+	    2. Aucune différence de poids selon regime : 2,2 %
+	==> Selon le point de départ : 93,1 % à 99,0 % ; l'ordre ne change pas.
+	Note : les données sont 44 fois plus probables sous l'hypothèse 1 que
+	       sous la 2 (facteur de Bayes ; 1 à 3 faible, 3 à 20 modéré, 20 à
+	       150 fort, au-delà très fort).
+
+	==> Différents : R1/R2 (modéré) ; R1/R3 (fort).
+	==> Non tranchés : R2/R3.
+	==> Si une différence existe, regroupement le plus probable :
+	    R1 < R2 = R3 (62,0 %).
+	Note : différents à partir de 75 % de probabilité, semblables jusqu'à
+	       25 %, sinon non tranchés ; écarts chiffrés à l'étape 6.
+
+	==> Moyennes brutes, regime : R1 = 274 ; R2 = 274 ; R3 = 291 (n = 10).
+	==> poids0 moyen par groupe : R1 = 249 ; R2 = 241 ; R3 = 252.
+	==> poids0 est dans tous les modèles, donc les groupes sont comparés à
+	    poids0 égal ; son effet propre n'est pas la question posée.
+	==> Écart-type résiduel (covariables prises en compte) : 7,26 ; loi
+	    normale à variance commune seule.
+	Note : pour un compte rendu : « poids diffère selon regime, à même
+	       poids0 (probabilité a posteriori 97,8 %), facteur de Bayes 44
+	       (m.bay {KefiR}, BayesFactor, Rouder et al. 2012). »
+	Note : probabilités d'hypothèses, pas des p-values ; ni l'importance, ni
+	       la cause d'une différence ; la méthode avec print(resultat,
+	       detail = TRUE).
+
+[m.bay : OK - 1.3 s]

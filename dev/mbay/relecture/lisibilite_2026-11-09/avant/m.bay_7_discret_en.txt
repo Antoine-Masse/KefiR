@@ -1,0 +1,39 @@
+1) Plan recognised: one factor, traitement, with 3 groups (temoin, froid, chaud); N = 90.
+	--> Categorical response (2 categories: non, oui). One question: do the proportions differ according to traitement? Counterpart of the chi-squared test.
+2) Checks on the data.
+	==> Counts per group and category (3 groups x 2 categories): temoin 12/18; froid 12/18; chaud 6/24 (non/oui).
+	--> No approximation is made: the computation is exact, small counts do not make it wrong, only less decisive (unlike the chi-squared, which needs expected counts of 5).
+3) Law of the data.
+	==> Each group has its own proportions of the 2 categories (binomial law); "no difference": the same proportions in every group. There is no shape of the noise to compare.
+4) Starting point (priors), set before seeing the data.
+	==> 50 % chance that a difference exists (heads or tails: the method takes no side); in each group, every set of proportions equally likely in advance (uniform Dirichlet, Gunel and Dickey 1974).
+	--> These values are not fitted on the data; step 5 varies them to see whether the answer holds.
+5) Bayes factor and sensitivity to the priors. [contingencyTableBF() {BayesFactor}]
+	==> Bayes factor, difference against none: 0.463.
+	==> Precision: closed-form computation, no draws; no simulation error.
+	==> Sensitivity: concentration of the prior from 1 to 4, crossed with starting chances of a difference from 1 against 2 to 2 against 1. The leading answer then goes from 37.6 % to 81.2 %.
+	--> Caution added: the answer can reverse with the starting point; it will be called not settled.
+6) Which groups differ, and by how much. [Dirichlet-multinomial groupings {KefiR}, Dirichlet posterior, hdi() {bayestestR}]
+	==> Most probable groupings (5 compared): temoin = froid = chaud (58.9 %); temoin = froid < chaud (22.3 %); temoin < froid < chaud (6.8 %).
+	==> temoin and froid: different at 18.8 %; estimated gap froid - temoin = 0.0017 [-0.24; 0.22], i.e. 0.0068 [-1.1; 0.91] in log odds ratio.
+	==> temoin and chaud: different at 35.1 %; estimated gap chaud - temoin = 0.19 [-0.025; 0.4], i.e. 0.91 [-0.19; 2] in log odds ratio.
+	==> froid and chaud: different at 35.1 %; estimated gap chaud - froid = 0.19 [-0.037; 0.4], i.e. 0.92 [-0.11; 2.2] in log odds ratio.
+	Estimated gap: difference of the proportions of oui (posterior median), then the log odds ratio. Brackets: 95 % credible interval (the value lies there with 95 % probability; not a confidence interval).
+	--> All pairs come from one single law over the groupings: no correction pair by pair is needed, and the answers cannot contradict each other.
+7) Conclusion: the hypotheses ranked, what each one rests on, its support.
+	Verdict: undecided. The data allow no conclusion, neither a difference nor its absence.
+	Probability of each hypothesis, given the data and the starting point:
+	  1. The proportions of germe do not differ according to traitement: 68.4 % (not settled)
+	  2. The proportions of germe differ according to traitement: 31.6 %
+	     Rests on the counts: they are 2.16 times more probable if the proportions are the same than if they differ.
+	  Depending on the starting point, the first answer goes from 37.6 % to 81.2 %: the order can reverse.
+	Which groups differ in their proportions (probability, then estimated gap of the proportion of oui, log odds ratio, 95 % credible intervals):
+	  temoin / froid: alike, moderate support (different at 18.8 %); estimated gap froid - temoin = 0.0017 [-0.24; 0.22], delta = 0.0068 [-1.1; 0.91].
+	  temoin / chaud: alike, weak support (different at 35.1 %); estimated gap chaud - temoin = 0.19 [-0.025; 0.4], delta = 0.91 [-0.19; 2].
+	  froid / chaud: alike, weak support (different at 35.1 %); estimated gap chaud - froid = 0.19 [-0.037; 0.4], delta = 0.92 [-0.11; 2.2].
+	  Most probable grouping: temoin = froid = chaud (58.9 %).
+	Observed proportions per group (description of the sample):
+	  temoin: non 40.0 %, oui 60.0 % (n = 30)
+	  froid: non 40.0 %, oui 60.0 % (n = 30)
+	  chaud: non 20.0 %, oui 80.0 % (n = 30)
+	These are probabilities of hypotheses, not p-values: no threshold of 5 % applies. Whether a difference has a cause depends on how the study was run (randomisation, order, operator).

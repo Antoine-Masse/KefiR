@@ -1,0 +1,23 @@
+BayesFactor 0.9.12.4.8 R R version 4.6.1 (2026-06-24 ucrt) 
+a= 2  ||P'P-I||= 2.220446e-16  ||PP'-(I-1/a)||= 1.110223e-16 
+a= 3  ||P'P-I||= 2.220446e-16  ||PP'-(I-1/a)||= 2.220446e-16 
+a= 4  ||P'P-I||= 4.440892e-16  ||PP'-(I-1/a)||= 2.220446e-16 
+X paquet = indicatrices x P : 0 
+X_AB paquet vs produit ligne a ligne : 0 
+mediane |b| (r=.5, attendu .5) : 0.4987918 
+ttestBF vs anovaBF k=2 : -0.701723 -0.701723 
+n= 10  anovaBF k=3 ms: 54.31198  ttestBF k=2 ms: 31.79255  aov ms: 3.034711 
+n= 30  anovaBF k=3 ms: 41.5438  ttestBF k=2 ms: 23.91036  aov ms: 1.67784 
+n= 100  anovaBF k=3 ms: 26.84814  ttestBF k=2 ms: 27.7665  aov ms: 3.698721 
+A*B withmain s/jeu : 0.5421534 
+                   bf        error
+A           -1.336026 0.0001034401
+B           -0.953879 0.0000926689
+A + B       -2.315573 0.0140587603
+A + B + A:B -3.725540 0.0149893814
+[1] "A"           "B"           "A + B"       "A + B + A:B"
+Error in integrate(marginal.g.oneWay, lower = 0, upper = Inf, F = F, N = N,  : 
+  roundoff error is detected in the extrapolation table
+cauchy extreme :  NA 133.9703 
+utilisateur     système      écoulé 
+       8.16        0.71       10.34 

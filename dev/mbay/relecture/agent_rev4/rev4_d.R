@@ -1,0 +1,11 @@
+.libPaths(c("C:/Users/masse/Desktop/KefiR/mbay-lib", .libPaths()))
+source("C:/Users/masse/Desktop/KefiR/KefiR-mbay/dev/mbay/scripts/agent_load_bay.R"); .kefir_bay()
+set.seed(9)
+d4 <- expand.grid(A = c("a1", "a2"), B = c("b1", "b2"), C = c("c1", "c2"), D = c("d1", "d2"), r = 1:3)
+d4$y <- rnorm(nrow(d4), 0.8 * (d4$A == "a2"))
+cat("n hereditary models 4 factors:", length(.bay_fact_space(c("A","B","C","D","A:B","A:C","A:D","B:C","B:D","C:D","A:B:C","A:B:D","A:C:D","B:C:D","A:B:C:D"))$models), "\n")
+t1 <- system.time(r <- tryCatch(m.bay(y ~ A * B * C * D, data = d4, verbose = FALSE, sensitivity = FALSE), error = function(e) {cat("ERROR", conditionMessage(e), "\n"); NULL}))
+print(t1)
+if (!is.null(r)) { print(r$effects[, c("term", "p_h1", "prior_h1")]); cat("notes:", r$notes$en, "\n") }
+t2 <- system.time(r2 <- m.bay(y ~ A * B * C * D, data = d4, verbose = FALSE))
+print(t2); cat("notes:", r2$notes$en, "\n")

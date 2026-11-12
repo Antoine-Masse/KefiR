@@ -1,0 +1,3 @@
+R version 4.6.1 (2026-06-24 ucrt)
+agent_72 : post-hoc a plusieurs facteurs, 3 x 2, n = 10, scenario H0, N = 60
+une famille detaillee : 0.050 | une paire P>=.75 : 0.033 | P>=.95 : 0.000

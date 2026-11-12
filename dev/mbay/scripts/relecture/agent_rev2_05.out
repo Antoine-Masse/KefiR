@@ -1,0 +1,23 @@
+n=(2,2) d=1e3                      r=0.5 REF 1.463
+   S=  4000 seed 1 n= 64000 log_bf   1.445 ecart  -0.017 err%   2.03 z   -0.9 ess    2339 
+   S=  4000 seed 2 n= 64000 log_bf   1.471 ecart  +0.009 err%   2.06 z   +0.4 ess    2273 
+   S= 20000 seed 1 n= 80000 log_bf   1.438 ecart  -0.025 err%   1.80 z   -1.4 ess    2974 
+   S= 20000 seed 2 n= 80000 log_bf   1.467 ecart  +0.004 err%   1.84 z   +0.2 ess    2840 
+n=(2,2) d=1e6                      r=0.5 REF 2.106
+   S=  4000 seed 1 n= 64000 log_bf   2.168 ecart  +0.062 err%  34.86 z   +0.2 ess       8 LOW
+   S=  4000 seed 2 n= 64000 log_bf   1.716 ecart  -0.390 err%   6.79 z   -5.7 ess     216 LOW
+   S= 20000 seed 1 n=320000 log_bf   2.261 ecart  +0.155 err%  15.65 z   +1.0 ess      41 LOW
+   S= 20000 seed 2 n=320000 log_bf   2.161 ecart  +0.056 err%  18.44 z   +0.3 ess      29 LOW
+n=(3,3) d=1e3                      r=0.5 REF 6.500
+   S=  4000 seed 1 n= 16000 log_bf   6.525 ecart  +0.025 err%   2.32 z   +1.1 ess    1668 
+   S=  4000 seed 2 n=  4000 log_bf   6.488 ecart  -0.012 err%   2.00 z   -0.6 ess    1537 
+   S= 20000 seed 1 n= 20000 log_bf   6.526 ecart  +0.026 err%   1.92 z   +1.4 ess    2382 
+   S= 20000 seed 2 n= 20000 log_bf   6.507 ecart  +0.008 err%   2.24 z   +0.3 ess    1820 
+n=(2,30) d=1e4 SS1=1e-4 r=.05      r=0.05 REF 2.170
+   S=  4000 seed 1 n=  4000 log_bf   2.011 ecart  -0.159 err%   0.58 z  -27.5 ess    3531 
+   S=  4000 seed 2 n=  4000 log_bf   2.014 ecart  -0.156 err%   0.81 z  -19.3 ess    3172 
+   S= 20000 seed 1 n= 80000 log_bf   2.031 ecart  -0.139 err%   0.96 z  -14.5 ess    9628 
+   S= 20000 seed 2 n= 20000 log_bf   2.010 ecart  -0.160 err%   0.54 z  -29.8 ess   12668 
+n=(2,30) d=1e4 SS1=1e-4 r=.005     r=0.005 REF 0.574
+   S=  4000 seed 1 n=  4000 log_bf  -0.291 ecart  -0.865 err%   0.58 z -150.2 ess    3531 
+   S=  4000 seed 2 n=  4000 log_bf  -0.289 ecart  -0.863 err%   0.81 z -106.8 ess    3172 

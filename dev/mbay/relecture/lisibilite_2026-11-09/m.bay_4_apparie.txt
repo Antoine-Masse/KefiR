@@ -1,0 +1,39 @@
+1) Plan reconnu : données appariées, t (avant, apres) mesuré sur les mêmes 15 sujets ; N = 30.
+	--> Une seule question : y a-t-il une différence de y selon t, chaque sujet comparé à lui-même ?
+2) Contrôles des données.
+	==> Sujets : 15 ; mesurés dans toutes les conditions intra-sujet : 15.
+	Les valeurs éloignées sont cherchées une fois retiré le niveau propre de chaque sujet.
+	==> Effectifs : 15 par condition (2 conditions, N = 30).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur condition : 0 sur 30 au-delà de 1,5 écart interquartile, 0 au-delà de 3. [Tukey, quantile() {stats}]
+	--> Aucune valeur n'est retirée.
+3) Forme du bruit.
+	==> Données appariées : la comparaison porte sur la différence au sein de chaque sujet, ce qui retire ce qui varie d'un sujet à l'autre.
+	==> Seule la loi normale est calculée : queues lourdes et variances inégales entre conditions ne sont pas encore validées avec des sujets, elles ne sont donc pas comparées.
+	--> Aucune valeur n'est assez éloignée pour mettre d'emblée la loi normale en doute ; elle n'est pas mise à l'épreuve des autres.
+4) Point de départ (a priori), fixé par la méthode avant de voir les données.
+	==> 50 % de chances qu'une différence existe (pile ou face : la méthode ne prend pas parti) ; taille attendue r = 0,5 sur la différence standardisée au sein des sujets (dz).
+	--> Différence appariée : test t apparié bayésien de Rouder et al. (2009), r = 0,5 comme pour un effet sujet aléatoire (égal à lmBF(y ~ temps + id) à 0,2 près en échelle log).
+	--> Ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les fait varier pour voir si la réponse tient.
+5) Facteurs de Bayes des 2 modèles. [ttestBF(paired = TRUE) {BayesFactor}]
+	==> Facteur de Bayes, différence contre absence : 75,4.
+	==> Précision : ttestBF intègre numériquement, sans tirage ; aucune erreur de simulation.
+	==> Sensibilité : r de 0,25 à 1, croisé avec des chances de départ d'une différence de 1 contre 2 à 2 contre 1. [m.bay() {KefiR}]
+	--> Aucun terme ne change de côté.
+6) De combien les deux niveaux diffèrent. [posterior(ttestBF()) {BayesFactor}, hdi() {bayestestR}]
+	==> Écart estimé apres - avant = 1,5 [0,62 ; 2,2], soit 1 [0,31 ; 1,7] écart-type des différences (dz).
+	Écart estimé : médiane a posteriori, légèrement ramenée vers zéro par l'a priori. Crochets : intervalle de crédibilité à 95 %, si une différence existe (la valeur s'y trouve avec 95 % de probabilité ; ce n'est pas un intervalle de confiance).
+7) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
+	Verdict : une différence existe très probablement. Cela ne dit ni qu'elle est importante, ni quels groupes diffèrent, ni pourquoi.
+	  y diffère selon t : 98,7 % (soutien fort) ; Aucune différence de y selon t : 1,3 %.
+	Réponse (oui, non ou non tranché ; probabilité du oui compte tenu des données et du point de départ, et son a priori) :
+	  Différence de y selon t ? Oui, soutien fort (probabilité du oui 98,7 %, a priori 50,0 %).
+	     Repose sur les données, qui multiplient ses cotes (rapport oui/non) par 75,4 (facteur de Bayes).
+	  La réponse ne change pas de côté quand r ou les chances de départ changent.
+	Taille de l'écart, s'il existe (écart estimé : médiane a posteriori, et intervalle de crédibilité à 95 % ; delta en écart-type des différences (dz)) :
+	  apres - avant = 1,5 [0,62 ; 2,2], delta = 1 [0,31 ; 1,7].
+	Moyennes observées par facteur (description de l'échantillon) :
+	  t : avant = 20,08 (n = 15) ; apres = 21,69 (n = 15)
+	  Écart-type résiduel au sein des sujets (niveau propre de chaque sujet retiré) : 0,95.
+	Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend de la façon dont l'étude a été menée (tirage au sort, ordre, opérateur).
+	Facteurs de Bayes, a priori en détail, mode de lecture : print(resultat, detail = TRUE).

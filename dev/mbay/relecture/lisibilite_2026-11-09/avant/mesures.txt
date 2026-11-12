@@ -1,0 +1,14 @@
+fr 1_deux_groupes     lignes  37 | > 80 :  27 | max 308 | moyenne 121.2 | mots  803
+fr 2_quatre_groupes   lignes  51 | > 80 :  38 | max 308 | moyenne 120.0 | mots 1179
+fr 3_deux_facteurs    lignes  37 | > 80 :  25 | max 258 | moyenne 107.3 | mots  738
+fr 4_apparie          lignes  39 | > 80 :  26 | max 250 | moyenne 104.2 | mots  719
+fr 5_repete3          lignes  47 | > 80 :  34 | max 250 | moyenne 113.7 | mots  974
+fr 6_ancova           lignes  46 | > 80 :  33 | max 287 | moyenne 117.5 | mots  997
+fr 7_discret          lignes  39 | > 80 :  29 | max 248 | moyenne 122.2 | mots  849
+en 1_deux_groupes     lignes  37 | > 80 :  24 | max 269 | moyenne 113.3 | mots  730
+en 2_quatre_groupes   lignes  51 | > 80 :  37 | max 269 | moyenne 111.7 | mots 1053
+en 3_deux_facteurs    lignes  37 | > 80 :  24 | max 244 | moyenne 101.5 | mots  674
+en 4_apparie          lignes  39 | > 80 :  24 | max 213 | moyenne  96.8 | mots  643
+en 5_repete3          lignes  47 | > 80 :  32 | max 213 | moyenne 105.0 | mots  856
+en 6_ancova           lignes  46 | > 80 :  31 | max 258 | moyenne 108.8 | mots  887
+en 7_discret          lignes  39 | > 80 :  26 | max 210 | moyenne 113.1 | mots  740

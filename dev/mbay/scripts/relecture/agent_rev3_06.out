@@ -1,0 +1,16 @@
+d=30 f=0.25 (N=60, 2 groupes)
+  ref t_eq H0 -71.383 ; modes en log s^2 : -4.1 (log-hauteur rel. 0)
+   seed 1 H0 -71.394 ecart -0.011 annonce 0.014 ess 1862 | H1 -74.505 annonce 0.016 ess 1685 | logBF -3.111
+   seed 2 H0 -71.353 ecart +0.029 annonce 0.015 ess 1840 | H1 -74.514 annonce 0.016 ess 1703 | logBF -3.161
+d=30 f=0.33 (N=60, 2 groupes)
+  ref t_eq H0 -90.147 ; modes en log s^2 : -0.3 (log-hauteur rel. 0)
+   seed 1 H0 -90.151 ecart -0.004 annonce 0.017 ess 3143 | H1 -92.038 annonce 0.025 ess 1038 | logBF -1.887
+   seed 2 H0 -90.125 ecart +0.022 annonce 0.021 ess 1326 | H1 -91.988 annonce 0.027 ess 963 | logBF -1.863
+d=100 f=0.25 (N=60, 2 groupes)
+  ref t_eq H0 -60.954 ; modes en log s^2 : -6.1 (log-hauteur rel. 0)
+   seed 1 H0 -60.962 ecart -0.008 annonce 0.014 ess 1880 | H1 -64.327 annonce 0.016 ess 1703 | logBF -3.365
+   seed 2 H0 -60.920 ecart +0.034 annonce 0.014 ess 1855 | H1 -64.337 annonce 0.016 ess 1720 | logBF -3.417
+d=100 f=0.33 (N=60, 2 groupes)
+  ref t_eq H0 -89.743 ; modes en log s^2 : -0.4 (log-hauteur rel. 0)
+   seed 1 H0 -89.744 ecart -0.001 annonce 0.039 ess 533 | H1 -91.838 annonce 0.023 ess 1605 | logBF -2.094
+   seed 2 H0 -89.740 ecart +0.003 annonce 0.030 ess 804 | H1 -91.875 annonce 0.039 ess 544 | logBF -2.135

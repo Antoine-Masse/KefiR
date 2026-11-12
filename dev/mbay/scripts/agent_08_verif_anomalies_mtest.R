@@ -1,0 +1,10 @@
+suppressMessages(pkgload::load_all("C:/Users/masse/Desktop/KefiR/KefiR-mbay", quiet=TRUE))
+set.seed(1)
+x<-c(rnorm(40,0,.5),rnorm(40,0,2),rnorm(40,0,5)); g<-factor(rep(1:3,each=40))
+cat("Levene p:",car::leveneTest(x,g)[1,3]," bf.test p:",suppressWarnings(onewaytests::bf.test(x~g,data=data.frame(x,g),verbose=FALSE))$p.value,"\n")
+r<-tryCatch(m.test(formula=len~supp,data=ToothGrowth,verbose=FALSE,plot=FALSE),error=function(e)paste("ERREUR:",conditionMessage(e))); cat("formula= :",if(is.character(r)) r else "ok","\n")
+set.seed(2); d<-expand.grid(id=factor(1:24),T=factor(c("t1","t2","t3"))); d$G<-factor(ifelse(as.integer(d$id)<=12,"a","b")); d$y<-rnorm(72)+rep(rnorm(24),3)+(d$G=="b")*(d$T=="t3")*2
+r<-tryCatch(m.test(y~G*T+Error(id/T),data=d,verbose=TRUE,plot=FALSE),error=function(e){cat("ERREUR",conditionMessage(e),"\n");NULL})
+cat("---effects---\n");print(r$effects)
+r2<-tryCatch(m.test(y~G*T+Error(id/T),data=d,verbose=FALSE,plot=FALSE),error=function(e)paste("ERREUR:",conditionMessage(e)));cat("verbose=FALSE:",if(is.character(r2)) r2 else "ok","\n")
+print(summary(aov(y~G*T+Error(id/T),data=d)))

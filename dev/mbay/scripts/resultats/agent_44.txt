@@ -1,0 +1,13 @@
+R version 4.6.1 (2026-06-24 ucrt)
+Le jeu du relecteur, par graine de calcul :
+graine 1 : log BF 1.71, P 0.8463, err 3.7%, lois normal_eq=0.00 normal_het=1.00 t_eq=0.00, log BF par loi 24.51 1.71 14.31
+graine 2 : log BF 6.07, P 0.9977, err 4.3%, lois normal_eq=0.00 normal_het=0.00 t_eq=0.00 t_het=1.00, log BF par loi 24.51 1.62 14.29 6.21
+graine 3 : log BF 6.16, P 0.9979, err 4.1%, lois normal_eq=0.00 normal_het=0.00 t_eq=0.00 t_het=1.00, log BF par loi 24.51 1.54 14.29 6.30
+graine 4 : log BF 6.10, P 0.9978, err 3.9%, lois normal_eq=0.00 normal_het=0.00 t_eq=0.00 t_het=1.00, log BF par loi 24.51 1.65 14.33 6.24
+
+Sous H0, plans a ecarts-types etages : P>.5 P>.95 mediane | Welch p<.05 p<.005 | P(lois) moyennes | lois ecartees | err mediane
+k=8 n=6 sd 1e-2 a 1e2 : 0.240 0.020 0.342 | 0.080 0.010 | 0 0.518 0 0.816 | 60 | 4.2
+k=8 n=6 sd 1e-1 a 1e1 : 0.220 0.020 0.303 | 0.080 0.010 | 0 0.373 0 0.66 | 10 | 3.6
+k=3 n=6 sd 1e-2 a 1e2 : 0.300 0.000 0.380 | 0.050 0.000 | 0 0.611 0 0.695 | 58 | 3.5
+k=3 n=20 sd 1e-2 a 1e2 : 0.140 0.000 0.287 | 0.090 0.000 | 0 0.773 0 0.277 | 28 | 2.4
+k=8 n=20 sd 1e-2 a 1e2 : 0.130 0.000 0.229 | 0.090 0.000 | 0 0.842 0 0.233 | 44 | 4.6

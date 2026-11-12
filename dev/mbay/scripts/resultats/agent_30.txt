@@ -1,0 +1,12 @@
+B1 hetero -6.922 zs 85.615 Welch p 3.29e-15 
+ d 5 log BF -1.5 
+ d 50 log BF -6.92 
+ d 500 log BF -12.25 
+ d 5000 log BF -16.88 
+B2 S 1 log BF 2.63 
+B2 S 10 log BF 1.12 
+B2 S 100 log BF -1.19 
+B2 S 10000 log BF -5.81 
+B2 S 1e+06 log BF -10.42 
+2 groupes seuls 1.64 
+I6 zs Inf 

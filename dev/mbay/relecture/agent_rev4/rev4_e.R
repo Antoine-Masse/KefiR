@@ -1,0 +1,7 @@
+.libPaths(c("C:/Users/masse/Desktop/KefiR/mbay-lib", .libPaths()))
+suppressMessages(library(BayesFactor))
+set.seed(9)
+d4 <- expand.grid(A = c("a1", "a2"), B = c("b1", "b2"), C = c("c1", "c2"), D = c("d1", "d2"), r = 1:3)
+d4$y <- rnorm(nrow(d4), 0.8 * (d4$A == "a2"))
+print(t.test(y ~ A, d4)$p.value); print(tapply(d4$y, d4$A, mean))
+print(extractBF(lmBF(y ~ A, d4, rscaleFixed = .5, progress = FALSE), logbf = TRUE)$bf)

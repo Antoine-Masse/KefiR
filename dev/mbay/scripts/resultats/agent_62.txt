@@ -1,0 +1,6 @@
+agent_62 : brms + bridgesampling impossible sur ce poste (compilation Stan : R 4.6 attend Rtools 4.5, absent).
+Reference de remplacement : Laplace sous a priori d'information unitaire propre, beta ~ N(0, n V).
+cas 1 (d = 0,0,0, n = 20 par groupe) : log BF  BIC -3.62 | Laplace information unitaire -3.65 | ecart 0.02
+cas 2 (d = 0,0,0.6, n = 20 par groupe) : log BF  BIC -3.30 | Laplace information unitaire -3.33 | ecart 0.03
+cas 3 (d = 0,0.5,1, n = 15 par groupe) : log BF  BIC 3.63 | Laplace information unitaire 3.47 | ecart 0.16
+cas 4 (d = 0,0,0.4, n = 40 par groupe) : log BF  BIC -3.97 | Laplace information unitaire -3.99 | ecart 0.02

@@ -1,0 +1,18 @@
+a) analytique -19.42322  MC -19.37379 
+b) forme fermee -1.076013  limite NIW -1.076013 
+c) d=1 -0.07531919  Liang -0.07531919 
+************
+Welcome to BayesFactor 0.9.12-4.8. If you have questions, please contact Richard Morey (richarddmorey@gmail.com).
+
+Type BFManual() to open the manual.
+************
+d) r 0.25  anovaBF log -0.05792238  ma formule d=1 -0.05792253 
+d) r 0.5  anovaBF log -0.3338462  ma formule d=1 -0.3338463 
+d) r 1  anovaBF log -0.948614  ma formule d=1 -0.948614 
+d') r 0.25  MANOVA d=3 log BF -0.2715955 
+d') r 0.5  MANOVA d=3 log BF -0.8680451 
+d') r 1  MANOVA d=3 log BF -2.216847 
+invariance -1.076013 -1.076013 
+H0 th 0.097 0.014 0  logBF r=.5 -2.408263  BICapprox -8.464005 
+f= 2  modeles 5  P(incl) unif: 0.6 0.2 0.2 
+f= 3  modeles 19  P(incl) unif: 0.737 0.316 0.053 

@@ -17,6 +17,8 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Imports:
     stats,
+    BayesFactor (>= 0.9.12-4.7),
+    bayestestR (>= 0.13.0),
     graphics,
     grDevices,
     lme4,
@@ -60,6 +62,8 @@ Imports:
 Suggests:
     dae,
     doParallel,
+    nlme,
+    nnet,
     knitr,
     rmarkdown,
     testthat (>= 3.0.0),

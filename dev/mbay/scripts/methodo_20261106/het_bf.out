@@ -1,0 +1,29 @@
+== Controle 1 : quadrature contre MC independant
+k2 modere  arith  quad=0.30190 (grille/2 0.30190) MC=0.30195 se=0.00004 ESS=19992
+k2 modere  geom   quad=0.32100 (grille/2 0.32100) MC=0.32092 se=0.00006 ESS=19986
+k3 H0 het  arith  quad=0.32459 (grille/2 0.32459) MC=0.32543 se=0.00043 ESS=19332
+k3 H0 het  geom   quad=0.42979 (grille/2 0.42979) MC=0.43009 se=0.00038 ESS=19692
+k3 effet   arith  quad=3.61623 (grille/2 3.61623) MC=3.57316 se=0.07636 ESS=1974
+k3 effet   geom   quad=4.05352 (grille/2 4.05352) MC=3.95740 se=0.06078 ESS=3498
+== Controle 2 : k=2, delta a priori ~ Cauchy(sqrt2/2), tau arith
+mediane |delta| 0.7091498659496552 attendu 0.7071067811865476
+== Scenario H0 n=(5,5,40) sd=(4,4,1), N=300
+  temps 20 jeux 33 s
+arith    med=0.300 P>.5=0.147 P>.95=0.000 P<.25=0.323
+geom     med=0.358 P>.5=0.183 P>.95=0.000 P<.25=0.020
+harm     med=0.408 P>.5=0.220 P>.95=0.000 P<.25=0.000
+nweight  med=0.374 P>.5=0.187 P>.95=0.000 P<.25=0.013
+welch    med=0.192 P>.5=0.090 P>.95=0.000 P<.25=0.643
+== Scenario H0 inverse n=(5,5,40) sd=(1,1,4), N=150
+arith    med=0.166 P>.5=0.080 P>.95=0.000 P<.25=0.787
+geom     med=0.246 P>.5=0.127 P>.95=0.000 P<.25=0.527
+harm     med=0.318 P>.5=0.140 P>.95=0.000 P<.25=0.080
+nweight  med=0.114 P>.5=0.053 P>.95=0.000 P<.25=0.840
+welch    med=0.173 P>.5=0.093 P>.95=0.000 P<.25=0.747
+== Groupe tres dispersé : ecart 1 sigma entre groupes 1 et 2 (n=20), sd3 = S ; un jeu fixe puis S varie
+S=  1 arith=46.4 geom=46.3 harm=46.2 nweight=46.4 welch=46.4
+S=  3 arith=40 geom=43.2 harm=43.7 nweight=40 welch=40
+S= 10 arith=24.8 geom=55.4 harm=59.9 nweight=24.8 welch=24.8
+S= 30 arith=9.49 geom=57.6 harm=69.1 nweight=9.49 welch=9.49
+S=100 arith=2.9 geom=48.1 harm=71.7 nweight=2.9 welch=2.9
+fin 485 s

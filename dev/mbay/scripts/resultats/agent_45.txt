@@ -1,0 +1,54 @@
+jeu loi forme log_m se ess
+1 t_het H0 -22.41980 0.00027 11703627
+1 t_het tous -23.90596 0.00036 7050072
+1 t_het s1 -23.37158 0.00031 9511213
+1 t_het s2 -23.41003 0.00032 8836913
+1 t_het s3 -23.43415 0.00032 9122080
+1 normal_het H0 -21.93436 0.00027 5867460
+1 normal_het tous -22.94421 0.00041 3750350
+1 normal_het s1 -22.57352 0.00034 4690086
+1 normal_het s2 -22.64131 0.00035 4524659
+1 normal_het s3 -22.64154 0.00034 4649920
+2 t_het H0 -33.94295 0.00046 4458842
+2 t_het tous -34.01770 0.00058 2843693
+2 t_het s1 -33.90783 0.00072 1915574
+2 t_het s2 -33.92311 0.00043 5158712
+2 t_het s3 -34.77718 0.00056 3066582
+2 normal_het H0 -32.76384 0.00058 2269530
+2 normal_het tous -33.08779 0.00067 1842728
+2 normal_het s1 -33.08967 0.00062 2071639
+2 normal_het s2 -32.76994 0.00058 2276511
+2 normal_het s3 -33.40712 0.00069 1725693
+3 t_het H0 -24.59843 0.00047 4345276
+3 t_het tous -23.99366 0.00036 7155261
+3 t_het s1 -25.07573 0.00054 3305652
+3 t_het s2 -25.51501 0.00049 4030014
+3 t_het s3 -22.96681 0.00034 7804405
+3 normal_het H0 -23.88234 0.00077 1453656
+3 normal_het tous -23.13612 0.00064 1952687
+3 normal_het s1 -24.27296 0.00079 1374364
+3 normal_het s2 -24.48104 0.00077 1448722
+3 normal_het s3 -22.20560 0.00061 2136635
+# Quadrature deterministe (reference exacte a 1e-6 pres ; grille fine = grossiere) :
+# 1 normal_het H0 -21.934682 quad
+# 1 normal_het tous -22.944787 quad
+# 1 normal_het s1 -22.573960 quad
+# 1 normal_het s2 -22.641748 quad
+# 1 normal_het s3 -22.642010 quad
+# 1 t_het H0 -22.419855 quad
+# 2 normal_het H0 -32.763170 quad
+# 2 normal_het tous -33.087077 quad
+# 2 normal_het s1 -33.089010 quad
+# 2 normal_het s2 -32.769185 quad
+# 2 normal_het s3 -33.406421 quad
+# 2 t_het H0 -33.942566 quad
+# 3 normal_het H0 -23.883456 quad
+# 3 normal_het tous -23.136871 quad
+# 3 normal_het s1 -24.273696 quad
+# 3 normal_het s2 -24.481582 quad
+# 3 normal_het s3 -22.206346 quad
+# 3 t_het H0 -24.598595 quad
+# y pris tel que genere. Pour y standardise (y-moy)/sd : log_m + (N-1)*log(sd(y)) :
+# jeu 1 : N=13 sd=1.264045 (N-1)*log(sd)=2.811803
+# jeu 2 : N=18 sd=1.594727 (N-1)*log(sd)=7.933940
+# jeu 3 : N=15 sd=1.342854 (N-1)*log(sd)=4.127157

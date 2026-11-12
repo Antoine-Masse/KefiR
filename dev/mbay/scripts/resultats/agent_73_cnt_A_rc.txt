@@ -1,0 +1,3 @@
+R version 4.6.1 (2026-06-24 ucrt)
+agent_73 : discret a plusieurs facteurs, 2 x 2, n = 25, scenario cnt_A, N = 200
+un terme P>.75 : 0.330 | P>.95 : 0.130 || P(A)>.75 : 0.320 | P(A)>.95 : 0.130 || glm, rapport de vraisemblance sur A p<.05 : 0.685

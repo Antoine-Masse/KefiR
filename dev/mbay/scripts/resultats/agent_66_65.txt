@@ -1,0 +1,3 @@
+R version 4.6.1 (2026-06-24 ucrt)
+agent_66/65 : 2 x 2, variances egales, effet A 0.8, n = 10 par case (N = 40), N = 200, lois moyennees (D19)
+P(A)>.75 : 0.450 | P(A)>.95 : 0.175 (avant 0.175) | B ou A:B P>.95 : 0.000 | plafond residuel : 0.000 | P(var. par case) mediane : 0.215 | temps median 1.81 s, max 4.08 s

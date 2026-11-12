@@ -1,0 +1,390 @@
+
+########## 1. Deux facteurs, variances tres differentes d'une case a l'autre, aucun effet
+
+1) Plan reconnu : 2 facteurs croisés, engrais (2 niveaux), sol (2 niveaux) ; 4
+   cases, N = 55.
+	==> Termes : engrais, sol, engrais:sol. 5 combinaisons de termes sont
+	    possibles (une interaction n'entre qu'avec ses facteurs : hérédité).
+	--> Une réponse par terme, obtenue en pesant ensemble ces 5
+	    combinaisons.
+2) Contrôles des données [quantile() {stats}] - rien à retirer.
+	==> Effectifs : 5 à 40 par case (N = 55), déséquilibré.
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur case : 1 au-delà de 1,5 écart
+	    interquartile, 0 au-delà de 3 (sur 55).
+	--> Aucune valeur retirée.
+3) Forme du bruit - normale, variance commune ou par case, moyennées.
+	==> Variances par case : inégales probables (> 99,9 %) ; écarts-types de
+	    0,82 à 7,6.
+	--> Chaque réponse est donc calculée surtout avec une variance par
+	    case : une case très dispersée ne fait plus paraître les écarts plus
+	    grands qu'ils ne sont.
+	--> Aucune valeur éloignée ne met d'emblée la loi normale en doute.
+	Note : les queues lourdes ne sont pas encore calculées à plusieurs
+	       facteurs.
+4) Point de départ (a priori) - aucune différence du tout : 33,3 %.
+	==> Chance de chaque terme d'avance : engrais 50,0 %, sol 50,0 %,
+	    engrais:sol 16,7 %.
+	==> Taille attendue r = 0,5 par terme.
+	Note : ces chances ne s'additionnent pas ; plus il y a de termes, moins
+	       chacun est probable, ce qui protège des fausses interactions.
+	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
+	       fait varier.
+5) Solidité de la réponse [lmBF() {BayesFactor}] - aucun terme ne change de
+   côté.
+	==> 5 modèles comparés (combinaisons de termes).
+	==> Précision du calcul : < 0,1 point sur les probabilités, négligeable.
+	--> Aucun terme ne change de côté.
+	--> La réponse globale peut s'inverser : le bilan ne l'affirmera pas.
+	Note : r va de 0,25 à 1, avec trois lois sur les modèles.
+6) Quels niveaux diffèrent, et de combien [lmBF(), posterior() {BayesFactor},
+   hdi() {bayestestR}] - aucun terme probable, rien à comparer.
+	==> Aucun terme n'atteint 50 % : les niveaux ne sont pas comparés.
+
+7) Bilan - indécis (Aucune différence de rendement selon engrais, sol : 55,2 %).
+	==> Verdict : indécis.
+	==> Probabilité de chaque hypothèse :
+	    1. Aucune différence de rendement selon engrais, sol : 55,2 % (non
+	    tranché)
+	    2. rendement diffère selon au moins un facteur : 44,8 %
+	--> Selon le point de départ : 29,4 % à 67,9 % ; l'ordre peut
+	    s'inverser, non tranché.
+	Note : les données sont 2,47 fois plus probables sous l'hypothèse 1 que
+	       sous la 2 (facteur de Bayes ; 1 à 3 faible, 3 à 20 modéré, 20 à
+	       150 fort, au-delà très fort).
+
+	==> engrais (seul ou en interaction) : non tranché (30,8 % ; a priori
+	    50,0 % ; facteur de Bayes 0,446).
+	==> sol (seul ou en interaction) : non tranché (28,2 % ; a priori
+	    50,0 % ; facteur de Bayes 0,393).
+	==> engrais:sol (les écarts selon engrais changent avec sol) : non,
+	    soutien modéré (5,6 % ; a priori 16,7 % ; facteur de Bayes 0,297).
+
+	==> Moyennes observées, engrais : e1 = 20,0 (n = 10) ; e2 = 20,2
+	    (n = 45).
+	==> Moyennes observées, sol : argile = 19,9 (n = 10) ; sable = 20,3
+	    (n = 45).
+	==> Par case : e1 x argile = 20,0 ; e2 x argile = 19,9 ;
+	    e1 x sable = 20,0 ; e2 x sable = 20,3.
+	==> Écart-type au sein des cases : 2,92 ; variance commune ou par case,
+	    moyennées.
+	Note : pour un compte rendu : « Les données ne permettent pas de
+	       conclure (probabilité d'une différence 44,8 %, facteur de Bayes
+	       2,47 en faveur de l'absence de différence ; engrais non tranché
+	       (30,8 %), sol non tranché (28,2 %), engrais:sol non (5,6 %)) ;
+	       m.bay {KefiR}, BayesFactor, Rouder et al. 2012. »
+	Note : probabilités d'hypothèses, pas des p-values ; la méthode avec
+	       print(resultat, detail = TRUE).
+
+########## 2. Deux facteurs, effet de la variete seule
+
+1) Plan reconnu : 2 facteurs croisés, variete (3 niveaux), serre (2 niveaux) ; 6
+   cases, N = 72.
+	==> Termes : variete, serre, variete:serre. 5 combinaisons de termes
+	    sont possibles (une interaction n'entre qu'avec ses facteurs :
+	    hérédité).
+	--> Une réponse par terme, obtenue en pesant ensemble ces 5
+	    combinaisons.
+2) Contrôles des données [quantile() {stats}] - rien à retirer.
+	==> Effectifs : 12 par case (N = 72).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur case : 0 au-delà de 1,5 écart
+	    interquartile, 0 au-delà de 3 (sur 72).
+	--> Aucune valeur retirée.
+3) Forme du bruit - normale, variance commune ou par case, moyennées.
+	==> Variances par case : égales probables (90,7 %) ; écarts-types de 2,2
+	    à 3,3.
+	--> Chaque réponse est donc calculée surtout avec une variance commune,
+	    comme d'habitude ; une variance par case garde son petit poids.
+	--> Aucune valeur éloignée ne met d'emblée la loi normale en doute.
+	Note : les queues lourdes ne sont pas encore calculées à plusieurs
+	       facteurs.
+4) Point de départ (a priori) - aucune différence du tout : 33,3 %.
+	==> Chance de chaque terme d'avance : variete 50,0 %, serre 50,0 %,
+	    variete:serre 16,7 %.
+	==> Taille attendue r = 0,5 par terme.
+	Note : ces chances ne s'additionnent pas ; plus il y a de termes, moins
+	       chacun est probable, ce qui protège des fausses interactions.
+	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
+	       fait varier.
+5) Solidité de la réponse [lmBF() {BayesFactor}] - aucun terme ne change de
+   côté.
+	==> 5 modèles comparés (combinaisons de termes).
+	==> Précision du calcul : environ 0,1 point sur les probabilités,
+	    négligeable.
+	--> Aucun terme ne change de côté.
+	Note : r va de 0,25 à 1, avec trois lois sur les modèles.
+6) Quels niveaux diffèrent, et de combien [lmBF(), posterior() {BayesFactor},
+   hdi() {bayestestR}] - variete.
+	--> variete probable (99,4 %) et dans aucune interaction probable : ses
+	    niveaux sont comparés, à serre égal.
+	==> Regroupement en tête : V1 < V3 = V2 (75,3 %).
+	==> Si une différence existe, regroupements en tête : V1 < V3 = V2
+	    (75,3 %) ; V1 < V3 < V2 (24,2 %) ; V1 = V3 < V2 (0,5 %).
+	==> V1/V2 : différents à 99,7 % ; V2 - V1 = 3,1 [1,5 ; 4,6], soit 1,13
+	    écart-type résiduel (autres termes pris en compte).
+	==> V1/V3 : différents à 99,3 % ; V3 - V1 = 2,5 [0,9 ; 4,0], soit 0,93
+	    écart-type résiduel (autres termes pris en compte).
+	==> V2/V3 : différents à 24,7 % ; V3 - V2 = -0,6 [-2,1 ; 0,8], soit
+	    -0,21 écart-type résiduel (autres termes pris en compte).
+	Note : [ ; ] = intervalle de crédibilité à 95 % (95 % de chances d'y
+	       trouver l'écart).
+	Note : l'écart estimé est ramené vers 0 par l'a priori, surtout quand
+	       les groupes sont petits.
+
+7) Bilan - hauteur diffère selon au moins un facteur : 99,4 % (soutien très
+   fort).
+	==> Verdict : une différence existe très probablement.
+	==> Probabilité de chaque hypothèse :
+	    1. hauteur diffère selon au moins un facteur : 99,4 % (soutien très
+	    fort)
+	    2. Aucune différence de hauteur selon variete, serre : 0,6 %
+	==> Selon le point de départ : 99,2 % à 99,7 % ; l'ordre ne change pas.
+	Note : les données sont 89,8 fois plus probables sous l'hypothèse 1 que
+	       sous la 2 (facteur de Bayes ; 1 à 3 faible, 3 à 20 modéré, 20 à
+	       150 fort, au-delà très fort).
+
+	==> variete (seul ou en interaction) : oui, soutien très fort (99,4 % ;
+	    a priori 50,0 % ; facteur de Bayes 156).
+	==> serre (seul ou en interaction) : non tranché (29,9 % ; a priori
+	    50,0 % ; facteur de Bayes 0,427).
+	==> variete:serre (les écarts selon variete changent avec serre) : non,
+	    soutien modéré (6,2 % ; a priori 16,7 % ; facteur de Bayes 0,33).
+	==> Paires, variete :
+	==> Différents : V1/V2 (très fort) ; V1/V3 (fort).
+	==> Semblables : V2/V3 (modéré).
+	==> Si une différence existe, regroupement le plus probable :
+	    V1 < V3 = V2 (75,3 %).
+	Note : différents à partir de 75 % de probabilité, semblables jusqu'à
+	       25 %, sinon non tranchés ; écarts chiffrés à l'étape 6.
+
+	==> Moyennes observées, variete : V1 = 30,8 ; V2 = 34,3 ; V3 = 33,6
+	    (n = 24).
+	==> Moyennes observées, serre : S1 = 32,6 ; S2 = 33,2 (n = 36).
+	==> Par case : V1 x S1 = 30,1 ; V2 x S1 = 34,1 ; V3 x S1 = 33,7 ;
+	    V1 x S2 = 31,6 ; V2 x S2 = 34,5 ; V3 x S2 = 33,5.
+	==> Écart-type au sein des cases : 2,74 ; variance commune ou par case,
+	    moyennées.
+	Note : pour un compte rendu : « hauteur diffère selon au moins un
+	       facteur (probabilité a posteriori 99,4 %), facteur de Bayes
+	       89,8 ; variete oui (99,4 %), serre non tranché (29,9 %),
+	       variete:serre non (6,2 %) (m.bay {KefiR}, BayesFactor, Rouder et
+	       al. 2012). »
+	Note : probabilités d'hypothèses, pas des p-values ; ni l'importance, ni
+	       la cause d'une différence ; la méthode avec print(resultat,
+	       detail = TRUE).
+
+########## 3. Deux facteurs, interaction (le traitement n'agit que chez H)
+
+1) Plan reconnu : 2 facteurs croisés, traitement (2 niveaux), sexe (2 niveaux) ;
+   4 cases, N = 60.
+	==> Termes : traitement, sexe, traitement:sexe. 5 combinaisons de termes
+	    sont possibles (une interaction n'entre qu'avec ses facteurs :
+	    hérédité).
+	--> Une réponse par terme, obtenue en pesant ensemble ces 5
+	    combinaisons.
+2) Contrôles des données [quantile() {stats}] - rien à retirer.
+	==> Effectifs : 15 par case (N = 60).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur case : 2 au-delà de 1,5 écart
+	    interquartile, 0 au-delà de 3 (sur 60).
+	--> Aucune valeur retirée.
+3) Forme du bruit - normale, variance commune ou par case, moyennées.
+	==> Variances par case : égales probables (85,5 %) ; écarts-types de 4,6
+	    à 6,3.
+	--> Chaque réponse est donc calculée surtout avec une variance commune,
+	    comme d'habitude ; une variance par case garde son petit poids.
+	--> Aucune valeur éloignée ne met d'emblée la loi normale en doute.
+	Note : les queues lourdes ne sont pas encore calculées à plusieurs
+	       facteurs.
+4) Point de départ (a priori) - aucune différence du tout : 33,3 %.
+	==> Chance de chaque terme d'avance : traitement 50,0 %, sexe 50,0 %,
+	    traitement:sexe 16,7 %.
+	==> Taille attendue r = 0,5 par terme.
+	Note : ces chances ne s'additionnent pas ; plus il y a de termes, moins
+	       chacun est probable, ce qui protège des fausses interactions.
+	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
+	       fait varier.
+5) Solidité de la réponse [lmBF() {BayesFactor}] - aucun terme ne change de
+   côté.
+	==> 5 modèles comparés (combinaisons de termes).
+	==> Précision du calcul : < 0,1 point sur les probabilités, négligeable.
+	--> Aucun terme ne change de côté.
+	Note : r va de 0,25 à 1, avec trois lois sur les modèles.
+6) Quels niveaux diffèrent, et de combien [lmBF(), posterior() {BayesFactor},
+   hdi() {bayestestR}] - cases traitement x sexe.
+	--> traitement:sexe probable (97,8 %) : les écarts d'un facteur
+	    dépendent de l'autre, donc les cases sont comparées.
+	==> Regroupement en tête :
+	    actif x F = placebo x H = placebo x F < actif x H (71,5 %).
+	==> Si une différence existe, regroupements en tête :
+	    actif x F = placebo x H = placebo x F < actif x H (71,5 %) ;
+	    actif x F = placebo x H < placebo x F < actif x H (9,9 %) ;
+	    actif x F < placebo x H = placebo x F < actif x H (9,3 %).
+	==> actif x F/actif x H : différents à > 99,9 % ; actif x H -
+	    actif x F = 9,4 [5,3 ; 13,2], soit 1,76 écart-type.
+	==> actif x F/placebo x F : différents à 22,2 % ; placebo x F -
+	    actif x F = 1,9 [-1,5 ; 5,9], soit 0,35 écart-type.
+	==> actif x F/placebo x H : différents à 18,6 % ; placebo x H -
+	    actif x F = 1,1 [-2,5 ; 4,9], soit 0,21 écart-type.
+	==> actif x H/placebo x F : différents à > 99,9 % ; placebo x F -
+	    actif x H = -7,4 [-10,9 ; -3,3], soit -1,40 écart-type.
+	==> actif x H/placebo x H : différents à > 99,9 % ; placebo x H -
+	    actif x H = -8,1 [-11,9 ; -4,1], soit -1,54 écart-type.
+	==> placebo x F/placebo x H : différents à 19,2 % ; placebo x H -
+	    placebo x F = -0,8 [-4,4 ; 2,8], soit -0,15 écart-type.
+	Note : [ ; ] = intervalle de crédibilité à 95 % (95 % de chances d'y
+	       trouver l'écart).
+	Note : l'écart estimé est ramené vers 0 par l'a priori, surtout quand
+	       les groupes sont petits.
+
+7) Bilan - score diffère selon au moins un facteur : 99,2 % (soutien fort).
+	==> Verdict : une différence existe très probablement.
+	==> Probabilité de chaque hypothèse :
+	    1. score diffère selon au moins un facteur : 99,2 % (soutien fort)
+	    2. Aucune différence de score selon traitement, sexe : 0,8 %
+	==> Selon le point de départ : 98,6 % à 99,6 % ; l'ordre ne change pas.
+	Note : les données sont 62,2 fois plus probables sous l'hypothèse 1 que
+	       sous la 2 (facteur de Bayes ; 1 à 3 faible, 3 à 20 modéré, 20 à
+	       150 fort, au-delà très fort).
+
+	==> traitement (seul ou en interaction) : oui, soutien fort (98,7 % ; a
+	    priori 50,0 % ; facteur de Bayes 76,1).
+	==> sexe (seul ou en interaction) : oui, soutien fort (99,0 % ; a priori
+	    50,0 % ; facteur de Bayes 98,2).
+	==> traitement:sexe (les écarts selon traitement changent avec sexe) :
+	    oui, soutien fort (97,8 % ; a priori 16,7 % ; facteur de Bayes 225).
+	==> Paires, cases traitement x sexe :
+	==> Différents : actif x F/actif x H, actif x H/placebo x F,
+	    actif x H/placebo x H (très fort).
+	==> Semblables : actif x F/placebo x F, actif x F/placebo x H,
+	    placebo x F/placebo x H (modéré).
+	==> Si une différence existe, regroupement le plus probable :
+	    actif x F = placebo x H = placebo x F < actif x H (71,5 %).
+	Note : différents à partir de 75 % de probabilité, semblables jusqu'à
+	       25 %, sinon non tranchés ; écarts chiffrés à l'étape 6.
+
+	==> Moyennes observées, traitement : actif = 54,4 ; placebo = 50,9
+	    (n = 30).
+	==> Moyennes observées, sexe : F = 50,3 ; H = 55,0 (n = 30).
+	==> Par case : actif x F = 49,2 ; placebo x F = 51,3 ;
+	    actif x H = 59,6 ; placebo x H = 50,4.
+	==> Écart-type au sein des cases : 5,23 ; variance commune ou par case,
+	    moyennées.
+	Note : pour un compte rendu : « score diffère selon au moins un facteur
+	       (probabilité a posteriori 99,2 %), facteur de Bayes 62,2 ;
+	       traitement oui, seul ou en interaction, (98,7 %), sexe oui, seul
+	       ou en interaction, (99,0 %), traitement:sexe oui (97,8 %) (m.bay
+	       {KefiR}, BayesFactor, Rouder et al. 2012). »
+	Note : probabilités d'hypothèses, pas des p-values ; ni l'importance, ni
+	       la cause d'une différence ; la méthode avec print(resultat,
+	       detail = TRUE).
+
+########## 4. Plan en tranches (groupe entre sujets, temps intra-sujet)
+
+1) Plan reconnu : mesures répétées sur 16 sujets, groupe (2 niveaux, entre
+   sujets), temps (3 niveaux, intra-sujet) ; N = 48.
+	--> Termes : groupe, temps, groupe:temps ; une réponse par terme,
+	    obtenue en pesant ensemble les 5 combinaisons de termes.
+2) Contrôles des données [quantile() {stats}] - 1 valeur éloignée, gardée.
+	==> Sujets : 16 ; complets : 16.
+	==> Effectifs : 8 par condition (N = 48).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur condition : 1 au-delà de 1,5 écart
+	    interquartile, 1 au-delà de 3 (sur 48).
+	--> Aucune valeur retirée.
+	Note : valeurs éloignées cherchées une fois retiré le niveau propre de
+	       chaque sujet.
+3) Forme du bruit - normale, seule.
+	==> Mesures répétées : chaque sujet garde son niveau propre.
+	--> 1 valeur au-delà de 3 écarts interquartiles : lire la réponse avec
+	    réserve.
+	Note : conditions supposées également corrélées au sein d'un sujet (non
+	       testé ; m.test() contrôle la sphéricité).
+	Note : queues lourdes et variances inégales ne sont pas encore validées
+	       avec des sujets.
+4) Point de départ (a priori) - aucune différence du tout : 33,3 %.
+	==> Chance de chaque terme d'avance : groupe 50,0 %, temps 50,0 %,
+	    groupe:temps 16,7 %.
+	==> Taille attendue r = 0,5 par terme.
+	==> Chaque sujet garde son niveau propre, dans tous les modèles,
+	    « aucune différence » compris.
+	Note : ces chances ne s'additionnent pas ; plus il y a de termes, moins
+	       chacun est probable, ce qui protège des fausses interactions.
+	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
+	       fait varier.
+5) Solidité de la réponse [lmBF() {BayesFactor}] - groupe change de côté selon
+   l'a priori.
+	==> Précision numérique : deux calculs avec des graines différentes
+	    diffèrent jusqu'à 5,1 points de probabilité.
+	==> 5 modèles comparés (combinaisons de termes).
+	==> groupe change de côté : 43,7 % à 85,0 %.
+	--> Prudence ajoutée : groupe sera dit non tranché.
+	Note : r va de 0,25 à 1, avec trois lois sur les modèles.
+6) Quels niveaux diffèrent, et de combien [lmBF(), posterior() {BayesFactor},
+   hdi() {bayestestR}] - temps, puis groupe.
+	--> temps probable (> 99,9 %) et dans aucune interaction probable : ses
+	    niveaux sont comparés, à groupe égal.
+	==> Regroupement en tête : J0 < J7 < J14 (88,8 %).
+	==> Si une différence existe, regroupements en tête : J0 < J7 < J14
+	    (88,8 %) ; J0 < J7 = J14 (10,3 %) ; J0 = J7 < J14 (0,9 %).
+	==> J0/J14 : différents à > 99,9 % ; J14 - J0 = 1,2 [0,8 ; 1,5], soit
+	    2,41 écart-type résiduel au sein des sujets.
+	==> J0/J7 : différents à 99,1 % ; J7 - J0 = 0,7 [0,3 ; 1,0], soit 1,38
+	    écart-type résiduel au sein des sujets.
+	==> J14/J7 : différents à 89,7 % ; J7 - J14 = -0,5 [-0,8 ; -0,2], soit
+	    -1,03 écart-type résiduel au sein des sujets.
+	--> groupe non tranché (73,6 %, étape 5) mais en tête : ses niveaux sont
+	    comparés à titre indicatif, à temps égal.
+	--> groupe varie entre sujets : son écart est fortement ramené vers 0,
+	    l'a priori étant à l'échelle de la variation au sein des sujets ;
+	    écart observé des moyennes : 4,7.
+	==> Écart estimé traite - temoin = 1,5 [-0,6 ; 6,1].
+	Note : [ ; ] = intervalle de crédibilité à 95 % (95 % de chances d'y
+	       trouver l'écart).
+	Note : l'écart estimé est ramené vers 0 par l'a priori, surtout quand
+	       les groupes sont petits.
+
+7) Bilan - poids diffère selon au moins un facteur : > 99,9 % (soutien très
+   fort).
+	==> Verdict : une différence existe très probablement.
+	==> Probabilité de chaque hypothèse :
+	    1. poids diffère selon au moins un facteur : > 99,9 % (soutien très
+	    fort)
+	    2. Aucune différence de poids selon groupe, temps : < 0,1 %
+	==> La réponse reste > 99,9 % quel que soit le point de départ.
+	Note : les données sont 86 400 fois plus probables sous l'hypothèse 1
+	       que sous la 2 (facteur de Bayes ; 1 à 3 faible, 3 à 20 modéré, 20
+	       à 150 fort, au-delà très fort).
+
+	==> groupe (seul ou en interaction) : non tranché (73,6 % ; a priori
+	    50,0 % ; facteur de Bayes 2,79).
+	==> temps (seul ou en interaction) : oui, soutien très fort (> 99,9 % ;
+	    a priori 50,0 % ; facteur de Bayes 72 900).
+	==> groupe:temps (les écarts selon groupe changent avec temps) : non
+	    tranché (37,8 % ; a priori 16,7 % ; facteur de Bayes 3,04).
+	==> Paires, temps :
+	==> Différents : J0/J14 (très fort) ; J0/J7 (fort) ; J14/J7 (modéré).
+	==> Si une différence existe, regroupement le plus probable :
+	    J0 < J7 < J14 (88,8 %).
+	==> Écart estimé traite - temoin (groupe) : 1,5 [-0,6 ; 6,1] (étape 6).
+	Note : les données augmentent les chances de groupe:temps (facteur de
+	       Bayes 3,04), mais ce terme partait à 16,7 %, d'où 37,8 %
+	       seulement.
+
+	==> Moyennes observées, groupe : temoin = 60,1 ; traite = 64,8 (n = 24).
+	==> Moyennes observées, temps : J0 = 61,8 ; J14 = 63,1 ; J7 = 62,5
+	    (n = 16).
+	==> Par case : temoin x J0 = 59,5 ; traite x J0 = 64,1 ;
+	    temoin x J14 = 60,5 ; traite x J14 = 65,6 ; temoin x J7 = 60,3 ;
+	    traite x J7 = 64,7.
+	==> Écart-type résiduel au sein des sujets : 0,44 ; loi normale à
+	    variance commune seule.
+	Note : pour un compte rendu : « poids diffère selon au moins un facteur
+	       (probabilité a posteriori > 99,9 %), facteur de Bayes 86 400 ;
+	       groupe non tranché (73,6 %), temps oui (> 99,9 %), groupe:temps
+	       non tranché (37,8 %) (m.bay {KefiR}, BayesFactor, Rouder et al.
+	       2012). »
+	Note : probabilités d'hypothèses, pas des p-values ; ni l'importance, ni
+	       la cause d'une différence ; la méthode avec print(resultat,
+	       detail = TRUE).

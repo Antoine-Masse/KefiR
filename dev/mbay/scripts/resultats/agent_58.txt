@@ -1,0 +1,7 @@
+R version 4.6.1 (2026-06-24 ucrt)
+agent_58 : ANCOVA, N = 200 jeux par scenario, 3 groupes, covariable U(5,15), pente 0.8, residu 1, r = 0.5, rscaleCont = sqrt(2)/4
+scenario : P(g)>.5 / >.75 / >.95 | car type II p<.05 || P(g:x)>.5 / >.75 | p(g:x)<.05 || couverture ecart ajuste
+paral_H0_n15 : 0.055 / 0.010 / 0.000 | 0.025 || - / - | - || 0.990
+paral_un_ecart_n15 : 0.835 / 0.585 / 0.300 | 0.755 || - / - | - || 0.932
+inter_ecrite_pentes_egales_n20 : 0.235 / 0.120 / 0.025 | 0.345 || 0.000 / 0.000 | 0.070 || 0.972
+inter_ecrite_pente_differente_n20 : 0.705 / 0.565 / 0.350 | 0.315 || 0.630 / 0.460 | 0.935 || 0.955

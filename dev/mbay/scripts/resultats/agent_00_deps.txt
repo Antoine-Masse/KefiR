@@ -1,0 +1,53 @@
+R: R version 4.6.1 (2026-06-24 ucrt) 
+.libPaths:
+[1] "C:/Users/masse/Desktop/KefiR/mbay-lib"                  
+[2] "C:/Users/masse/AppData/Local/Programs/R/R-4.6.1/library"
+g++:   make:  
+RTOOLS env:   C:\RBuildTools\4.4 
+pkgbuild installe: TRUE 
+WARNING: Rtools is required to build R packages, but is not currently installed.
+
+Please download and install the appropriate version of Rtools for 4.6.1 from
+https://cran.r-project.org/bin/windows/Rtools/.
+[1] FALSE
+character(0)
+contrib url: https://cloud.r-project.org/bin/windows/contrib/4.6   n bin: 25587  n src: 25617 
+                          pkg        bin        src
+BayesFactor       BayesFactor 0.9.12-4.8 0.9.12-4.8
+bayestestR         bayestestR     0.20.0     0.20.0
+BAS                       BAS      2.0.2      2.0.2
+rstanarm             rstanarm     2.32.2     2.32.2
+brms                     brms     2.23.0     2.23.0
+bridgesampling bridgesampling      1.2-1      1.2-1
+rstan                   rstan     2.32.7     2.32.7
+StanHeaders       StanHeaders   2.39.1.1   2.39.1.1
+Imports KefiR: 41  ; fermeture recursive hors base: 216 
+
+== BayesFactor : rec 22  au-dela KefiR 5 
+ coda pbapply hypergeo elliptic contfrac 
+
+== bayestestR : rec 2  au-dela KefiR 2 
+ insight datawizard 
+
+== BAS : rec 0  au-dela KefiR 0 
+  
+
+== rstanarm : rec 117  au-dela KefiR 37 
+ bayesplot loo posterior rstan rstantools shinystan RcppParallel StanHeaders BH ggdist ggridges reshape2 checkmate tensorA distributional inline pkgbuild QuickJSR desc shiny colourpicker DT dygraphs gtools markdown shinyjs shinythemes threejs xtable miniUI litedown callr processx commonmark httpuv sourcetools ps 
+
+== brms : rec 75  au-dela KefiR 30 
+ rstan loo posterior rstantools bayesplot bridgesampling future future.apply nleqslv coda ggdist ggridges reshape2 Brobdingnag globals listenv parallelly checkmate tensorA distributional StanHeaders inline RcppParallel pkgbuild QuickJSR BH desc callr processx ps 
+
+== bridgesampling : rec 19  au-dela KefiR 2 
+ Brobdingnag coda 
+                          pkg recursives au_dela_KefiR deja_installes
+BayesFactor       BayesFactor         22             5              0
+bayestestR         bayestestR          2             2              0
+BAS                       BAS          0             0              0
+rstanarm             rstanarm        117            37             13
+brms                     brms         75            30              5
+bridgesampling bridgesampling         19             2              0
+
+union au-dela KefiR: 52 
+sans binaire:  
+[1] "datawizard"

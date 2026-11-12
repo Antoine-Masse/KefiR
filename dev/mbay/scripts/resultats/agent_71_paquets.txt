@@ -1,0 +1,2 @@
+R version 4.6.1 (2026-06-24 ucrt)
+agent_71 paquets : k = 10, deux paquets a 1 ecart-type, n = 8, N = 30 ; paires entre paquets dites differentes : 0.380 ; paires d'un meme paquet dites differentes : 0.030, semblables : 0.082

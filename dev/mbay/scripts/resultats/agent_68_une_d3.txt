@@ -1,0 +1,3 @@
+R version 4.6.1 (2026-06-24 ucrt)
+agent_68 : MANOVA, scenario une_d3, 3 groupes x 15, N = 100
+Pillai p<.05 : 0.410 || A BFpack P>.75 0.060 P>.95 0.020 || B BIC P>.75 0.060 P>.95 0.010 || C lmBF empile P>.75 0.160 P>.95 0.040

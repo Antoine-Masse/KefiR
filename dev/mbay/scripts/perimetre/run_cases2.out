@@ -1,0 +1,343 @@
+
+
+## CAS : A. x,g data.frame sans data (reproduit cas 8) 
+ERREUR: colonnes non définies sélectionnées 
+pile: suppressMessages > m.test > .filter_small_groups > interaction > [ > [.data.frame > .handleSimpleError > h 
+trace verbose (extraits):
+  
+
+
+## CAS : A2. x='y', g=c('A','B'), data 
+ERREUR: inherits(formula, "formula") n'est pas TRUE 
+pile: rt > capture.output > withVisible > suppressMessages > m.test > model.frame > .formulator_safe > stopifnot 
+trace verbose (extraits):
+  
+
+
+## CAS : B. y~G*T+Error(id/T) split-plot (reproduit cas 18) 
+method: EMMs (emmeans package)  chosen_test:   p_glob: 0.5004 
+colonnes groups: categories, EMMs_Tukey 
+effects:
+  term  p.value
+1    G 5.00e-01
+2    T 3.17e-14
+trace verbose (extraits):
+  RECOMMANDATION : Modèle à effets mixtes (lmer) requis.
+  --> Vers modèle à effets mixtes (lmer)
+  7) Ajustement modèle à effets mixtes [lmer() {lmerTest}]
+  Formule : y ~ G + T + (1 | id)
+  Attention !
+  Attention : uniquement en triant les valeurs en fonction de Y et en fonction des variables d'effet aléatoire.
+  14) ATTENTION : Certaines vérifications ont échoué (voir bilan valreg() ci-dessus).
+  ANOVA Type III pour modèle mixte [anova() {lmerTest}]
+  Type III Analysis of Variance Table with Satterthwaite's method
+  Composantes variance [VarCorr() {lme4}] :
+  Coefficients effets fixes [fixef() {lme4}] :
+
+
+## CAS : B2. y~G*T+(1|id) 
+method: Parametric ANOVA/t-test  chosen_test:   p_glob: 0.5004 
+colonnes groups: categories, Bootstrap (median), Wilcoxon_Holm, Lincon 
+effects:
+  term  p.value
+1    G 5.00e-01
+2    T 1.20e-13
+3  G:T 9.68e-01
+trace verbose (extraits):
+  1) Syntaxe lmer (1|id) détectée : traitement comme mesures répétées avec id='id'
+  6) Ajustement du modèle ANOVA avec effets aléatoires / mesures répétées [aov() avec terme Error].
+  Jarque-Bera [jb.norm.test() {normtest}]
+  Test de Levene [car::leveneTest()] - Variance homogène (homoscédasticité).
+  --> Vers analyse robuste
+  Approche robuste suggérée pour effets aléatoires :
+  - Modèle mixte avec estimation robuste (lmerTest::lmer)
+  10) ATTENTION : Aucune méthode robuste automatique n'a pu être appliquée pour ce plan.
+  a) Posthoc - Analyse des différences de médianes par bootstrap [pairwise.boot() de {KefiR}].
+  b) Posthoc - Test de Wilcoxon-Mann-Whitney [pairwise.wilcox.test()].
+  c) Posthoc - Comparaisons robustes sur moyennes tronquées [lincon() de {WRS2}].
+
+
+## CAS : B3. y~G*T+Error(id)  
+method: EMMs (emmeans package)  chosen_test:   p_glob: 0.5004 
+colonnes groups: categories, EMMs_Tukey 
+effects:
+  term  p.value
+1    G 5.00e-01
+2    T 3.17e-14
+trace verbose (extraits):
+  RECOMMANDATION : Modèle à effets mixtes (lmer) requis.
+  --> Vers modèle à effets mixtes (lmer)
+  7) Ajustement modèle à effets mixtes [lmer() {lmerTest}]
+  Formule : y ~ G + T + (1 | id)
+  Attention !
+  Attention : uniquement en triant les valeurs en fonction de Y et en fonction des variables d'effet aléatoire.
+  14) ATTENTION : Certaines vérifications ont échoué (voir bilan valreg() ci-dessus).
+  ANOVA Type III pour modèle mixte [anova() {lmerTest}]
+  Type III Analysis of Variance Table with Satterthwaite's method
+  Composantes variance [VarCorr() {lme4}] :
+  Coefficients effets fixes [fixef() {lme4}] :
+
+
+## CAS : B4. y~G+T, id=id 
+method: EMMs (emmeans package)  chosen_test:   p_glob: 0.5004 
+colonnes groups: categories, EMMs_Tukey 
+effects:
+  term  p.value
+1    G 5.00e-01
+2    T 3.17e-14
+trace verbose (extraits):
+  RECOMMANDATION : Modèle à effets mixtes (lmer) requis.
+  --> Vers modèle à effets mixtes (lmer)
+  7) Ajustement modèle à effets mixtes [lmer() {lmerTest}]
+  Formule : y ~ G + T + (1 | id)
+  Attention !
+  Attention : uniquement en triant les valeurs en fonction de Y et en fonction des variables d'effet aléatoire.
+  14) ATTENTION : Certaines vérifications ont échoué (voir bilan valreg() ci-dessus).
+  ANOVA Type III pour modèle mixte [anova() {lmerTest}]
+  Type III Analysis of Variance Table with Satterthwaite's method
+  Composantes variance [VarCorr() {lme4}] :
+  Coefficients effets fixes [fixef() {lme4}] :
+
+
+## CAS : C. 2 groupes non normaux 
+method: Wilcoxon-Mann-Whitney test  chosen_test:   p_glob: 1.844e-06 
+colonnes groups: categories, Bootstrap (median), Wilcoxon_Holm 
+trace verbose (extraits):
+  3) Détection outliers [identify_outliers() {rstatix}]
+  5) Test de Fisher-Snedecor [var.test()]
+  --> Vers un test de comparaison non paramétrique (Wilcoxon-Mann-Whitney)
+  6) Estimation de la fiabilité du test de Wilcoxon-Mann-Whitney :
+  Test de Kolmogorov-Smirnov [ks.test()] sur les données centrées sur la médiane et réduites -
+  --> Le test de Mann-Whitney-Wilcoxon est fiable a priori.
+  a) Analyse des différences de médianes par bootstrap [pairwise.boot(mu='median') de {KefiR}]
+  b) Test de Wilcoxon-Mann-Witney [wilcox.test()].
+
+
+## CAS : D. 2 groupes discrets 
+method: Student t-test  chosen_test:   p_glob: 0.8706 
+colonnes groups: categories, Bootstrap (mean), Student_Holm 
+trace verbose (extraits):
+  3) Détection outliers [identify_outliers() {rstatix}]
+  5) Test de Fisher-Snedecor [var.test()]
+  7) Test de Student [t.test()] - Différences non significatives entre les groupes. p-value : 0.87
+
+
+## CAS : E. 3 groupes outliers extremes 
+method: Robust ANOVA (med1way)  chosen_test: med1way  p_glob: 0.711 
+colonnes groups: categories, Bootstrap (median), Wilcoxon_Holm, Brunner-Munzel_Holm, medpb2_Holm 
+trace verbose (extraits):
+  3) Détection outliers [identify_outliers() {rstatix}]
+  4) Ajustement du modèle ANOVA [aov()].
+  Jarque-Bera [jb.norm.test() {normtest}]
+  c) Test de Fligner-Killeen [fligner.test()] - p-value : 0.57
+  d) Distance de Cook [cooks.distance()] - max : 0.2211 (seuil : 0.0444) ==> INFLUENT (dépasse le seuil)
+  f) Test de Kolmogorov-Smirnov [ks.test()] - min p-value : 0.0025 (α_Šidák = 0.017)
+  ==> Test recommandé : med1way() [ANOVA sur médianes]
+  8) Analyse de la variance à un facteur des médianes [med1way()] :
+  9) Test de Kolmogorov-Smirnov [ks.test()] sur les données centrées sur la médiane et réduites -
+  Attention ! les groupes n'ont pas la même distribution. min(p-value) : 0.0025
+  ==> Le test de Mann-Whitney-Wilcoxon sera moins fiable.
+  --> Ajout du test de Brunner-Munzel comme alternative robuste.
+  a) Posthoc - Analyse des différences de médianes par bootstrap [pairwise.boot() de {KefiR}].
+  b) Posthoc - Test de Wilcoxon-Mann-Whitney [pairwise.wilcox.test()].
+
+
+## CAS : F. A*B non normal + outliers 
+method: Parametric ANOVA/t-test  chosen_test:   p_glob: 0.001518 
+colonnes groups: categories, Bootstrap (median), Wilcoxon_Holm, Brunner-Munzel_Holm, Lincon 
+effects:
+  term p.value
+1    A 0.00152
+2    B 0.02418
+3  A:B 0.12591
+trace verbose (extraits):
+  3) Ajustement du modèle ANOVA [aov()].
+  4) DIAGNOSTIC : Influence sur les résidus du modèle [cooks.distance() {stats}]
+  • DFBETAS [dfbetas()] : 3% affectant coefficients individuels (seuil : 2/√n).
+  --> Modèle robuste aux observations individuelles.
+  Jarque-Bera [jb.norm.test() {normtest}]
+  Test de Levene [car::leveneTest()] - Variance homogène (homoscédasticité).
+  --> Vers analyse robuste
+  8) Application du test de Scheirer-Ray-Hare [rcompanion::scheirerRayHare()] pour plan bifactoriel indépendant.
+  a) Posthoc - Analyse des différences de médianes par bootstrap [pairwise.boot() de {KefiR}].
+  b) Posthoc - Test de Wilcoxon-Mann-Whitney [pairwise.wilcox.test()].
+  c) Posthoc - Test de Brunner-Munzel par paires [brunner.munzel.test() de {lawstat}, correction de Holm].
+  d) Posthoc - Comparaisons robustes sur moyennes tronquées [lincon() de {WRS2}].
+
+
+## CAS : G. A*B*C non normal 
+method: Parametric ANOVA/t-test  chosen_test:   p_glob: 0.5158 
+colonnes groups: categories, Bootstrap (median), Wilcoxon_Holm, Dunn_Holm 
+effects:
+   term p.value
+1     A   0.516
+2     B   0.261
+3   A:B   0.882
+4     C   0.190
+5   A:C   0.215
+6   B:C   0.155
+7 A:B:C   0.619
+trace verbose (extraits):
+  3) Ajustement du modèle ANOVA [aov()].
+  4) DIAGNOSTIC : Influence sur les résidus du modèle [cooks.distance() {stats}]
+  • DFBETAS [dfbetas()] : 15.6% affectant coefficients individuels (seuil : 2/√n).
+  Jarque-Bera [jb.norm.test() {normtest}]
+  Test de Levene [car::leveneTest()] - Variance homogène (homoscédasticité).
+  --> Vers analyse robuste
+  8) Application de l'ANOVA par permutation [lmPerm::aovp()] pour plan multi-facteurs indépendant.
+  9) Contrôle d'adéquation des post-hocs après ANOVA robuste.
+  a) Posthoc - Analyse des différences de médianes par bootstrap [pairwise.boot() de {KefiR}].
+  b) Posthoc - Test de Wilcoxon-Mann-Whitney [pairwise.wilcox.test()].
+  c) Posthoc - Test de Dunn [dunnTest() de {FSA}].
+
+
+## CAS : H. A*B desequilibre ratio 3 
+method: Parametric ANOVA/t-test  chosen_test:   p_glob: 0.4455 
+colonnes groups: categories, Bootstrap (mean), Student_Holm, Scheffe, Tukey, SNK, Waller-Duncan 
+effects:
+  term p.value
+1    A   0.445
+2    B   0.978
+3  A:B   0.711
+trace verbose (extraits):
+  --> Passage vers ANOVA robuste.
+  4) Application du test de Scheirer-Ray-Hare [rcompanion::scheirerRayHare()] pour plan bifactoriel indépendant.
+  a) Posthoc - Analyse des différences de moyennes par bootstrap [pairwise.boot() de {KefiR}].
+  b) Posthoc - Test de Student [pairwise.t.test(pool.sd=TRUE)].
+  c) Posthoc - Test conservateur de Scheffé [scheffe.test() of {agricolae}].
+  d) Posthoc - Test conservateur de Tukey [HSD.test() of {agricolae}].
+  e) Posthoc - Test puissant de Newman-Keuls [SNK.test() of {agricolae}].
+  f) Posthoc - Test puissant de Waller-Duncan [waller.test() of {agricolae}].
+
+
+## CAS : I. A*B desequilibre ratio 11 
+method: Parametric ANOVA/t-test  chosen_test:   p_glob: 0.37 
+colonnes groups: categories, Bootstrap (median), Wilcoxon_Holm, Lincon 
+effects:
+  term p.value
+1    A   0.370
+2    B   0.255
+3   AB   0.640
+trace verbose (extraits):
+  --> Passage vers ANOVA robuste WRS2 (t2way/t3way).
+  4) Application de l'ANOVA robuste WRS2 en raison d'un déséquilibre extrême (ratio > 10).
+  Trimmage : 5% (pas d'outliers, trimming minimal de robustesse).
+  WRS2::t2way(formula = formula, data = data, tr = tr_val)
+  a) Posthoc - Analyse des différences de médianes par bootstrap [pairwise.boot() de {KefiR}].
+  b) Posthoc - Test de Wilcoxon-Mann-Whitney [pairwise.wilcox.test()].
+  c) Posthoc - Comparaisons robustes sur moyennes tronquées [lincon() de {WRS2}].
+
+
+## CAS : J. RM 3 temps non normal, id 
+method: Parametric ANOVA/t-test  chosen_test:   p_glob: 0.3039 
+colonnes groups: categories, Bootstrap (mean), Student_Holm 
+effects:
+  term p.value
+1    F   0.304
+trace verbose (extraits):
+  7) Ajustement du modèle ANOVA avec effets aléatoires / mesures répétées [aov() avec terme Error].
+  Jarque-Bera [jb.norm.test() {normtest}]
+  9) ASSOMPTION 3/3 : Test de sphéricité (Test de Mauchly) [anova_test() {rstatix}].
+  a) Posthoc - Analyse des différences de moyennes par bootstrap [pairwise.boot() de {KefiR}].
+  b) Posthoc - Test de Student [pairwise.t.test(paired=TRUE)].
+
+
+## CAS : K. paire normal, id 
+method: Paired Student t-test  chosen_test:   p_glob: 0.8039 
+colonnes groups: categories, Student_Holm 
+trace verbose (extraits):
+  9) Test de Student apparié [t.test(paired=TRUE)] :
+
+
+## CAS : L. paire non normal, id 
+method: Wilcoxon signed-rank test  chosen_test:   p_glob: 1 
+colonnes groups: categories, Wilcoxon_Holm 
+trace verbose (extraits):
+  9) Test de Wilcoxon signé [wilcox.test(paired=TRUE)] :
+
+
+## CAS : M. ANCOVA 1 facteur non normale 
+method: ANCOVA post-hoc (tukey adjustment)  chosen_test:   p_glob: 0.6897 
+colonnes groups: categories, ANCOVA 
+effects:
+  term p.value
+1    F    0.69
+2  cov    0.29
+trace verbose (extraits):
+  3) Ajustement du modèle ANCOVA à 1 facteur(s) [lm()]
+  Formule : y ~ F + cov
+  Type de Sommes de Carrés sélectionné : Type III [car::Anova(type='III')]
+  Le Type III ne dépend pas de l'ordre des termes : ce résultat reste valable tel quel.
+  (Facultatif, pour un test séquentiel de Type I : y ~ cov + F.)
+  4) DIAGNOSTIC : Test indépendance covariables-facteurs [approche robuste]
+  2. Tester homogénéité variances [var.test() ou bartlett.test()]
+  • Normal + variances homogènes : ANOVA [aov() sur 1 facteur]
+  • Normal + variances inégales : Welch ANOVA [oneway.test()]
+  • Non-normal : Kruskal-Wallis [kruskal.test()]
+  ==> Modèle robuste aux observations individuelles
+  • n ≤ 50 : Shapiro-Wilk [shapiro.test() {stats}]
+  • 50 < n ≤ 500 : Jarque-Bera [jb.norm.test() {KefiR}]
+  Test utilisé : [jb.norm.test() {KefiR}]
+
+
+## CAS : N. ANCOVA 2 facteurs non normale 
+method: ANCOVA post-hoc (tukey adjustment)  chosen_test:   p_glob: 0.4875 
+colonnes groups: categories, ANCOVA 
+effects:
+  term p.value
+1    F   0.487
+2    G   0.344
+3  cov   0.913
+trace verbose (extraits):
+  3) Ajustement du modèle ANCOVA à 2 facteur(s) [lm()]
+  Formule : y ~ F + G + cov
+  Type de Sommes de Carrés sélectionné : Type III [car::Anova(type='III')]
+  Le Type III ne dépend pas de l'ordre des termes : ce résultat reste valable tel quel.
+  (Facultatif, pour un test séquentiel de Type I : y ~ cov + F + G.)
+  4) DIAGNOSTIC : Test indépendance covariables-facteurs [approche robuste]
+  2. Tester homogénéité variances [var.test() ou bartlett.test()]
+  • Normal + variances homogènes : ANOVA [aov() sur 1 facteur]
+  • Normal + variances inégales : Welch ANOVA [oneway.test()]
+  • Non-normal : Kruskal-Wallis [kruskal.test()]
+  ==> Modèle robuste aux observations individuelles
+  • n ≤ 50 : Shapiro-Wilk [shapiro.test() {stats}]
+  • 50 < n ≤ 500 : Jarque-Bera [jb.norm.test() {KefiR}]
+  Test utilisé : [jb.norm.test() {KefiR}]
+
+
+## CAS : O. ANCOVA covariable correlee au facteur 
+method: ANCOVA post-hoc (tukey adjustment)  chosen_test:   p_glob: 0.3664 
+colonnes groups: categories, ANCOVA 
+effects:
+  term  p.value
+1    F 3.66e-01
+2  cov 3.34e-10
+trace verbose (extraits):
+  3) Ajustement du modèle ANCOVA à 1 facteur(s) [lm()]
+  Formule : y ~ F + cov
+  Type de Sommes de Carrés sélectionné : Type III [car::Anova(type='III')]
+  Le Type III ne dépend pas de l'ordre des termes : ce résultat reste valable tel quel.
+  (Facultatif, pour un test séquentiel de Type I : y ~ cov + F.)
+  4) DIAGNOSTIC : Test indépendance covariables-facteurs [approche robuste]
+  2. Tester homogénéité variances [var.test() ou bartlett.test()]
+  • Normal + variances homogènes : ANOVA [aov() sur 1 facteur]
+  • Normal + variances inégales : Welch ANOVA [oneway.test()]
+  • Non-normal : Kruskal-Wallis [kruskal.test()]
+  ==> ATTENTION : Covariable dépend du facteur (violation détectée)
+  'cov' vs 'F': p = 1.01e-18 [aov()]
+  ==> Modèle robuste aux observations individuelles
+  • n ≤ 50 : Shapiro-Wilk [shapiro.test() {stats}]
+
+
+## CAS : P. ANCOVA avec id 
+ERREUR: ANCOVA appariée non supportée. Utiliser modèles mixtes (lmerTest). 
+pile: suppressMessages > A > m.test > .multi_factor_analysis > .ancova_analysis > .exit > .handleSimpleError > h 
+trace verbose (extraits):
+  1. Utiliser modèles mixtes avec package lmerTest :
+  install.packages('lmerTest')
+  library(lmerTest)
+  modele <- lmer(VD ~ facteur + covariable + (1|sujet_id), data=vos_donnees)
+  anova(modele)  # Tests Type III avec degrés liberté Satterthwaite
+
+
+## CAS : Q. MANOVA non normale 

@@ -1,0 +1,143 @@
+### Cas G : rendement selon l'engrais, a surface egale (3 engrais, 15 parcelles), pentes paralleles
+> m.bay(rendement ~ engrais + surface, data = d)
+
+1) Plan reconnu : analyse de covariance, engrais (3 groupes), covariable(s) surface ; N = 45.
+	--> Question : rendement diffère-t-il selon engrais une fois surface pris en compte ?
+2) Contrôles des données.
+	Les valeurs éloignées sont cherchées sur ce que les covariables n'expliquent pas.
+	==> Effectifs : 15 par groupe (3 groupes, N = 45).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur groupe : 0 sur 45 au-delà de 1,5 écart interquartile, 0 au-delà de 3. [Tukey, quantile() {stats}]
+	==> Covariable surface : étendue commune aux groupes de 5,5 à 13 ; elle contient au moins 53,3 % de chaque groupe (E1 le moins).
+	--> Covariable(s) centrée(s) sur leur moyenne (surface = 9,52) : les groupes sont comparés à cette valeur, dans les données, et non à 0 (Aiken et West 1991).
+	--> Aucune valeur n'est retirée.
+3) Forme du bruit.
+	==> Seule la loi normale à variance commune est calculée, et la covariable agit en ligne droite (linéarité non testée) : queues lourdes, variances inégales et courbure ne sont pas encore validées avec des covariables.
+	--> Aucune valeur n'est assez éloignée pour mettre d'emblée la loi normale en doute ; elle n'est pas mise à l'épreuve des autres.
+4) Point de départ (a priori), fixé par la méthode avant de voir les données.
+	==> 50 % de chances qu'une différence existe (pile ou face : la méthode ne prend pas parti) ; taille attendue r = 0,5 par terme (Zellner-Siow).
+	--> Covariable(s) surface : dans chaque modèle, « aucune différence » compris ; pente a priori de Cauchy d'échelle sqrt(2)/4 (rscaleCont, le « medium » de BayesFactor), partagée avec ses interactions avec un facteur ; chaque réponse se lit contre le modèle avec les covariables seules.
+	--> Ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les fait varier pour voir si la réponse tient.
+5) Facteurs de Bayes des 2 modèles. [lmBF() {BayesFactor}]
+	==> Facteur de Bayes, différence contre absence : 9,19.
+	==> Précision : recalculées avec une autre graine, les probabilités bougent d'au plus 0,25 point(s) de pourcentage, négligeable.
+	==> Sensibilité : r (et rscaleCont avec lui) de 0,25 à 1, croisé avec des chances de départ d'une différence de 1 contre 2 à 2 contre 1. [m.bay() {KefiR}]
+	--> Aucun terme ne change de côté.
+6) Quels groupes diffèrent, et de combien. [lmBF(), posterior() {BayesFactor}, hdi() {bayestestR}]
+	==> Regroupements les plus probables (5 comparés) : E2 = E1 < E3 (59,0 %) ; E2 < E1 < E3 (23,6 %) ; E2 = E1 = E3 (10,4 %).
+	==> E1 et E2 : différents à 30,6 % ; écart estimé E2 - E1 = 0,42 [-1,1 ; 1,9], soit 0,2 [-0,49 ; 0,9] écart-type résiduel (covariables prises en compte).
+	==> E1 et E3 : différents à 88,3 % ; écart estimé E3 - E1 = 2 [0,43 ; 3,6], soit 0,95 [0,19 ; 1,7] écart-type résiduel (covariables prises en compte).
+	==> E2 et E3 : différents à 83,9 % ; écart estimé E3 - E2 = 1,6 [0,061 ; 3,2], soit 0,75 [0,023 ; 1,5] écart-type résiduel (covariables prises en compte).
+	Écart estimé : médiane a posteriori, légèrement ramenée vers zéro par l'a priori. Crochets : intervalle de crédibilité à 95 %, si une différence existe (la valeur s'y trouve avec 95 % de probabilité ; ce n'est pas un intervalle de confiance).
+	--> Toutes les paires viennent d'une seule loi sur les regroupements : aucune correction paire par paire n'est nécessaire, et les réponses ne peuvent pas se contredire.
+7) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
+	Verdict : une différence existe probablement. Cela ne dit ni qu'elle est importante, ni pourquoi ; les paires sont plus bas.
+	  rendement diffère selon engrais, à même surface : 90,2 % (soutien modéré) ; Aucune différence de rendement selon engrais : 9,8 %.
+	Réponse (oui, non ou non tranché ; probabilité du oui compte tenu des données et du point de départ, et son a priori) :
+	  Différence de rendement selon engrais, à même surface ? Oui, soutien modéré (probabilité du oui 90,2 %, a priori 50,0 %).
+	     Repose sur les données, qui multiplient ses cotes (rapport oui/non) par 9,19 (facteur de Bayes).
+	  La réponse ne change pas de côté quand r ou les chances de départ changent.
+	Quels groupes diffèrent à la moyenne des covariables (loi normale ; probabilité, puis écart ajusté et intervalle de crédibilité à 95 %) :
+	  E1 / E2 : semblables, soutien faible (différents à 30,6 %) ; écart estimé E2 - E1 = 0,42 [-1,1 ; 1,9], delta = 0,2 [-0,49 ; 0,9].
+	  E1 / E3 : différents, soutien modéré (différents à 88,3 %) ; écart estimé E3 - E1 = 2 [0,43 ; 3,6], delta = 0,95 [0,19 ; 1,7].
+	  E2 / E3 : différents, soutien modéré (différents à 83,9 %) ; écart estimé E3 - E2 = 1,6 [0,061 ; 3,2], delta = 0,75 [0,023 ; 1,5].
+	  Regroupement le plus probable : E2 = E1 < E3 (59,0 %).
+	Moyennes observées par facteur (brutes, non ajustées ; covariable moyenne par groupe, surface : E1 = 10,70 ; E2 = 7,93 ; E3 = 9,92) :
+	  engrais : E1 = 35,8 (n = 15) ; E2 = 32,3 (n = 15) ; E3 = 37,2 (n = 15)
+	  Écart-type résiduel (covariables prises en compte) : 2,1.
+	Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend de la façon dont l'étude a été menée (tirage au sort, ordre, opérateur).
+	Facteurs de Bayes, a priori en détail, mode de lecture : print(resultat, detail = TRUE).
+
+### Cas H : score selon la methode, avec la note d'entree, pentes differentes (methode * note)
+> m.bay(score ~ methode * note, data = d)
+
+1) Plan reconnu : analyse de covariance, methode (2 groupes), covariable(s) note ; N = 50.
+	--> Question : score diffère-t-il selon methode une fois note pris en compte ? Et les pentes diffèrent-elles (methode:note) ?
+2) Contrôles des données.
+	Les valeurs éloignées sont cherchées sur ce que les covariables n'expliquent pas.
+	==> Effectifs : 25 par groupe (2 groupes, N = 50).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur groupe : 0 sur 50 au-delà de 1,5 écart interquartile, 0 au-delà de 3. [Tukey, quantile() {stats}]
+	==> Covariable note : étendue commune aux groupes de 7,67 à 17,5 ; elle contient au moins 84,0 % de chaque groupe (projet le moins).
+	--> Covariable(s) centrée(s) sur leur moyenne (note = 13,3) : les groupes sont comparés à cette valeur, dans les données, et non à 0 (Aiken et West 1991).
+	--> Aucune valeur n'est retirée.
+3) Forme du bruit.
+	==> Seule la loi normale à variance commune est calculée, et la covariable agit en ligne droite (linéarité non testée) : queues lourdes, variances inégales et courbure ne sont pas encore validées avec des covariables.
+	--> Aucune valeur n'est assez éloignée pour mettre d'emblée la loi normale en doute ; elle n'est pas mise à l'épreuve des autres.
+4) Point de départ (a priori), fixé par la méthode avant de voir les données.
+	==> Taille d'un effet : r = 0,5 par terme (Zellner-Siow). Chance de chaque terme, pris seul (ces chances ne s'additionnent pas) : methode 50,0 %, methode:note 25,0 % ; aucune différence du tout 50,0 %.
+	--> Covariable(s) note : dans chaque modèle, « aucune différence » compris ; pente a priori de Cauchy d'échelle sqrt(2)/4 (rscaleCont, le « medium » de BayesFactor), partagée avec ses interactions avec un facteur ; chaque réponse se lit contre le modèle avec les covariables seules.
+	--> Pourquoi : une proportion ~ Beta(1,1) par ordre d'interaction (HOP, Taylor-Rodriguez et al. 2016) : plus il y a de termes, moins chacun est probable d'avance, ce qui protège des fausses interactions ; une interaction n'entre qu'avec ses facteurs.
+5) Facteurs de Bayes des 3 modèles. [lmBF() {BayesFactor}]
+	==> Précision : recalculées avec une autre graine, les probabilités bougent d'au plus 0,0035 point(s) de pourcentage, négligeable.
+	==> Sensibilité : r (et rscaleCont avec lui) de 0,25 à 1, croisé avec trois lois sur les modèles (HOP, 1/2 par terme, uniforme). [m.bay() {KefiR}]
+	--> Aucun terme ne change de côté.
+6) Quels groupes diffèrent, et de combien, selon note. [lmBF(y ~ g * x), posterior() {BayesFactor}, hdi() {bayestestR}]
+	--> Changement de stratégie : des pentes différentes sont probables (methode:note > 99,9 %), donc l'écart entre groupes dépend de note : un écart ajusté unique n'aurait pas de sens. Écarts aux quartiles de note, et zone où les groupes diffèrent (équivalent bayésien de Johnson et Neyman).
+	==> projet - classique : note = 11 : -0,99 [-1,8 ; -0,24] ; note = 14 : 0,5 [-0,11 ; 1,2] ; note = 16 : 1,8 [1 ; 2,7] ; ils diffèrent de 6,8 à 12 et de 14 à 18.
+	Crochets : intervalle de crédibilité à 95 %. Zone : valeurs de l'étendue observée où cet intervalle exclut 0.
+7) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
+	Verdict : une différence existe très probablement. Cela ne dit ni qu'elle est importante, ni pourquoi ; les paires sont plus bas.
+	  score diffère selon methode, à même note : > 99,9 % (soutien très fort) ; Aucune différence de score selon methode : < 0,1 %.
+	     L'écart entre groupes dépend de note : il change de sens selon sa valeur, aucun groupe n'est donc devant partout (écarts plus bas).
+	     Repose sur le terme le plus probable : methode (oui > 99,9 %).
+	Réponse par terme (oui, non ou non tranché ; probabilité du oui compte tenu des données et du point de départ, et son a priori) :
+	  Différence de score selon methode à même note, seul ou en interaction ? Oui, soutien très fort (probabilité du oui > 99,9 %, a priori 50,0 %).
+	     Repose sur les données, qui multiplient ses cotes (rapport oui/non) par 1710 (facteur de Bayes).
+	  Les écarts selon methode varient-ils avec note (methode:note) ? Oui, soutien très fort (probabilité du oui > 99,9 %, a priori 25,0 %).
+	     Repose sur les données, qui multiplient ses cotes (rapport oui/non) par 4330 (facteur de Bayes).
+	  Aucune réponse ne change de côté quand r ou la loi sur les modèles change.
+	Quels groupes diffèrent selon note (pentes différentes ; écart et intervalle de crédibilité à 95 % aux quartiles, zone où ils diffèrent) :
+	  projet - classique : note = 11 : -0,99 [-1,8 ; -0,24] ; note = 14 : 0,5 [-0,11 ; 1,2] ; note = 16 : 1,8 [1 ; 2,7] ; ils diffèrent de 6,8 à 12 et de 14 à 18.
+	Moyennes observées par facteur (brutes, non ajustées ; covariable moyenne par groupe, note : classique = 13,3 ; projet = 13,2) :
+	  methode : classique = 12,8 (n = 25) ; projet = 13,1 (n = 25)
+	  Par case : classique = 12,8 ; projet = 13,1.
+	  Écart-type résiduel (covariables prises en compte) : 1,6.
+	Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend de la façon dont l'étude a été menée (tirage au sort, ordre, opérateur).
+	Facteurs de Bayes, a priori en détail, mode de lecture : print(resultat, detail = TRUE).
+
+### Cas I : poids selon le regime, avec l'age, groupes qui se recouvrent peu sur l'age
+> m.bay(poids ~ regime + age, data = d, sensitivity = FALSE)
+
+1) Plan reconnu : analyse de covariance, regime (2 groupes), covariable(s) age ; N = 30.
+	--> Question : poids diffère-t-il selon regime une fois age pris en compte ?
+2) Contrôles des données.
+	Les valeurs éloignées sont cherchées sur ce que les covariables n'expliquent pas.
+	==> Effectifs : 15 par groupe (2 groupes, N = 30).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur groupe : 2 sur 30 au-delà de 1,5 écart interquartile, 0 au-delà de 3. [Tukey, quantile() {stats}]
+	==> Covariable age : étendue commune aux groupes de 32,8 à 33,8 ; elle contient au moins 6,7 % de chaque groupe (R1 le moins).
+	--> Prudence ajoutée : les groupes se recouvrent peu sur la covariable, l'ajustement les compare donc là où certains n'ont pas de données (extrapolation) ; le soutien des réponses sur les groupes sera plafonné à faible.
+	--> Covariable(s) centrée(s) sur leur moyenne (age = 34,3) : les groupes sont comparés à cette valeur, dans les données, et non à 0 (Aiken et West 1991).
+	--> Aucune valeur n'est retirée.
+3) Forme du bruit.
+	==> Seule la loi normale à variance commune est calculée, et la covariable agit en ligne droite (linéarité non testée) : queues lourdes, variances inégales et courbure ne sont pas encore validées avec des covariables.
+	--> Aucune valeur n'est assez éloignée pour mettre d'emblée la loi normale en doute ; elle n'est pas mise à l'épreuve des autres.
+4) Point de départ (a priori), fixé par la méthode avant de voir les données.
+	==> 50 % de chances qu'une différence existe (pile ou face : la méthode ne prend pas parti) ; taille attendue r = 0,5 par terme (Zellner-Siow).
+	--> Covariable(s) age : dans chaque modèle, « aucune différence » compris ; pente a priori de Cauchy d'échelle sqrt(2)/4 (rscaleCont, le « medium » de BayesFactor), partagée avec ses interactions avec un facteur ; chaque réponse se lit contre le modèle avec les covariables seules.
+	--> Ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les fait varier pour voir si la réponse tient.
+5) Facteurs de Bayes des 2 modèles. [lmBF() {BayesFactor}]
+	==> Facteur de Bayes, différence contre absence : 9,41.
+	==> Précision : recalculées avec une autre graine, les probabilités bougent d'au plus 0,02 point(s) de pourcentage, négligeable.
+	==> Sensibilité aux a priori non calculée (sensitivity = FALSE).
+	--> Les réponses ne sont pas éprouvées contre d'autres points de départ.
+6) Quels groupes diffèrent, et de combien. [lmBF(), posterior() {BayesFactor}, hdi() {bayestestR}]
+	==> Écart estimé R2 - R1 = 4,5 [0,62 ; 8,2], soit 1,8 [0,22 ; 3,4] écart-type résiduel (covariables prises en compte).
+	Écart estimé : médiane a posteriori, légèrement ramenée vers zéro par l'a priori. Crochets : intervalle de crédibilité à 95 %, si une différence existe (la valeur s'y trouve avec 95 % de probabilité ; ce n'est pas un intervalle de confiance).
+	--> Ces écarts comparent les groupes à la moyenne de la covariable, là où certains ont peu ou pas de données (étape 2) : les lire avec réserve.
+7) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
+	Verdict : une différence existe probablement. Cela ne dit ni qu'elle est importante, ni quels groupes diffèrent, ni pourquoi.
+	  poids diffère selon regime, à même age : 90,4 % (soutien faible) ; Aucune différence de poids selon regime : 9,6 %.
+	Réponse (oui, non ou non tranché ; probabilité du oui compte tenu des données et du point de départ, et son a priori) :
+	  Différence de poids selon regime, à même age ? Oui, soutien faible (probabilité du oui 90,4 %, a priori 50,0 %).
+	     Repose sur les données, qui multiplient ses cotes (rapport oui/non) par 9,41 (facteur de Bayes).
+	  Soutien plafonné à faible : les groupes se recouvrent peu sur la covariable (age moyen : R1 26,8, R2 41,9), groupe et covariable sont donc presque confondus et l'ajustement extrapole.
+	Taille de l'écart, s'il existe (écart estimé : médiane a posteriori, et intervalle de crédibilité à 95 % ; delta en écart-type résiduel (covariables prises en compte)) :
+	  R2 - R1 = 4,5 [0,62 ; 8,2], delta = 1,8 [0,22 ; 3,4].
+	  À lire avec réserve : ces écarts comparent les groupes là où certains ont peu ou pas de valeurs de la covariable.
+	Moyennes observées par facteur (brutes, non ajustées ; covariable moyenne par groupe, age : R1 = 26,8 ; R2 = 41,9) :
+	  regime : R1 = 70,9 (n = 15) ; R2 = 79,5 (n = 15)
+	  Écart-type résiduel (covariables prises en compte) : 2,4.
+	Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend de la façon dont l'étude a été menée (tirage au sort, ordre, opérateur).
+	Facteurs de Bayes, a priori en détail, mode de lecture : print(resultat, detail = TRUE).

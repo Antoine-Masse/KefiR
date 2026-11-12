@@ -1,0 +1,37 @@
+1) Plan reconnu : 2 facteurs croisés, A (2 niveaux), B (3 niveaux) ; 6 cases, N = 60.
+	==> Termes : A, B, A:B. 5 combinaisons de termes sont possibles (une interaction n'entre qu'avec ses facteurs : hérédité).
+	--> Une réponse par terme, obtenue en pesant ensemble ces 5 combinaisons.
+2) Contrôles des données.
+	==> Effectifs : 10 par case (6 cases, N = 60).
+	==> Ex-aequo : aucun.
+	==> Valeurs éloignées de leur case : 6 sur 60 au-delà de 1,5 écart interquartile, 1 au-delà de 3. [Tukey, quantile() {stats}]
+	--> Aucune valeur n'est retirée.
+3) Forme du bruit.
+	==> À plusieurs facteurs, seule la loi normale à variance commune est calculée : queues lourdes et variances inégales n'y sont pas encore validées, elles ne sont donc pas comparées.
+	--> 1 valeur(s) au-delà de 3 écarts interquartiles de leur case (étape 2) : la réponse suppose un bruit normal, la lire avec réserve.
+4) Point de départ (a priori), fixé par la méthode avant de voir les données.
+	==> Taille d'un effet : r = 0,5 par terme (Zellner-Siow). Chance de chaque terme, pris seul (ces chances ne s'additionnent pas) : A 50,0 %, B 50,0 %, A:B 16,7 % ; aucune différence du tout 33,3 %.
+	--> Pourquoi : une proportion ~ Beta(1,1) par ordre d'interaction (HOP, Taylor-Rodriguez et al. 2016) : plus il y a de termes, moins chacun est probable d'avance, ce qui protège des fausses interactions ; une interaction n'entre qu'avec ses facteurs.
+5) Facteurs de Bayes des 5 modèles. [lmBF() {BayesFactor}]
+	==> Précision : recalculées avec une autre graine, les probabilités bougent d'au plus 0,28 point(s) de pourcentage, négligeable.
+	==> Sensibilité : r de 0,25 à 1, croisé avec trois lois sur les modèles (HOP, 1/2 par terme, uniforme). [m.bay() {KefiR}]
+	==> Terme(s) qui changent de côté : B (21,4 % à 70,6 %).
+	--> Prudence ajoutée : B sera dit non tranché, quelle que soit sa probabilité affichée.
+6) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
+	Verdict : une différence existe très probablement. Cela ne dit ni qu'elle est importante, ni quels groupes diffèrent, ni pourquoi.
+	  y diffère selon au moins un facteur : 99,0 % (soutien fort) ; Aucune différence de y selon A, B : 1,0 %.
+	     Repose sur le terme le plus probable : A (oui 98,8 %).
+	Réponse par terme (oui, non ou non tranché ; probabilité du oui compte tenu des données et du point de départ, et son a priori) :
+	  Différence de y selon A, seul ou en interaction ? Oui, soutien fort (probabilité du oui 98,8 %, a priori 50,0 %).
+	     Repose sur les données, qui multiplient ses cotes (rapport oui/non) par 82,4 (facteur de Bayes).
+	  Différence de y selon B, seul ou en interaction ? Non tranché (probabilité du oui 60,1 %, a priori 50,0 % ; selon le point de départ 21,4 % à 70,6 %).
+	     Les données ne le font pencher que de peu vers le oui (cotes multipliées par 1,51, depuis un point de départ à 50 %) : trop peu pour trancher.
+	  Les écarts selon A varient-ils avec B (A:B) ? Non tranché (probabilité du oui 39,3 %, a priori 16,7 %).
+	     Les données penchent vers le oui (cotes multipliées par 3,24) ; l'a priori (16,7 %) penche de l'autre côté : non tranché.
+	Moyennes observées par facteur (description ; ce bilan ne dit pas quels niveaux diffèrent) :
+	  A : A1 = 9,8 (n = 30) ; A2 = 11,7 (n = 30)
+	  B : B1 = 10,8 (n = 20) ; B2 = 10,2 (n = 20) ; B3 = 11,3 (n = 20)
+	  Par case : A1 x B1 = 10,5 ; A2 x B1 = 11,1 ; A1 x B2 = 8,4 ; A2 x B2 = 11,9 ; A1 x B3 = 10,6 ; A2 x B3 = 12,0.
+	  Écart-type au sein des cases : 1,8.
+	Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend de la façon dont l'étude a été menée (tirage au sort, ordre, opérateur).
+	Facteurs de Bayes, a priori en détail, mode de lecture : print(resultat, detail = TRUE).

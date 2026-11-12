@@ -1,0 +1,48 @@
+--- A. une paire d'ex-aequo dans un petit groupe
+[1] "normal_eq"
+P m.bay
+0.3138853
+
+
+Surtout des valeurs répétées : les lois à variances inégales ou à queues lourdes ne s'appliquent pas et ont été écartées. Une loi pour données discrètes n'est pas encore validée.
+P 4 lois forcees 0.3052158 ecartees  lois 0.166 0.364 0.174 0.296 ess NA NA 2371.463 2234.342 1931.752 1289.591 1171.958 1058.136 
+--- B. vrai H0, variances inegales, entiers : part reduite a normal_eq et erreur
+lois retenues : 
+  1   4 
+107  43 
+reduit a normal_eq : 107/150 ; parmi eux P(H1)>.5 : 0.159, >.9 : 0.019 ; hors reduction >.5 : 0.116
+  sur les jeux reduits avec SS>0, logBF normal_eq contre eq+het :
+         eq eq_het
+ [1,] -0.97  -0.95
+ [2,] -0.85  -0.67
+ [3,] -0.16   0.85
+ [4,] -0.97  -0.88
+ [5,] -1.01  -0.96
+ [6,]  0.82   0.51
+ [7,] -0.99  -0.83
+ [8,] -0.92  -0.08
+ [9,] -0.59  -0.63
+[10,]  3.08   1.55
+[11,]  0.05  -0.07
+[12,]  1.36   1.00
+--- C. ex-aequo non reconnus apres centrage (bruit d'arrondi pres de 0)
+[1] "0.29999999999999999" "0.30000000000000004" "0.3000000000000001" 
+[4] "0.29999999999999993" "0.29999999999999988" "0.30000000000000016"
+groupe a brut : share 1  centre : share 0.1666667  ss 8.421136e-32  retenues normal_eq normal_het t_eq t_het 
+groupe a arrondi, graine 1                 OK P=0.2685 logBF=-1.00 err=4.53% lois=normal_eq:0.030 normal_het:0.926 t_eq:0.044 notes=1 (3.7s)
+groupe a arrondi, graine 2                 OK P=0.2748 logBF=-0.97 err=4.14% lois=normal_eq:0.030 normal_het:0.926 t_eq:0.044 notes=1 (11.8s)
+meme groupe a exactement constant          OK P=0.2621 logBF=-1.03 err=0.00% lois=normal_eq:1.000 notes=1 (7.9s)
+--- D. laws reduites : het calcule quand meme ? temps et plantage
+2 groupes constants n=200                  OK P=1.0000 logBF=325.21 err=0.00% lois=normal_eq:1.000 notes=1 (10.1s)
+utilisateur     système      écoulé 
+       8.99        1.08       10.06 
+k=12 un constant                           OK P=0.9971 logBF=5.84 err=0.00% lois=normal_eq:1.000 notes=1 (65.0s)
+utilisateur     système      écoulé 
+      59.30        5.34       65.03 
+k=12 sans ex-aequo laws=normal_eq          OK P=0.1846 logBF=-1.49 err=0.00% lois=normal_eq:1.000 notes=0 (7.2s)
+utilisateur     système      écoulé 
+       6.45        0.72        7.16 
+--- E. discontinuite exact contre 1e-8
+y1                                         OK P=1.0000 logBF=37.77 err=0.00% lois=normal_eq:1.000 notes=1 (11.6s)
+y2                                         OK P=1.0000 logBF=41.87 err=3.31% lois=normal_eq:0.000 normal_het:1.000 t_eq:0.000 notes=1 (5.7s)
+y3                                         OK P=1.0000 logBF=41.91 err=3.29% lois=normal_eq:0.000 normal_het:0.970 t_eq:0.000 t_het:0.030 notes=0 (2.8s)

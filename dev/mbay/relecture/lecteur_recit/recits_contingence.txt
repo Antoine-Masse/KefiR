@@ -1,0 +1,112 @@
+### Cas J : germination (oui/non) selon le traitement des graines, 3 traitements, 30 graines chacun
+> m.bay(germe ~ traitement, data = d)
+
+1) Plan reconnu : un facteur, traitement, à 3 groupes (temoin, froid, chaud) ; N = 90.
+	--> Réponse catégorielle (2 modalités : non, oui). Une seule question : les proportions diffèrent-elles selon traitement ? Pendant du test du khi-deux.
+2) Contrôles des données.
+	==> Effectifs par groupe et modalité (3 groupes x 2 modalités) : temoin 12/18 ; froid 12/18 ; chaud 6/24 (non/oui).
+	--> Aucune approximation : le calcul est exact, les petits effectifs ne le faussent pas, ils le rendent seulement moins tranché (contrairement au khi-deux, qui demande des effectifs attendus de 5).
+3) Loi des données.
+	==> Chaque groupe a ses propres proportions des 2 modalités (loi binomiale) ; « aucune différence » : les mêmes proportions dans tous les groupes. Il n'y a pas de forme du bruit à comparer.
+4) Point de départ (a priori), fixé avant de voir les données.
+	==> 50 % de chances qu'une différence existe (pile ou face : la méthode ne prend pas parti) ; dans chaque groupe, toutes les proportions sont également possibles d'avance (Dirichlet uniforme, Gunel et Dickey 1974).
+	--> Ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les fait varier pour voir si la réponse tient.
+5) Facteur de Bayes et sensibilité aux a priori. [contingencyTableBF() {BayesFactor}]
+	==> Facteur de Bayes, différence contre absence : 0,463.
+	==> Précision : calcul en forme close, sans tirage ; aucune erreur de simulation.
+	==> Sensibilité : concentration de l'a priori de 0,5 à 2, croisée avec des chances de départ d'une différence de 1 contre 2 à 2 contre 1. La réponse en tête va alors de 42,2 % à 89,4 %.
+	--> Prudence ajoutée : la réponse peut s'inverser selon le point de départ ; elle sera dite non tranchée.
+6) Quels groupes diffèrent, et de combien. [Dirichlet-multinomial groupings {KefiR}, Dirichlet posterior, hdi() {bayestestR}]
+	==> Regroupements les plus probables (5 comparés) : temoin = froid = chaud (58,9 %) ; temoin = froid < chaud (22,3 %) ; temoin < froid < chaud (6,8 %).
+	==> temoin et froid : différents à 18,8 % ; écart estimé froid - temoin = 0,0017 [-0,24 ; 0,22], soit 0,0068 [-1,1 ; 0,91] en log du rapport de cotes.
+	==> temoin et chaud : différents à 35,1 % ; écart estimé chaud - temoin = 0,19 [-0,025 ; 0,4], soit 0,91 [-0,19 ; 2] en log du rapport de cotes.
+	==> froid et chaud : différents à 35,1 % ; écart estimé chaud - froid = 0,19 [-0,037 ; 0,4], soit 0,92 [-0,11 ; 2,2] en log du rapport de cotes.
+	Écart estimé : différence des proportions de oui (médiane a posteriori), puis le log du rapport de cotes. Crochets : intervalle de crédibilité à 95 % (la valeur s'y trouve avec 95 % de probabilité ; ce n'est pas un intervalle de confiance).
+	--> Toutes les paires viennent d'une seule loi sur les regroupements : aucune correction paire par paire n'est nécessaire, et les réponses ne peuvent pas se contredire.
+7) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
+	Verdict : indécis. Les données ne permettent de conclure ni à une différence, ni à son absence.
+	Probabilité de chaque hypothèse, compte tenu des données et du point de départ :
+	  1. Les proportions de germe ne diffèrent pas selon traitement : 68,4 % (non tranché)
+	  2. Les proportions de germe diffèrent selon traitement : 31,6 %
+	     Repose sur les effectifs : ils sont 2,16 fois plus probables si les proportions sont les mêmes que si elles diffèrent.
+	  Selon le point de départ, la première réponse va de 42,2 % à 89,4 % : l'ordre peut s'inverser.
+	Quels groupes diffèrent par leurs proportions (probabilité, puis écart estimé de la proportion de oui, log du rapport de cotes, intervalles de crédibilité à 95 %) :
+	  temoin / froid : semblables, soutien modéré (différents à 18,8 %) ; écart estimé froid - temoin = 0,0017 [-0,24 ; 0,22], delta = 0,0068 [-1,1 ; 0,91].
+	  temoin / chaud : semblables, soutien faible (différents à 35,1 %) ; écart estimé chaud - temoin = 0,19 [-0,025 ; 0,4], delta = 0,91 [-0,19 ; 2].
+	  froid / chaud : semblables, soutien faible (différents à 35,1 %) ; écart estimé chaud - froid = 0,19 [-0,037 ; 0,4], delta = 0,92 [-0,11 ; 2,2].
+	  Regroupement le plus probable : temoin = froid = chaud (58,9 %).
+	Proportions observées par groupe (description de l'échantillon) :
+	  temoin : non 40,0 %, oui 60,0 % (n = 30)
+	  froid : non 40,0 %, oui 60,0 % (n = 30)
+	  chaud : non 20,0 %, oui 80,0 % (n = 30)
+	Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend de la façon dont l'étude a été menée (tirage au sort, ordre, opérateur).
+
+### Cas K : reussite (0/1) selon le groupe de TD, 2 groupes, 18 etudiants chacun
+> m.bay(reussite ~ groupe, data = d)
+
+1) Plan reconnu : un facteur, groupe, à 2 groupes (TD1, TD2) ; N = 36.
+	--> Réponse catégorielle (2 modalités : 0, 1). Une seule question : les proportions diffèrent-elles selon groupe ? Pendant du test du khi-deux.
+2) Contrôles des données.
+	==> Effectifs par groupe et modalité (2 groupes x 2 modalités) : TD1 11/7 ; TD2 8/10 (0/1).
+	--> Aucune approximation : le calcul est exact, les petits effectifs ne le faussent pas, ils le rendent seulement moins tranché (contrairement au khi-deux, qui demande des effectifs attendus de 5).
+3) Loi des données.
+	==> Chaque groupe a ses propres proportions des 2 modalités (loi binomiale) ; « aucune différence » : les mêmes proportions dans tous les groupes. Il n'y a pas de forme du bruit à comparer.
+4) Point de départ (a priori), fixé avant de voir les données.
+	==> 50 % de chances qu'une différence existe (pile ou face : la méthode ne prend pas parti) ; dans chaque groupe, toutes les proportions sont également possibles d'avance (Dirichlet uniforme, Gunel et Dickey 1974).
+	--> Ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les fait varier pour voir si la réponse tient.
+5) Facteur de Bayes et sensibilité aux a priori. [contingencyTableBF() {BayesFactor}]
+	==> Facteur de Bayes, différence contre absence : 0,633.
+	==> Précision : calcul en forme close, sans tirage ; aucune erreur de simulation.
+	==> Sensibilité : concentration de l'a priori de 0,5 à 2, croisée avec des chances de départ d'une différence de 1 contre 2 à 2 contre 1. La réponse en tête va alors de 37,3 % à 82,3 %.
+	--> Prudence ajoutée : la réponse peut s'inverser selon le point de départ ; elle sera dite non tranchée.
+6) Quels groupes diffèrent, et de combien. [Dirichlet-multinomial groupings {KefiR}, Dirichlet posterior, hdi() {bayestestR}]
+	==> Écart estimé TD2 - TD1 = 0,16 [-0,14 ; 0,45], soit 0,66 [-0,55 ; 2] en log du rapport de cotes.
+	Écart estimé : différence des proportions de 1 (médiane a posteriori), puis le log du rapport de cotes. Crochets : intervalle de crédibilité à 95 % (la valeur s'y trouve avec 95 % de probabilité ; ce n'est pas un intervalle de confiance).
+7) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
+	Verdict : indécis. Les données ne permettent de conclure ni à une différence, ni à son absence.
+	Probabilité de chaque hypothèse, compte tenu des données et du point de départ :
+	  1. Les proportions de reussite ne diffèrent pas selon groupe : 61,2 % (non tranché)
+	  2. Les proportions de reussite diffèrent selon groupe : 38,8 %
+	     Repose sur les effectifs : ils sont 1,58 fois plus probables si les proportions sont les mêmes que si elles diffèrent.
+	  Selon le point de départ, la première réponse va de 37,3 % à 82,3 % : l'ordre peut s'inverser.
+	Taille de l'écart (écart estimé de la proportion de 1, puis log du rapport de cotes ; intervalles de crédibilité à 95 %) :
+	  TD2 - TD1 = 0,16 [-0,14 ; 0,45], delta = 0,66 [-0,55 ; 2].
+	Proportions observées par groupe (description de l'échantillon) :
+	  TD1 : 0 61,1 %, 1 38,9 % (n = 18)
+	  TD2 : 0 44,4 %, 1 55,6 % (n = 18)
+	Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend de la façon dont l'étude a été menée (tirage au sort, ordre, opérateur).
+
+### Cas L : couleur des fleurs (3 couleurs) selon la parcelle, 2 parcelles
+> m.bay(couleur ~ parcelle, data = d)
+
+1) Plan reconnu : un facteur, parcelle, à 2 groupes (P1, P2) ; N = 80.
+	--> Réponse catégorielle (3 modalités : blanc, rose, rouge). Une seule question : les proportions diffèrent-elles selon parcelle ? Pendant du test du khi-deux.
+2) Contrôles des données.
+	==> Effectifs par groupe et modalité (2 groupes x 3 modalités) : P1 23/10/7 ; P2 8/12/20 (blanc/rose/rouge).
+	--> Aucune approximation : le calcul est exact, les petits effectifs ne le faussent pas, ils le rendent seulement moins tranché (contrairement au khi-deux, qui demande des effectifs attendus de 5).
+3) Loi des données.
+	==> Chaque groupe a ses propres proportions des 3 modalités (loi multinomiale) ; « aucune différence » : les mêmes proportions dans tous les groupes. Il n'y a pas de forme du bruit à comparer.
+4) Point de départ (a priori), fixé avant de voir les données.
+	==> 50 % de chances qu'une différence existe (pile ou face : la méthode ne prend pas parti) ; dans chaque groupe, toutes les proportions sont également possibles d'avance (Dirichlet uniforme, Gunel et Dickey 1974).
+	--> Ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les fait varier pour voir si la réponse tient.
+5) Facteur de Bayes et sensibilité aux a priori. [contingencyTableBF() {BayesFactor}]
+	==> Facteur de Bayes, différence contre absence : 106.
+	==> Précision : calcul en forme close, sans tirage ; aucune erreur de simulation.
+	==> Sensibilité : concentration de l'a priori de 0,5 à 2, croisée avec des chances de départ d'une différence de 1 contre 2 à 2 contre 1. La réponse en tête va alors de 96,8 % à 99,6 %.
+	--> La réponse ne change pas de côté.
+6) Quels groupes diffèrent, et de combien. [Dirichlet-multinomial groupings {KefiR}, Dirichlet posterior, hdi() {bayestestR}]
+	==> Écart estimé P2 - P1 = 0,37 [0,19 ; 0,54].
+	Écart estimé : écart total des proportions sur les modalités (moitié de la somme des écarts, de 0 à 1 ; médiane a posteriori). Crochets : intervalle de crédibilité à 95 % (la valeur s'y trouve avec 95 % de probabilité ; ce n'est pas un intervalle de confiance).
+7) Conclusion : les hypothèses classées, ce sur quoi chacune repose, son soutien.
+	Verdict : une différence existe très probablement. Cela ne dit ni qu'elle est importante, ni quels groupes diffèrent, ni pourquoi.
+	Probabilité de chaque hypothèse, compte tenu des données et du point de départ :
+	  1. Les proportions de couleur diffèrent selon parcelle : 99,1 % (soutien fort)
+	  2. Les proportions de couleur ne diffèrent pas selon parcelle : 0,9 %
+	     Repose sur les effectifs : ils sont 106 fois plus probables si les proportions diffèrent que si elles sont les mêmes.
+	  Selon le point de départ : 96,8 % à 99,6 % ; l'ordre ne change pas.
+	Taille de l'écart (écart estimé sur les modalités, de 0 à 1 ; intervalles de crédibilité à 95 %) :
+	  P2 - P1 = 0,37 [0,19 ; 0,54].
+	Proportions observées par groupe (description de l'échantillon) :
+	  P1 : blanc 57,5 %, rose 25,0 %, rouge 17,5 % (n = 40)
+	  P2 : blanc 20,0 %, rose 30,0 %, rouge 50,0 % (n = 40)
+	Ce sont des probabilités d'hypothèses, pas des p-values : aucun seuil de 5 % ne s'y applique. La cause d'une différence dépend de la façon dont l'étude a été menée (tirage au sort, ordre, opérateur).

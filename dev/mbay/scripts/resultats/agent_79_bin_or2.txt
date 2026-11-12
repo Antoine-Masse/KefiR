@@ -1,0 +1,4 @@
+R version 4.6.1 (2026-06-24 ucrt)
+agent_79 : D25 sous effet modere, scenario bin_or2, N = 1000
+P(A)<=.25 (non) : 571/1000 = 0.571 [0.540 ; 0.601] | BF(A)<=1/20 (non, soutien fort) : 0/1000 = 0.000 [0.000 ; 0.004] | BF(A)<=1/3 : 571/1000 = 0.571 [0.540 ; 0.601]
+P(A)>.75 (oui) : 132/1000 = 0.132 [0.112 ; 0.154] | rapport de vraisemblance p<.05 : 411/1000 = 0.411 [0.381 ; 0.442]

@@ -1,0 +1,83 @@
+R version 4.6.1 (2026-06-24 ucrt) | BayesFactor 0.9.12.4.8 | bayestestR 0.20.0 | car 3.1.5 | emmeans 2.0.4 
+
+================= JEU G =================
+log BF(engrais) = 2.2151 (BF = 9.162, erreur rel. = 0.00546)
+P(engrais), a priori 1/2 = 0.901595
+colonnes posterior : mu, engrais-E1, engrais-E2, engrais-E3, xc-xc, sig2, g_engrais, g_continuous 
+Ecarts ajustes bayesiens (mediane, HDI 95 %) :
+         med      lo     hi
+E2-E1 0.4342 -1.0951 1.9491
+E3-E1 2.0601  0.4559 3.5878
+E3-E2 1.6164  0.0675 3.1763
+car::Anova type II :
+Anova Table (Type II tests)
+
+Response: rendement
+          Sum Sq Df  F value    Pr(>F)    
+engrais    53.61  2   6.0569  0.004958 ** 
+xc        653.15  1 147.6003 3.604e-15 ***
+Residuals 181.43 41                       
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+emmeans (paires, adjust = none, reverse) :
+  contrast estimate      SE   p.value lower.CL upper.CL
+1  E2 - E1  0.58834 0.83794 0.4865650 -1.10391   2.2806
+2  E3 - E1  2.55282 0.77388 0.0020144  0.98993   4.1157
+3  E3 - E2  1.96448 0.80493 0.0190728  0.33889   3.5901
+
+================= JEU H =================
+log BF[g+x vs x] = -0.9816 ; log BF[g+x+g:x vs x] = 8.1584
+Posterieurs : x 0.000572 | g+x 0.000107 | g+x+g:x 0.999321
+P(methode) = 0.999428 ; P(methode:note) = 0.999321
+colonnes posterior : mu, methode-classique, methode-projet, xc-xc, methode:xc-classique.&.xc, methode:xc-projet.&.xc, sig2, g_methode, g_continuous 
+colonnes d'interaction utilisees : methode:xc-classique.&.xc / methode:xc-projet.&.xc 
+Quartiles de note : 11.3565 / 13.5785 / 15.5884  ; moyenne : 13.2798 
+Ecart projet - classique aux quartiles (bayesien, mediane, HDI 95 %) :
+        med      lo      hi
+25% -0.9813 -1.8085 -0.1802
+50%  0.4951 -0.1515  1.1765
+75%  1.8360  0.9466  2.6965
+Etendue de note : [ 6.7536 ; 17.8355 ] ; pas de grille 0.1108 
+Zone bayesienne (HDI exclut 0) : [6.754 ; 11.630] (45 pts) U [13.846 ; 17.836] (37 pts) 
+  dont HDI > 0 : [13.846 ; 17.836] (37 pts) | HDI < 0 : [6.754 ; 11.630] (45 pts) 
+car::Anova type II :
+Anova Table (Type II tests)
+
+Response: score
+           Sum Sq Df  F value    Pr(>F)    
+methode      1.77  1   1.1076    0.2981    
+xc         396.20  1 247.7416 < 2.2e-16 ***
+methode:xc  48.41  1  30.2685 1.605e-06 ***
+Residuals   73.57 46                       
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+emmeans ecart projet - classique aux quartiles :
+    note estimate      SE    p.value lower.CL  upper.CL
+1 11.357 -0.92336 0.42874 0.03654159 -1.78637 -0.060352
+2 13.578  0.57016 0.35949 0.11958285 -0.15345  1.293782
+3 15.588  1.92114 0.45477 0.00011208  1.00574  2.836553
+Johnson-Neyman (grille 101 pts) : [6.754 ; 11.408] (43 pts) U [13.846 ; 17.836] (37 pts) 
+  dont ecart > 0 : [13.846 ; 17.836] (37 pts) | ecart < 0 : [6.754 ; 11.408] (43 pts) 
+Bornes JN exactes (note) : 11.4684 et 13.8189 ; A = 0.3913 (A > 0 : significatif hors de l'intervalle)
+
+================= JEU I =================
+log BF(regime) = 2.2419 (BF = 9.411) ; P(regime), a priori 1/2 = 0.903952
+Ecart ajuste R2 - R1 (bayesien) :
+   med     lo     hi 
+4.3176 0.5334 8.2861 
+car::Anova type II :
+Anova Table (Type II tests)
+
+Response: poids
+           Sum Sq Df F value  Pr(>F)  
+regime     40.541  1  7.1629 0.01250 *
+xc         42.431  1  7.4968 0.01081 *
+Residuals 152.817 27                  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+emmeans R2 - R1 :
+  contrast estimate     SE  p.value lower.CL upper.CL
+1  R2 - R1   4.5748 1.7093 0.012497   1.0675    8.082
+Etendues : R1 [20.2328 ; 33.7831], R2 [32.7692 ; 49.4539] ; commune [32.7692 ; 33.7831]
+  R1 : 1 / 15 = 0.0667 dans l'etendue commune
+  R2 : 1 / 15 = 0.0667 dans l'etendue commune

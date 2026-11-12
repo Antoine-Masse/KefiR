@@ -1,0 +1,9 @@
+R version 4.6.1 (2026-06-24 ucrt)
+agent_56 : appariees et mesures repetees, N = 200 jeux par scenario, sujet sd 2, residu sd 1, r = 0.5, prior_h1 = 0.5
+scenario : P(diff)>.5 / >.75 / >.95 | classique p<.05 || couverture delta (dz si k=2) || paire egale dite differente (P>.75) || regroupement vrai en tete
+k2_n12_H0 : 0.090 / 0.030 / 0.000 | 0.040 || 0.970 || - || -
+k2_n20_H0 : 0.090 / 0.005 / 0.000 | 0.040 || 0.990 || - || -
+k2_n15_d0.7 : 0.635 / 0.295 / 0.070 | 0.415 || 0.935 || - || -
+k3_n12_H0 : 0.055 / 0.030 / 0.000 | 0.040 || 0.983 || 0.025 || 0.960
+k3_n15_un_ecart : 0.655 / 0.385 / 0.095 | 0.555 || 0.952 || 0.015 || 0.385
+k4_n12_graduel : 0.520 / 0.275 / 0.065 | 0.440 || 0.944 || - || 0.000

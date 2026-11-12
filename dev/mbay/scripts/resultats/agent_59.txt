@@ -1,0 +1,9 @@
+R version 4.6.1 (2026-06-24 ucrt)
+agent_59 : contingence, N = 500 jeux par scenario, a = 1, prior_h1 = 0.5
+scenario : P(diff)>.5 / >.75 / >.95 | khi-deux p<.05 || couverture diff. de proportions (paires)
+k2_n20_H0_p.3 : 0.114 / 0.024 / 0.000 | 0.044 || 0.952
+k2_n50_H0_p.5 : 0.074 / 0.016 / 0.002 | 0.042 || 0.960
+k3_n30_H0_p.2 : 0.052 / 0.014 / 0.002 | 0.058 || 0.946
+k2_n40_ecart_.2 : 0.494 / 0.300 / 0.106 | 0.378 || 0.966
+k3_n30_un_ecart : 0.776 / 0.610 / 0.370 | 0.700 || 0.945
+k2_n10_H0_petit : 0.166 / 0.026 / 0.000 | 0.004 || 0.966

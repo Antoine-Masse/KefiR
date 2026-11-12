@@ -1,0 +1,176 @@
+
+======== aberrante, effet reel 
+Bilan de m.bay : x ~ g (N = 60)
+Hypothèses, de la plus probable à la moins probable :
+  1. g agit sur x           : > 99,9 % (soutien très fort)
+  2. Aucun effet de g sur x : < 0,1 %
+  Les données ne tranchent pas : selon les a priori, cette probabilité va de 20,8 % à > 99,9 % et l'hypothèse en tête change.
+Réponses par terme :
+  g a-t-il un effet ? Oui > 99,9 %, non < 0,1 % (a priori 50,0 % ; facteur de Bayes 10^7).
+Forme du bruit, comparée et non choisie (probabilités a posteriori) :
+  queues lourdes, variances égales 68,5 % ; queues lourdes, variances inégales 31,5 % ; normale, variances inégales < 0,1 % ; normale, variances égales < 0,1 %.
+A priori, fixés d'avance :
+  Effet : 50,0 % avant de voir les données. Taille d'un effet : échelle r = 0,5 sur l'écart standardisé.
+  Bruit : chacune des 4 formes part à égalité ; rapports de précision Dirichlet(1,5) ; queues lourdes nu - 2 ~ Exp(1).
+  Variés dans la sensibilité : r de 0,25 à 1, cotes 1:4 à 4:1, Dirichlet 0,5 à 4,5, bruit imposé normal ou non.
+Comment lire :
+  Une probabilité est ici celle d'une hypothèse, sachant les données et les a priori ci-dessus.
+  Le facteur de Bayes dit de combien les données déplacent les cotes. Il ne dépend pas des cotes a priori.
+  Ni l'un ni l'autre n'est une p-value : une p-value est la probabilité de données au moins aussi extrêmes s'il n'y avait pas d'effet.
+  Soutien : faible sous 75 %, modéré sous 95 %, fort sous 99,3 %, puis très fort.
+[31 s]
+         law hypothesis  log_ml posterior   rel_se    ess
+1  normal_eq         H0 -86.035 4.433e-40 0.000000     NA
+2  normal_eq         H1 -87.369 1.167e-40 0.000000     NA
+3 normal_het         H0 -50.478 1.227e-24 0.009835 1675.9
+4 normal_het         H1 -51.786 3.318e-25 0.009236 1708.6
+5       t_eq         H0 -11.565 9.743e-08 0.030489  699.7
+6       t_eq         H1   4.201 6.852e-01 0.026016  441.3
+7      t_het         H0 -11.817 7.571e-08 0.033426  618.5
+8      t_het         H1   3.424 3.148e-01 0.027903  402.7
+      odds
+r      1:4 1:1 4:1
+  0.25   1   1   1
+  0.50   1   1   1
+  1.00   1   1   1
+by_u 0.9999998 0.9999998 by_law 0.2083978 0.2128132 0.9999999 0.9999998 range 0.2083978 1 verdict changes 
+
+======== effet enorme 
+Bilan de m.bay : x ~ g (N = 40)
+Hypothèses, de la plus probable à la moins probable :
+  1. g agit sur x           : > 99,9 % (soutien très fort)
+  2. Aucun effet de g sur x : < 0,1 %
+  Stable selon les a priori : > 99,9 % à > 99,9 %.
+Réponses par terme :
+  g a-t-il un effet ? Oui > 99,9 %, non < 0,1 % (a priori 50,0 % ; facteur de Bayes 10^18).
+Forme du bruit, comparée et non choisie (probabilités a posteriori) :
+  normale, variances égales 52,6 % ; normale, variances inégales 20,4 % ; queues lourdes, variances égales 17,6 % ; queues lourdes, variances inégales 9,4 %.
+A priori, fixés d'avance :
+  Effet : 50,0 % avant de voir les données. Taille d'un effet : échelle r = 0,5 sur l'écart standardisé.
+  Bruit : chacune des 4 formes part à égalité ; rapports de précision Dirichlet(1,5) ; queues lourdes nu - 2 ~ Exp(1).
+  Variés dans la sensibilité : r de 0,25 à 1, cotes 1:4 à 4:1, Dirichlet 0,5 à 4,5, bruit imposé normal ou non.
+Comment lire :
+  Une probabilité est ici celle d'une hypothèse, sachant les données et les a priori ci-dessus.
+  Le facteur de Bayes dit de combien les données déplacent les cotes. Il ne dépend pas des cotes a priori.
+  Ni l'un ni l'autre n'est une p-value : une p-value est la probabilité de données au moins aussi extrêmes s'il n'y avait pas d'effet.
+  Soutien : faible sous 75 %, modéré sous 95 %, fort sous 99,3 %, puis très fort.
+[19 s]
+         law hypothesis  log_ml posterior  rel_se   ess
+1  normal_eq         H0 -116.72 3.234e-24 0.00000    NA
+2  normal_eq         H1  -63.28 5.260e-01 0.00000    NA
+3 normal_het         H0 -104.88 4.477e-19 0.03976 500.8
+4 normal_het         H1  -64.22 2.044e-01 0.01949 488.5
+5       t_eq         H0 -121.49 2.749e-26 0.03835 319.0
+6       t_eq         H1  -64.37 1.758e-01 0.04488 268.3
+7      t_het         H0 -110.50 1.629e-21 0.05060 236.8
+8      t_het         H1  -65.00 9.381e-02 0.04204 285.7
+      odds
+r      1:4 1:1 4:1
+  0.25   1   1   1
+  0.50   1   1   1
+  1.00   1   1   1
+by_u 1 1 by_law 1 1 1 1 range 1 1 verdict stable 
+
+======== N=1e4, ecart .08 sd 
+Bilan de m.bay : x ~ g (N = 10000)
+Hypothèses, de la plus probable à la moins probable :
+  1. g agit sur x           : > 99,9 % (soutien très fort)
+  2. Aucun effet de g sur x : < 0,1 %
+  Sensibilité aux a priori non calculée (sensitivity = FALSE).
+Réponses par terme :
+  g a-t-il un effet ? Oui > 99,9 %, non < 0,1 % (a priori 50,0 % ; facteur de Bayes 3620).
+Forme du bruit, comparée et non choisie (probabilités a posteriori) :
+  normale, variances égales 97,5 % ; normale, variances inégales 2,5 % ; queues lourdes, variances égales < 0,1 % ; queues lourdes, variances inégales < 0,1 %.
+A priori, fixés d'avance :
+  Effet : 50,0 % avant de voir les données. Taille d'un effet : échelle r = 0,5 sur l'écart standardisé.
+  Bruit : chacune des 4 formes part à égalité ; rapports de précision Dirichlet(1,5) ; queues lourdes nu - 2 ~ Exp(1).
+Comment lire :
+  Une probabilité est ici celle d'une hypothèse, sachant les données et les a priori ci-dessus.
+  Le facteur de Bayes dit de combien les données déplacent les cotes. Il ne dépend pas des cotes a priori.
+  Ni l'un ni l'autre n'est une p-value : une p-value est la probabilité de données au moins aussi extrêmes s'il n'y avait pas d'effet.
+  Soutien : faible sous 75 %, modéré sous 95 %, fort sous 99,3 %, puis très fort.
+[37 s]
+         law hypothesis log_ml posterior  rel_se   ess
+1  normal_eq         H0 -14207 2.691e-04 0.00000    NA
+2  normal_eq         H1 -14199 9.748e-01 0.00000    NA
+3 normal_het         H0 -14211 6.873e-06 0.01900 423.7
+4 normal_het         H1 -14203 2.493e-02 0.01620 442.1
+5       t_eq         H0 -14244 4.537e-20 0.02662 369.4
+6       t_eq         H1 -14236 7.207e-17 0.03018 343.8
+7      t_het         H0 -14247 1.295e-21 0.03087 338.9
+8      t_het         H1 -14240 2.130e-18 0.03134 335.6
+
+======== H0 vraie 
+Bilan de m.bay : x ~ g (N = 60)
+Hypothèses, de la plus probable à la moins probable :
+  1. Aucun effet de g sur x : 78,4 % (soutien modéré)
+  2. g agit sur x           : 21,6 %
+  Les données ne tranchent pas : selon les a priori, cette probabilité va de 32,8 % à 97,4 % et l'hypothèse en tête change.
+Réponses par terme :
+  g a-t-il un effet ? Oui 21,6 %, non 78,4 % (a priori 50,0 % ; facteur de Bayes 0,276).
+Forme du bruit, comparée et non choisie (probabilités a posteriori) :
+  normale, variances égales 81,0 % ; normale, variances inégales 16,1 % ; queues lourdes, variances égales 2,2 % ; queues lourdes, variances inégales 0,7 %.
+A priori, fixés d'avance :
+  Effet : 50,0 % avant de voir les données. Taille d'un effet : échelle r = 0,5 sur l'écart standardisé.
+  Bruit : chacune des 4 formes part à égalité ; rapports de précision Dirichlet(1,5) ; queues lourdes nu - 2 ~ Exp(1).
+  Variés dans la sensibilité : r de 0,25 à 1, cotes 1:4 à 4:1, Dirichlet 0,5 à 4,5, bruit imposé normal ou non.
+Comment lire :
+  Une probabilité est ici celle d'une hypothèse, sachant les données et les a priori ci-dessus.
+  Le facteur de Bayes dit de combien les données déplacent les cotes. Il ne dépend pas des cotes a priori.
+  Ni l'un ni l'autre n'est une p-value : une p-value est la probabilité de données au moins aussi extrêmes s'il n'y avait pas d'effet.
+  Soutien : faible sous 75 %, modéré sous 95 %, fort sous 99,3 %, puis très fort.
+[59 s]
+         law hypothesis log_ml posterior  rel_se   ess
+1  normal_eq         H0 -86.53  0.632078 0.00000    NA
+2  normal_eq         H1 -87.80  0.177691 0.00000    NA
+3 normal_het         H0 -88.13  0.127745 0.02032 481.1
+4 normal_het         H1 -89.49  0.033038 0.02006 482.4
+5       t_eq         H0 -90.10  0.017866 0.03274 365.4
+6       t_eq         H1 -91.47  0.004527 0.03762 287.5
+7      t_het         H0 -91.21  0.005877 0.03705 329.2
+8      t_het         H1 -92.82  0.001178 0.04205 243.2
+      odds
+r         1:4    1:1   4:1
+  0.25 0.1136 0.3388 0.672
+  0.50 0.0646 0.2164 0.525
+  1.00 0.0258 0.0959 0.298
+by_u 0.2184876 0.2157619 by_law 0.2194343 0.205483 0.202176 0.1669843 range 0.3279145 0.9741695 verdict changes 
+[1] 2.368849e-52
+
+======== odds prior_h1=.2 
+Bilan de m.bay : x ~ g (N = 40)
+Hypothèses, de la plus probable à la moins probable :
+  1. g agit sur x           : 99,1 % (soutien fort)
+  2. Aucun effet de g sur x : 0,9 %
+  L'hypothèse en tête ne change pas selon les a priori, mais le soutien si : 94,8 % à > 99,9 % (soutien modéré à soutien très fort).
+Réponses par terme :
+  g a-t-il un effet ? Oui 99,1 %, non 0,9 % (a priori 20,0 % ; facteur de Bayes 448).
+Forme du bruit, comparée et non choisie (probabilités a posteriori) :
+  normale, variances égales 36,2 % ; queues lourdes, variances égales 32,0 % ; normale, variances inégales 18,2 % ; queues lourdes, variances inégales 13,7 %.
+A priori, fixés d'avance :
+  Effet : 20,0 % avant de voir les données. Taille d'un effet : échelle r = 0,5 sur l'écart standardisé.
+  Bruit : chacune des 4 formes part à égalité ; rapports de précision Dirichlet(1,5) ; queues lourdes nu - 2 ~ Exp(1).
+  Variés dans la sensibilité : r de 0,25 à 1, cotes 1:4 à 4:1, Dirichlet 0,5 à 4,5, bruit imposé normal ou non.
+Comment lire :
+  Une probabilité est ici celle d'une hypothèse, sachant les données et les a priori ci-dessus.
+  Le facteur de Bayes dit de combien les données déplacent les cotes. Il ne dépend pas des cotes a priori.
+  Ni l'un ni l'autre n'est une p-value : une p-value est la probabilité de données au moins aussi extrêmes s'il n'y avait pas d'effet.
+  Soutien : faible sous 75 %, modéré sous 95 %, fort sous 99,3 %, puis très fort.
+Avertissements :
+  Précision numérique faible : erreur sur le facteur de Bayes d'environ 2 %.
+[45 s]
+         law hypothesis log_ml posterior  rel_se   ess
+1  normal_eq         H0 -65.40 0.0051034 0.00000    NA
+2  normal_eq         H1 -59.76 0.3569345 0.00000    NA
+3 normal_het         H0 -65.80 0.0034280 0.02454 254.2
+4 normal_het         H1 -60.46 0.1782441 0.02535 249.8
+5       t_eq         H0 -68.59 0.0002089 0.05358 161.4
+6       t_eq         H1 -59.88 0.3195438 0.04495 167.1
+7      t_het         H0 -69.17 0.0001170 0.06032 143.7
+8      t_het         H1 -60.73 0.1364204 0.06684 109.5
+      odds
+r       1:16   1:4   1:1
+  0.25 0.948 0.986 0.997
+  0.50 0.965 0.991 0.998
+  1.00 0.969 0.992 0.998
+by_u 0.9912998 0.9913629 by_law 0.9859038 0.981131 0.9993468 0.9991428 range 0.9480351 0.9993468 verdict crosses 

@@ -1,0 +1,73 @@
+BayesFactor 0.9.12.4.8 
+
+=== A ===
+n paires = 13  moyenne(apres-avant) = -4.350351  dz = -0.6017521  t = -2.169648 
+log BF10 (formule) = 0.5473715 
+log BF10 (ttestBF) = 0.5473715 
+ecart = 1.703688e-10 
+
+=== B1 ===
+anovaBF :
+Bayes factor analysis
+--------------
+[1] session + sujet : 23.51522 ±0.2%
+
+Against denominator:
+  rt ~ sujet 
+---
+Bayes factor type: BFlinearModel, JZS
+
+Integrale 2D, indicatrices sujet brutes  : log BF (session+sujet vs sujet) = 3.160175 
+Integrale 2D, indicatrices sujet centrees : log BF (session+sujet vs sujet) = 3.160175 
+anovaBF log BF = 3.157648  (+/- erreur rel. 0.00197579 )
+
+=== B2 === nombre de partitions : 15 
+         partition k w logBF   prior      post
+     S1=S2=S3 | S4 2 2 24.91 0.05556 2.392e-01
+   S1=S2 | S3 | S4 3 1 25.24 0.02778 1.664e-01
+   S1 | S2=S3 | S4 3 1 25.24 0.02778 1.661e-01
+     S1=S2 | S3=S4 2 1 24.88 0.02778 1.165e-01
+ S1 | S2 | S3 | S4 4 1 24.79 0.02778 1.067e-01
+   S1 | S2 | S3=S4 3 1 24.47 0.02778 7.703e-02
+     S1 | S2=S3=S4 2 2 23.58 0.05556 6.346e-02
+   S1=S3 | S2 | S4 3 1 23.73 0.02778 3.676e-02
+   S1 | S2=S4 | S3 3 1 22.66 0.02778 1.260e-02
+     S1=S3 | S2=S4 2 1 21.91 0.02778 5.979e-03
+     S1=S3=S4 | S2 2 2 20.78 0.05556 3.867e-03
+     S1=S2=S4 | S3 2 2 20.58 0.05556 3.142e-03
+     S1=S4 | S2=S3 2 1 20.43 0.02778 1.353e-03
+   S1=S4 | S2 | S3 3 1 20.10 0.02778 9.767e-04
+       S1=S2=S3=S4 1 6  0.00 0.50000 3.277e-11
+
+Trois meilleures :
+       partition      post
+   S1=S2=S3 | S4 0.2391626
+ S1=S2 | S3 | S4 0.1663861
+ S1 | S2=S3 | S4 0.1660870
+
+P(les deux sessions different) :
+  S1 vs S2 : 0.4748
+  S1 vs S3 : 0.7142
+  S1 vs S4 : 0.9907
+  S2 vs S3 : 0.5299
+  S2 vs S4 : 0.9148
+  S3 vs S4 : 0.7391
+
+=== C ===
+Bayes factor analysis
+--------------
+[1] seance + id                          : 1.310455  ±0.42%
+[2] groupe + id                          : 0.7116297 ±0.6%
+[3] seance + groupe + id                 : 0.9818681 ±2.5%
+[4] seance + groupe + seance:groupe + id : 3.471478  ±2.12%
+
+Against denominator:
+  score ~ id 
+---
+Bayes factor type: BFlinearModel, JZS
+
+                                              bf       error
+seance + id                           0.27037464 0.004220552
+groupe + id                          -0.34019759 0.006002310
+seance + groupe + id                 -0.01829826 0.025002561
+seance + groupe + seance:groupe + id  1.24458045 0.021151556

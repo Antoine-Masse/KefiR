@@ -1,0 +1,35 @@
+1) Type de modèle détecté : ANOVA (facteurs catégoriques uniquement).
+2) Effets aléatoires détectés dans la formule (terme Error) : y ~ t + Error(id)
+3) Plan apparié / mesures répétées détecté. Réalisation de contrôles spécifiques...
+	Facteur(s) intra-sujet auto-détecté(s) : t
+4) Vérification de la structure du plan à mesures répétées (équilibrage et unicité)...
+	Structure ATTENDUE du plan (vérification des réplicats) :
+	• Nombre de sujets : 15
+	• Conditions par sujet : 2 (toutes combinaisons facteurs intra-sujet)
+	• Total observations : 30
+	Structure du plan ÉQUILIBRÉE :
+	==> Les 15 sujets ont exactement 2 observations (une par condition).
+	--> Vers une ANOVA à mesures répétées.
+5) ASSOMPTION DE BASE : Indépendance des observations (contexte mesures répétées).
+	C'est une assomption de PLAN qui ne peut pas être testée statistiquement.
+	Vérifiez que :
+	  • Mesures répétées sur les mêmes sujets (attendu)
+	  • Pas de cluster supplémentaire au-delà du sujet
+	  • Effets d'ordre/report contrôlés
+	  • Pas d'abandon systématique
+6) Seulement deux conditions détectées dans le plan apparié ==> Délégation à .one_factor_analysis() [optimisé pour comparaisons appariées].
+7) Alignement par id pour les données appariées.
+8) Contrôle de la normalité des différences appariées :
+	Test de Shapiro-Wilk (<=50), Jarque-Bera (<=500) ou skewness/kurtosis (>500).
+	Les différences sont normales (p-value : 0.94).
+9) Test de Student apparié [t.test(paired=TRUE)] :
+	==> Différences significatives entre les conditions. p-value : 0.00039
+
+m.test() - version 02 bêta 2026 - envoyer ce bilan à antoine.masse@u-bordeaux.fr en cas d'anomalie.
+  categories Student_Holm
+1      avant            a
+2      apres            b
+=== Bootstrap === 
+  categories Student_bootstrapped
+1      avant                    a
+2      apres                    a

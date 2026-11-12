@@ -1,0 +1,51 @@
+=== 0. BFbal vs BFman :-2.121739 -2.121739 
+
+=== 1. Calibration sous l'a priori exact (Sigma=I par invariance), a=3 ; pi=1/2
+
+=== 2. Effet sur une seule DV (moyennes -.5,0,.5 ; f=.408), DV ajoutees sans rapport, 300 jeux
+ d  n/gr | H1: med P, P>.5, P>.95, P<.25, Pillai<.05 | H0: med P, P>.5, P<.05, Pillai<.05 | med Mahalanobis f a priori
+ 1  15  | 0.751 0.730 0.213 0.060 0.647 | 0.206 0.087 0.000 0.050 | 0.50
+ 2  15  | 0.624 0.597 0.140 0.183 0.543 | 0.141 0.080 0.000 0.067 | 0.78
+ 3  15  | 0.467 0.443 0.063 0.270 0.427 | 0.099 0.067 0.200 0.053 | 0.98
+ 5  15  | 0.245 0.280 0.047 0.507 0.293 | 0.060 0.053 0.413 0.057 | 1.30
+ 10 15  | 0.085 0.117 0.013 0.780 0.173 | 0.028 0.013 0.637 0.023 | 1.88
+ 20 15  | 0.041 0.060 0.003 0.857 0.113 | 0.019 0.027 0.767 0.047 | 2.70
+ 1  30  | 0.977 0.927 0.577 0.013 0.913 | 0.138 0.047 0.000 0.033 | 0.50
+ 2  30  | 0.938 0.833 0.470 0.073 0.857 | 0.070 0.030 0.327 0.033 | 0.78
+ 3  30  | 0.849 0.737 0.367 0.130 0.803 | 0.039 0.020 0.590 0.043 | 0.99
+ 5  30  | 0.619 0.553 0.190 0.303 0.693 | 0.020 0.007 0.707 0.060 | 1.30
+ 10 30  | 0.133 0.240 0.053 0.627 0.510 | 0.005 0.017 0.897 0.037 | 1.88
+ 20 30  | 0.016 0.083 0.020 0.827 0.370 | 0.001 0.010 0.960 0.037 | 2.69
+
+=== 3. Sigma non commune sous H0, desequilibre (10,10,40) ; Sigma groupe 1,2 = 9*Sigma3 ; d=3 ; 300 jeux
+ sd=3,3,1 : P>.5 0.427 ; P>.95 0.113 ; Pillai p<.05 0.423
+ sd=1,1,3 : P>.5 0.000 ; P>.95 0.000 ; Pillai p<.05 0.000
+ sd=1,1,1 : P>.5 0.050 ; P>.95 0.007 ; Pillai p<.05 0.047
+
+=== 4. Sensibilite r a d=3 et d=10, H1 ci-dessus (un jeu moyen) ; n/gr=15
+ d=3 p Pillai=0.019 ; P(r=.25,.5,1)=0.786 0.741 0.486
+ d=10 p Pillai=0.45 ; P(r=.25,.5,1)=0.187 0.036 0.001
+
+=== 5. Partitions
+ k=4, 1 groupe devie .9 : P(terme global, Sec.5.2)=0.615 ; 1-P(toutes egales, Sec.9)=0.607
+      [,1]  [,2]  [,3]  [,4]
+[1,] 1.000 0.659 0.617 0.423
+[2,] 0.659 1.000 0.667 0.502
+[3,] 0.617 0.667 1.000 0.541
+[4,] 0.423 0.502 0.541 1.000
+ Vs lmBF full : 0.615 
+ Sur 150 jeux (ecart .6): med P terme=0.392 ; med P partition=0.443 ; ecart abs med=0.050 ; ecart max=0.089 ; desaccord autour de .5 : 0.033
+
+ Multiplicite sur paires nulles, k=5 : groupes 1-4 egaux, groupe 5 decale 1.5 ; n=20 ; 150 jeux
+ P(diff) a priori conditionnelle ; max sur 6 paires nulles : mediane 0.534 ; >.5 : 0.607 ; >.75 : 0.173 ; moyenne 0.469
+ H0 globale, k=5, n=20 : med max P(diff)=0.166 ; >.5 : 0.080 ; P(toutes pas egales)>.5 : 0.100
+
+ Saut A/B : meme paire (groupes 1 et 2, ecart .8, n=20), autres groupes au centre
+ k=3 partition P(mu1!=mu2)=0.559
+ k=4 partition P(mu1!=mu2)=0.494
+ k=5 partition P(mu1!=mu2)=0.298
+ k=6 option B P(mu1!=mu2)=0.083 (BF paire=1.91, cotes 0.047)
+ k=7 option B P(mu1!=mu2)=0.060 (BF paire=1.91, cotes 0.034)
+ k=8 option B P(mu1!=mu2)=0.046 (BF paire=1.91, cotes 0.025)
+
+FIN

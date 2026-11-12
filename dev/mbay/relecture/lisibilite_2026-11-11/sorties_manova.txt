@@ -1,0 +1,137 @@
+############ PLAN : manova ############
+
+== Donnees (head) ==
+  g    y1    y2
+1 A 10.20  8.67
+2 A 12.06 11.34
+3 A 11.12 10.88
+4 A  8.06  9.50
+5 A  9.16  9.03
+6 A  7.40  9.91
+n = 30 
+
+============ m.test ============
+m.test(cbind(y1, y2) ~ g, data = d) 
+
+1) Analyse MANOVA avec 2 variables dépendantes et 30 observations.
+	Facteur de groupement unique avec 3 groupes.
+2) ASSOMPTION 1/6 : Indépendance des observations.
+	Assurez-vous que les observations entre les groupes sont indépendantes (pas de mesures répétées, pas d'effets de cluster).
+3) ASSOMPTION 2/6 : Absence de multicolinéarité.
+	Corrélation maximale = 0.581 (acceptable, < 0.90).
+4) ASSOMPTION 3/6 : Linéarité entre variables dépendantes [lm() avec terme quadratique].
+	==> Aucune courbure détectée (correction de Bonferroni).
+5) ASSOMPTION 4/6 : Outliers multivariés : Aucun détecté (distance de Mahalanobis, α = 0.001).
+6) ASSOMPTION 5/6 : Normalité multivariée [mvn() {MVN}]
+	Test de Mardia (asymétrie, kurtosis) et test de Henze-Zirkler
+	Test de Mardia - p-value Asymétrie : 0.63, p-value Kurtosis : 0.44
+	Test de Henze-Zirkler p-value : 0.27
+	Assomption de normalité multivariée respectée (majorité des tests non significatifs).
+7) ASSOMPTION 6/6 : Homogénéité des matrices de covariance, test M de Box [boxM() {biotools}].
+	Note : Ce test est sensible ; significativité évaluée à α = 0.001 (conservateur).
+	Test M de Box : p-value = 0.44 (>= 0.001).
+	Les matrices de covariance peuvent être considérées comme homogènes.
+	Contrôles d'assomptions : 4 testés, 0 violés.
+8) Exécution de la MANOVA classique (approche paramétrique).
+	Tests multivariés [manova()]
+	Lambda de Wilks, trace de Pillai, trace de Hotelling-Lawley, plus grande racine de Roy
+	Test Lambda de Wilks : Effet multivarié significatif, p-value = 3.3e-05
+	Test trace de Pillai : Effet multivarié significatif, p-value = 0.00037
+9) ANALYSE POST-HOC MANOVA
+	30 observations, 2 VDs, 3 groupes
+	Méthode : both
+10) ANALYSE DISCRIMINANTE :
+	Nombre de fonctions discriminantes : 2
+	Proportion de variance inter-groupes expliquée :
+	FD1 : 100%
+	FD2 : 0%
+		FD1 : Variable la plus importante = y1 (r = 0.95)
+		FD2 : Variable la plus importante = y2 (r = 0.592)
+11) ANOVAs UNIVARIÉES PROTÉGÉES (correction Bonferroni) :
+	Alpha original : 0.05
+	Alpha ajusté : 0.025 (alpha / 2 VDs)
+		Test utilisé pour chaque variable : ANOVA [aov()]
+		y1: F(2,27)=20.17, p=4.4e-06 *SIGNIFICATIF*
+		y2: F(2,27)=14.53, p=5.2e-05 *SIGNIFICATIF*
+	Résumé : 2/2 variables dépendantes montrent des différences significatives
+	(après correction Bonferroni)
+12) COMPARAISONS MULTIVARIÉES ENTRE GROUPES (trace de Pillai, correction de Holm) :
+ categories Pillai_Holm
+          A           a
+          B           b
+          C           c
+
+
+m.test() - version 02 bêta 2026 - envoyer ce bilan à antoine.masse@u-bordeaux.fr en cas d'anomalie.
+
+[m.test : OK - 0.2 s]
+
+============ m.bay ============
+m.bay(cbind(y1, y2) ~ g, data = d) 
+
+1) Plan reconnu : 2 réponses (y1, y2) comparées ensemble entre les 3 groupes de
+   g (A, B, C) ; N = 30 individus.
+	--> Une question : les groupes diffèrent-ils sur au moins une des
+	    réponses ?
+2) Contrôles des données [quantile() {stats}] - rien à retirer.
+	==> Effectifs : 10 par groupe.
+	==> Valeurs au-delà de 3 écarts interquartiles de leur groupe : y1 0, y2
+	    0.
+	--> Aucune valeur retirée.
+3) Forme du bruit - normale à plusieurs réponses, corrélations prises égales.
+	==> Chaque réponse est standardisée ; corrélations entre réponses au
+	    sein des groupes : 0,58.
+	--> Le modèle prend ces corrélations égales, ce qu'elles sont à peu
+	    près.
+	Note : des dispersions égales dans les groupes sont supposées, comme
+	       dans une MANOVA classique.
+4) Point de départ (a priori) - 50,0 % de chances d'une différence.
+	==> Deux formes d'une différence, à poids égaux : le même écart sur
+	    chaque réponse, ou des écarts qui changent d'une réponse à l'autre ;
+	    taille attendue r = 0,5.
+	Note : ces valeurs ne sont pas ajustées sur les données ; l'étape 5 les
+	       fait varier.
+5) Solidité de la réponse [lmBF() {BayesFactor}] - facteur de Bayes 4 400,
+   l'ordre ne change pas.
+	==> Facteur de Bayes : 4 400.
+	==> Précision du calcul : < 0,1 point sur la probabilité.
+	==> Sensibilité : la réponse en tête reste > 99,9 % quel que soit le
+	    point de départ.
+	--> L'ordre ne change pas.
+	Note : r va de r/2 à 2r, les chances de départ de 1 contre 2 à 2 contre
+	       1.
+6) Quelles réponses diffèrent [lmBF() {BayesFactor}] - y1 en tête (> 99,9 %).
+	==> y1 : différence entre groupes à > 99,9 % ; moyennes A = 9,5,
+	    B = 11,5, C = 13,7.
+	==> y2 : différence entre groupes à 99,8 % ; moyennes A = 9,8, B = 11,2,
+	    C = 13,0.
+	==> Si une différence existe, écarts qui changent d'une réponse à
+	    l'autre : 19,1 %.
+	Note : chaque réponse lue seule (un facteur, chances égales), pour voir
+	       où se trouve la différence ; la réponse globale est celle de
+	       l'étape 5.
+
+7) Bilan - Au moins une des réponses (y1, y2) diffère selon g : > 99,9 %
+   (soutien très fort).
+	==> Verdict : une différence existe très probablement.
+	==> Probabilité de chaque hypothèse :
+	    1. Au moins une des réponses (y1, y2) diffère selon g : > 99,9 %
+	       (soutien très fort)
+	    2. Aucune différence de y1, y2 selon g : < 0,1 %
+	==> La réponse reste > 99,9 % quel que soit le point de départ.
+	Note : les données sont 4 400 fois plus probables sous l'hypothèse 1 que
+	       sous la 2 (facteur de Bayes ; 1 à 3 faible, 3 à 20 modéré, 20 à
+	       150 fort, au-delà très fort).
+
+	==> Chaque réponse lue seule : y1 > 99,9 % ; y2 99,8 %.
+
+	==> Moyennes observées, y1 : A = 9,5 ; B = 11,5 ; C = 13,7.
+	==> Moyennes observées, y2 : A = 9,8 ; B = 11,2 ; C = 13,0.
+	Note : pour un compte rendu : « Au moins une des réponses (y1, y2)
+	       diffère selon g (probabilité a posteriori > 99,9 %), facteur de
+	       Bayes 4 400 (m.bay {KefiR}, BayesFactor, Rouder et al. 2012). »
+	Note : probabilités d'hypothèses, pas des p-values ; ni l'importance, ni
+	       la cause d'une différence ; la méthode avec print(resultat,
+	       detail = TRUE).
+
+[m.bay : OK - 3.5 s]

@@ -1,0 +1,6 @@
+k=12 n_s=3 d=10 Welch p=5e-19 (25s) logBF     0.49 P(H1) 0.6206 err   6.91% | lois: normal_eq=0.000 normal_het=1.000 | logBF/loi: 52.4 0.5
+k=12 n_s=3 d=1000 Welch p=7e-83 (60s) logBF     0.42 P(H1) 0.6025 err   7.09% | lois: normal_eq=0.000 normal_het=1.000 | logBF/loi: 495.9 0.4
+k=12 n_s=5 d=10 Welch p=2e-22 (9s) logBF     1.71 P(H1) 0.8468 err   6.52% | lois: normal_eq=0.008 normal_het=0.992 | logBF/loi: 73.9 1.7
+k=12 n_s=5 d=1000 Welch p=4e-98 (84s) logBF     1.83 P(H1) 0.8615 err   6.72% | lois: normal_eq=0.000 normal_het=1.000 | logBF/loi: 533.3 1.8
+k=20 n_s=3 d=10 Welch p=6e-08 (122s) logBF    -1.52 P(H1) 0.1796 err   5.02% | lois: normal_eq=0.000 normal_het=1.000 | logBF/loi: 49.7 -1.5
+k=20 n_s=3 d=1000 Welch p=5e-111 (170s) logBF    -1.54 P(H1) 0.1768 err   6.74% | lois: normal_eq=0.000 normal_het=1.000 | logBF/loi: 801.5 -1.5
