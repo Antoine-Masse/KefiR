@@ -43,8 +43,8 @@
 		contingency = list(en = "Dirichlet-multinomial with neutral margins, Heckerman et al. 1995", fr = "Dirichlet-multinomiale \u00e0 marges neutres, Heckerman et al. 1995"),
 		ordinal = list(en = "proportional odds, MASS::polr, BIC approximation", fr = "cotes proportionnelles, MASS::polr, approximation BIC"),
 		counts = list(en = "Poisson and negative binomial, BIC approximation, Raftery 1995", fr = "Poisson et binomiale n\u00e9gative, approximation BIC, Raftery 1995"),
-		discrete_fact = if (identical(obj$kind, "ordinal")) list(en = "proportional odds, MASS::polr, BIC approximation, HOP prior", fr = "cotes proportionnelles, MASS::polr, approximation BIC, a priori HOP") else if (identical(obj$kind, "binary")) list(en = "logistic regression, BIC approximation, HOP prior, Raftery 1995", fr = "r\u00e9gression logistique, approximation BIC, a priori HOP, Raftery 1995") else
-			list(en = "Poisson and negative binomial, BIC approximation, HOP prior, Raftery 1995", fr = "Poisson et binomiale n\u00e9gative, approximation BIC, a priori HOP, Raftery 1995"),
+		discrete_fact = if (identical(obj$kind, "ordinal")) list(en = "proportional odds, MASS::polr, deviance Bayes factor (Held et al. 2015), HOP prior", fr = "cotes proportionnelles, MASS::polr, facteur de Bayes de d\u00e9viance (Held et al. 2015), a priori HOP") else if (identical(obj$kind, "binary")) list(en = "logistic regression, deviance Bayes factor (Held et al. 2015), HOP prior", fr = "r\u00e9gression logistique, facteur de Bayes de d\u00e9viance (Held et al. 2015), a priori HOP") else
+			list(en = "Poisson and negative binomial, deviance Bayes factor (Held et al. 2015), HOP prior", fr = "Poisson et binomiale n\u00e9gative, facteur de Bayes de d\u00e9viance (Held et al. 2015), a priori HOP"),
 		list(en = "BayesFactor, Rouder et al. 2012", fr = "BayesFactor, Rouder et al. 2012"))
 }
 

@@ -1022,3 +1022,7 @@ Demande de l'expert : 60 à 200 jeux ne permettent pas de se comparer à 0,7 %. 
 | D27 | mesures répétées AR(1), 15 × 4 | 5/1000 = 0,5 % [0,21 ; 1,17] | 2,6 % [1,78 ; 3,78] | 0 % (200) |
 
 **Lecture.** Les quatre décisions tiennent le niveau visé : la borne haute de Wilson reste sous 1,2 % à P > 0,95, et la valeur centrale est à 0,7 % ou en dessous. Les chiffres « 0 % » d'avant, sur 60 à 200 jeux, étaient trop optimistes. Le niveau réel est de 0,2 à 0,5 %, toujours dans la cible.
+
+## 31. Discret à plusieurs facteurs, BIC contre facteur de Bayes de déviance (D31, `agent_80`), 12 novembre
+
+Sur les mêmes jeux : 2 × 2, n = 25 par case, 1000 jeux par scénario, a priori HOP, sans sensibilité. Le tableau est dans DECISIONS, D31. Résultats complets avec intervalles de Wilson : `scripts/resultats/agent_80_*.txt`. Le test du rapport de vraisemblance à p < 0,05 détecte 42,5 % (oui/non) et 70,1 % (comptages) sous les effets. Sous H0, il est à 4,6 % et 5,4 %.

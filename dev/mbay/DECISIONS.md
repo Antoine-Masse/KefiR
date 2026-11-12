@@ -785,3 +785,34 @@ Testé (`test-bay-story.R`). Au passage, l'estimation de la ligne d'attente cro�
 - **Sensibilité** : a/2, a, 2a (soit 1, 2, 4), croisés avec les chances de départ.
 - **Post-hoc** : la même formule sur le tableau fusionné de chaque regroupement.
 - Le BIC de D30 est gardé à part (`.bay_cont_lbf_bic`), pour les comparaisons seulement.
+
+## D31. Discret à plusieurs facteurs : facteur de Bayes de déviance à g de Zellner-Siow, au lieu du BIC (12 novembre, I1 de l'expert)
+
+**Pourquoi.** Le BIC (information unitaire) affirmait l'absence d'effet sous un effet modéré. `agent_79` le montrait : en oui/non avec un rapport de cotes de 2 et n = 25 par case, « non » sur A dans 57 % des jeux.
+
+**Moteur** (`.bay_dev_lbf`, `R/sys_bay_discrete_fact.R`). Le facteur de Bayes d'un modèle contre le nul est tiré de la déviance gagnée z et du nombre p de paramètres ajoutés (Held, Sabanés Bové et Gravestock 2015 ; Li et Clyde 2018) :
+BF = ∫ (1 + g)^(−p/2) exp[g/(1 + g) · z/2] π(g) dg, avec π(g) = InvGamma(1/2, N r²/2).
+- r = √2/4 : à deux groupes équilibrés, c'est une Cauchy d'échelle √2/2 sur l'écart standardisé, l'étalon du test t de m.bay (D5).
+- Les ajustements sont les mêmes qu'avant (`glm`, `glm.nb`, `polr`), plus une intégrale à une dimension sur log g. Elle est contrôlée contre une intégration directe dans `test-bay-discrete-fact.R`.
+- Le modèle nul et la comparaison de Poisson à la binomiale négative restent à −BIC/2 : un seul paramètre de plus.
+- **Sensibilité** : r/2 à 2r, croisée avec les trois lois sur les modèles.
+
+**Mesure** (`agent_80`, mêmes jeux pour les deux moteurs, 2 × 2, n = 25, 1000 jeux par scénario ; VALIDATION §31).
+
+| | BIC | ZS √2/4 |
+|---|---:|---:|
+| H0 oui/non : un terme P > 0,95 | 0,2 % | 0,4 % [0,2 ; 1,0] |
+| H0 comptages : un terme P > 0,95 | 0,2 % | 0,3 % [0,1 ; 0,9] |
+| Oui/non, rapport de cotes 2 : « non » sur A à tort | 56,4 % | 33,1 % |
+| Comptages, rapport 1,5 : « non » sur A à tort | 27,2 % | 10,7 % |
+| Oui/non, rapport de cotes 2 : « oui » sur A | 12,1 % | 19,2 % |
+| Comptages, rapport 1,5 : « oui » sur A | 37,1 % | 46,9 % |
+| « non, soutien fort » sur A à tort | 0 % | 0 % |
+
+**Décision.** Le BIC est remplacé par ZS √2/4 dans D25 et D26 (oui/non, comptages, réponse ordonnée à plusieurs facteurs).
+- Le niveau sous H0 reste dans la cible (≤ 0,4 %, borne de Wilson ≤ 1 %).
+- Les « non » à tort reculent de moitié (oui/non) à des deux tiers (comptages).
+- La puissance monte de 7 à 10 points.
+- Un « non » à soutien modéré reste fréquent sous un effet modéré en oui/non (33 %). C'est la prudence d'un terme à 1 ddl avec n = 25 par case, sans « non » fort à tort.
+
+**Reste à faire.** Les voies à un facteur (comptages, D17 voie 2 ; ordinal, voie 3, avec son post-hoc par regroupements) emploient encore −BIC/2. Elles sont à basculer sur le même moteur, après la même mesure (« non » à tort sous un effet modéré).

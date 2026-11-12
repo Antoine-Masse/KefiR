@@ -9,7 +9,9 @@ test_that("yes/no with two factors: BIC of the glm models, HOP, answers per term
 	expect_identical(r$kind, "binary")
 	# Independent check: -BIC/2 of the model with tr against the null, by hand.
 	d$y <- as.integer(d$germe == "oui")
-	lb_tr <- (-BIC(glm(y ~ tr, data = d, family = binomial)) + BIC(glm(y ~ 1, data = d, family = binomial))) / 2
+	# D31: deviance Bayes factor (Zellner-Siow g, r = sqrt(2)/4) from the deviance gained by glm.
+	z <- glm(y ~ 1, data = d, family = binomial)$deviance - glm(y ~ tr, data = d, family = binomial)$deviance
+	lb_tr <- .bay_dev_lbf(z, 1, nrow(d), sqrt(2) / 4)
 	expect_equal(r$models$log_bf[r$models$model == "tr"], lb_tr, tolerance = 1e-8)
 	expect_gt(r$effects$p_h1[1L], 0.75)
 	expect_true(any(grepl("rapport des cotes|odds ratio", txt)))
@@ -36,7 +38,8 @@ test_that("ordered response with two factors (D26): polr per model, BIC, HOP", {
 	expect_identical(r$plan, "discrete_fact")
 	expect_identical(r$kind, "ordinal")
 	d$o <- factor(d$note, ordered = TRUE)
-	lb <- (-BIC(MASS::polr(o ~ recette, data = d)) + BIC(MASS::polr(o ~ 1, data = d))) / 2
+	z <- 2 * (as.numeric(logLik(MASS::polr(o ~ recette, data = d))) - as.numeric(logLik(MASS::polr(o ~ 1, data = d))))
+	lb <- .bay_dev_lbf(z, 1, nrow(d), sqrt(2) / 4)
 	expect_equal(r$models$log_bf[r$models$model == "recette"], lb, tolerance = 1e-6)
 	expect_gt(r$effects$p_h1[1L], 0.9)
 	expect_gt(r$ratios$ratio[1L], 1)

@@ -1,8 +1,8 @@
 # sys_bay_discrete_fact.R
-# Discrete responses with several factors between groups (m.bay, DECISIONS, D25): yes/no
-# (logistic regression) and counts (Poisson and negative binomial, averaged). Same logic as
-# with one factor (D17): one glm per hereditary model of sys_bay_factorial.R, marginal
-# likelihood by -BIC/2 (unit information; Schwarz 1978, Raftery 1995), HOP prior on the
+# Discrete responses with several factors between groups (m.bay, DECISIONS, D25, D31): yes/no
+# (logistic regression), counts (Poisson and negative binomial, averaged) and ordered values.
+# One glm per hereditary model of sys_bay_factorial.R, Bayes factor of each model against the
+# null from the deviance with a Zellner-Siow g (D31; it replaced -BIC/2), HOP prior on the
 # models, an answer per term. contingencyTableBF is not used: it handles a two-way table only
 # (one factor against the response), not the three-way table of two factors. Nothing is
 # exported.
@@ -129,7 +129,13 @@
 	.bay_tell(story, if (bin) "Law of the answers" else if (ord) "Law of the ordered values" else "Law of the counts",
 		if (bin) "Loi des r\u00e9ponses" else if (ord) "Loi des valeurs ordonn\u00e9es" else "Loi des comptages", "step",
 		fun = if (bin) "glm(family = binomial) {stats}" else if (ord) "polr() {MASS}" else c("glm(), glm.nb() {stats, MASS}", "glm(), glm.nb() {stats, MASS}"))
-	lml <- .bay_df_lml(y01, factors, sp, kind)
+	# D31: deviance Bayes factor with a Zellner-Siow g of scale r (Held et al. 2015) for each
+	# model against the null; the null itself, and the comparison of Poisson with the negative
+	# binomial, stay at -BIC/2 (agent_80: fewer wrong "no" than the BIC, same level under H0).
+	fits <- .bay_df_fits(y01, factors, sp, kind)
+	r0 <- .bay_dev_r()
+	lml <- .bay_df_lml_engine(fits, "dev", r0)
+	nb_ok <- TRUE
 	n_warn <- .bay_cw$n
 	p_nb <- NA_real_
 	if (ord) {
@@ -169,8 +175,8 @@
 		.bay_tell(story, paste0("Caution added: unstable fits (", n_warn, if (n_warn == 1L) " warning" else " warnings", " of glm); read the answer with caution."),
 			paste0("Prudence ajout\u00e9e : ajustements instables (", n_warn, if (n_warn == 1L) " avertissement" else " avertissements", " de glm) ; lire la r\u00e9ponse avec r\u00e9serve."), "decide")
 	}
-	.bay_tell(story, "Marginal likelihoods by -BIC/2, the unit-information approximation (Schwarz 1978; Raftery 1995), as with one factor (DECISIONS, D17, D25).",
-		"Vraisemblances marginales par -BIC/2, approximation d'information unitaire (Schwarz 1978 ; Raftery 1995), comme \u00e0 un facteur (DECISIONS, D17, D25).", "detail")
+	.bay_tell(story, "Each model against the null: Bayes factor from the deviance gained, with a Zellner-Siow g of scale r = sqrt(2)/4 (Held, Saban\u00e9s Bov\u00e9 and Gravestock 2015; Li and Clyde 2018); the null model and the comparison of the laws by -BIC/2 (DECISIONS, D31).",
+		"Chaque mod\u00e8le contre le nul : facteur de Bayes tir\u00e9 de la d\u00e9viance gagn\u00e9e, avec un g de Zellner-Siow d'\u00e9chelle r = sqrt(2)/4 (Held, Saban\u00e9s Bov\u00e9 et Gravestock 2015 ; Li et Clyde 2018) ; le mod\u00e8le nul et la comparaison des lois par -BIC/2 (DECISIONS, D31).", "detail")
 
 	# Step 4: priors.
 	.bay_tell(story, "Starting point (priors)", "Point de d\u00e9part (a priori)", "step")
@@ -179,12 +185,18 @@
 	incl <- vapply(seq_along(terms), function(i) sum(exp(lp[vapply(sp$models, function(m) i %in% m, logical(1))])), numeric(1))
 	.bay_tell(story, paste0("Chance of each term in advance: ", paste0(terms, " ", vapply(incl, .bay_pct, character(1), dec = "."), collapse = ", "), "."),
 		paste0("Chance de chaque terme d'avance : ", paste0(terms, " ", vapply(incl, .bay_pct, character(1), dec = ","), collapse = ", "), "."))
-	.bay_tell(story, "prior on the effects: worth one observation (unit information), no scale to choose.",
-		"a priori sur les effets : le poids d'une seule observation (information unitaire), sans \u00e9chelle \u00e0 choisir.", "note")
+	.bay_tell(story, paste0("Expected size r = ", .bay_num_txt(r0)$en, " per term, the same yardstick as for a continuous response."),
+		paste0("Taille attendue r = ", .bay_num_txt(r0)$fr, " par terme, le m\u00eame \u00e9talon que pour une r\u00e9ponse continue."))
 
 	# Step 5: solidity.
 	.bay_tell(story, "Solidity of the answer", "Solidit\u00e9 de la r\u00e9ponse", "step")
 	lb <- lm_m - lm_m[1L]
+	# The same for another scale r (sensitivity).
+	lb_r <- function(r) {
+		L <- .bay_df_lml_engine(fits, "dev", r)
+		v <- if (ncol(L) == 1L) L[, 1L] else if (nb_ok) .bay_lse2(L[, "poisson"], L[, "negbin"]) - log(2) else L[, "poisson"]
+		v - v[1L]
+	}
 	eff <- .bay_fact_terms(sp, lb, lp)
 	eff <- eff[match(.bay_term_key(terms), .bay_term_key(eff$term)), , drop = FALSE]
 	eff$term <- terms
@@ -195,12 +207,14 @@
 	sens <- NULL
 	if (isTRUE(sensitivity)) {
 		priors <- list(hop = lp, hip = .bay_fact_prior(sp, "hip"), unif = .bay_fact_prior(sp, "unif"))
-		pt <- vapply(priors, function(q) {
-			e <- .bay_fact_terms(sp, lb, q)
+		lbs <- list(lb, lb_r(r0 / 2), lb_r(r0 * 2))
+		grid <- expand.grid(r = seq_along(lbs), prior = names(priors), stringsAsFactors = FALSE)
+		pt <- vapply(seq_len(nrow(grid)), function(g) {
+			e <- .bay_fact_terms(sp, lbs[[grid$r[g]]], priors[[grid$prior[g]]])
 			e$p_h1[match(.bay_term_key(terms), .bay_term_key(e$term))]
 		}, numeric(length(terms)))
 		pt <- matrix(pt, nrow = length(terms))
-		pa <- vapply(priors, function(q) 1 - .bay_fact_null(lb, q), numeric(1))
+		pa <- vapply(seq_len(nrow(grid)), function(g) 1 - .bay_fact_null(lbs[[grid$r[g]]], priors[[grid$prior[g]]]), numeric(1))
 		rng_terms <- t(apply(pt, 1L, range))
 		verdict_terms <- vapply(seq_along(terms), function(i) {
 			lead <- eff$p_h1[i] >= 0.5
@@ -214,8 +228,8 @@
 		moved <- which(verdict_terms == "changes")
 		.bay_step_result(story, if (length(moved)) paste0(paste(terms[moved], collapse = ", "), " change side with the prior") else "no term changes side",
 			if (length(moved)) paste0(paste(terms[moved], collapse = ", "), " changent de c\u00f4t\u00e9 selon l'a priori") else "aucun terme ne change de c\u00f4t\u00e9")
-		.bay_tell(story, "three ways of sharing the chances between the models; no scale r with unit information.",
-			"trois fa\u00e7ons de r\u00e9partir les chances entre les mod\u00e8les ; pas d'\u00e9chelle r avec l'information unitaire.", "note")
+		.bay_tell(story, paste0("r goes from ", .bay_num_txt(r0 / 2)$en, " to ", .bay_num_txt(r0 * 2)$en, ", with three ways of sharing the chances between the models."),
+			paste0("r va de ", .bay_num_txt(r0 / 2)$fr, " \u00e0 ", .bay_num_txt(r0 * 2)$fr, ", avec trois fa\u00e7ons de r\u00e9partir les chances entre les mod\u00e8les."), "note")
 	} else {
 		.bay_step_result(story, "sensitivity not computed", "sensibilit\u00e9 non calcul\u00e9e")
 	}
@@ -274,7 +288,7 @@
 		questions = list(en = paste0("Does ", what_en, " differ, term by term?"), fr = paste0(what_fr, " diff\u00e8re-t-elle, terme par terme ?")),
 		sensitivity = sens, posthoc = NULL, ratios = ratios, glm_warnings = n_warn,
 		cell_stats = data.frame(cell = names(stat), n = as.integer(cn[names(stat)]), value = as.numeric(stat), stringsAsFactors = FALSE),
-		kind = kind, priors = list(model_prior = "HOP(1,1)", effects = "unit information (BIC)"),
+		kind = kind, priors = list(model_prior = "HOP(1,1)", effects = paste0("deviance Bayes factor, Zellner-Siow g, r = ", signif(r0, 3))),
 		contradiction = FALSE, heavy = FALSE, detail = isTRUE(detail), prob_effect = p_any,
 		method = if (bin) "Yes/no with several factors: logistic regression, BIC approximation" else if (ord) "Ordered response with several factors: proportional odds (MASS::polr), BIC approximation" else "Counts with several factors: Poisson and negative binomial, BIC approximation",
 		plan = "discrete_fact", label = input$label, n = length(y01), notes = get_notes(), call = call_expr)
@@ -306,7 +320,7 @@
 	.bay_bilan_common(obj, narrated, body)
 	if (!isTRUE(detail)) return(invisible(obj))
 	say <- .bay_detail_head(obj)
-	say("Each hereditary model fitted by glm; marginal likelihood -BIC/2 (unit information); HOP prior on the models; counts: Poisson and negative binomial averaged at even odds (DECISIONS, D25).",
-		"Chaque mod\u00e8le h\u00e9r\u00e9ditaire ajust\u00e9 par glm ; vraisemblance marginale -BIC/2 (information unitaire) ; a priori HOP sur les mod\u00e8les ; comptages : Poisson et binomiale n\u00e9gative moyenn\u00e9es \u00e0 poids \u00e9gaux (DECISIONS, D25).")
+	say("Each hereditary model fitted by glm; Bayes factor against the null from the deviance with a Zellner-Siow g (r = sqrt(2)/4; D31); HOP prior on the models; counts: Poisson and negative binomial averaged at even odds (DECISIONS, D25).",
+		"Chaque mod\u00e8le h\u00e9r\u00e9ditaire ajust\u00e9 par glm ; facteur de Bayes contre le nul tir\u00e9 de la d\u00e9viance avec un g de Zellner-Siow (r = sqrt(2)/4 ; D31) ; a priori HOP sur les mod\u00e8les ; comptages : Poisson et binomiale n\u00e9gative moyenn\u00e9es \u00e0 poids \u00e9gaux (DECISIONS, D25).")
 	invisible(obj)
 }
