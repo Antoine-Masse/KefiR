@@ -6,6 +6,8 @@ Détail, mesures avant et après : `dev/mtest_audit/RAPPORT.md`.
 
 ### Résultats qui changent pour les étudiants
 
+* **p-value globale d'un modèle à plusieurs termes** (`$global_pvalue`, et la valeur rendue avec `return = FALSE`) : c'était la p-value du premier facteur de la formule. C'est maintenant la plus petite p-value des k termes testés (effets principaux et interactions, corrigées de la sphéricité s'il y a lieu), corrigée de Bonferroni : `min(1, k × min(p))`. Le récit l'écrit, par exemple « p globale = 3 × 0.042 = 0.126 ». Avec un seul terme, rien ne change (`corrigraph`). La covariable d'une ANCOVA n'est pas comptée. Décision d'Antoine Massé, 12 novembre 2026.
+
 * **Plan split-plot** `y ~ G*T + Error(id/T)` : l'interaction G:T n'est plus retirée sans message. Le facteur constant pour chaque sujet (G) est reconnu inter-sujet, et `$effects` reproduit `aov()`.
 * **Post-hocs d'un split-plot** : ils passent par `emmeans` sur `lmer(y ~ G*T + (1 | id))`. Les tests appariés sur les cellules croisées apparaient des sujets différents.
 * **Variances hétérogènes, données non normales** : la confirmation du test de Levene se fait maintenant par Brown-Forsythe **sur les variances** (`car::leveneTest(center = median)`), et non plus par `onewaytests::bf.test()`, qui compare des moyennes. Une hétéroscédasticité nette n'est plus écartée à tort, et l'ANOVA classique n'est plus retenue dans ce cas.

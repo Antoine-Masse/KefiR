@@ -9,7 +9,7 @@ Rien n'est poussé. Ni master, ni `m.bay`, ni les branches `feat/m.bay`, cor.bay
 
 ## Synthèse
 
-Dix-sept défauts, tous reproduits sur des données construites pour l'occasion, puis corrigés, chacun avec son commit et son test (a à g : audits de m.bay ; h à k : cet audit ; l à q : relectures de l'expert indépendant). Rien n'est fusionné : la fusion vers master revient à Antoine.
+Dix-huit points, tous reproduits sur des données construites pour l'occasion, puis corrigés, chacun avec son commit et son test (a à g : audits de m.bay ; h à k : cet audit ; l à q : relectures de l'expert indépendant ; r : décision d'Antoine). Rien n'est fusionné : la fusion vers master revient à Antoine.
 
 | | Défaut | Avant | Après | Ce que voit l'étudiant |
 |---|---|---|---|---|
@@ -29,11 +29,12 @@ Dix-sept défauts, tous reproduits sur des données construites pour l'occasion,
 | n | Résultat RM sans mention de la correction | « (p=0.22) » | « (p=0.22, corrigée de Greenhouse-Geisser) » | lien explicite avec l'étape de sphéricité |
 | o | Plan en tranches déséquilibré (5 + 9 sujets) | plantage « Les variables explicatives… ne correspondent pas aux colonnes de g » | ANOVA à mesures répétées `aov()` + `Error()` ; grp identique à `aov` | le cas banal de TP aboutit ; la sortie signale les groupes inégaux |
 | p | F corrigés de type III, tableau `aov` séquentiel | 5 + 9 sujets : « non corrigée » = type III (temps F = 3,17, p = 0,036) alors que le tableau affiche F = 5,14 (p = 0,0046) | ε appliqué aux F et ddl du tableau `aov` affiché | p non corrigée et p corrigée cohérentes avec le tableau |
+| r | p globale d'un modèle à plusieurs termes = p du premier facteur (décision d'Antoine, 12 novembre) | plan en tranches 7 + 7 : 0,104 (grp) alors que temps p = 0,042 | min(1, 3 × 0,0421) = 0,126 (Bonferroni sur la plus petite p) | `$global_pvalue` et `return = FALSE` changent dès qu'il y a plusieurs termes ; le récit donne le calcul |
 | q | Risque du Welch mal chiffré | « environ 10 à 17 % » | « environ 11 à 17 % », sources citées dans le code | chiffre exact |
 
 **Format des nombres.** m.test écrit partout les p-values et les epsilons avec un point décimal (`.format_pval()`, `round()`), y compris en français. Les nouveaux messages gardent le point, par cohérence avec le reste de la sortie. m.bay utilise la virgule : à harmoniser plus tard si Antoine le souhaite.
 
-**Points ouverts** (§ 4) : Welch par défaut sans test préalable de variance (décision d'Antoine) ; lenteur de `return = FALSE` ; règle de `$global_pvalue` en plan multi-facteurs (soumise à Antoine, non modifiée) ; mesure sous H0 après la correction de sphéricité et `R CMD check` final, en attente de mémoire libre.
+**Points ouverts** (§ 4) : Welch par défaut sans test préalable de variance (décision d'Antoine) ; lenteur de `return = FALSE` ; mesure sous H0 après la correction de sphéricité et `R CMD check` final, en attente de mémoire libre.
 
 ## 1. Défauts signalés par les audits de m.bay (a à g)
 
@@ -207,20 +208,32 @@ La correction de fond serait d'appliquer Welch par défaut (t de Welch, F de Wel
 
 - **Lenteur avec `return = FALSE`.** Les post-hocs (bootstrap compris) sont calculés même quand seule la p-value est demandée : 47 s contre 0,85 s avec `boot = FALSE`.
 - **`$groups` et `$p.value` vides en modèle mixte** (voie `lmer` existante et split-plot) : `.posthoc_mixed_model()` rend une liste par effet, que `m.test()` ne remonte pas. Les comparaisons s'affichent bien.
-- **`$global_pvalue` d'un plan à plusieurs facteurs : règle actuelle, non modifiée.** C'est la p-value du **premier facteur principal de la formule** (`.first_factor_pvalue()`, `R/sys_effects_table.R` ; règle BP-031, fixée par le test « la p-value globale est celle du premier facteur »). Pour une mesure répétée, c'est la p-value corrigée de la sphéricité si ce facteur est intra-sujet. Exemples : split-plot de la section a, 0,199 (G) alors que G:T p = 0,030 ; plan en tranches équilibré de l'expert, 0,104 (grp) alors que temps p = 0,042. La règle ne décrit pas le plan entier ; l'expert propose le minimum corrigé ou le test du modèle entier. **Soumis à Antoine.** `$effects` donne tous les termes.
+- **`$global_pvalue` d'un plan à plusieurs facteurs : tranché par Antoine le 12 novembre 2026, voir § 4.3.** Règle antérieure, pour mémoire : C'est la p-value du **premier facteur principal de la formule** (`.first_factor_pvalue()`, `R/sys_effects_table.R` ; règle BP-031, fixée par le test « la p-value globale est celle du premier facteur »). Pour une mesure répétée, c'est la p-value corrigée de la sphéricité si ce facteur est intra-sujet. Exemples : split-plot de la section a, 0,199 (G) alors que G:T p = 0,030 ; plan en tranches équilibré de l'expert, 0,104 (grp) alors que temps p = 0,042. La règle ne décrit pas le plan entier ; l'expert propose le minimum corrigé ou le test du modèle entier. **Soumis à Antoine.** `$effects` donne tous les termes.
 - **Doublon en mesures répétées** : « ASSOMPTION DE BASE : Indépendance… » puis « ASSOMPTION 1/3 : Indépendance… ».
 - **Note emmeans** « adjust = "tukey" was changed to "sidak" » imprimée même avec `verbose = FALSE`.
 - **Documentation MANOVA** : elle annonce une « Permutation MANOVA » et un « Kruskal-Wallis multivarié » qui n'existent pas dans le code.
 - **roxygen** : `mbay-lib` contient roxygen2 8.1.1, qui réécrit tout le NAMESPACE. Le `.Rd` de `.manova_analysis` a donc été corrigé à la main.
 
-### 4.3 Durée d'un appel en plan en tranches (passe 2 de l'expert)
+### 4.3 Décision d'Antoine : p globale d'un modèle à plusieurs termes (correctif r, b824ef0)
+
+**Décision d'Antoine Massé, 12 novembre 2026.** `$global_pvalue`, et la valeur rendue avec `return = FALSE`, servent à établir un lien entre variables, par exemple dans un réseau. Avec k termes testés (effets principaux et interactions), la p globale est `min(1, k × min(p))` : la correction de Bonferroni sur la plus petite p. Le taux de faux liens reste ainsi à alpha. Les p sont celles de `$effects`, corrigées de la sphéricité quand elle s'applique. Avec un seul terme, rien ne change : c'est l'appel de `corrigraph` (`m.test(x, g, return = FALSE)`, `R/corrigraph.R:456`).
+
+Mise en œuvre, en un seul point (`R/m.test.R`, juste avant les post-hocs ; assistant `.global_pvalue_bonferroni()` dans `R/sys_effects_table.R`) : toutes les voies passent par là (ANOVA à plusieurs facteurs, mesures répétées, plan en tranches, modèle mixte, voies robustes à plusieurs termes, ANCOVA), avec `return = FALSE` comme avec `return = TRUE`. Le récit l'écrit : « p globale = 3 × 0.042 = 0.126 (plus petite p des 3 termes : temps, corrigée de Bonferroni) ».
+
+Deux choix d'application, à valider par Antoine :
+- **ANCOVA.** Un terme dont toutes les variables sont numériques (la covariable) est un ajustement, pas une comparaison de groupes : il n'est pas compté dans k. Sinon, une covariable très significative ferait passer tout modèle pour un « lien » avec le facteur. `y ~ x + F` garde donc la p de F, comme avant. Les interactions facteur × covariable sont comptées.
+- **MANOVA.** À plusieurs termes, la règle porte sur la p par terme du test retenu (Wilks, ou Pillai si une assomption est violée). La MANOVA robuste (Wilks sur les rangs) teste les groupes croisés d'un seul bloc : un seul test, la règle est sans objet.
+
+Mesures : plan en tranches équilibré de l'expert (7 + 7 sujets), p globale 0,104 (grp) → min(1, 3 × 0,0421) = 0,126. Le test r échoue sur le commit précédent (3 échecs sur 5) et passe après. Les tests qui figeaient l'ancienne règle (`test-m.test.R` : deux facteurs et réponse transformée ; `test-manova.R` : deux facteurs) suivent la nouvelle.
+
+### 4.4 Durée d'un appel en plan en tranches (passe 2 de l'expert)
 
 L'expert a vu plus de 10 minutes pour deux appels avec `boot = FALSE`. Mesuré séparément (`verbose = FALSE`, `return = TRUE`, machine encore chargée, 0,9 Go libre) : plan équilibré 7 + 7 sujets, 4,7 s puis 11,8 s ; plan 5 + 9 sujets après le correctif o, 2,9 s puis 2,3 s (avant : échec en 1,2 s). Profil de l'appel équilibré (9 s) : `.multi_factor_analysis()` 4,1 s, post-hocs `emmeans` du split-plot 1,8 s, sphéricité (`rstatix` + `car`) 0,3 s. Rien de pathologique : les 10 minutes viennent de la saturation de la machine (0 Go libre, échange disque) au moment de la mesure. L'estimation « environ 1 s » de l'introduction vaut pour un facteur à 50 observations ; un plan en tranches avec post-hocs `emmeans` coûte quelques secondes.
 
 ## 5. Vérifications
 
-- `tests/testthat/test-m.test-audit.R` : 15 tests, 46 assertions, 0 échec au dernier commit. Chacun a été lancé sur le commit précédant sa correction (échec), puis après (succès).
-- Non-régression au dernier commit : `test-m.test.R` (20 tests), `test-manova.R` (22 tests, 17 s au lieu de plus de 6 min) et `test-valreg.R` (6 tests) : 0 échec, 0 erreur (5d4f7c2).
+- `tests/testthat/test-m.test-audit.R` : 19 tests, 58 assertions, 0 échec au dernier commit (b824ef0). Chacun a été lancé sur le commit précédant sa correction (échec), puis après (succès).
+- Non-régression au dernier commit : `test-m.test.R` (20 tests), `test-manova.R` (22 tests, 17 s au lieu de plus de 6 min) et `test-valreg.R` (6 tests) : 0 échec, 0 erreur (b824ef0).
 - `R CMD check --no-manual --ignore-vignettes` (R 4.6.1, bibliothèque `mbay-lib`). Sur dc74ae7 : 2 NOTE (le dossier `.claude` inclus dans le build ; NEWS.md sans titre de version), corrigées au commit suivant. Sur 2a1e8b1 : Status: OK. Au dernier commit (l, m, n) : **non relancé**. Le check du 12 novembre a été tué par la saturation mémoire (« fatal error status code 4 » au chargement, sans message). La règle commune impose d'attendre que le verrou `VERROU_CHECK.txt` soit libre et que la mémoire libre dépasse 1 Go (0,08 Go au moment d'arrêter). À relancer.
 
 ## Références
