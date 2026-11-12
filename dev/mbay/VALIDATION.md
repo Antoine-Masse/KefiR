@@ -1008,3 +1008,17 @@ Demande de la session parente après l'audit de D30 (BIC trop prudent sur une ta
 | Comptages, rapport des moyennes 1,5 sur A | 27,2 % [24,5 ; 30,0] | 0 % [0 ; 0,4] | 37,1 % | 70,1 % |
 
 **Lecture.** Le BIC ne dit jamais « non, soutien fort » sous ces effets. Mais il dit « non » à soutien modéré dans plus de la moitié des jeux en oui/non, alors que le facteur agit et que le test le voit dans 41 %. C'est le même défaut que la voie catégorielle (D30), au niveau modéré. **Pas de correction avant le choix de moteur** de g.bay (BIC, `BAS::bas.glm` à a priori robuste, forme close à marges neutres), qui sera repris à l'identique pour D25, D26 et D30.
+
+## 30. Recalibrations sous H0 sur 1000 jeux, avec intervalle de Wilson (`agent_77`), 11 et 12 novembre
+
+Demande de l'expert : 60 à 200 jeux ne permettent pas de se comparer à 0,7 %. Mêmes plans que les calibrations d'origine, sans sensibilité. Résultats : `scripts/resultats/agent_77_*.txt`.
+
+| Décision | Plan | Un terme P > 0,95 [Wilson 95 %] | Un terme P > 0,75 [Wilson 95 %] | Avant (jeux) |
+|---|---|---:|---:|---|
+| D23 | MANOVA 2 × 2, 3 réponses, n = 12 | 3/1000 = 0,3 % [0,10 ; 0,88] | 2,0 % [1,30 ; 3,07] | 0 % (60) |
+| D25 | oui/non 2 × 2, n = 25 | 2/1000 = 0,2 % [0,05 ; 0,73] | 1,2 % [0,69 ; 2,09] | 0 % (200) |
+| D25 | comptages 2 × 2, n = 25 | 2/1000 = 0,2 % [0,05 ; 0,73] | 1,6 % [0,99 ; 2,58] | 0 % (200) |
+| D26 | notes 1 à 5, 2 × 2, n = 25 | 2/1000 = 0,2 % [0,05 ; 0,73] | 0,9 % [0,47 ; 1,70] | 0,5 % (200) |
+| D27 | mesures répétées AR(1), 15 × 4 | 5/1000 = 0,5 % [0,21 ; 1,17] | 2,6 % [1,78 ; 3,78] | 0 % (200) |
+
+**Lecture.** Les quatre décisions tiennent le niveau visé : la borne haute de Wilson reste sous 1,2 % à P > 0,95, et la valeur centrale est à 0,7 % ou en dessous. Les chiffres « 0 % » d'avant, sur 60 à 200 jeux, étaient trop optimistes. Le niveau réel est de 0,2 à 0,5 %, toujours dans la cible.
