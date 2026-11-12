@@ -301,3 +301,62 @@ test_that("r. p globale : un terme inchange ; plusieurs termes, Bonferroni sur l
   expect_true(any(grepl("p globale = 3 \u00d7 ", res$output, fixed = TRUE) &
                     grepl("corrig\u00e9e de Bonferroni", res$output, fixed = TRUE)))
 })
+
+# Plan en tranches 2 groupes x 6 temps, donnees normales AR(1)
+make_ar1_split <- function(seed, n = 12, k = 6) {
+  ar <- make_ar1(seed, n, k)
+  ar$d$G <- factor(rep(rep(c("A", "B"), each = n / 2), k))
+  ar$d
+}
+
+test_that("s. mesures repetees normales : normalite testee sur les residus intra-sujet, pas de Friedman", {
+  ar <- make_ar1(5001)
+  # residus de la strate intra-sujet = residus de lm(y ~ T + id)
+  m <- aov(y ~ T + Error(id / T), data = ar$d)
+  pr <- proj(m)
+  expect_equal(unname(pr[[length(pr)]][, "Residuals"]),
+               unname(residuals(lm(y ~ T + id, data = ar$d))), tolerance = 1e-8)
+  # regle GG/HF calculee par car::Anova, sans m.test
+  sm <- summary(car::Anova(lm(ar$wide ~ 1), idata = data.frame(T = factor(paste0("t", 1:6))),
+                           idesign = ~T, type = 3), multivariate = FALSE)
+  adj <- sm$pval.adjustments; uni <- sm$univariate.tests
+  p_ref <- if (adj["T", "GG eps"] <= 0.75) adj["T", "Pr(>F[GG])"] else
+    pf(uni["T", "F value"], min(1, adj["T", "HF eps"]) * uni["T", "num Df"],
+       min(1, adj["T", "HF eps"]) * uni["T", "den Df"], lower.tail = FALSE)
+  res <- audit_quiet(m.test(y ~ T + Error(id / T), data = ar$d, plot = FALSE, boot = FALSE))
+  expect_false(any(grepl("Friedman", res$output)))
+  expect_true(any(grepl("sont normaux", res$output)))
+  expect_equal(res$value$global_pvalue, p_ref, tolerance = 1e-6)
+})
+
+test_that("s. plan en tranches normal : residus intra-sujet normaux, ANOVA conservee", {
+  d <- make_ar1_split(2)
+  m <- aov(y ~ G * T + Error(id / T), data = d)
+  pr <- proj(m)
+  expect_equal(unname(pr[[length(pr)]][, "Residuals"]),
+               unname(residuals(lm(y ~ G * T + id, data = d))), tolerance = 1e-8)
+  res <- audit_quiet(m.test(y ~ G * T + Error(id / T), data = d, plot = FALSE, boot = FALSE))
+  expect_true(any(grepl("sont normaux", res$output)))
+  expect_false(any(grepl("non-normalit\u00e9 s\u00e9v\u00e8re", res$output, fixed = TRUE)))
+  expect_setequal(res$value$effects$term, c("G", "T", "G:T"))
+  expect_equal(res$value$effects$p.value[res$value$effects$term == "T"], girden_ref(d, "T"),
+               tolerance = 1e-6)
+})
+
+test_that("s. voie Friedman : $method juste et Nemenyi apparie sujet par sujet", {
+  set.seed(77); n <- 15
+  d <- data.frame(id = factor(rep(1:n, 4)), T = factor(rep(paste0("t", 1:4), each = n)))
+  d$y <- rexp(n)[as.integer(d$id)] * 3 + rexp(4 * n)^3 + 2 * (d$T == "t4")
+  res <- audit_quiet(m.test(y ~ T + Error(id / T), data = d, plot = FALSE, boot = FALSE))
+  expect_equal(res$value$method, "Friedman test")
+  expect_equal(res$value$global_pvalue, friedman.test(y ~ T | id, data = d)$p.value)
+  # Nemenyi : memes lettres que les lignes soient rangees par temps ou par sujet
+  ref <- PMCMRplus::frdAllPairsNemenyiTest(y ~ T | id, data = d)
+  o <- order(d$id, d$T)
+  by_t <- pairwise(d$y, d$T, type = "neminye")$groups
+  by_id <- pairwise(d$y[o], d$T[o], type = "neminye")$groups
+  expect_equal(by_id, by_t)
+  expect_lt(ref$p.value["t4", "t2"], 0.05)
+  lt <- by_id[by_id[, 1] %in% c("t2", "t4"), 2]
+  expect_length(intersect(strsplit(lt[1], "")[[1]], strsplit(lt[2], "")[[1]]), 0)
+})

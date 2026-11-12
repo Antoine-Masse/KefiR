@@ -10,7 +10,23 @@ gen <- function(i, scen) {
   y <- matrix(rnorm(n * k), n, k) %*% chol(sig)
   data.frame(id = factor(rep(1:n, k)), T = factor(rep(paste0("t", 1:k), each = n)), y = as.vector(y))
 }
+# Plan en tranches (audit s) : 2 groupes de 6 sujets x 6 temps, AR(1), aucun effet
+one_split <- function(i) {
+  d <- gen(i, "ar1"); d$G <- factor(rep(rep(c("A", "B"), each = 6), 6))
+  e <- tryCatch(suppressWarnings(suppressMessages({
+    utils::capture.output(v <- m.test(y ~ G * T + Error(id / T), data = d, boot = FALSE, plot = FALSE)); v })),
+    error = function(e) NULL)
+  pe <- function(term) {
+    if (is.null(e)) return(NA_real_)
+    x <- e$effects$p.value[e$effects$term == term]
+    if (length(x)) x[1] else NA_real_
+  }
+  c(i = i, p_mtest = if (is.null(e)) NA_real_ else as.numeric(e$global_pvalue), p_aov = NA_real_,
+    p_G = pe("G"), p_T = pe("T"), p_GT = pe("G:T"),
+    hors_anova = as.numeric(is.null(e) || !grepl("ANOVA", paste(e$method, collapse = " "))))
+}
 one <- function(i, scen) {
+  if (scen == "split") return(one_split(i))
   d <- gen(i, scen)
   p <- tryCatch(suppressWarnings(suppressMessages({
     utils::capture.output(v <- m.test(y ~ T + Error(id / T), data = d, return = FALSE, boot = FALSE)); v })),
@@ -35,8 +51,14 @@ for (scen in scens) {
   r <- as.data.frame(do.call(rbind, run(scen)))
   r$scen <- scen
   res[[scen]] <- r
-  saveRDS(do.call(rbind, res), out)
-  cat(scen, ": m.test", round(100 * mean(r$p_mtest < 0.05, na.rm = TRUE), 1), "%  aov non corrige",
+  saveRDS(res, out)
+  if (scen == "split") {
+    cat(scen, ": p globale", round(100 * mean(r$p_mtest < 0.05, na.rm = TRUE), 1),
+        "%  G", round(100 * mean(r$p_G < 0.05, na.rm = TRUE), 1),
+        "%  T", round(100 * mean(r$p_T < 0.05, na.rm = TRUE), 1),
+        "%  G:T", round(100 * mean(r$p_GT < 0.05, na.rm = TRUE), 1),
+        "%  hors ANOVA", sum(r$hors_anova), "  NA", sum(is.na(r$p_mtest)), "\n")
+  } else cat(scen, ": m.test", round(100 * mean(r$p_mtest < 0.05, na.rm = TRUE), 1), "%  aov non corrige",
       round(100 * mean(r$p_aov < 0.05), 1), "%  NA", sum(is.na(r$p_mtest)), "\n")
 }
 if (workers > 1) parallel::stopCluster(cl)

@@ -1,5 +1,5 @@
 .libPaths(c("C:/Users/masse/Desktop/KefiR/mbay-lib", .libPaths()))
-x <- readRDS("sph_after.rds"); x <- x[x$scen == "ar1", ]
+x <- readRDS("sph_after.rds"); x <- if (is.data.frame(x)) x[x$scen == "ar1", ] else x$ar1
 gen <- function(i) { set.seed(5000 + i); n <- 12; k <- 6
   sig <- 0.9^abs(outer(1:k, 1:k, "-")); matrix(rnorm(n * k), n, k) %*% chol(sig) }
 ref <- t(sapply(x$i, function(i) {

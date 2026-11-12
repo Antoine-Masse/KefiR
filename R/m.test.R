@@ -2103,6 +2103,19 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
       }
 
       # 3. Ajouter method si absent
+      # Audit s : le test robuste conduit par .multi_factor_analysis() (Friedman,
+      # etc.) était annoncé « Parametric ANOVA/t-test » dans $method.
+      robust_name <- if (is.null(chosen_test) && !is.null(bilan$robust_results$method)) {
+        switch(as.character(bilan$robust_results$method)[1],
+          "Friedman" = , "Friedman_Test" = "Friedman test",
+          "Kruskal_Wallis" = "Kruskal-Wallis",
+          "Scheirer_Ray_Hare" = "Scheirer-Ray-Hare",
+          "Permutation_ANOVA" = "Permutation ANOVA",
+          "WRS2_t2way" = "Robust ANOVA (t2way)",
+          "WRS2_t3way" = "Robust ANOVA (t3way)",
+          NULL)
+      } else NULL
+      if (is.null(synth$method) && !is.null(robust_name)) synth$method <- robust_name
       if (is.null(synth$method)) {
         synth$method <- if (!is.null(chosen_test)) {
           switch(chosen_test,

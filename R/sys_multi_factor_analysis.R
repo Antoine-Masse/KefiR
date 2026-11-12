@@ -225,11 +225,22 @@
     if (inherits(model, "aov") || inherits(model, "lm")) {
       return(residuals(model))
     } else if (inherits(model, "aovlist")) {
-      if (requireNamespace("dae", quietly = TRUE)) {
-        return(dae::residuals.aovlist(model))
-      } else {
-        return(unlist(lapply(model, residuals)))
+      # Audit s (novembre 2026) : on teste la normalité sur les résidus de la
+      # strate d'erreur la plus basse (intra-sujet), une valeur par observation.
+      # Concaténer les « résidus » de toutes les strates (constante, sujets,
+      # intra-sujet) mélangeait des quantités d'échelles différentes et faisait
+      # conclure à une non-normalité sévère sur des données normales.
+      res <- tryCatch({
+        pr <- suppressWarnings(proj(model))
+        low <- pr[[length(pr)]]
+        if (!"Residuals" %in% colnames(low)) stop("no residual column")
+        as.numeric(low[, "Residuals"])
+      }, error = function(e) NULL)
+      if (is.null(res)) {
+        # Repli : résidus de la seule strate la plus basse (même échelle).
+        res <- as.numeric(residuals(model[[length(model)]]))
       }
+      return(res)
     } else {
       .exit(
         "The provided model is neither an 'aov', 'lm', nor 'aovlist' object.",
