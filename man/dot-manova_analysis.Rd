@@ -96,7 +96,7 @@ statistical approach.
 \item Classical MANOVA (parametric, homogeneous covariances)
 \item Repeated measures MANOVA (within-subject factors)
 \item MANOVA with random effects (nlme::lme or lme4::lmer)
-\item Robust MANOVA (rrcov::Wilks.test with MCD estimator)
+\item Robust MANOVA (rrcov::Wilks.test, rank-based Wilks' lambda)
 }
 \item \strong{Test execution}: Wilks' Lambda, Pillai's trace, Hotelling-Lawley, Roy's largest root
 \item \strong{Post-hoc analyses}: Discriminant analysis if requested
@@ -171,8 +171,9 @@ Routledge. Chapter 5.
 When assumptions are violated, the function switches to robust methods:
 
 \itemize{
-\item \strong{Robust MANOVA:} Uses MCD (Minimum Covariance Determinant) estimator
-(package: rrcov)
+\item \strong{Robust MANOVA:} rank-based Wilks' lambda (Nath & Pavur, 1985),
+\code{rrcov::Wilks.test(method = "rank")}. The MCD version simulated its null
+distribution (3000 draws, more than 6 minutes) and was abandoned.
 \item \strong{Permutation MANOVA:} For small samples or severe violations
 \item \strong{Multivariate Kruskal-Wallis:} Non-parametric alternative (limited availability in R)
 }

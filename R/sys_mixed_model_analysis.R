@@ -159,9 +159,21 @@
       fixed_terms <- formula_terms[!grepl("\\|", formula_terms)]
     }
 
+    # Les termes fixes de la formule (interactions comprises) priment :
+    # coller within + between par " + " retirait l'interaction en silence.
+    formula_fixed <- character(0)
+    if (!is.null(formula)) {
+      formula_fixed <- tryCatch({
+        lbl <- attr(terms(.drop_error_term(formula)), "term.labels")
+        lbl[!grepl("\\||^Error\\(", lbl)]
+      }, error = function(e) character(0))
+    }
+
     # Construire partie fixe
-    if (length(fixed_terms) > 0) {
-      fixed_part <- paste(fixed_terms, collapse = " + ")
+    if (length(formula_fixed) > 0) {
+      fixed_part <- paste(formula_fixed, collapse = " + ")
+    } else if (length(fixed_terms) > 0) {
+      fixed_part <- paste(unique(fixed_terms), collapse = " * ")
     } else {
       fixed_part <- "1"  # Modele intercept-only
     }
@@ -300,8 +312,14 @@
   })
   .dbg(NULL,"Fin de valreg()",debug=debug)
   # Extract results from valreg() new return format
-  validation_result <- valreg_output$valid
-  k <- valreg_output$k
+  # valreg() renvoie un simple logique quand k == 0 (cas verbose = FALSE) :
+  # accepter les deux formes plut\u00f4t que planter sur `$`.
+  if (is.list(valreg_output)) {
+    validation_result <- valreg_output$valid
+    if (!is.null(valreg_output$k)) k <- valreg_output$k
+  } else {
+    validation_result <- isTRUE(valreg_output)
+  }
 
   # Message selon validation
   if (!isTRUE(validation_result)) {

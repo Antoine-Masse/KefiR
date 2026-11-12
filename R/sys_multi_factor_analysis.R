@@ -225,11 +225,22 @@
     if (inherits(model, "aov") || inherits(model, "lm")) {
       return(residuals(model))
     } else if (inherits(model, "aovlist")) {
-      if (requireNamespace("dae", quietly = TRUE)) {
-        return(dae::residuals.aovlist(model))
-      } else {
-        return(unlist(lapply(model, residuals)))
+      # Audit s (novembre 2026) : on teste la normalité sur les résidus de la
+      # strate d'erreur la plus basse (intra-sujet), une valeur par observation.
+      # Concaténer les « résidus » de toutes les strates (constante, sujets,
+      # intra-sujet) mélangeait des quantités d'échelles différentes et faisait
+      # conclure à une non-normalité sévère sur des données normales.
+      res <- tryCatch({
+        pr <- suppressWarnings(stats::proj(model))
+        low <- pr[[length(pr)]]
+        if (!"Residuals" %in% colnames(low)) stop("no residual column")
+        as.numeric(low[, "Residuals"])
+      }, error = function(e) NULL)
+      if (is.null(res)) {
+        # Repli : résidus de la seule strate la plus basse (même échelle).
+        res <- as.numeric(residuals(model[[length(model)]]))
       }
+      return(res)
     } else {
       .exit(
         "The provided model is neither an 'aov', 'lm', nor 'aovlist' object.",
@@ -662,8 +673,27 @@
         within_interaction <- interaction(data[within], drop = TRUE)
       }
     } else {
-      # Si within non sp\u00e9cifi\u00e9, utiliser tous les facteurs sauf between et id
-      auto_within <- setdiff(all_factors, c(between, id))
+      # Si within non sp\u00e9cifi\u00e9, utiliser tous les facteurs sauf between et id.
+      # Un facteur constant au sein de chaque sujet est inter-sujet (split-plot
+      # y ~ G*T + Error(id/T)) : le compter comme intra-sujet faussait le contr\u00f4le
+      # de structure (sujets \u00ab incomplets \u00bb) et l'aiguillage vers un lmer additif.
+      candidates <- setdiff(all_factors, c(between, id))
+      is_constant_within_id <- vapply(candidates, function(f) {
+        all(tapply(as.character(data[[f]]), data[[id]],
+                   function(v) length(unique(v[!is.na(v)])) <= 1), na.rm = TRUE)
+      }, logical(1))
+      auto_between <- candidates[is_constant_within_id]
+      auto_within <- candidates[!is_constant_within_id]
+      if (length(auto_between) > 0) {
+        between <- c(between, auto_between)
+        k <- .vbse(
+          paste0("Auto-detected between-subject factor(s) (constant within each subject): ",
+                 paste(auto_between, collapse = ", ")),
+          paste0("Facteur(s) inter-sujet auto-d\u00e9tect\u00e9(s) (constant(s) pour chaque sujet) : ",
+                 paste(auto_between, collapse = ", ")),
+          verbose = verbose, code = code, k = k, cpt = "off"
+        )
+      }
       if (length(auto_within) == 0) {
         .exit(
           "Could not identify within-subject factors. Please specify 'within' explicitly.",
@@ -907,7 +937,9 @@
         if (length(idx_b) == 0) next
 
         # Table id \u00e0\u2014 within dans ce sous-ensemble
-        tab_bw <- table(data[[id]][idx_b], within_fac[idx_b])
+        # as.character : un id facteur garde tous ses niveaux, et les sujets des
+        # autres niveaux du between apparaissaient comme \u00ab incomplets \u00bb.
+        tab_bw <- table(as.character(data[[id]][idx_b]), within_fac[idx_b])
 
         # 1) Chaque sujet pr\u00e9sent dans ce between doit avoir toutes les modalit\u00e9s within
         missing_per_id <- rowSums(tab_bw > 0) != n_within_levels
@@ -999,9 +1031,10 @@
         cross_count <- apply(cross_tab, 1, function(x) sum(x > 0))
 
         # Un plan \u00e9quilibr\u00e9 complet doit avoir exactement n_within_levels * n_between_levels combinaisons
+        # Un sujet n'appartient qu'\u00e0 un niveau du between (plan split-plot) :
+        # il doit avoir toutes les modalit\u00e9s within, pas within \u00d7 between.
         n_within <- length(unique(data[[within[1]]]))
-        n_between <- length(unique(data[[between[1]]]))
-        expected <- n_within * n_between
+        expected <- n_within
 
         if (any(cross_count != expected)) {
           k <- .vbse(
@@ -1473,7 +1506,25 @@
 
     table_data <- table(g_cat)
 
-    if (length(unique(table_data)) == 1) {
+    # Mesures repetees avec Error() : la structure intra-sujet a deja ete verifiee
+    # complete (sinon robuste = TRUE). Des groupes inter-sujets d'effectifs inegaux
+    # (split-plot 5 + 9 sujets) ne relevent pas de la branche "desequilibre" entre
+    # sujets, qui ajustait lm(y ~ ... + Error()) et controlait l'independance de `id` :
+    # elle plantait. aov() + Error() traite ce plan.
+    rm_unequal_groups <- isTRUE(paired) && isTRUE(alea) && length(unique(table_data)) > 1
+    if (rm_unequal_groups) {
+      k <- .vbse(
+        paste0("Between-subject groups of unequal sizes (", paste(range(table_data), collapse = " to "),
+               " observations per cell); every subject has all within-subject levels.\n\t",
+               "--> Repeated-measures ANOVA [aov() with Error term], sequential table (type I)."),
+        paste0("Groupes inter-sujets d'effectifs in\u00e9gaux (", paste(range(table_data), collapse = " \u00e0 "),
+               " observations par cellule) ; chaque sujet a toutes les modalit\u00e9s intra-sujet.\n\t",
+               "--> ANOVA \u00e0 mesures r\u00e9p\u00e9t\u00e9es [aov() avec terme Error], tableau s\u00e9quentiel (type I)."),
+        verbose = verbose, code = code, k = k, cpt = "on"
+      )
+    }
+
+    if (length(unique(table_data)) == 1 || rm_unequal_groups) {
       # Donn\u00e9es \u00e9quilibr\u00e9es (factoriel)
       .dbg("", "Les donn\u00e9es sont \u00e9quilibr\u00e9es (factoriel), vers une tentative d'ANOVA.", debug=debug)
       balanced <- TRUE  # Indicateur pour le type de SS \u00e0 utiliser
@@ -2013,62 +2064,54 @@
               stop("Package {rlang} required for rstatix::anova_test()")
             }
 
-            # Extraire r\u00e9sultats sph\u00e9ricit\u00e9
+            # Extraire r\u00e9sultats sph\u00e9ricit\u00e9. Mauchly reste une INFORMATION :
+            # peu puissant avec peu de sujets, il ne d\u00e9cide plus de la correction.
+            # (Les anciennes affectations `<<-` \u00e9crivaient hors de la fonction :
+            # l'\u00e9tape de correction ne se d\u00e9clenchait jamais.)
+            sphericity_corrections <- .sphericity_corrected(anova_result, aov_model = model)
             if (!is.null(anova_result$`Mauchly's Test for Sphericity`)) {
               mauchly_results <- anova_result$`Mauchly's Test for Sphericity`
               p_mauchly <- mauchly_results$p[1]
-
               if (!is.na(p_mauchly)) {
-                if (p_mauchly < alpha) {
-                  # Variable pour tracker violation sph\u00e9ricit\u00e9 (pour cr\u00e9er \u00e9tape s\u00e9par\u00e9e)
-                  sphericity_violated <<- TRUE
-
-                  k <- .vbse(
-                    paste0("==> Sphericity assumption VIOLATED (Mauchly's test p = ",
-                           .format_pval(p_mauchly), ")."),
-                    paste0("==> Hypoth\u00e8se de sph\u00e9ricit\u00e9 VIOL\u00c9E (test de Mauchly p = ",
-                           .format_pval(p_mauchly), ")."),
-                    verbose = verbose, code = code, k = k, cpt = "off"
-                  )
-
-                  # Extraire epsilon et corrections
-                  if (!is.null(anova_result$`Sphericity Corrections`)) {
-                    gg_eps <- anova_result$`Sphericity Corrections`$GGe[1]
-                    hf_eps <- anova_result$`Sphericity Corrections`$HFe[1]
-
-                    k <- .vbse(
-                      paste0("    Greenhouse-Geisser epsilon = ", round(gg_eps, 3),
-                             " (closer to 1 = less severe violation)."),
-                      paste0("    Epsilon de Greenhouse-Geisser = ", round(gg_eps, 3),
-                             " (plus proche de 1 = violation moins s\u00e9v\u00e8re)."),
-                      verbose = verbose, code = code, k = k, cpt = "off"
-                    )
-
-                    # Stocker pour \u00e9tape 9 (scope sup\u00e9rieur)
-                    sphericity_corrections <<- list(
-                      gg_eps = gg_eps,
-                      hf_eps = hf_eps,
-                      corrections = anova_result$`Sphericity Corrections`
-                    )
-                  }
-                } else {
-                  sphericity_violated <<- FALSE
-
-                  k <- .vbse(
-                    paste0("==> Sphericity assumption SATISFIED (Mauchly's test p = ",
-                           .format_pval(p_mauchly), ").\n",
-                           "\t--> No correction needed. Standard F-test degrees of freedom apply."),
-                    paste0("==> Hypoth\u00e8se de sph\u00e9ricit\u00e9 RESPECT\u00c9E (test de Mauchly p = ",
-                           .format_pval(p_mauchly), ").\n",
-                           "\t--> Aucune correction n\u00e9cessaire. Les degr\u00e9s de libert\u00e9 standard du test F s'appliquent."),
-                    verbose = verbose, code = code, k = k, cpt = "off"
-                  )
-                }
+                sphericity_violated <- p_mauchly < alpha
+                k <- .vbse(
+                  paste0("Mauchly's test p = ", .format_pval(p_mauchly),
+                         if (sphericity_violated) " (sphericity rejected)." else " (sphericity not rejected).", "\n\t",
+                         "Note: Mauchly's test has little power with few subjects; it does not decide the correction."),
+                  paste0("Test de Mauchly : p = ", .format_pval(p_mauchly),
+                         if (sphericity_violated) " (sph\u00e9ricit\u00e9 rejet\u00e9e)." else " (sph\u00e9ricit\u00e9 non rejet\u00e9e).", "\n\t",
+                         "Note : le test de Mauchly est peu puissant avec peu de sujets ; il ne d\u00e9cide pas de la correction."),
+                  verbose = verbose, code = code, k = k, cpt = "off"
+                )
               }
             } else {
               k <- .vbse(
                 "Note: Mauchly's test could not be performed (may require specific design structure).",
                 "Note : Le test de Mauchly n'a pas pu \u00eatre effectu\u00e9 (peut n\u00e9cessiter une structure de plan sp\u00e9cifique).",
+                verbose = verbose, code = code, k = k, cpt = "off"
+              )
+            }
+
+            if (!is.null(sphericity_corrections)) {
+              sph_lines_en <- sapply(seq_len(nrow(sphericity_corrections)), function(i) {
+                s <- sphericity_corrections[i, ]
+                paste0("    ", s$term, ": epsilon GG = ", round(s$GGe, 3), ", HF = ", round(s$HFe, 3),
+                       " --> ", s$method, " (epsilon = ", round(s$epsilon, 3), "), p = ",
+                       .format_pval(s$p_corrected), " (uncorrected: ", .format_pval(s$p_uncorrected), ")")
+              })
+              sph_lines_fr <- sapply(seq_len(nrow(sphericity_corrections)), function(i) {
+                s <- sphericity_corrections[i, ]
+                paste0("    ", s$term, " : epsilon GG = ", round(s$GGe, 3), ", HF = ", round(s$HFe, 3),
+                       " --> ", s$method, " (epsilon = ", round(s$epsilon, 3), "), p = ",
+                       .format_pval(s$p_corrected), " (non corrig\u00e9e : ", .format_pval(s$p_uncorrected), ")")
+              })
+              k <- .vbse(
+                paste0("==> Sphericity correction always applied to within-subject terms\n\t",
+                       "(Greenhouse-Geisser if epsilon <= 0.75, otherwise Huynh-Feldt; Girden, 1992):\n\t",
+                       paste(sph_lines_en, collapse = "\n\t")),
+                paste0("==> Correction de sph\u00e9ricit\u00e9 toujours appliqu\u00e9e aux termes intra-sujet\n\t",
+                       "(Greenhouse-Geisser si epsilon <= 0,75, sinon Huynh-Feldt ; Girden, 1992) :\n\t",
+                       paste(sph_lines_fr, collapse = "\n\t")),
                 verbose = verbose, code = code, k = k, cpt = "off"
               )
             }
@@ -2086,62 +2129,6 @@
             verbose = verbose, code = code, k = k, cpt = "off"
           )
         }
-      }
-      #----------------------------------------------------------------------
-
-      #----------------------------------------------------------------------
-      # \u00c9TAPE 9 (conditionnelle) : Application des corrections de sph\u00e9ricit\u00e9
-      #----------------------------------------------------------------------
-      if (sphericity_violated && !is.null(sphericity_corrections)) {
-        k <- .vbse(
-          paste0("Application of sphericity corrections [rstatix::anova_test()].\n",
-                 "    When sphericity is violated, degrees of freedom are adjusted to compensate.\n",
-                 "    Two main corrections exist:"),
-          paste0("Application des corrections de sph\u00e9ricit\u00e9 [rstatix::anova_test()].\n",
-                 "    Lorsque la sph\u00e9ricit\u00e9 est viol\u00e9e, les degr\u00e9s de libert\u00e9 sont ajust\u00e9s pour compenser.\n",
-                 "    Deux corrections principales existent :"),
-          verbose = verbose, code = code, k = k, cpt = "on"
-        )
-
-        # Greenhouse-Geisser (plus conservateur)
-        gg_eps <- sphericity_corrections$gg_eps
-        hf_eps <- sphericity_corrections$hf_eps
-
-        k <- .vbse(
-          paste0("    \u2022 Greenhouse-Geisser correction (conservative)\n",
-                 "        Epsilon = ", round(gg_eps, 3), "\n",
-                 "        Adjusted df multiplied by epsilon\n",
-                 "        ==> Use when epsilon < 0.75 (substantial violation)"),
-          paste0("    \u2022 Correction de Greenhouse-Geisser (conservatrice)\n",
-                 "        Epsilon = ", round(gg_eps, 3), "\n",
-                 "        ddl ajust\u00e9s multipli\u00e9s par epsilon\n",
-                 "        ==> \u00c0 utiliser si epsilon < 0,75 (violation substantielle)"),
-          verbose = verbose, code = code, k = k, cpt = "off"
-        )
-
-        k <- .vbse(
-          paste0("    \u2022 Huynh-Feldt correction (less conservative)\n",
-                 "        Epsilon = ", round(hf_eps, 3), "\n",
-                 "        Less adjustment than Greenhouse-Geisser\n",
-                 "        ==> Use when epsilon >= 0.75 (moderate violation)"),
-          paste0("    \u2022 Correction de Huynh-Feldt (moins conservatrice)\n",
-                 "        Epsilon = ", round(hf_eps, 3), "\n",
-                 "        Ajustement moindre que Greenhouse-Geisser\n",
-                 "        ==> \u00c0 utiliser si epsilon >= 0,75 (violation mod\u00e9r\u00e9e)"),
-          verbose = verbose, code = code, k = k, cpt = "off"
-        )
-
-        # Recommandation
-        recommended_correction <- if (gg_eps < 0.75) "Greenhouse-Geisser" else "Huynh-Feldt"
-        k <- .vbse(
-          paste0("==> Recommended correction for this data: ", recommended_correction, "\n",
-                 "    (ANOVA results will be reported with standard uncorrected p-values.\n",
-                 "     Corrected p-values should be examined in rstatix output if needed.)"),
-          paste0("==> Correction recommand\u00e9e pour ces donn\u00e9es : ", recommended_correction, "\n",
-                 "    (Les r\u00e9sultats ANOVA seront rapport\u00e9s avec les p-values standard non corrig\u00e9es.\n",
-                 "     Les p-values corrig\u00e9es doivent \u00eatre examin\u00e9es dans la sortie rstatix si n\u00e9cessaire.)"),
-          verbose = verbose, code = code, k = k, cpt = "off"
-        )
       }
       #----------------------------------------------------------------------
 
@@ -4344,6 +4331,15 @@
               if (any(effect_rows)) {
                 effects <- row_names[effect_rows]
                 p_values <- strata_table[effect_rows, "Pr(>F)"]
+                corr_methods <- rep(NA_character_, length(p_values))
+                # Termes intra-sujet : p-value corrig\u00e9e de la sph\u00e9ricit\u00e9 (GG/HF)
+                if (exists("sphericity_corrections", inherits = FALSE) && !is.null(sphericity_corrections)) {
+                  p_values <- .apply_sphericity(
+                    data.frame(term = trimws(row_names[effect_rows]), p.value = p_values,
+                               stringsAsFactors = FALSE), sphericity_corrections)$p.value
+                  corr_methods <- sphericity_corrections$method[
+                    match(gsub("\\s+", "", row_names[effect_rows]), gsub("\\s+", "", sphericity_corrections$term))]
+                }
 
                 # Identifier effets significatifs
                 sig_idx <- which(p_values < alpha & !is.na(p_values))
@@ -4354,6 +4350,7 @@
                   all_sig_effects[[strata_name]] <- data.frame(
                     effect = sig_effects,
                     p_value = sig_pvals,
+                    corr = corr_methods[sig_idx],
                     stringsAsFactors = FALSE
                   )
                 }
@@ -4362,13 +4359,19 @@
                 all_strata_info[[strata_name]] <- list(
                   n_effects = length(effects),
                   effects = trimws(effects),  # Nettoyer espaces
-                  p_values = p_values
+                  p_values = p_values,
+                  corr = corr_methods
                 )
               }
             }
           }
         }
 
+        # p-value affichee, avec la correction de sphericite appliquee (lien avec l'etape Mauchly)
+        .ptxt <- function(p, corr, fr = FALSE) {
+          paste0("p=", .format_pval(p),
+                 if (!is.na(corr)) paste0(if (fr) ", corrig\u00e9e de " else ", corrected by ", corr) else "")
+        }
         # Afficher synth\u00e8se par strate
         if (length(all_strata_info) > 0) {
           for (strata_name in names(all_strata_info)) {
@@ -4377,7 +4380,10 @@
             if (info$n_effects > 0) {
               # Construire message pour cette strate
               effects_summary <- paste0(sapply(seq_along(info$effects), function(i) {
-                paste0(info$effects[i], " (p=", .format_pval(info$p_values[i]), ")")
+                paste0(info$effects[i], " (", .ptxt(info$p_values[i], info$corr[i], fr = TRUE), ")")
+              }), collapse = ", ")
+              effects_summary_en <- paste0(sapply(seq_along(info$effects), function(i) {
+                paste0(info$effects[i], " (", .ptxt(info$p_values[i], info$corr[i]), ")")
               }), collapse = ", ")
 
               # Identifier effets significatifs
@@ -4387,19 +4393,20 @@
               if (info$n_effects == 1) {
                 effect_name <- info$effects[1]
                 p_val <- info$p_values[1]
+                p_corr <- info$corr[1]
 
                 if (!is.null(sig_in_strata) && nrow(sig_in_strata) > 0) {
                   # Effet significatif
                   k <- .vbse(
-                    paste0("==> Significant effect of ", effect_name, " (p=", .format_pval(p_val), ")."),
-                    paste0("==> Effet significatif de ", effect_name, " (p=", .format_pval(p_val), ")."),
+                    paste0("==> Significant effect of ", effect_name, " (", .ptxt(p_val, p_corr), ")."),
+                    paste0("==> Effet significatif de ", effect_name, " (", .ptxt(p_val, p_corr, fr = TRUE), ")."),
                     verbose = verbose, code = code, k = k, cpt = "off"
                   )
                 } else {
                   # Pas d'effet significatif
                   k <- .vbse(
-                    paste0("==> No significant effect of ", effect_name, " (p=", .format_pval(p_val), ")."),
-                    paste0("==> Aucun effet significatif de ", effect_name, " (p=", .format_pval(p_val), ")."),
+                    paste0("==> No significant effect of ", effect_name, " (", .ptxt(p_val, p_corr), ")."),
+                    paste0("==> Aucun effet significatif de ", effect_name, " (", .ptxt(p_val, p_corr, fr = TRUE), ")."),
                     verbose = verbose, code = code, k = k, cpt = "off"
                   )
                 }
@@ -4407,17 +4414,20 @@
                 # Format avec mention de strate si plusieurs effets
                 if (!is.null(sig_in_strata) && nrow(sig_in_strata) > 0) {
                   sig_summary <- paste0(sapply(seq_len(nrow(sig_in_strata)), function(i) {
-                    paste0(sig_in_strata$effect[i], " (p=", .format_pval(sig_in_strata$p_value[i]), ")")
+                    paste0(sig_in_strata$effect[i], " (", .ptxt(sig_in_strata$p_value[i], sig_in_strata$corr[i], fr = TRUE), ")")
+                  }), collapse = ", ")
+                  sig_summary_en <- paste0(sapply(seq_len(nrow(sig_in_strata)), function(i) {
+                    paste0(sig_in_strata$effect[i], " (", .ptxt(sig_in_strata$p_value[i], sig_in_strata$corr[i]), ")")
                   }), collapse = ", ")
 
                   k <- .vbse(
-                    paste0("Stratum '", strata_name, "': Significant effect(s) - ", sig_summary),
+                    paste0("Stratum '", strata_name, "': Significant effect(s) - ", sig_summary_en),
                     paste0("Strate '", strata_name, "' : Effet(s) significatif(s) - ", sig_summary),
                     verbose = verbose, code = code, k = k, cpt = "off"
                   )
                 } else {
                   k <- .vbse(
-                    paste0("Stratum '", strata_name, "': No significant effects (tested: ", effects_summary, ")"),
+                    paste0("Stratum '", strata_name, "': No significant effects (tested: ", effects_summary_en, ")"),
                     paste0("Strate '", strata_name, "' : Aucun effet significatif (test\u00e9s : ", effects_summary, ")"),
                     verbose = verbose, code = code, k = k, cpt = "off"
                   )
@@ -4535,6 +4545,11 @@
   # $effects et p-value globale : table du test r\u00e9ellement conduit, r\u00e8gle unique
   # (BP-031) : la p-value globale est celle du premier facteur de la formule
   effects_table <- .multi_effects_table(model, robust_results, formula, data, alpha)
+  # Mesures r\u00e9p\u00e9t\u00e9es par aov() + Error() : p-values intra-sujet corrig\u00e9es (GG/HF)
+  if (inherits(model, "aovlist") && is.null(robust_results$test_result) &&
+      exists("sphericity_corrections", inherits = FALSE)) {
+    effects_table <- .apply_sphericity(effects_table, sphericity_corrections)
+  }
   if (!is.null(effects_table)) {
     first_factor_pvalue <- .first_factor_pvalue(effects_table, formula)
     if (!is.na(first_factor_pvalue)) global_pvalue <- first_factor_pvalue

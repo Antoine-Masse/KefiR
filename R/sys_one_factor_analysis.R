@@ -786,6 +786,42 @@
     }
 
 	  ## --------------------------------------------------------------------------
+	  # Non-normalite + heteroscedasticite CONFIRMEE (Levene puis Brown-Forsythe), k > 2,
+	  # asymetrie moderee : Kruskal-Wallis et l'ANOVA classique supposent des variances
+	  # egales. Sous H0 (n = 5/5/40, sd = 4/4/1), Kruskal-Wallis rejette 21 % des fois,
+	  # t1way 9,6 %, le F de Welch 5,1 % (dev/mtest_audit/RAPPORT.md). Le F de Welch
+	  # reste le moins mauvais (Delacre et al., 2019), mais pas robuste : avec ~5 valeurs
+	  # par groupe et une asymetrie de 1,4 a 1,75, il rejette encore 11 a 12 % sous H0
+	  # (expert independant, chk_welch.R, 4000 jeux). Le 17 % vient du plan
+	  # n = 5/5/40, sd = 4/4/1, donnees exponentielles centrees (calcul direct, N = 1000),
+	  # ou Kruskal-Wallis rejette 33 % et t1way 21,5 % (RAPPORT, correctif k).
+	  if (!isTRUE(check_normality) && isFALSE(check_variance_equal) && !isTRUE(paired) &&
+	      check_number > 2) {
+	    skew_hetero <- suppressWarnings(max(unlist(by(x, g, function(z)
+	      if (length(z) >= 3) abs(agricolae::skewness(z)) else NA_real_)), na.rm = TRUE))
+	    extreme_hetero <- exists("max_outliers_extrem") && isTRUE(max_outliers_extrem > 0.05)
+	    # Le F de Welch divise par chaque variance de groupe : pas de groupe constant
+	    var_hetero <- tapply(x, g, stats::var, na.rm = TRUE)
+	    if (is.finite(skew_hetero) && skew_hetero < 2 && !extreme_hetero &&
+	        all(is.finite(var_hetero) & var_hetero > 0)) {
+	      k <- .vbse(
+	        paste0("Heterogeneous variances confirmed, moderate asymmetry (max |skew| = ", round(skew_hetero, 2), ").\n\t",
+	               "Kruskal-Wallis and the classical ANOVA assume equal variances.\n\t",
+	               "--> Welch's heteroscedastic F-test, the least fragile choice here.\n\t",
+               "Caution: with small skewed groups (about 5 values), its risk of a false positive\n\t",
+               "stays above alpha (about 11 to 17 % instead of 5 % in simulations)."),
+	        paste0("Variances h\u00e9t\u00e9rog\u00e8nes confirm\u00e9es, asym\u00e9trie mod\u00e9r\u00e9e (max |skew| = ", round(skew_hetero, 2), ").\n\t",
+	               "Kruskal-Wallis et l'ANOVA classique supposent des variances \u00e9gales.\n\t",
+	               "--> Test F h\u00e9t\u00e9rosc\u00e9dastique de Welch, le choix le moins fragile ici.\n\t",
+               "Prudence : avec de petits groupes asym\u00e9triques (environ 5 valeurs), son risque de faux positif\n\t",
+               "reste sup\u00e9rieur \u00e0 alpha (environ 11 \u00e0 17 % au lieu de 5 % en simulation)."),
+	        verbose = verbose, code = code, k = k, cpt = "on"
+	      )
+	      # Branche NORMAL, variances in\u00e9gales : Welch, puis post-hocs t sans variance commune
+	      check_normality <- TRUE
+	    }
+	  }
+
 	  ################################################################
 	  #
 	  #

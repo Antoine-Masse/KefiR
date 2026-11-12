@@ -54,7 +54,10 @@ test_that("les moyennes ajustees ne dependent pas du centrage", {
   expect_equal(sort(b$value$descriptive_stats$adjusted_mean), sort(ref$emmean))
 })
 
-test_that("la p-value globale est celle du premier facteur", {
+# Regle de la p globale (decision d'Antoine Masse, 12 novembre 2026) : un seul terme
+# compare -> sa p-value ; plusieurs termes -> min(1, k x min(p)). La covariable
+# d'une ANCOVA n'est pas un terme compare.
+test_that("ANCOVA a un facteur : la p-value globale est celle du facteur", {
   set.seed(1)
   d <- data.frame(F = rep(c("A", "B", "C"), each = 15), x = runif(45, 20, 30))
   d$y <- c(0, 1, 2)[factor(d$F)] + 0.2 * d$x + rnorm(45, 0, 1)
@@ -63,13 +66,13 @@ test_that("la p-value globale est celle du premier facteur", {
   expect_equal(bilan(y ~ x + F, data = d)$value$global_pvalue, ref)
 })
 
-test_that("ANOVA a deux facteurs : p globale et $effects suivent le tableau affiche", {
+test_that("ANOVA a deux facteurs : p globale de Bonferroni et $effects suivent le tableau affiche", {
   set.seed(2)
   d <- data.frame(F = rep(c("A", "B"), each = 20), G = rep(c("u", "v"), 20))
   d$y <- 10 + (d$F == "B") * 2 + rnorm(40)
   ref <- anova(lm(y ~ F * G, data = d))
   b <- bilan(y ~ F * G, data = d)
-  expect_equal(p_only(y ~ F * G, data = d), ref["F", "Pr(>F)"])
+  expect_equal(p_only(y ~ F * G, data = d), min(1, 3 * min(ref[c("F", "G", "F:G"), "Pr(>F)"])))
   expect_equal(b$value$effects$term, c("F", "G", "F:G"))
   expect_equal(b$value$effects$p.value, ref[c("F", "G", "F:G"), "Pr(>F)"])
 })
@@ -82,7 +85,8 @@ test_that("une reponse transformee n'est transformee qu'une fois", {
   expect_equal(p_only(log(y) ~ F + x, data = d), ref)
   expect_equal(p_only(I(log(y)) ~ F + x, data = d), ref)
   d$G <- rep(c("u", "v"), 20)
-  expect_equal(p_only(log(y) ~ F * G, data = d), anova(lm(log(y) ~ F * G, data = d))["F", "Pr(>F)"])
+  expect_equal(p_only(log(y) ~ F * G, data = d),
+               min(1, 3 * min(anova(lm(log(y) ~ F * G, data = d))[c("F", "G", "F:G"), "Pr(>F)"])))
   expect_equal(p_only(log(y) ~ F, data = d), t.test(log(y) ~ F, data = d, var.equal = TRUE)$p.value)
 })
 
@@ -94,7 +98,7 @@ test_that("$global_pvalue et return=FALSE donnent le test global, pas une compar
   d$y <- rpois(nrow(d), 3)
   d <- d[-c(1:5, 20:21), ]
   r <- bilan(y ~ A * B, data = d, boot = FALSE)$value
-  expect_equal(r$global_pvalue, r$effects$p.value[r$effects$term == "A"])
+  expect_equal(r$global_pvalue, min(1, nrow(r$effects) * min(r$effects$p.value)))
   expect_equal(r$global_pvalue, p_only(y ~ A * B, data = d))
 })
 

@@ -71,10 +71,11 @@ test_that("les formules multivariees egalent summary.manova()", {
   }
 })
 
-test_that("deux facteurs : p-values et methode suivent le premier terme", {
+test_that("deux facteurs : p globale de Bonferroni sur les termes, test retenu", {
   d <- make_two_way()
   r <- bilan(cbind(a, b) ~ F * G, data = d)$value
-  expect_equal(r$global_pvalue, r$effects$p.Wilks[r$effects$term == "F"])
+  p_terms <- if (grepl("Pillai", r$method)) r$effects$p.Pillai else r$effects$p.Wilks
+  expect_equal(r$global_pvalue, min(1, length(p_terms) * min(p_terms)))
   expect_equal(p_only(cbind(a, b) ~ F * G, data = d), r$global_pvalue)
 })
 
@@ -121,7 +122,7 @@ test_that("une violation unique bascule sur Pillai, et la methode le dit", {
   if (identical(r$method, "MANOVA (Pillai's trace)")) {
     expect_equal(r$global_pvalue, summary(fit, test = "Pillai")$stats[1, "Pr(>F)"])
   } else {
-    expect_identical(r$method, "Robust MANOVA (Wilks, MCD)")
+    expect_identical(r$method, "Robust MANOVA (Wilks, ranks)")
     expect_equal(r$global_pvalue, r$test_statistics$RobustWilks$p_value)
   }
 })
@@ -133,7 +134,7 @@ test_that("la voie robuste est reproductible et annoncee", {
   r1 <- bilan(cbind(a, b) ~ g, data = d)$value
   set.seed(99)
   r2 <- bilan(cbind(a, b) ~ g, data = d)$value
-  expect_identical(r1$method, "Robust MANOVA (Wilks, MCD)")
+  expect_identical(r1$method, "Robust MANOVA (Wilks, ranks)")
   expect_identical(r1$global_pvalue, r2$global_pvalue)
   expect_true(all(sapply(r1$protected_anovas, function(z) z$test) == "kruskal"))
 })

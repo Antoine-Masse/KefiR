@@ -36,6 +36,35 @@
   if (length(found) > 0) effects$p.value[found[1]] else effects$p.value[1]
 }
 
+#' Global p-value of a model with several terms: Bonferroni on the smallest p
+#'
+#' Decision of Antoine Masse (12 November 2026): with return = FALSE, the global
+#' p-value is used to draw a link between variables (networks). With k tested terms
+#' (main effects and interactions), global p = min(1, k * min(p)), p being the
+#' p-values of $effects (already corrected for sphericity when it applies). The
+#' rate of false links stays at alpha. Pure covariate terms (all variables numeric,
+#' ANCOVA) are adjustments, not compared groups: they are left out of k.
+#'
+#' @param effects data.frame (term, p.value).
+#' @param data Analysis data, to recognise numeric covariates.
+#' @return NULL with fewer than 2 tested terms, else a list (p, k, p_min, term).
+#' @keywords internal
+.global_pvalue_bonferroni <- function(effects, data = NULL) {
+  if (is.null(effects) || !is.data.frame(effects) || nrow(effects) == 0) return(NULL)
+  eff <- effects[!is.na(effects$p.value) & effects$term != "global", , drop = FALSE]
+  if (is.data.frame(data) && nrow(eff) > 0) {
+    is_cov <- vapply(as.character(eff$term), function(t) {
+      v <- trimws(strsplit(t, ":", fixed = TRUE)[[1]])
+      all(v %in% names(data)) && all(vapply(v, function(z) is.numeric(data[[z]]), logical(1)))
+    }, logical(1))
+    eff <- eff[!is_cov, , drop = FALSE]
+  }
+  if (nrow(eff) < 2) return(NULL)
+  i <- which.min(eff$p.value)
+  list(p = min(1, nrow(eff) * eff$p.value[i]), k = nrow(eff),
+       p_min = eff$p.value[i], term = as.character(eff$term[i]))
+}
+
 #' $effects table of a multi-factor analysis, from the test actually conducted
 #'
 #' @param model Fitted parametric model, or NULL.

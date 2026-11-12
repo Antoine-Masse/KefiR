@@ -277,8 +277,12 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
   }
 
   # Cas suppl\u00e9mentaire : formule a \u00e9t\u00e9 pass\u00e9e via argument nomm\u00e9
-  if ("formula" %in% names(call_expr)) {
-    formula <- call_expr$formula
+  # Le param\u00e8tre `formula` est d\u00e9j\u00e0 \u00e9valu\u00e9 : le remplacer par call_expr$formula
+  # (expression non \u00e9valu\u00e9e, de classe "call") faisait refuser y ~ F.
+  # Une formule \u00e9crite en texte ("y ~ F") reste accept\u00e9e.
+  if (!is.null(formula) && !inherits(formula, "formula") && is.character(formula)) {
+    formula <- tryCatch(stats::as.formula(formula, env = parent.frame()),
+                        error = function(e) formula)
   }
 
   # Cas formule avec data$ : essayer d'extraire le data.frame depuis l'environnement parent
@@ -657,6 +661,10 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 
         if (!is.null(data) && extracted_id %in% names(data)) {
           # Assigner id si non d\u00e9j\u00e0 d\u00e9fini
+          # Le BLOC 8 (id => paired) est d\u00e9j\u00e0 pass\u00e9 : sans cette ligne, l'analyse
+          # et les post-hocs restaient NON appari\u00e9s alors que l'annonce dit
+          # \u00ab mesures r\u00e9p\u00e9t\u00e9es \u00bb.
+          paired <- TRUE
           if (is.null(id)) {
             id <- extracted_id
             k <- .vbse(
@@ -859,6 +867,14 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
     }
 
     # --- 9.5 : EXTRACTION x et g (AVANT modification Error) ---
+    # Plan apparie : trier par sujet (tri stable). pairwise.t.test(paired = TRUE)
+    # et wilcox.test(paired = TRUE) apparient PAR POSITION dans chaque groupe :
+    # des lignes non triees par sujet comparaient des sujets differents.
+    if (isTRUE(paired) && !is.null(id) && is.data.frame(data) && length(id) == 1 &&
+        id %in% names(data)) {
+      data <- data[order(data[[id]]), , drop = FALSE]
+    }
+
     # Extraire avec formule SANS modifications id/Error
     formula_for_extraction <- formula
 
@@ -1231,6 +1247,20 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
     check_anova <- TRUE
   }
 
+  # Appel m.test(x, g, id = ...) sans formule et plus de 2 modalites : l'analyse
+  # multi-facteurs exige une formule (sinon terms(NULL) plantait). On construit
+  # x ~ g + Error(id/g), donnees triees par sujet pour l'appariement des post-hocs.
+  if (is.null(formula) && isTRUE(check_anova) && isTRUE(paired) && !is.null(id) &&
+      is.data.frame(data) && id %in% names(data) && !is.data.frame(g) &&
+      is.numeric(x) && !is.matrix(x) && length(x) == nrow(data)) {
+    data$x <- x
+    data$g <- droplevels(factor(g))
+    data <- data[order(data[[id]]), , drop = FALSE]
+    x <- data$x
+    g <- data$g
+    formula <- stats::as.formula(paste0("x ~ g + Error(", id, "/g)"))
+  }
+
   # --- ROUTAGE SP\u00c9CIAL POUR Error(facteur) ---
   # Id\u00e9e : Si Error(facteur_cat\u00e9goriel) d\u00e9tect\u00e9 (ratio < 5%), forcer vers RM-ANOVA
   # APA : Maxwell & Delaney (2004). Error() sp\u00e9cifie strates \u2192 aov() obligatoire
@@ -1400,6 +1430,32 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
   ################################################################################
 
   .dbg(NULL, "Tests posts-hocs.", debug = debug)
+
+  # p-value globale d'un mod\u00e8le \u00e0 plusieurs termes (d\u00e9cision d'Antoine Mass\u00e9,
+  # 12 novembre 2026) : Bonferroni sur la plus petite p des termes test\u00e9s,
+  # min(1, k \u00d7 min(p)). Avec un seul terme (corrigraph), rien ne change.
+  eff_rule <- if (is.list(bilan)) bilan$effects else NULL
+  # MANOVA \u00e0 plusieurs termes : une p par terme pour le test retenu (Wilks ou Pillai).
+  # La voie robuste teste les groupes crois\u00e9s d'un seul bloc : un seul test, r\u00e8gle sans objet.
+  if (is.data.frame(eff_rule) && is.null(eff_rule$p.value)) {
+    p_col <- if (grepl("Pillai", paste(bilan$method, collapse = " "))) "p.Pillai" else
+      if (grepl("Wilks' Lambda", paste(bilan$method, collapse = " "))) "p.Wilks" else NA_character_
+    eff_rule <- if (!is.na(p_col) && p_col %in% names(eff_rule))
+      data.frame(term = eff_rule$term, p.value = eff_rule[[p_col]], stringsAsFactors = FALSE) else NULL
+  }
+  global_rule <- .global_pvalue_bonferroni(eff_rule, data)
+  if (!is.null(global_rule)) {
+    bilan$global_pvalue <- global_rule$p
+    k <- .vbse(
+      paste0("Global p-value = ", global_rule$k, " x ", .format_pval(global_rule$p_min), " = ",
+             .format_pval(global_rule$p), " (smallest p of the ", global_rule$k, " terms: ",
+             global_rule$term, ", Bonferroni-corrected)."),
+      paste0("p globale = ", global_rule$k, " \u00d7 ", .format_pval(global_rule$p_min), " = ",
+             .format_pval(global_rule$p), " (plus petite p des ", global_rule$k, " termes : ",
+             global_rule$term, ", corrig\u00e9e de Bonferroni)."),
+      verbose = verbose, code = code, k = k, cpt = "on"
+    )
+  }
 
   # NOTE PERSO: Gestion return=FALSE (Cahier des charges priorit\u00e9 2)
   # Si return=FALSE \u2192 renvoyer UNIQUEMENT p-value globale, PAS de post-hocs
@@ -1609,14 +1665,60 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
     # Cela donne une vue compl\u00e8te \u00e0 l'utilisateur qui peut juger par lui-m\u00eame
     # Note: Le titre "Posthoc - Tests post-hoc..." est affich\u00e9 par .posthoc() lui-m\u00eame
 
+    # Plan split-plot (facteur inter-sujet + facteur intra-sujet) analyse par aov() + Error() :
+    # .posthoc(paired = TRUE) sur les cellules croisees apparierait PAR POSITION des sujets
+    # differents (A.t1 contre B.t3). Les comparaisons passent par emmeans sur
+    # lmer(y ~ termes + (1 | id)), comme la voie modele mixte.
+    split_plot_model <- NULL
+    if (!is_mixed_model && !is_ancova && isTRUE(paired) && !is.null(id) &&
+        is.data.frame(data) && length(id) == 1 && id %in% names(data) && !is.null(formula) &&
+        requireNamespace("lmerTest", quietly = TRUE)) {
+      sp_factors <- setdiff(intersect(all.vars(.drop_error_term(formula)[[3]]), names(data)), id)
+      sp_factors <- sp_factors[vapply(sp_factors, function(f) is.factor(data[[f]]) || is.character(data[[f]]),
+                                      logical(1))]
+      sp_constant <- vapply(sp_factors, function(f) {
+        all(tapply(as.character(data[[f]]), data[[id]],
+                   function(v) length(unique(v[!is.na(v)])) <= 1), na.rm = TRUE)
+      }, logical(1))
+      if (length(sp_factors) > 1 && any(sp_constant) && any(!sp_constant)) {
+        sp_fixed <- attr(terms(.drop_error_term(formula)), "term.labels")
+        sp_fixed <- sp_fixed[!grepl("\\|", sp_fixed)]
+        sp_formula <- stats::as.formula(paste0(deparse1(formula[[2]]), " ~ ",
+                                               paste(sp_fixed, collapse = " + "), " + (1 | ", id, ")"))
+        split_plot_model <- tryCatch(suppressMessages(suppressWarnings(
+          lmerTest::lmer(sp_formula, data = data, REML = TRUE))), error = function(e) NULL)
+      }
+      if (!is.null(split_plot_model)) {
+        sp_anova <- stats::anova(split_plot_model, type = "III")
+        sp_sig <- rownames(sp_anova)[!is.na(sp_anova[["Pr(>F)"]]) & sp_anova[["Pr(>F)"]] <= alpha]
+        k <- .vbse(
+          paste0("Between- and within-subject factors (", paste(names(sp_constant)[sp_constant], collapse = ", "),
+                 " / ", paste(names(sp_constant)[!sp_constant], collapse = ", "), "):\n\t",
+                 "paired tests on crossed cells would pair different subjects.\n\t",
+                 "--> Comparisons by emmeans on lmer(", deparse1(sp_formula), ")."),
+          paste0("Facteurs inter- et intra-sujet (", paste(names(sp_constant)[sp_constant], collapse = ", "),
+                 " / ", paste(names(sp_constant)[!sp_constant], collapse = ", "), ") :\n\t",
+                 "des tests appari\u00e9s sur les cellules crois\u00e9es apparieraient des sujets diff\u00e9rents.\n\t",
+                 "--> Comparaisons par emmeans sur lmer(", deparse1(sp_formula), ")."),
+          verbose = verbose, code = code, k = k, cpt = "on"
+        )
+        is_mixed_model <- TRUE
+      }
+    }
+
     if (is_mixed_model) {
       .dbg("Mixed model detected, routing to .posthoc_mixed_model()",
            "Mod\u00e8le mixte d\u00e9tect\u00e9, routage vers .posthoc_mixed_model()",
            debug = debug)
 
       # Extraire le mod\u00e8le et les effets significatifs
-      mixed_model <- bilan$robust_results$model
-      sig_effects <- bilan$robust_results$significant_effects
+      if (!is.null(split_plot_model)) {
+        mixed_model <- split_plot_model
+        sig_effects <- sp_sig
+      } else {
+        mixed_model <- bilan$robust_results$model
+        sig_effects <- bilan$robust_results$significant_effects
+      }
 
       synth <- .posthoc_mixed_model(
         mixed_model = mixed_model,
@@ -2001,6 +2103,19 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
       }
 
       # 3. Ajouter method si absent
+      # Audit s : le test robuste conduit par .multi_factor_analysis() (Friedman,
+      # etc.) était annoncé « Parametric ANOVA/t-test » dans $method.
+      robust_name <- if (is.null(chosen_test) && !is.null(bilan$robust_results$method)) {
+        switch(as.character(bilan$robust_results$method)[1],
+          "Friedman" = , "Friedman_Test" = "Friedman test",
+          "Kruskal_Wallis" = "Kruskal-Wallis",
+          "Scheirer_Ray_Hare" = "Scheirer-Ray-Hare",
+          "Permutation_ANOVA" = "Permutation ANOVA",
+          "WRS2_t2way" = "Robust ANOVA (t2way)",
+          "WRS2_t3way" = "Robust ANOVA (t3way)",
+          NULL)
+      } else NULL
+      if (is.null(synth$method) && !is.null(robust_name)) synth$method <- robust_name
       if (is.null(synth$method)) {
         synth$method <- if (!is.null(chosen_test)) {
           switch(chosen_test,

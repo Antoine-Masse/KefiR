@@ -13,7 +13,7 @@
 	# Code normal : afficher les messages si verbose==TRUE
 	if (isTRUE(verbose)) {
 		#if (cpt=="on") {k <- k + 1}
-		if ((is.null(ang)) | (length(ang)==1)) {ang <- fr}
+		if (.ang_missing(ang)) {ang <- fr}
 		if (cpt=="on") {
 			k <- k + 1
 			ang <- paste0(k,") ",ang,"\n")

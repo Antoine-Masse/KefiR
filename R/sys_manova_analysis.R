@@ -40,7 +40,7 @@
 #'       \item Classical MANOVA (parametric, homogeneous covariances)
 #'       \item Repeated measures MANOVA (within-subject factors)
 #'       \item MANOVA with random effects (nlme::lme or lme4::lmer)
-#'       \item Robust MANOVA (rrcov::Wilks.test with MCD estimator)
+#'       \item Robust MANOVA (rrcov::Wilks.test, rank-based Wilks' lambda)
 #'     }
 #'   \item \strong{Test execution}: Wilks' Lambda, Pillai's trace, Hotelling-Lawley, Roy's largest root
 #'   \item \strong{Post-hoc analyses}: Discriminant analysis if requested
@@ -126,8 +126,9 @@
 #' When assumptions are violated, the function switches to robust methods:
 #'
 #' \itemize{
-#'   \item \strong{Robust MANOVA:} Uses MCD (Minimum Covariance Determinant) estimator
-#'     (package: rrcov)
+#'   \item \strong{Robust MANOVA:} rank-based Wilks' lambda (Nath & Pavur, 1985),
+#'     \code{rrcov::Wilks.test(method = "rank")}. The MCD version simulated its null
+#'     distribution (3000 draws, more than 6 minutes) and was abandoned.
 #'   \item \strong{Permutation MANOVA:} For small samples or severe violations
 #'   \item \strong{Multivariate Kruskal-Wallis:} Non-parametric alternative (limited availability in R)
 #' }
@@ -1101,14 +1102,14 @@
     #                    ROBUST MANOVA (MCD ESTIMATOR)
     #==========================================================================
 
-    k <- .vbse("Executing robust MANOVA (Wilks test with robust estimator).",
-               "Ex\u00e9cution de la MANOVA robuste (test de Wilks avec estimateur robuste).",
+    k <- .vbse("Executing robust MANOVA (Wilks test on ranks).",
+               "Ex\u00e9cution de la MANOVA robuste (test de Wilks sur les rangs).",
                verbose=verbose, k=k, cpt="on")
 
     # Use rrcov package for robust MANOVA with MCD estimator
     if (requireNamespace("rrcov", quietly = TRUE)) {
-      k <- .vbse("Using MCD (Minimum Covariance Determinant) estimator for robust MANOVA [rrcov package].",
-                 "Utilisation de l'estimateur MCD (Minimum Covariance Determinant) pour MANOVA robuste [package rrcov].",
+      k <- .vbse("Each response is replaced by its ranks: Wilks' lambda on ranks [Wilks.test(method = \"rank\") {rrcov}].",
+                 "Chaque r\u00e9ponse est remplac\u00e9e par ses rangs : lambda de Wilks sur les rangs [Wilks.test(method = \"rank\") {rrcov}].",
                  verbose=verbose, k=k, cpt="off")
 
       if (!is.null(g_terms)) {
@@ -1117,9 +1118,12 @@
                    verbose=verbose, k=k, cpt="off")
       }
 
-      # MCD et loi du test reposent sur un tirage : graine fixe pour un bilan reproductible
+      # Wilks sur les rangs (Nath & Pavur, 1985) : loi asymptotique, sans tirage.
+      # La version MCD simulait sa loi (nrep = 3000 par defaut) : plus de 6 minutes
+      # par appel. Sous H0 non normale, les rangs donnent 4,9 a 5,5 % de rejets
+      # (dev/mtest_audit/RAPPORT.md).
       robust_result <- tryCatch({
-        suppressWarnings(withr::with_seed(2026, rrcov::Wilks.test(x, grouping=g_factor, method="mcd")))
+        suppressWarnings(rrcov::Wilks.test(x, grouping=g_factor, method="rank"))
       }, error=function(e) NULL)
 
       if (!is.null(robust_result)) {
@@ -1130,12 +1134,12 @@
         )
 
         if (robust_pval <= alpha) {
-          k <- .vbse(paste0("Robust Wilks' test (MCD): Significant multivariate effect, p-value = ", .mvn_fmt(robust_pval)),
-                     paste0("Test de Wilks robuste (MCD) : Effet multivari\u00e9 significatif, p-value = ", .mvn_fmt(robust_pval)),
+          k <- .vbse(paste0("Robust Wilks' test (ranks): Significant multivariate effect, p-value = ", .mvn_fmt(robust_pval)),
+                     paste0("Test de Wilks robuste (rangs) : Effet multivari\u00e9 significatif, p-value = ", .mvn_fmt(robust_pval)),
                      verbose=verbose, k=k, cpt="off")
         } else {
-          k <- .vbse(paste0("Robust Wilks' test (MCD): Non-significant multivariate effect, p-value = ", .mvn_fmt(robust_pval)),
-                     paste0("Test de Wilks robuste (MCD) : Effet multivari\u00e9 non significatif, p-value = ", .mvn_fmt(robust_pval)),
+          k <- .vbse(paste0("Robust Wilks' test (ranks): Non-significant multivariate effect, p-value = ", .mvn_fmt(robust_pval)),
+                     paste0("Test de Wilks robuste (rangs) : Effet multivari\u00e9 non significatif, p-value = ", .mvn_fmt(robust_pval)),
                      verbose=verbose, k=k, cpt="off")
         }
       }
@@ -1147,7 +1151,7 @@
     }
   }
 
-  # Voie robuste sans r\u00e9sultat (groupes trop petits, MCD impossible...) : Pillai, en le disant
+  # Voie robuste sans r\u00e9sultat (groupes trop petits, rangs impossibles...) : Pillai, en le disant
   if (isTRUE(robust) && is.null(test_statistics$RobustWilks)) {
     k <- .vbse("Robust MANOVA not applicable to these data.\n\t--> Back to Pillai's trace, the most robust classical test.\n\t(Assumptions are violated: interpret with caution.)",
                "MANOVA robuste inapplicable \u00e0 ces donn\u00e9es.\n\t--> Retour vers la trace de Pillai, le test classique le plus robuste.\n\t(Assomptions viol\u00e9es : interpr\u00e9tez avec prudence.)",
@@ -1197,7 +1201,7 @@
   method_used <- "MANOVA"
   if (!is.null(test_statistics$RobustWilks)) {
     global_pvalue <- as.numeric(test_statistics$RobustWilks$p_value)
-    method_used <- "Robust MANOVA (Wilks, MCD)"
+    method_used <- "Robust MANOVA (Wilks, ranks)"
   } else if (!is.null(test_statistics$Pillai) && (violations > 0 || is.null(test_statistics$Wilks))) {
     global_pvalue <- test_statistics$Pillai$p_value
     method_used <- "MANOVA (Pillai's trace)"
