@@ -9,7 +9,7 @@ Rien n'est poussé. Ni master, ni `m.bay`, ni les branches `feat/m.bay`, cor.bay
 
 ## Synthèse
 
-Quatorze défauts, tous reproduits sur des données construites pour l'occasion, puis corrigés, chacun avec son commit et son test (a à g : audits de m.bay ; h à k : cet audit ; l à n : relecture de l'expert indépendant). Rien n'est fusionné : la fusion vers master revient à Antoine.
+Dix-sept défauts, tous reproduits sur des données construites pour l'occasion, puis corrigés, chacun avec son commit et son test (a à g : audits de m.bay ; h à k : cet audit ; l à q : relectures de l'expert indépendant). Rien n'est fusionné : la fusion vers master revient à Antoine.
 
 | | Défaut | Avant | Après | Ce que voit l'étudiant |
 |---|---|---|---|---|
@@ -27,10 +27,13 @@ Quatorze défauts, tous reproduits sur des données construites pour l'occasion,
 | l | Mesures répétées : p-value jamais corrigée de la sphéricité | voir § l | voir § l | p corrigée GG/HF toujours ; Mauchly en information |
 | m | Welch annoncé « robuste » | récit trop affirmatif | « le choix le moins fragile », avec un avertissement pour les petits groupes asymétriques | message plus prudent |
 | n | Résultat RM sans mention de la correction | « (p=0.22) » | « (p=0.22, corrigée de Greenhouse-Geisser) » | lien explicite avec l'étape de sphéricité |
+| o | Plan en tranches déséquilibré (5 + 9 sujets) | plantage « Les variables explicatives… ne correspondent pas aux colonnes de g » | ANOVA à mesures répétées `aov()` + `Error()` ; grp identique à `aov` | le cas banal de TP aboutit ; la sortie signale les groupes inégaux |
+| p | F corrigés de type III, tableau `aov` séquentiel | 5 + 9 sujets : « non corrigée » = type III (temps F = 3,17, p = 0,036) alors que le tableau affiche F = 5,14 (p = 0,0046) | ε appliqué aux F et ddl du tableau `aov` affiché | p non corrigée et p corrigée cohérentes avec le tableau |
+| q | Risque du Welch mal chiffré | « environ 10 à 17 % » | « environ 11 à 17 % », sources citées dans le code | chiffre exact |
 
 **Format des nombres.** m.test écrit partout les p-values et les epsilons avec un point décimal (`.format_pval()`, `round()`), y compris en français. Les nouveaux messages gardent le point, par cohérence avec le reste de la sortie. m.bay utilise la virgule : à harmoniser plus tard si Antoine le souhaite.
 
-**Points ouverts** (§ 4) : Welch par défaut sans test préalable de variance (décision d'Antoine) ; lenteur de `return = FALSE` ; `$global_pvalue` = premier terme en plan multi-facteurs.
+**Points ouverts** (§ 4) : Welch par défaut sans test préalable de variance (décision d'Antoine) ; lenteur de `return = FALSE` ; règle de `$global_pvalue` en plan multi-facteurs (soumise à Antoine, non modifiée) ; mesure sous H0 après la correction de sphéricité et `R CMD check` final, en attente de mémoire libre.
 
 ## 1. Défauts signalés par les audits de m.bay (a à g)
 
@@ -54,7 +57,7 @@ Quatre causes en chaîne :
 3. Le contrôle « équilibrage RM strict » comptait les sujets de l'autre niveau du between comme incomplets : `table()` d'un facteur `id` garde tous ses niveaux.
 4. Le contrôle de croisement attendait within × between cellules par sujet. Un sujet n'appartient pourtant qu'à un niveau du between.
 
-Correction : un facteur constant pour chaque sujet est déclaré inter-sujet, et le message le dit. La partie fixe de `lmer` reprend les termes de la formule. Les deux contrôles raisonnent sujet par sujet. Le plan équilibré part maintenant vers `aov()` avec `Error()`, et `$effects` reproduit `aov` exactement. Un plan déséquilibré part vers `lmer`, qui garde G:T.
+Correction : un facteur constant pour chaque sujet est déclaré inter-sujet, et le message le dit. La partie fixe de `lmer` reprend les termes de la formule. Les deux contrôles raisonnent sujet par sujet. Le plan équilibré part maintenant vers `aov()` avec `Error()`, et `$effects` reproduit `aov` exactement. Un plan dont la structure intra-sujet est incomplète (sujet sans toutes les modalités, doublons) part vers `lmer`, qui garde G:T (test b). **Correction de cette phrase après la passe 2 de l'expert** : un plan complet mais aux groupes inter-sujets inégaux (5 + 9 sujets) ne partait pas vers `lmer`, il plantait (correctif o).
 
 ### b. Plantage avec `verbose = FALSE`
 
@@ -139,7 +142,10 @@ Correction (a00440c) :
 - les epsilons sont recalculés exactement par `car::Anova()` sur le plan de `rstatix` (qui les arrondit à 3 décimales : écart de 1e-4 sur p sinon) ;
 - la p-value corrigée alimente le récit, `$effects` et la p-value globale ;
 - Mauchly reste affiché comme information, avec la mention de sa faible puissance ;
-- le test a (split-plot) compare maintenant G:T à la p-value corrigée.
+- le test a (split-plot) compare maintenant G:T à la p-value corrigée ;
+- depuis le correctif p (709080d), ε est appliqué aux F et ddl du **tableau `aov` affiché** (séquentiel), et non plus au F de type III de `car`. En plan équilibré, c'est le même F ; en plan déséquilibré, la p « non corrigée » annoncée est enfin celle du tableau.
+
+Sens de la correction : la p corrigée est en général plus grande que la p non corrigée, mais pas toujours. Quand F < 1, réduire les degrés de liberté la diminue : dans l'exemple ci-dessous, 0,731 → 0,609.
 
 Complément (5d4f7c2, correctif n) : la ligne de résultat le rappelle, « Aucun effet significatif de T (p=0.609, corrigée de Greenhouse-Geisser) », pour que l'étudiant fasse le lien avec l'étape de sphéricité.
 
@@ -201,11 +207,15 @@ La correction de fond serait d'appliquer Welch par défaut (t de Welch, F de Wel
 
 - **Lenteur avec `return = FALSE`.** Les post-hocs (bootstrap compris) sont calculés même quand seule la p-value est demandée : 47 s contre 0,85 s avec `boot = FALSE`.
 - **`$groups` et `$p.value` vides en modèle mixte** (voie `lmer` existante et split-plot) : `.posthoc_mixed_model()` rend une liste par effet, que `m.test()` ne remonte pas. Les comparaisons s'affichent bien.
-- **`$global_pvalue` d'un plan à plusieurs facteurs** = p-value du premier terme (0,199 pour G dans le split-plot, alors que G:T p = 0,030). Ce choix est fixé par un test existant, mais il trompe un lecteur pressé. `$effects` donne tous les termes.
+- **`$global_pvalue` d'un plan à plusieurs facteurs : règle actuelle, non modifiée.** C'est la p-value du **premier facteur principal de la formule** (`.first_factor_pvalue()`, `R/sys_effects_table.R` ; règle BP-031, fixée par le test « la p-value globale est celle du premier facteur »). Pour une mesure répétée, c'est la p-value corrigée de la sphéricité si ce facteur est intra-sujet. Exemples : split-plot de la section a, 0,199 (G) alors que G:T p = 0,030 ; plan en tranches équilibré de l'expert, 0,104 (grp) alors que temps p = 0,042. La règle ne décrit pas le plan entier ; l'expert propose le minimum corrigé ou le test du modèle entier. **Soumis à Antoine.** `$effects` donne tous les termes.
 - **Doublon en mesures répétées** : « ASSOMPTION DE BASE : Indépendance… » puis « ASSOMPTION 1/3 : Indépendance… ».
 - **Note emmeans** « adjust = "tukey" was changed to "sidak" » imprimée même avec `verbose = FALSE`.
 - **Documentation MANOVA** : elle annonce une « Permutation MANOVA » et un « Kruskal-Wallis multivarié » qui n'existent pas dans le code.
 - **roxygen** : `mbay-lib` contient roxygen2 8.1.1, qui réécrit tout le NAMESPACE. Le `.Rd` de `.manova_analysis` a donc été corrigé à la main.
+
+### 4.3 Durée d'un appel en plan en tranches (passe 2 de l'expert)
+
+L'expert a vu plus de 10 minutes pour deux appels avec `boot = FALSE`. Mesuré séparément (`verbose = FALSE`, `return = TRUE`, machine encore chargée, 0,9 Go libre) : plan équilibré 7 + 7 sujets, 4,7 s puis 11,8 s ; plan 5 + 9 sujets après le correctif o, 2,9 s puis 2,3 s (avant : échec en 1,2 s). Profil de l'appel équilibré (9 s) : `.multi_factor_analysis()` 4,1 s, post-hocs `emmeans` du split-plot 1,8 s, sphéricité (`rstatix` + `car`) 0,3 s. Rien de pathologique : les 10 minutes viennent de la saturation de la machine (0 Go libre, échange disque) au moment de la mesure. L'estimation « environ 1 s » de l'introduction vaut pour un facteur à 50 observations ; un plan en tranches avec post-hocs `emmeans` coûte quelques secondes.
 
 ## 5. Vérifications
 
