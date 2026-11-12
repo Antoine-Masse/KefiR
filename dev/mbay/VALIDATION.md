@@ -997,3 +997,14 @@ n = 8 par groupe, 30 jeux par partie. Résultats : `scripts/resultats/agent_71_*
 ## 28. Tableaux de contingence, ancien et nouveau moteur (D30, `agent_78`), 11 novembre
 
 1000 tables par scénario, intervalle de Wilson à 95 %. Résultats complets : `scripts/resultats/agent_78_*.txt` (BF > 20 et BF > 3, ancien et nouveau, khi-deux). Le tableau est dans DECISIONS, D30.
+
+## 29. D25 sous un effet modéré : le BIC dit « non » quand le facteur agit (`agent_79`), 12 novembre
+
+Demande de la session parente après l'audit de D30 (BIC trop prudent sur une table 3 × 3 à lien réel). 2 × 2, n = 25 par case, 1000 jeux par scénario, sans sensibilité. Résultats : `scripts/resultats/agent_79_*.txt`.
+
+| Scénario | « non » sur A (P ≤ 0,25, soit BF ≤ 1/3) | « non, soutien fort » (BF ≤ 1/20) | « oui » sur A (P > 0,75) | Rapport de vraisemblance p < 0,05 |
+|---|---:|---:|---:|---:|
+| Oui/non, rapport de cotes 2 sur A | 57,1 % [54,0 ; 60,1] | 0 % [0 ; 0,4] | 13,2 % | 41,1 % |
+| Comptages, rapport des moyennes 1,5 sur A | 27,2 % [24,5 ; 30,0] | 0 % [0 ; 0,4] | 37,1 % | 70,1 % |
+
+**Lecture.** Le BIC ne dit jamais « non, soutien fort » sous ces effets. Mais il dit « non » à soutien modéré dans plus de la moitié des jeux en oui/non, alors que le facteur agit et que le test le voit dans 41 %. C'est le même défaut que la voie catégorielle (D30), au niveau modéré. **Pas de correction avant le choix de moteur** de g.bay (BIC, `BAS::bas.glm` à a priori robuste, forme close à marges neutres), qui sera repris à l'identique pour D25, D26 et D30.
