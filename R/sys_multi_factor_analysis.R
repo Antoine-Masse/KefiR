@@ -4302,11 +4302,14 @@
               if (any(effect_rows)) {
                 effects <- row_names[effect_rows]
                 p_values <- strata_table[effect_rows, "Pr(>F)"]
+                corr_methods <- rep(NA_character_, length(p_values))
                 # Termes intra-sujet : p-value corrig\u00e9e de la sph\u00e9ricit\u00e9 (GG/HF)
                 if (exists("sphericity_corrections", inherits = FALSE) && !is.null(sphericity_corrections)) {
                   p_values <- .apply_sphericity(
                     data.frame(term = trimws(row_names[effect_rows]), p.value = p_values,
                                stringsAsFactors = FALSE), sphericity_corrections)$p.value
+                  corr_methods <- sphericity_corrections$method[
+                    match(gsub("\\s+", "", row_names[effect_rows]), gsub("\\s+", "", sphericity_corrections$term))]
                 }
 
                 # Identifier effets significatifs
@@ -4318,6 +4321,7 @@
                   all_sig_effects[[strata_name]] <- data.frame(
                     effect = sig_effects,
                     p_value = sig_pvals,
+                    corr = corr_methods[sig_idx],
                     stringsAsFactors = FALSE
                   )
                 }
@@ -4326,13 +4330,19 @@
                 all_strata_info[[strata_name]] <- list(
                   n_effects = length(effects),
                   effects = trimws(effects),  # Nettoyer espaces
-                  p_values = p_values
+                  p_values = p_values,
+                  corr = corr_methods
                 )
               }
             }
           }
         }
 
+        # p-value affichee, avec la correction de sphericite appliquee (lien avec l'etape Mauchly)
+        .ptxt <- function(p, corr, fr = FALSE) {
+          paste0("p=", .format_pval(p),
+                 if (!is.na(corr)) paste0(if (fr) ", corrig\u00e9e de " else ", corrected by ", corr) else "")
+        }
         # Afficher synth\u00e8se par strate
         if (length(all_strata_info) > 0) {
           for (strata_name in names(all_strata_info)) {
@@ -4341,7 +4351,10 @@
             if (info$n_effects > 0) {
               # Construire message pour cette strate
               effects_summary <- paste0(sapply(seq_along(info$effects), function(i) {
-                paste0(info$effects[i], " (p=", .format_pval(info$p_values[i]), ")")
+                paste0(info$effects[i], " (", .ptxt(info$p_values[i], info$corr[i], fr = TRUE), ")")
+              }), collapse = ", ")
+              effects_summary_en <- paste0(sapply(seq_along(info$effects), function(i) {
+                paste0(info$effects[i], " (", .ptxt(info$p_values[i], info$corr[i]), ")")
               }), collapse = ", ")
 
               # Identifier effets significatifs
@@ -4351,19 +4364,20 @@
               if (info$n_effects == 1) {
                 effect_name <- info$effects[1]
                 p_val <- info$p_values[1]
+                p_corr <- info$corr[1]
 
                 if (!is.null(sig_in_strata) && nrow(sig_in_strata) > 0) {
                   # Effet significatif
                   k <- .vbse(
-                    paste0("==> Significant effect of ", effect_name, " (p=", .format_pval(p_val), ")."),
-                    paste0("==> Effet significatif de ", effect_name, " (p=", .format_pval(p_val), ")."),
+                    paste0("==> Significant effect of ", effect_name, " (", .ptxt(p_val, p_corr), ")."),
+                    paste0("==> Effet significatif de ", effect_name, " (", .ptxt(p_val, p_corr, fr = TRUE), ")."),
                     verbose = verbose, code = code, k = k, cpt = "off"
                   )
                 } else {
                   # Pas d'effet significatif
                   k <- .vbse(
-                    paste0("==> No significant effect of ", effect_name, " (p=", .format_pval(p_val), ")."),
-                    paste0("==> Aucun effet significatif de ", effect_name, " (p=", .format_pval(p_val), ")."),
+                    paste0("==> No significant effect of ", effect_name, " (", .ptxt(p_val, p_corr), ")."),
+                    paste0("==> Aucun effet significatif de ", effect_name, " (", .ptxt(p_val, p_corr, fr = TRUE), ")."),
                     verbose = verbose, code = code, k = k, cpt = "off"
                   )
                 }
@@ -4371,17 +4385,20 @@
                 # Format avec mention de strate si plusieurs effets
                 if (!is.null(sig_in_strata) && nrow(sig_in_strata) > 0) {
                   sig_summary <- paste0(sapply(seq_len(nrow(sig_in_strata)), function(i) {
-                    paste0(sig_in_strata$effect[i], " (p=", .format_pval(sig_in_strata$p_value[i]), ")")
+                    paste0(sig_in_strata$effect[i], " (", .ptxt(sig_in_strata$p_value[i], sig_in_strata$corr[i], fr = TRUE), ")")
+                  }), collapse = ", ")
+                  sig_summary_en <- paste0(sapply(seq_len(nrow(sig_in_strata)), function(i) {
+                    paste0(sig_in_strata$effect[i], " (", .ptxt(sig_in_strata$p_value[i], sig_in_strata$corr[i]), ")")
                   }), collapse = ", ")
 
                   k <- .vbse(
-                    paste0("Stratum '", strata_name, "': Significant effect(s) - ", sig_summary),
+                    paste0("Stratum '", strata_name, "': Significant effect(s) - ", sig_summary_en),
                     paste0("Strate '", strata_name, "' : Effet(s) significatif(s) - ", sig_summary),
                     verbose = verbose, code = code, k = k, cpt = "off"
                   )
                 } else {
                   k <- .vbse(
-                    paste0("Stratum '", strata_name, "': No significant effects (tested: ", effects_summary, ")"),
+                    paste0("Stratum '", strata_name, "': No significant effects (tested: ", effects_summary_en, ")"),
                     paste0("Strate '", strata_name, "' : Aucun effet significatif (test\u00e9s : ", effects_summary, ")"),
                     verbose = verbose, code = code, k = k, cpt = "off"
                   )

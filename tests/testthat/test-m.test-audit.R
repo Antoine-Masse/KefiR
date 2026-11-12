@@ -222,3 +222,11 @@ test_that("m. le recit du Welch heteroscedastique ne promet pas la robustesse", 
   expect_true(any(grepl("Prudence", res$output, fixed = TRUE)))
   expect_false(any(grepl("robuste \u00e0 une non-normalit\u00e9 mod\u00e9r\u00e9e", res$output, fixed = TRUE)))
 })
+
+test_that("n. le resultat de mesures repetees rappelle que la p-value est corrigee", {
+  d <- make_ar1(3)$d
+  res <- audit_quiet(m.test(y ~ T + Error(id / T), data = d, plot = FALSE, boot = FALSE))
+  ligne <- grep("effet significatif de T", res$output, value = TRUE)
+  expect_length(ligne, 1)
+  expect_match(ligne, "corrig\u00e9e de Greenhouse-Geisser", fixed = TRUE)
+})
