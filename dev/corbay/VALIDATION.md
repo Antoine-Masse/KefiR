@@ -195,3 +195,22 @@ Table complète (66 cases) : `Rscript analyse_auto.R`.
 - **Paire aberrante contre le sens du lien** : `cor.test` de Pearson ne voit plus le lien (5 à 11 %) ; cor.bay le retrouve (96 % à P > 0,95, rho = 0,5, n = 100).
 - **Contre-épreuve** : aucun désaccord compté (« contradiction », C9) dans les 66 cases. Les désaccords nets entre les deux méthodes existent (jusqu'à 49 % des jeux à paire aberrante, rho = 0,3, n = 100), mais toujours quand Kendall a été choisi à cause de paires à part : ils sont dits « expliqués », la réponse de Pearson n'est pas retenue, et le bilan tranche. Avant ce réglage, ces mêmes jeux auraient rendu le bilan « indécis » (37 à 58 % des cas, `sim_auto_mcd.rds`).
 - **Absence de lien** : « aucun lien » à 75 % n'apparaît qu'à partir de 50 paires (11 à 25 % des jeux sans lien), 100 paires (43 à 67 %) : conséquence voulue de kappa = 1/3 (§4).
+
+## 7. « Aucun lien » soutenu alors que l'intervalle de rho exclut 0 ? (`sim_null_hdi.R`, 1000 jeux par case, 12 novembre)
+
+Demande de la session parente, pour la cohérence avec m.bay et g.bay : le bilan peut-il dire « aucun lien, soutien fort » alors que l'intervalle de crédibilité de rho, dans le même bilan, exclut 0 ? Liens modérés réels, données normales, code du paquet (règle `auto`, facteurs de Bayes, niveau de soutien de `.corbay_lead_info`, intervalle du bilan sous l'a priori d'estimation ; la dernière colonne reprend l'intervalle sous l'a priori du test). Soutien modéré = niveau 3 (P ≥ 0,75 et BF ≥ 3), fort = niveau 4 (P ≥ 0,95).
+
+| rho | n | « aucun lien » en tête | … soutien modéré | … soutien fort | IC excluant 0 (tous jeux) | « aucun lien » modéré ou fort **et** IC excluant 0 | « aucun lien » en tête et IC excluant 0 | idem, IC sous l'a priori du test | P(aucun lien) maximale |
+|---|---|---|---|---|---|---|---|---|---|
+| 0,2 | 30 | 67,1 | 0,0 | 0 | 21,6 | **0** | 0,0 | 0 | 0,714 |
+| 0,2 | 50 | 58,7 | 1,7 | 0 | 30,8 | **0** | 0,0 | 0 | 0,759 |
+| 0,2 | 100 | 42,5 | 5,1 | 0 | 51,6 | **0** | 0,2 | 0 | 0,813 |
+| 0,3 | 30 | 46,3 | 0,0 | 0 | 39,6 | **0** | 0,0 | 0 | 0,714 |
+| 0,3 | 50 | 30,1 | 0,2 | 0 | 61,5 | **0** | 0,0 | 0 | 0,759 |
+| 0,3 | 100 | 10,2 | 0,1 | 0 | 87,1 | **0** | 0,0 | 0 | 0,806 |
+
+**Lecture.**
+- **Jamais de « soutien fort » de l'absence de lien** jusqu'à 100 paires : avec kappa = 1/3, P(aucun lien) ne dépasse pas 0,81. Le facteur de Bayes en faveur de l'absence est plafonné à ces tailles (§4).
+- **0 jeu sur 6000** avec « aucun lien » soutenu (modéré ou fort) et un intervalle excluant 0 ; le seuil de 5 % fixé par la session parente n'est pas approché. **Aucune ligne n'est ajoutée au bilan.**
+- « Aucun lien » en tête avec un intervalle excluant 0 n'arrive que dans 2 jeux sur 1000 (rho = 0,2, n = 100), toujours sans soutien : le bilan y dit « indécis » et l'estimation y est donnée « si un lien existe ».
+- À surveiller : à rho = 0,2 et n = 100, « aucun lien » en tête avec un soutien modéré dans 5,1 % des jeux (« plutôt pas de lien, sans conclure », jamais « très probablement ») ; l'intervalle contient alors 0, les deux lectures s'accordent. C'est le prix, déjà mesuré en §4, d'un a priori qui attend des liens d'ordre moyen.
