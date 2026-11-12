@@ -251,3 +251,27 @@ test_that("o. plan en tranches desequilibre (5 + 9 sujets) : pas de plantage, G:
   expect_equal(res$value$effects$p.value[res$value$effects$term == "grp"],
                ref[["Error: id"]][[1]]["grp", "Pr(>F)"], tolerance = 1e-6)
 })
+
+test_that("p. correction de sphericite appliquee au F du tableau aov affiche", {
+  d <- make_unbalanced_split()
+  tab <- summary(aov(y ~ grp * temps + Error(id / temps), data = d))[["Error: id:temps"]][[1]]
+  rownames(tab) <- trimws(rownames(tab))
+  # epsilons independants de m.test : car::Anova sur le format large
+  w <- reshape(d, idvar = c("id", "grp"), timevar = "temps", direction = "wide")
+  ycols <- grep("^y[.]", names(w), value = TRUE)
+  fit <- lm(as.matrix(w[, ycols]) ~ grp, data = w, contrasts = list(grp = "contr.sum"))
+  adj <- summary(car::Anova(fit, idata = data.frame(temps = factor(sub("^y[.]", "", ycols))),
+                            idesign = ~temps, type = 3), multivariate = FALSE)$pval.adjustments
+  p_ref <- sapply(c("temps", "grp:temps"), function(term) {
+    eps <- if (adj[term, "GG eps"] <= 0.75) adj[term, "GG eps"] else min(1, adj[term, "HF eps"])
+    pf(tab[term, "F value"], eps * tab[term, "Df"], eps * tab["Residuals", "Df"], lower.tail = FALSE)
+  })
+  res <- audit_quiet(m.test(y ~ grp * temps + Error(id / temps), data = d,
+                            boot = FALSE, plot = FALSE))
+  eff <- res$value$effects
+  expect_equal(eff$p.value[eff$term == "temps"], unname(p_ref["temps"]), tolerance = 1e-6)
+  expect_equal(eff$p.value[eff$term == "grp:temps"], unname(p_ref["grp:temps"]), tolerance = 1e-6)
+  # la p "non corrigee" annoncee est celle du tableau aov
+  p_unc <- .format_pval(tab["temps", "Pr(>F)"])
+  expect_true(any(grepl(paste0("non corrig\u00e9e : ", p_unc), res$output, fixed = TRUE)))
+})

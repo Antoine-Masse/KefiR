@@ -2057,7 +2057,7 @@
             # peu puissant avec peu de sujets, il ne d\u00e9cide plus de la correction.
             # (Les anciennes affectations `<<-` \u00e9crivaient hors de la fonction :
             # l'\u00e9tape de correction ne se d\u00e9clenchait jamais.)
-            sphericity_corrections <- .sphericity_corrected(anova_result)
+            sphericity_corrections <- .sphericity_corrected(anova_result, aov_model = model)
             if (!is.null(anova_result$`Mauchly's Test for Sphericity`)) {
               mauchly_results <- anova_result$`Mauchly's Test for Sphericity`
               p_mauchly <- mauchly_results$p[1]

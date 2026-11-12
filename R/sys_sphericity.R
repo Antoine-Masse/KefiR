@@ -10,7 +10,37 @@
 #' @return data.frame (term, F, DFn, DFd, p_uncorrected, GGe, HFe, method,
 #'   epsilon, p_corrected), or NULL when no within term has 3 levels or more.
 #' @keywords internal
-.sphericity_corrected <- function(anova_result) {
+.sphericity_corrected <- function(anova_result, aov_model = NULL) {
+  res <- .sphericity_corrected_car(anova_result)
+  # F et ddl du tableau aov() AFFICHE (sequentiel). En plan desequilibre, le F de
+  # type III de car::Anova() differe (temps : 5,14 contre 3,17) : la p "non corrigee"
+  # affichee doit etre celle du tableau. Epsilon, lui, ne depend pas du type de SC.
+  if (!is.null(res) && inherits(aov_model, "aovlist")) {
+    smry <- tryCatch(summary(aov_model), error = function(e) NULL)
+    if (!is.null(smry)) {
+      for (s in smry) {
+        if (length(s) == 0) next
+        tab <- s[[1]]
+        if (!is.data.frame(tab) || !"F value" %in% colnames(tab)) next
+        rn <- gsub("\\s+", "", rownames(tab))
+        res_row <- which(rn == "Residuals")
+        if (length(res_row) != 1) next
+        for (i in seq_len(nrow(res))) {
+          j <- match(gsub("\\s+", "", res$term[i]), rn)
+          if (is.na(j) || is.na(tab[j, "F value"])) next
+          res$F[i] <- tab[j, "F value"]
+          res$DFn[i] <- tab[j, "Df"]
+          res$DFd[i] <- tab[res_row, "Df"]
+        }
+      }
+      res$p_uncorrected <- stats::pf(res$F, res$DFn, res$DFd, lower.tail = FALSE)
+      res$p_corrected <- stats::pf(res$F, res$epsilon * res$DFn, res$epsilon * res$DFd, lower.tail = FALSE)
+    }
+  }
+  res
+}
+
+.sphericity_corrected_car <- function(anova_result) {
   # rstatix arrondit les epsilons a 3 decimales : on refait le calcul de car::Anova()
   # sur le meme plan pour des p-values exactes ; repli sur la table arrondie sinon.
   exact <- tryCatch({
