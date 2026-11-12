@@ -230,3 +230,24 @@ test_that("n. le resultat de mesures repetees rappelle que la p-value est corrig
   expect_length(ligne, 1)
   expect_match(ligne, "corrig\u00e9e de Greenhouse-Geisser", fixed = TRUE)
 })
+
+# Plan en tranches desequilibre : 14 sujets x 4 temps, groupes 5 + 9 (cas de l'expert)
+make_unbalanced_split <- function(nA = 5, nB = 9) {
+  set.seed(12)
+  L4 <- chol(0.8^abs(outer(1:4, 1:4, "-")))
+  do.call(rbind, lapply(seq_len(nA + nB), function(i) data.frame(
+    id = factor(paste0("s", i)), grp = factor(ifelse(i <= nA, "A", "B")),
+    temps = factor(paste0("t", 1:4)),
+    y = as.vector(rnorm(4) %*% L4) + c(0, 0.3, 0.6, 0.9) * (i > nA))))
+}
+
+test_that("o. plan en tranches desequilibre (5 + 9 sujets) : pas de plantage, G:T garde", {
+  d <- make_unbalanced_split()
+  res <- audit_quiet(m.test(y ~ grp * temps + Error(id / temps), data = d,
+                            boot = FALSE, verbose = FALSE, plot = FALSE))
+  expect_false(is.null(res$value))
+  expect_setequal(res$value$effects$term, c("grp", "temps", "grp:temps"))
+  ref <- summary(aov(y ~ grp * temps + Error(id / temps), data = d))
+  expect_equal(res$value$effects$p.value[res$value$effects$term == "grp"],
+               ref[["Error: id"]][[1]]["grp", "Pr(>F)"], tolerance = 1e-6)
+})

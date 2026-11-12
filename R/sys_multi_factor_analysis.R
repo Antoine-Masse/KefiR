@@ -1495,7 +1495,25 @@
 
     table_data <- table(g_cat)
 
-    if (length(unique(table_data)) == 1) {
+    # Mesures repetees avec Error() : la structure intra-sujet a deja ete verifiee
+    # complete (sinon robuste = TRUE). Des groupes inter-sujets d'effectifs inegaux
+    # (split-plot 5 + 9 sujets) ne relevent pas de la branche "desequilibre" entre
+    # sujets, qui ajustait lm(y ~ ... + Error()) et controlait l'independance de `id` :
+    # elle plantait. aov() + Error() traite ce plan.
+    rm_unequal_groups <- isTRUE(paired) && isTRUE(alea) && length(unique(table_data)) > 1
+    if (rm_unequal_groups) {
+      k <- .vbse(
+        paste0("Between-subject groups of unequal sizes (", paste(range(table_data), collapse = " to "),
+               " observations per cell); every subject has all within-subject levels.\n\t",
+               "--> Repeated-measures ANOVA [aov() with Error term], sequential table (type I)."),
+        paste0("Groupes inter-sujets d'effectifs in\u00e9gaux (", paste(range(table_data), collapse = " \u00e0 "),
+               " observations par cellule) ; chaque sujet a toutes les modalit\u00e9s intra-sujet.\n\t",
+               "--> ANOVA \u00e0 mesures r\u00e9p\u00e9t\u00e9es [aov() avec terme Error], tableau s\u00e9quentiel (type I)."),
+        verbose = verbose, code = code, k = k, cpt = "on"
+      )
+    }
+
+    if (length(unique(table_data)) == 1 || rm_unequal_groups) {
       # Donn\u00e9es \u00e9quilibr\u00e9es (factoriel)
       .dbg("", "Les donn\u00e9es sont \u00e9quilibr\u00e9es (factoriel), vers une tentative d'ANOVA.", debug=debug)
       balanced <- TRUE  # Indicateur pour le type de SS \u00e0 utiliser
