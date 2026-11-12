@@ -1431,6 +1431,32 @@ m.test <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 
   .dbg(NULL, "Tests posts-hocs.", debug = debug)
 
+  # p-value globale d'un mod\u00e8le \u00e0 plusieurs termes (d\u00e9cision d'Antoine Mass\u00e9,
+  # 12 novembre 2026) : Bonferroni sur la plus petite p des termes test\u00e9s,
+  # min(1, k \u00d7 min(p)). Avec un seul terme (corrigraph), rien ne change.
+  eff_rule <- if (is.list(bilan)) bilan$effects else NULL
+  # MANOVA \u00e0 plusieurs termes : une p par terme pour le test retenu (Wilks ou Pillai).
+  # La voie robuste teste les groupes crois\u00e9s d'un seul bloc : un seul test, r\u00e8gle sans objet.
+  if (is.data.frame(eff_rule) && is.null(eff_rule$p.value)) {
+    p_col <- if (grepl("Pillai", paste(bilan$method, collapse = " "))) "p.Pillai" else
+      if (grepl("Wilks' Lambda", paste(bilan$method, collapse = " "))) "p.Wilks" else NA_character_
+    eff_rule <- if (!is.na(p_col) && p_col %in% names(eff_rule))
+      data.frame(term = eff_rule$term, p.value = eff_rule[[p_col]], stringsAsFactors = FALSE) else NULL
+  }
+  global_rule <- .global_pvalue_bonferroni(eff_rule, data)
+  if (!is.null(global_rule)) {
+    bilan$global_pvalue <- global_rule$p
+    k <- .vbse(
+      paste0("Global p-value = ", global_rule$k, " x ", .format_pval(global_rule$p_min), " = ",
+             .format_pval(global_rule$p), " (smallest p of the ", global_rule$k, " terms: ",
+             global_rule$term, ", Bonferroni-corrected)."),
+      paste0("p globale = ", global_rule$k, " \u00d7 ", .format_pval(global_rule$p_min), " = ",
+             .format_pval(global_rule$p), " (plus petite p des ", global_rule$k, " termes : ",
+             global_rule$term, ", corrig\u00e9e de Bonferroni)."),
+      verbose = verbose, code = code, k = k, cpt = "on"
+    )
+  }
+
   # NOTE PERSO: Gestion return=FALSE (Cahier des charges priorit\u00e9 2)
   # Si return=FALSE \u2192 renvoyer UNIQUEMENT p-value globale, PAS de post-hocs
   if (return == FALSE) {

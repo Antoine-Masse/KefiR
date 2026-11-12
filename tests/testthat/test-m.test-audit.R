@@ -284,3 +284,20 @@ test_that("q. le recit du Welch cite le risque mesure (11 a 17 %)", {
   res <- audit_quiet(m.test(x, g, plot = FALSE, boot = FALSE))
   expect_true(any(grepl("environ 11 \u00e0 17 %", res$output, fixed = TRUE)))
 })
+
+test_that("r. p globale : un terme inchange ; plusieurs termes, Bonferroni sur la plus petite", {
+  # un seul terme (appel de corrigraph) : inchange
+  expect_equal(audit_quiet(m.test(iris$Sepal.Length, iris$Species, return = FALSE))$value,
+               oneway.test(Sepal.Length ~ Species, data = iris)$p.value)
+  # plan en tranches equilibre de l'expert : 0,104 (grp) avant, min(1, 3 x p(temps)) apres
+  d <- make_unbalanced_split(7, 7)
+  res <- audit_quiet(m.test(y ~ grp * temps + Error(id / temps), data = d, boot = FALSE, plot = FALSE))
+  eff <- res$value$effects
+  attendu <- min(1, 3 * min(eff$p.value))
+  expect_equal(eff$term[which.min(eff$p.value)], "temps")
+  expect_equal(res$value$global_pvalue, attendu)
+  expect_equal(audit_quiet(m.test(y ~ grp * temps + Error(id / temps), data = d, boot = FALSE,
+                                  return = FALSE))$value, attendu)
+  expect_true(any(grepl("p globale = 3 \u00d7 ", res$output, fixed = TRUE) &
+                    grepl("corrig\u00e9e de Bonferroni", res$output, fixed = TRUE)))
+})
