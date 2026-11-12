@@ -40,10 +40,10 @@
 #'   stacked, individual random; one or several factors between groups; reading per
 #'   response.
 #' - **Discrete responses**: yes/no or categories with one factor
-#'   ([BayesFactor::contingencyTableBF()], D17); counts (Poisson and negative binomial) and
+#'   (Dirichlet-multinomial with neutral margins, shared with g.bay, D30); counts (Poisson and negative binomial) and
 #'   ordered ratings (proportional odds, [MASS::polr()]) with one factor (D17); yes/no,
-#'   counts and ordered ratings with several factors between groups (glm or polr, BIC,
-#'   HOP, D25, D26).
+#'   counts and ordered ratings with several factors between groups (glm or polr, deviance Bayes factor with a Zellner-Siow g,
+#'   HOP, D25, D26, D31).
 #'
 #' **Refused, with a message**: random slopes; covariates with subjects; MANOVA with
 #' covariates or subjects; discrete responses with subjects or covariates; categories (more
@@ -164,7 +164,7 @@
 #' k$score <- pmin(5, pmax(1, round(3 + (k$plot == "p2") + rnorm(40))))
 #' m.bay(score ~ plot, data = k, verbose = FALSE, sensitivity = FALSE)$prob_effect
 #'
-#' # Yes/no with two factors (logistic regression, BIC).
+#' # Yes/no with two factors (logistic regression).
 #' b <- expand.grid(rep = 1:20, tr = c("t0", "t1"), soil = c("clay", "sand"))
 #' b$germ <- ifelse(runif(80) < ifelse(b$tr == "t1", 0.75, 0.4), "yes", "no")
 #' m.bay(germ ~ tr * soil, data = b, verbose = FALSE, sensitivity = FALSE)$effects[, c("term", "p_h1")]
