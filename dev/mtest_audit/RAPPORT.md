@@ -9,7 +9,7 @@ Rien n'est poussé. Ni master, ni `m.bay`, ni les branches `feat/m.bay`, cor.bay
 
 ## Synthèse
 
-Dix-huit points, tous reproduits sur des données construites pour l'occasion, puis corrigés, chacun avec son commit et son test (a à g : audits de m.bay ; h à k : cet audit ; l à q : relectures de l'expert indépendant ; r : décision d'Antoine). Rien n'est fusionné : la fusion vers master revient à Antoine.
+Dix-neuf points, tous reproduits sur des données construites pour l'occasion, puis corrigés, chacun avec son commit et son test (a à g : audits de m.bay ; h à k : cet audit ; l à q : relectures de l'expert indépendant ; r : décision d'Antoine ; s : trouvé en mesurant la correction de sphéricité). Rien n'est fusionné : la fusion vers master revient à Antoine.
 
 | | Défaut | Avant | Après | Ce que voit l'étudiant |
 |---|---|---|---|---|
@@ -30,12 +30,12 @@ Dix-huit points, tous reproduits sur des données construites pour l'occasion, p
 | o | Plan en tranches déséquilibré (5 + 9 sujets) | plantage « Les variables explicatives… ne correspondent pas aux colonnes de g » | ANOVA à mesures répétées `aov()` + `Error()` ; grp identique à `aov` | le cas banal de TP aboutit ; la sortie signale les groupes inégaux |
 | p | F corrigés de type III, tableau `aov` séquentiel | 5 + 9 sujets : « non corrigée » = type III (temps F = 3,17, p = 0,036) alors que le tableau affiche F = 5,14 (p = 0,0046) | ε appliqué aux F et ddl du tableau `aov` affiché | p non corrigée et p corrigée cohérentes avec le tableau |
 | r | p globale d'un modèle à plusieurs termes = p du premier facteur (décision d'Antoine, 12 novembre) | plan en tranches 7 + 7 : 0,104 (grp) alors que temps p = 0,042 | min(1, 3 × 0,0421) = 0,126 (Bonferroni sur la plus petite p) | `$global_pvalue` et `return = FALSE` changent dès qu'il y a plusieurs termes ; le récit donne le calcul |
-| s | Mesures répétées : normalité testée sur un mélange de résidus de strates (**non corrigé**, § s) | données normales AR(1) : 577 jeux sur 1000 envoyés vers Friedman ; `m.test` 6,7 % sous H0 | — (correction proposée) | des données normales partent en non paramétrique ; `$method` faux ; post-hocs en échec |
+| s | Mesures répétées : normalité testée sur un mélange de résidus de strates | données normales AR(1) : 577 jeux sur 1000 envoyés vers Friedman ; `m.test` 6,7 % sous H0 ; plan en tranches T 8 %, G:T 7,5 % | résidus de la strate intra-sujet : 0 jeu sur 2000 hors ANOVA ; AR(1) 5,3 % (= règle GG/HF seule) ; tranches T 4,5 %, G:T 5 % | des données normales restent en ANOVA à mesures répétées ; `$method` = « Friedman test » sur la voie Friedman ; Nemenyi apparié sujet par sujet |
 | q | Risque du Welch mal chiffré | « environ 10 à 17 % » | « environ 11 à 17 % », sources citées dans le code | chiffre exact |
 
 **Format des nombres.** m.test écrit partout les p-values et les epsilons avec un point décimal (`.format_pval()`, `round()`), y compris en français. Les nouveaux messages gardent le point, par cohérence avec le reste de la sortie. m.bay utilise la virgule : à harmoniser plus tard si Antoine le souhaite.
 
-**Points ouverts** (§ 4) : **défaut s à corriger en priorité** (normalité des résidus en mesures répétées) ; Welch par défaut sans test préalable de variance (décision d'Antoine) ; lenteur de `return = FALSE` ; la mesure sous H0 après la correction de sphéricité et le `R CMD check` final sont faits (12 novembre).
+**Points ouverts** (§ 4) : Welch par défaut sans test préalable de variance (décision d'Antoine) ; lenteur de `return = FALSE` ; `$method` d'un plan en tranches qui nomme parfois le moteur des post-hocs. Le défaut s est corrigé (36723fe) ; mesures sous H0 et `R CMD check` refaits le 12 novembre après-midi.
 
 ## 1. Défauts signalés par les audits de m.bay (a à g)
 
@@ -157,28 +157,31 @@ Exemple du test l (12 sujets × 6 temps, AR(1) ρ = 0,9, graine 3) : ε GG = 0,4
 
 Calibration sous H0 (12 sujets × 6 temps, 1000 jeux par scénario, `sim_sph.R`) :
 
-| Mesure | Avant (cff6685) | Après (0beb8ad) |
-|---|---|---|
-| AR(1) ρ = 0,9 : `m.test`, 1000 jeux | **8,1 %** | **6,7 %** |
-| AR(1) : F non corrigé d'`aov` (référence) | 9,7 % | 9,7 % |
-| AR(1) : règle GG/HF de Girden appliquée seule, calcul direct par `car` (référence) | — | **5,3 %** |
-| Symétrie composée (sphéricité vraie) : `m.test`, 1000 jeux | 4,8 % | 3,1 % |
-| Symétrie composée : F non corrigé d'`aov` | 4,7 % | 4,7 % |
-| Expert indépendant, AR(1) ρ = 0,9, 2000 jeux | F non corrigé : 8,7 % | Greenhouse-Geisser : 4,5 % |
+| Mesure | Avant (cff6685) | Après l (0beb8ad) | Après s (36723fe) |
+|---|---|---|---|
+| AR(1) ρ = 0,9 : `m.test`, 1000 jeux | **8,1 %** | **6,7 %** | **5,3 %** |
+| AR(1) : F non corrigé d'`aov` (référence) | 9,7 % | 9,7 % | 9,7 % |
+| AR(1) : règle GG/HF de Girden appliquée seule, calcul direct par `car` (référence) | — | 5,3 % | 5,3 % |
+| Symétrie composée (sphéricité vraie) : `m.test`, 1000 jeux | 4,8 % | 3,1 % | 3,0 % |
+| Symétrie composée : règle GG/HF seule, par `car` | — | — | 3,0 % |
+| Symétrie composée : F non corrigé d'`aov` | 4,7 % | 4,7 % | 4,7 % |
+| Plan en tranches 2 × 6 sujets × 6 temps, AR(1), 200 jeux : G / T / G:T | — | 4 % / 8 % / 7,5 % (5d323cc) | 4 % / 4,5 % / 5 % |
+| Plan en tranches : p globale (Bonferroni, r) | — | 8,5 % | 6 % |
+| Expert indépendant, AR(1) ρ = 0,9, 2000 jeux | F non corrigé : 8,7 % | Greenhouse-Geisser : 4,5 % | |
 
-Mesures du 12 novembre 2026, un seul processus (`sim_sph.R` avec `workers = 1`), avant = cff6685, après = 0beb8ad ; 12 sujets × 6 temps, données **normales**. Écart-type Monte-Carlo ≈ 0,7 point autour de 5 %.
+Mesures du 12 novembre 2026, un seul processus (`sim_sph.R` avec `workers = 1`) ; 12 sujets × 6 temps, données **normales**. Écart-type Monte-Carlo ≈ 0,7 point autour de 5 % à 1000 jeux, ≈ 1,5 point à 200 jeux.
 
-**Lecture.** La correction de sphéricité fait ce qu'elle doit : appliquée seule, la règle de Girden rejette 5,3 % sous AR(1) (le F non corrigé, 9,7 %). Mais `m.test` reste à 6,7 %, parce que **577 jeux sur 1000 ne passent pas par l'ANOVA** : l'arbre les juge « non-normalité sévère » et les envoie vers le test de Friedman, alors que les données sont normales. C'est le défaut s ci-dessous, indépendant de la sphéricité. Sous symétrie composée (sphéricité vraie), la correction rend `m.test` un peu conservateur (3,1 %), ce qui est attendu de Greenhouse-Geisser avec ε estimé.
+**Lecture.** Après la correction de s, la p de `m.test` est celle de la règle de Girden calculée directement par `car::Anova` sur **les 2000 jeux** (écart > 1e-6 : 0 jeu) : plus aucun jeu normal ne part vers Friedman. En AR(1), `m.test` rejette 5,3 % (8,1 % au départ, 9,7 % sans correction). En symétrie composée, 3,0 % : c'est la règle elle-même qui est conservatrice quand la sphéricité est vraie, parce que l'epsilon de Greenhouse-Geisser estimé sur 12 sujets tombe souvent sous 0,75 alors que le vrai vaut 1 ; le F non corrigé, exact dans ce cas, donne 4,7 %. C'est le prix connu d'une correction appliquée sans condition (choix l), et il va dans le sens prudent. En plan en tranches, les termes intra-sujet T et G:T passent de 8 % et 7,5 % à 4,5 % et 5 % ; G, testé dans la strate sujets, ne change pas (4 %).
 
-### s. Normalité des résidus en mesures répétées : résidus de strates mélangés (trouvé, **non corrigé**)
+### s. Normalité des résidus en mesures répétées : résidus de strates mélangés (36723fe)
 
-Trouvé pendant la mesure ci-dessus, le 12 novembre ; non corrigé parce que la consigne était de rendre le rapport final et de s'arrêter. **À corriger en priorité** : ce défaut touche des étudiants dès que leurs données ont des mesures répétées.
+Trouvé pendant la mesure ci-dessus, le 12 novembre ; corrigé le même jour, à la demande de la session principale.
 
-- **Cause** (`R/sys_multi_factor_analysis.R`, `get_residuals()`, vers la ligne 224). Pour un modèle `aov()` avec `Error()`, la fonction essaie `dae::residuals.aovlist()`. Le paquet `dae` n'est pas installé (ni dans DESCRIPTION) : le repli `unlist(lapply(model, residuals))` concatène les « résidus » de toutes les strates. On obtient 1 valeur pour la strate de la constante (la moyenne générale projetée), 11 pour la strate sujets, 60 pour la strate intra-sujet. Ces nombres n'ont ni la même échelle ni le même sens.
-- **Effet mesuré** (jeu 1, données normales AR(1)) : asymétrie 2,62, aplatissement 12,99 sur ce mélange ; m.test affiche « Skewness = −2.746, Kurtosis = 11.044 », conclut à une « non-normalité sévère » et applique Friedman (p = 0,869 au lieu de 0,623 par Greenhouse-Geisser). Les résidus de la seule strate intra-sujet, `proj(model)[["id:T"]][, "Residuals"]`, sont normaux : asymétrie −0,07, aplatissement 3,10, Shapiro p = 0,96.
-- **Fréquence** : 577 jeux normaux sur 1000 basculent ainsi vers Friedman.
-- **Effets secondaires observés sur la même voie** : `$method` affiche « Parametric ANOVA/t-test » alors que le test est Friedman ; les post-hocs de Nemenyi échouent (« not an unreplicated complete block design ») ; le récit dit « Variances homogènes » pour un plan intra-sujet pur.
-- **Correction proposée** : pour un `aovlist`, tester la normalité sur les résidus de la strate d'erreur la plus basse (intra-sujet), `proj(model)[[length(proj(model))]][, "Residuals"]`, ou sur `residuals(lm(y ~ termes + id))`, qui leur sont équivalents en plan complet ; retirer la dépendance implicite à `dae`. Puis refaire `sim_sph.R` : `m.test` devrait rejoindre les 5,3 % de la règle seule.
+- **Cause** (`R/sys_multi_factor_analysis.R`, `get_residuals()`). Pour un modèle `aov()` avec `Error()`, la fonction essayait `dae::residuals.aovlist()`. Le paquet `dae`, déclaré en Suggests, n'était pas installé : le repli `unlist(lapply(model, residuals))` concaténait les « résidus » de toutes les strates. On obtenait 1 valeur pour la strate de la constante, 11 pour la strate sujets, 60 pour la strate intra-sujet, sans la même échelle ni le même sens.
+- **Effet mesuré avant** (jeu 1, données normales AR(1)) : asymétrie 2,62, aplatissement 12,99 sur ce mélange ; « non-normalité sévère », puis Friedman (p = 0,869 au lieu de 0,623 par Greenhouse-Geisser). 577 jeux normaux sur 1000 basculaient ainsi. En plan en tranches (15 graines, 2 × 6 sujets × 6 temps) : Shapiro p de 2e-11 à 0,015 sur le mélange, de 0,08 à 0,99 sur la strate intra-sujet.
+- **Correction.** Pour un `aovlist`, la normalité est testée sur les résidus de la strate d'erreur la plus basse, `proj(model)[[dernière]][, "Residuals"]`, une valeur par observation (repli : résidus de cette seule strate). Ce sont exactement les résidus de `lm(y ~ T + id)`, ou de `lm(y ~ G*T + id)` en plan en tranches (vérifié dans les tests). `dae` est retiré des Suggests de DESCRIPTION : plus rien ne s'en sert. Des données réellement non normales vont toujours vers Friedman.
+- **Voie Friedman.** `$method` disait « Parametric ANOVA/t-test » : il dit maintenant « Friedman test » (et nomme de même les autres voies robustes de `.multi_factor_analysis()` : Scheirer-Ray-Hare, ANOVA par permutation, t2way/t3way). Les post-hocs de Nemenyi (`pairwise(type = "neminye")`) fabriquaient l'identifiant du sujet par `rep(1:n, k)`, ce qui suppose les lignes rangées par condition ; or `m.test` les range par sujet depuis h. Selon n et k, Nemenyi échouait (« not an unreplicated complete block design ») ou, pire, appariait des sujets différents (exemple du test : lettres toutes « a » au lieu de t2 « a », t4 « b »). Le sujet est maintenant le rang d'apparition dans son groupe, juste dans les deux rangements.
+- **Tests** (trois tests s, 14 assertions) : échouent sur 5d323cc (8 échecs : Friedman à 0,87, « non-normalité sévère » en plan en tranches, `$method`, lettres de Nemenyi qui dépendent du rangement), passent sur 36723fe.
 
 ## 3. Taux de faux positifs sous H0
 
@@ -219,6 +222,7 @@ La correction de fond serait d'appliquer Welch par défaut (t de Welch, F de Wel
 - **Lenteur avec `return = FALSE`.** Les post-hocs (bootstrap compris) sont calculés même quand seule la p-value est demandée : 47 s contre 0,85 s avec `boot = FALSE`.
 - **`$groups` et `$p.value` vides en modèle mixte** (voie `lmer` existante et split-plot) : `.posthoc_mixed_model()` rend une liste par effet, que `m.test()` ne remonte pas. Les comparaisons s'affichent bien.
 - **`$global_pvalue` d'un plan à plusieurs facteurs : tranché par Antoine le 12 novembre 2026, voir § 4.3.** Règle antérieure, pour mémoire : C'est la p-value du **premier facteur principal de la formule** (`.first_factor_pvalue()`, `R/sys_effects_table.R` ; règle BP-031, fixée par le test « la p-value globale est celle du premier facteur »). Pour une mesure répétée, c'est la p-value corrigée de la sphéricité si ce facteur est intra-sujet. Exemples : split-plot de la section a, 0,199 (G) alors que G:T p = 0,030 ; plan en tranches équilibré de l'expert, 0,104 (grp) alors que temps p = 0,042. La règle ne décrit pas le plan entier ; l'expert propose le minimum corrigé ou le test du modèle entier. **Soumis à Antoine.** `$effects` donne tous les termes.
+- **`$method` d'un plan en tranches** : dans 41 jeux sur 200 (avant comme après s), `$method` vaut « EMMs (emmeans package) », le moteur des post-hocs, au lieu de nommer l'ANOVA à mesures répétées. Les p-values ne sont pas en cause ; seule l'étiquette l'est.
 - **Doublon en mesures répétées** : « ASSOMPTION DE BASE : Indépendance… » puis « ASSOMPTION 1/3 : Indépendance… ».
 - **Note emmeans** « adjust = "tukey" was changed to "sidak" » imprimée même avec `verbose = FALSE`.
 - **Documentation MANOVA** : elle annonce une « Permutation MANOVA » et un « Kruskal-Wallis multivarié » qui n'existent pas dans le code.
@@ -242,8 +246,8 @@ L'expert a vu plus de 10 minutes pour deux appels avec `boot = FALSE`. Mesuré s
 
 ## 5. Vérifications
 
-- `tests/testthat/test-m.test-audit.R` : 19 tests, 58 assertions, 0 échec au dernier commit (b824ef0). Chacun a été lancé sur le commit précédant sa correction (échec), puis après (succès).
-- Non-régression au dernier commit : `test-m.test.R` (20 tests), `test-manova.R` (22 tests, 17 s au lieu de plus de 6 min) et `test-valreg.R` (6 tests) : 0 échec, 0 erreur (b824ef0).
+- `tests/testthat/test-m.test-audit.R` : 22 tests, 72 assertions, 0 échec (36723fe). Chacun a été lancé sur le commit précédant sa correction (échec), puis après (succès).
+- Non-régression : `test-m.test.R` (20 tests), `test-manova.R` (22 tests, 17 s au lieu de plus de 6 min) et `test-valreg.R` (6 tests) : 0 échec, 0 erreur (b824ef0, puis 36723fe).
 - `R CMD check --no-manual --ignore-vignettes` (R 4.6.1, bibliothèque `mbay-lib`). Sur dc74ae7 : 2 NOTE (le dossier `.claude` inclus dans le build ; NEWS.md sans titre de version), corrigées au commit suivant. Sur 2a1e8b1 : Status: OK. Un essai du 12 novembre au matin a été tué par la saturation mémoire (« fatal error status code 4 »). **Check final sur 0beb8ad, 12 novembre 12 h 40, sous le verrou `VERROU_CHECK.txt` (libéré à la fin) : Status: OK**, 0 erreur, 0 avertissement, 0 NOTE, tests `testthat.R` compris.
 
 ## Références

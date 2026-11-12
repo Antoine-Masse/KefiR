@@ -58,7 +58,6 @@ Imports:
     multcomp,
     rrcov
 Suggests:
-    dae,
     doParallel,
     knitr,
     rmarkdown,
