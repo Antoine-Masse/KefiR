@@ -776,3 +776,12 @@ Rapport : `relecture/lisibilite_2026-11-11/AUDIT.md` (13 plans, plus une variant
 - le titre du bilan dit « non tranché (…) » ;
 - le compte rendu dit sur quoi porte la différence : « Les données ne permettent pas de conclure : les centres des groupes diffèrent (…), mais pas leurs moyennes (… sous la loi normale) ; les groupes diffèrent par leur forme ou leur dispersion plutôt que par leur moyenne ».
 Testé (`test-bay-story.R`). Au passage, l'estimation de la ligne d'attente croît en racine de N, et non plus linéairement (250 s annoncées pour 2 groupes de 400).
+
+**D30, suite (12 novembre) : le BIC des tables est REMPLACÉ par la Dirichlet-multinomiale à marges neutres, commune avec g.bay (G12).** L'audit de l'expert (passe 2) a montré que le BIC log-linéaire affirmait l'indépendance à tort sous un lien réel : en 3 × 3 avec V = 0,21 et N = 100, « indépendance, soutien fort » dans 61 % des tables, et 99 % en 4 × 5.
+- **Formule.** log BF₁₀ = Σᵢ log DM(ligneᵢ ; a) − log DM(totaux des colonnes ; r·a). Sous H1, les cases suivent Dirichlet(a). Sous H0, chaque marge reçoit la loi que H1 lui donne : Dirichlet(c·a) pour les lignes, Dirichlet(r·a) pour les colonnes. Le facteur de Bayes n'apprend donc rien des marges et ne dépend pas du plan d'échantillonnage.
+- **Source.** C'est le score « Bayesian Dirichlet equivalent » des réseaux bayésiens, X → Y contre le graphe vide : Heckerman, D., Geiger, D., & Chickering, D. M. (1995), *Machine Learning*, 20, 197-243 ; version uniforme Buntine (1991).
+- **Commun avec g.bay.** La valeur, a = 2 par case, et la formule sont celles de `.bay_dm_neutral_bf` de g.bay (G12, branche `claude/feat-g-bay-1f2987`, commits 90583a7 et 4683bdb). g.bay a écarté a = 3, qui dépassait 1 % de faux liens sous H0 quand les marges sont très inégales. Ma fonction `.bay_cont_lbf` rend le même nombre, contrôlé sur dix tables (2 × 2 à 5 × 6, dont des tables creuses) avec un écart nul.
+  - Une première version retirait les lignes et colonnes vides avant le calcul. Elle différait de g.bay sur une table à ligne vide (0,40 en échelle log), car une ligne vide entre dans r·a. Elle est alignée sur G12 : rien n'est retiré.
+- **Sensibilité** : a/2, a, 2a (soit 1, 2, 4), croisés avec les chances de départ.
+- **Post-hoc** : la même formule sur le tableau fusionné de chaque regroupement.
+- Le BIC de D30 est gardé à part (`.bay_cont_lbf_bic`), pour les comparaisons seulement.

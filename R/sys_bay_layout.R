@@ -40,7 +40,7 @@
 	switch(obj$plan,
 		oneway = list(en = "comparison of noise laws, Rouder et al. 2012", fr = "comparaison de lois du bruit, Rouder et al. 2012"),
 		paired = list(en = "Bayesian paired t test, Rouder et al. 2009", fr = "test t appari\u00e9 bay\u00e9sien, Rouder et al. 2009"),
-		contingency = list(en = "log-linear model, BIC approximation, Raftery 1995", fr = "mod\u00e8le log-lin\u00e9aire, approximation BIC, Raftery 1995"),
+		contingency = list(en = "Dirichlet-multinomial with neutral margins, Heckerman et al. 1995", fr = "Dirichlet-multinomiale \u00e0 marges neutres, Heckerman et al. 1995"),
 		ordinal = list(en = "proportional odds, MASS::polr, BIC approximation", fr = "cotes proportionnelles, MASS::polr, approximation BIC"),
 		counts = list(en = "Poisson and negative binomial, BIC approximation, Raftery 1995", fr = "Poisson et binomiale n\u00e9gative, approximation BIC, Raftery 1995"),
 		discrete_fact = if (identical(obj$kind, "ordinal")) list(en = "proportional odds, MASS::polr, BIC approximation, HOP prior", fr = "cotes proportionnelles, MASS::polr, approximation BIC, a priori HOP") else if (identical(obj$kind, "binary")) list(en = "logistic regression, BIC approximation, HOP prior, Raftery 1995", fr = "r\u00e9gression logistique, approximation BIC, a priori HOP, Raftery 1995") else
@@ -163,9 +163,9 @@
 		# Centres and means disagree (heavy tails win): the report says on what the difference
 		# bears, and follows the verdict (audit of the expert, 11 November).
 		pc <- h$posterior[h1]
-		emit("note", paste0("for a report: \"The data do not settle it: the centres of the groups differ (", .bay_pct(pc, "."),
+		emit("note", paste0("for a report: \"The data do not settle it: the centres of the groups (typical values, close to the medians) differ (", .bay_pct(pc, "."),
 				", heavy-tailed laws), but not their means (", .bay_pct(obj$p_normal, "."), " under the normal law); the groups differ by their shape or spread rather than their mean (m.bay {KefiR}, ", ct$en, ").\""),
-			paste0("pour un compte rendu : \u00ab Les donn\u00e9es ne permettent pas de conclure : les centres des groupes diff\u00e8rent (", .bay_pct(pc, ","),
+			paste0("pour un compte rendu : \u00ab Les donn\u00e9es ne permettent pas de conclure : les centres des groupes (valeurs typiques, proches des m\u00e9dianes) diff\u00e8rent (", .bay_pct(pc, ","),
 				", lois \u00e0 queues lourdes), mais pas leurs moyennes (", .bay_pct(obj$p_normal, ","), " sous la loi normale) ; les groupes diff\u00e8rent par leur forme ou leur dispersion plut\u00f4t que par leur moyenne (m.bay {KefiR}, ", ct$fr, "). \u00bb"))
 	} else if (term_lead) {
 		# Terms first, the global answer second (audit of 9c44239, point 1).

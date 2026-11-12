@@ -541,12 +541,12 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	}
 	heavy <- isTRUE(p_t >= .bay_heavy_threshold())
 	if (heavy && !contradiction) {
-		note("The noise looks heavy-tailed: the comparison bears on the centres of the groups, not exactly on their means.",
-			"Le bruit semble \u00e0 queues lourdes : la comparaison porte sur le centre des groupes, pas exactement sur leur moyenne.", tell = FALSE)
+		note("The noise looks heavy-tailed: the comparison bears on the centres of the groups (typical values, close to the medians), not exactly on their means.",
+			"Le bruit semble \u00e0 queues lourdes : la comparaison porte sur le centre des groupes (valeur typique, proche de la m\u00e9diane), pas exactement sur leur moyenne.", tell = FALSE)
 	}
 	if (heavy) {
-		.bay_tell(story, paste0("Heavy tails prevail (", .bay_pct(p_t, "."), "): the answer bears on the centres of the groups, not their means."),
-			paste0("Les queues lourdes l'emportent (", .bay_pct(p_t, ","), ") : la r\u00e9ponse porte sur les centres des groupes, pas sur leurs moyennes."), "decide")
+		.bay_tell(story, paste0("Heavy tails prevail (", .bay_pct(p_t, "."), "): the answer bears on the centres of the groups (typical values, close to the medians), not their means."),
+			paste0("Les queues lourdes l'emportent (", .bay_pct(p_t, ","), ") : la r\u00e9ponse porte sur les centres des groupes (valeurs typiques, proches des m\u00e9dianes), pas sur leurs moyennes."), "decide")
 	} else if (p_t > 0.5) {
 		.bay_tell(story, paste0("Heavy tails the more probable (", .bay_pct(p_t, "."), "), below ", .bay_pct(.bay_heavy_threshold(), "."), ": the answer mixes means and centres."),
 			paste0("Queues lourdes les plus probables (", .bay_pct(p_t, ","), "), sous ", .bay_pct(.bay_heavy_threshold(), ","), " : la r\u00e9ponse m\u00eale moyennes et centres."), "decide")

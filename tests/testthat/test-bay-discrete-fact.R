@@ -41,3 +41,17 @@ test_that("ordered response with two factors (D26): polr per model, BIC, HOP", {
 	expect_gt(r$effects$p_h1[1L], 0.9)
 	expect_gt(r$ratios$ratio[1L], 1)
 })
+
+test_that("deviance Bayes factor with a Zellner-Siow g (D31): same integral by brute force, sane limits", {
+	brute <- function(z, p, N, r) {
+		b <- N * r^2 / 2
+		f <- function(g) (1 + g)^(-p / 2) * exp(g / (1 + g) * z / 2) * sqrt(b) / gamma(0.5) * g^(-1.5) * exp(-b / g)
+		log(stats::integrate(f, 0, Inf, rel.tol = 1e-10)$value)
+	}
+	for (cs in list(c(0, 1, 100), c(4, 1, 100), c(12, 2, 400), c(30, 3, 80))) {
+		expect_equal(.bay_dev_lbf(cs[1], cs[2], cs[3], sqrt(2) / 4), brute(cs[1], cs[2], cs[3], sqrt(2) / 4), tolerance = 1e-5)
+	}
+	expect_lt(.bay_dev_lbf(0, 1, 100), 0)
+	expect_gt(.bay_dev_lbf(30, 1, 100), .bay_dev_lbf(10, 1, 100))
+	expect_equal(.bay_dev_lbf(5, 0, 100), 0)
+})

@@ -7,8 +7,35 @@
 # (one factor against the response), not the three-way table of two factors. Nothing is
 # exported.
 
-# -BIC/2 of every hereditary model, one column per law.
-.bay_df_lml <- function(y, factors, sp, kind) {
+# Scale r of the Zellner-Siow g on the deviance (D31): sqrt(2)/4 gives back, for two balanced
+# groups, the Cauchy of scale sqrt(2)/2 on the standardised gap of the t test (D5), the same
+# yardstick for discrete and continuous responses (Held, Sabanes Bove and Gravestock 2015;
+# Li and Clyde 2018).
+.bay_dev_r <- function() getOption("KefiR.bay_dev_r", sqrt(2) / 4)
+
+# Deviance-based log Bayes factor of a model against the null (Held et al. 2015):
+#   BF = int (1 + g)^(-p/2) exp[g / (1 + g) z / 2] pi(g) dg,  pi(g) = InvGamma(1/2, N r^2 / 2)
+# z the deviance gained, p the parameters added, N the number of observations. One dimension,
+# integrated on log g around its mode.
+.bay_dev_lbf <- function(z, p, N, r = .bay_dev_r()) {
+	if (!is.finite(z) || p <= 0) return(if (p <= 0) 0 else NA_real_)
+	z <- max(z, 0)
+	b <- N * r^2 / 2
+	# Written without overflow: log(1 + g) and g / (1 + g) from t = log g directly.
+	f <- function(t) {
+		l1g <- ifelse(t > 35, t, log1p(exp(pmin(t, 35))))
+		-p / 2 * l1g + stats::plogis(t) * z / 2 + 0.5 * log(b) - lgamma(0.5) - 0.5 * t - b * exp(-t)
+	}
+	lo <- log(b) - 12
+	hi <- max(log(b), log(z + 1)) + 80
+	m <- stats::optimize(f, c(lo, hi), maximum = TRUE)$objective
+	v <- stats::integrate(function(t) exp(f(t) - m), lo, hi, rel.tol = 1e-8, subdivisions = 500L)$value
+	m + log(v)
+}
+
+# Fits of every hereditary model, one column per law: -BIC/2 (lml), log-likelihood (ll) and
+# number of parameters (k).
+.bay_df_fits <- function(y, factors, sp, kind) {
 	safe <- paste0("f", seq_along(factors))
 	names(safe) <- names(factors)
 	d <- data.frame(y = y)
@@ -21,14 +48,35 @@
 			poisson = .bay_quiet(stats::glm(fo, data = d, family = stats::poisson())),
 			negbin = .bay_quiet(MASS::glm.nb(fo, data = d)),
 			polr = .bay_quiet(MASS::polr(fo, data = d))), error = function(e) NULL)
-		if (is.null(fit)) return(NA_real_)
-		if (identical(law, "negbin") && (!is.finite(fit$theta) || fit$theta > 1e6)) return(NA_real_)
-		-stats::BIC(fit) / 2
+		if (is.null(fit)) return(c(NA_real_, NA_real_, NA_real_))
+		if (identical(law, "negbin") && (!is.finite(fit$theta) || fit$theta > 1e6)) return(c(NA_real_, NA_real_, NA_real_))
+		ll <- stats::logLik(fit)
+		c(-stats::BIC(fit) / 2, as.numeric(ll), attr(ll, "df"))
 	}
 	laws <- if (kind == "binary") "binomial" else if (kind == "ordinal") "polr" else c("poisson", "negbin")
-	out <- vapply(laws, function(l) vapply(sp$models, one, numeric(1), law = l), numeric(length(sp$models)))
-	matrix(out, ncol = length(laws), dimnames = list(NULL, laws))
+	arr <- vapply(laws, function(l) vapply(sp$models, one, numeric(3), law = l), matrix(0, 3, length(sp$models)))
+	mk <- function(i) matrix(arr[i, , , drop = TRUE], ncol = length(laws), dimnames = list(NULL, laws))
+	list(lml = mk(1L), ll = mk(2L), k = mk(3L), N = length(y))
 }
+
+# Log marginal likelihoods by engine: "bic" (-BIC/2, D25) or "dev" (null model by -BIC/2, then
+# each model by the deviance Bayes factor against the null, D31). The comparison of the laws
+# (Poisson against negative binomial) stays on the null model at -BIC/2, one parameter apart.
+.bay_df_lml_engine <- function(fits, engine = c("dev", "bic"), r = .bay_dev_r()) {
+	engine <- match.arg(engine)
+	if (engine == "bic") return(fits$lml)
+	out <- fits$lml
+	for (j in seq_len(ncol(out))) {
+		for (i in seq_len(nrow(out))) {
+			out[i, j] <- if (i == 1L) fits$lml[1L, j] else
+				fits$lml[1L, j] + .bay_dev_lbf(2 * (fits$ll[i, j] - fits$ll[1L, j]), fits$k[i, j] - fits$k[1L, j], fits$N, r)
+		}
+	}
+	out
+}
+
+# -BIC/2 of every hereditary model, one column per law (D25; kept for the comparisons).
+.bay_df_lml <- function(y, factors, sp, kind) .bay_df_fits(y, factors, sp, kind)$lml
 
 .bay_m_discrete_fact <- function(input, y, kind, call_expr, get_notes, note, sensitivity, detail, verbose, return, story, posthoc) {
 	.bay_cw$n <- 0L
