@@ -176,7 +176,7 @@ Le facteur de Bayes est −BIC/2 de chaque modèle, avec n = N, le nombre d'indi
 
 **Pour m.bay.** La même correction est demandée à `sys_bay_contingency.R`. La formulation ci-dessus vaut pour les deux fonctions : test de l'interaction, marges libres, −BIC/2 avec n = N.
 
-## G12. Indépendance : Dirichlet-multinomiale à marges neutres, a = 3, et garde-fou de cohérence : DÉCIDÉ ET FAIT (12 novembre), remplace G11
+## G12. Indépendance : Dirichlet-multinomiale à marges neutres, a = 2, et garde-fou de cohérence : DÉCIDÉ ET FAIT (12 novembre), remplace G11
 
 **Origine.** Audit de 01effef (G11) par la session parente. Le défaut sous H0 est corrigé, mais le BIC fait l'erreur inverse :
 - sur 150 tables 3 × 3 à N = 100 avec un lien diagonal modéré (V ≈ 0,2), g.bay dit « lien » à P > 0,75 dans 18 % des cas, contre 65 % pour le test G à p < 0,05 ;
@@ -199,7 +199,7 @@ Deux critères sont demandés ensemble : sous H0, P(lien) > 0,95 dans moins de 1
    | 2 | 0,7 % | 8,9 % (7,4 %) |
    | **3** | **0,6 %** | **2,9 % (2,3 %)** |
 
-   **Retenue, a = 3.**
+   **Forme retenue.** La valeur de a est tranchée plus bas (a = 2).
 
 **Pourquoi la forme à marges neutres est juste.**
 - Propriété d'agrégation de la Dirichlet : Dirichlet(a) sur les r × c cases équivaut à des lignes Dirichlet(c·a) et, indépendamment, à chaque profil de ligne Dirichlet(a). La marge des lignes se simplifie donc dans le facteur de Bayes :
@@ -209,39 +209,79 @@ Deux critères sont demandés ensemble : sous H0, P(lien) > 0,95 dans moins de 1
 - C'est exactement le facteur de Bayes « multinomiales indépendantes » de Gunel et Dickey (1974). La seule différence : l'a priori commun sous H0 est Dirichlet(r·a), la loi qu'induit H1, au lieu de la Dirichlet(r(a − 1) + 1) de BayesFactor.
 - Le même nombre vaut, par symétrie, que les lignes, les colonnes ou le seul total soient fixés (tests : formes jointe, lignes et colonnes égales à 1e-10). Le problème du plan d'échantillonnage (G3) disparaît sans approximation.
 - Contrôle indépendant : vraisemblances marginales par Monte-Carlo sur les a priori, 200 000 tirages, égales à 0,02 près en log (test).
+- **Publiée** : c'est le score BDe (« Bayesian Dirichlet equivalent ») des réseaux bayésiens. Il compare le graphe X → Y au graphe vide, avec une taille d'échantillon équivalente r·c·a. La condition d'équivalence de vraisemblance impose précisément que les a priori des marges soient ceux qu'induit la Dirichlet jointe. Le cas uniforme est le BDeu. Rattachement fait par l'expert (passe 2) :
+  - Heckerman, D., Geiger, D., & Chickering, D. M. (1995). Learning Bayesian networks: the combination of knowledge and statistical data. *Machine Learning*, 20, 197-243 ;
+  - Buntine, W. (1991). Theory refinement on Bayesian networks. *Proceedings of the 7th Conference on Uncertainty in Artificial Intelligence*, 52-60.
+  - Limite connue de ce score : la sensibilité à la taille d'échantillon équivalente, d'où la grille de sensibilité sur a.
+  - Contrôle numérique contre `bnlearn::score(type = "bde")` : pas fait, bnlearn n'est pas dans mbay-lib.
+- **Code partagé** : `.bay_dm_neutral_bf(tab, a)` dans `R/sys_bay_dm_neutral.R`, autonome, avec `.bay_dm_neutral_a()` (= 2) et `.bay_dm_neutral_grid()` (= 1, 2, 4). m.bay peut l'appeler telle quelle.
 
-**Pourquoi a = 3.**
-- Sur la ligne d'une table, Dirichlet(3) attend des écarts modérés entre lignes plutôt qu'extrêmes ; Dirichlet(1) met autant de masse sur des profils très déséquilibrés. C'est le même raisonnement que Jamil et al. (2017) : « si l'on attend de petits effets, on peut augmenter a ».
-- a est fixé avant toute analyse, par la calibration ci-dessus, jamais sur les données de l'utilisateur.
-- La sensibilité fait varier a de 2 à 4, croisé avec les chances de départ.
-- Contrepartie à dire honnêtement : c'est un réglage KefiR, pas un défaut d'un paquet établi. Le calcul est une forme close de trois lignes ; aucun paquet ne propose ces marges neutres.
+**a = 2 ou a = 3 : désaccord avec l'expert, tranché le 12 novembre.**
 
-**Puissance** (P > 0,75, contre le test G à p < 0,05), à V = 0,2 et N = 200 :
+J'avais d'abord retenu a = 3 sur le critère « indépendance forte sous un lien modéré » (§ 10 de VALIDATION). L'expert recommandait a = 2, avec deux arguments :
+1. **Marges très inégales.** Table 2 × 6, lignes 0,8 / 0,2 : sous H0, BF > 20 dans 1,0 % des tables à a = 2 et 1,6 % à a = 4 ; a = 3 risquait de dépasser 1 %.
+2. **L'a priori que a induit sur le V de Cramér**, argument posé d'avance qui ne doit rien à la calibration. Médiane de V sous H1, mesurée ici (`scripts/sim_a2_a3.R`, 4 000 tables par cas) :
 
-| Table | g.bay | test G |
+   | Table | a = 2 | a = 3 |
+   |---|---|---|
+   | 2 × 2 | 0,22 | 0,18 |
+   | 2 × 3 | 0,32 | 0,26 |
+   | 3 × 3 | 0,28 | 0,24 |
+   | 3 × 4 | 0,31 | 0,26 |
+   | 4 × 5 | 0,29 | 0,24 |
+   | 2 × 6 | 0,39 | 0,33 |
+
+   À a = 2, l'a priori est centré sur un effet « moyen » (w = 0,3 de Cohen), comme r = 1/2 dans m.bay et kappa = 1/3 dans cor.bay.
+
+**Règle fixée par la session parente** : garder a = 3 seulement s'il tient moins de 1 % à P > 0,95 sous H0 dans tous les scénarios, marges très inégales comprises ; sinon, prendre a = 2.
+
+**Mesure** (`scripts/sim_a2_a3.R`, 1 000 tables par scénario, sous H0, P(lien) > 0,95, intervalle de Wilson à 95 %) :
+
+| Scénario | a = 2 | a = 3 |
 |---|---|---|
-| 2 × 2 | 71 % | 81 % |
-| 3 × 3 | 78 % | 90 % |
-| 3 × 4 | 70 % | 85 % |
+| 2 × 6, lignes 0,8 / 0,2, N = 30 | 0,1 % | 0,1 % |
+| 2 × 6, lignes 0,8 / 0,2, N = 60 | 1,0 % [0,5 ; 1,8] | **1,3 % [0,8 ; 2,2]** |
+| 2 × 6, lignes 0,8 / 0,2, N = 120 | 1,2 % [0,7 ; 2,1] | **2,0 % [1,3 ; 3,1]** |
+| 4 × 5, marges égales, N = 20 | 0,1 % | 0 % |
+| 4 × 5, marges inégales, N = 20 | 0,2 % | 0 % |
 
-À V = 0,3 et N = 100 :
+**Décision : a = 2.** a = 3 dépasse 1 % sur les marges très inégales. Sensibilité : a = 1, 2, 4, croisé avec les chances de départ.
 
-| Table | g.bay | test G |
+**Ce que a = 2 coûte, mesuré sur le bilan** (sensibilité et garde-fou compris, `scripts/sim_a2_bilan.R`, 1 000 tables) :
+
+| Scénario | a = 2, grille 1, 2, 4 | a = 3, grille 2, 3, 4 |
 |---|---|---|
-| 2 × 2 | 76 % | 87 % |
-| 3 × 3 | 88 % | 93 % |
-| 3 × 4 | 85 % | 88 % |
+| H0, 2 × 6 très inégales, N = 60 / 120 : « lien très probable » | 0,9 % / 0,5 % | 1,1 % / 1,9 % |
+| Lien V = 0,2, 3 × 3, N = 100 : « indépendance forte » | 2,3 % | 0,1 % |
+| Lien V = 0,2, 3 × 4, N = 100 | **7,3 %** | 1,7 % |
+| Lien V = 0,2, 4 × 5, N = 100 | **5,0 %** | 1,7 % |
+| Lien V = 0,2, N = 200 (3 × 3 à 4 × 5) | 1,3 à 2,9 % | 0,4 à 0,6 % |
+
+- Aucune des deux valeurs ne tient les deux critères ensemble.
+- a = 2 respecte la borne sous H0, y compris pour le facteur de Bayes brut à 1,2 % en 2 × 6 à N = 120, que la sensibilité ramène à 0,5 % dans le bilan.
+- a = 2 dépasse en revanche la borne de 5 % d'« indépendance forte » sous un lien V = 0,2 à N = 100 en 3 × 4 (7,3 %). Le critère 5 de l'expert (2 %) est dépassé aussi.
+- C'est le prix de la règle retenue. Je le signale comme point ouvert : le garde-fou pourrait être élargi, par exemple ne pas dire « indépendance forte » tant que l'intervalle à 95 % du V de Cramér dépasse un V moyen, mais il faudrait le décider et le calibrer à part.
+
+**Contrepartie à dire honnêtement** : a reste un réglage, choisi d'avance (a priori sur V, règle de calibration), jamais sur les données de l'utilisateur.
+
+**Puissance de a = 2** (P > 0,75, contre le test G à p < 0,05), facteur de Bayes brut (`sim_neutral.out`) :
+
+| Table | V = 0,2, N = 200 : g.bay | test G | V = 0,3, N = 100 : g.bay | test G |
+|---|---|---|---|---|
+| 2 × 2 | 68 % | 81 % | 75 % | 87 % |
+| 3 × 3 | 74 % | 90 % | 85 % | 93 % |
+| 3 × 4 | 60 % | 85 % | 81 % | 88 % |
 
 **Garde-fou de cohérence.** Si l'indépendance (ou, pour l'ajustement, les proportions données) est en tête avec un soutien fort ou très fort, alors qu'au moins une case s'en écarte avec un intervalle à 95 % qui exclut 1 (lecture G6) :
 - le soutien est ramené à « modéré » et le verdict devient « plutôt pas de lien, sans conclure » ;
 - une ligne « Prudence » dit pourquoi ;
 - la phrase de compte rendu le mentionne, et `$guard` vaut TRUE.
 
-La demande parlait d'un « intervalle du V de Cramér qui exclut 0 ». Ce critère ne peut pas servir : V est positif par construction, son intervalle n'atteint jamais 0, même sous indépendance. L'intervalle d'une case (et, en 2 × 2, celui du rapport des cotes, qui va avec) exclut ou non l'absence d'effet : c'est la lecture que le critère visait. Mesure : il fait passer l'indépendance forte sous un lien modéré de 2,9 % à 2,3 % au plus (a = 3). Sous H0, en grande table à N = 200, il retire le soutien fort dans 0 à 43 % des tables où il était donné (une case signalée par hasard). C'est une prudence, pas une erreur : le bilan dit alors « plutôt pas de lien ».
+La demande parlait d'un « intervalle du V de Cramér qui exclut 0 ». Ce critère ne peut pas servir : V est positif par construction, son intervalle n'atteint jamais 0, même sous indépendance. L'intervalle d'une case (et, en 2 × 2, celui du rapport des cotes, qui va avec) exclut ou non l'absence d'effet : c'est la lecture que le critère visait. Mesure : à a = 2, il fait passer l'indépendance forte sous un lien modéré de 8,9 % à 7,4 % au plus (facteur de Bayes brut, § 10). Sous H0, en grande table à N = 200, il retire le soutien fort dans 0 à 43 % des tables où il était donné (une case signalée par hasard). C'est une prudence, pas une erreur : le bilan dit alors « plutôt pas de lien ».
 
 **Visibilité.** `g.bay()` rend son objet avec `invisible()` quand `verbose = TRUE` (le récit et le bilan sont déjà imprimés), et visible sinon (testé). `print(g.bay(...))` imprime donc le bilan une seconde fois par construction, comme `print(m.bay(...))`.
 
-**Pour m.bay.** Même moteur, une ligne : dans `.bay_cont_lbf`, la concentration de la loi commune sous H0 devient `R * conc` au lieu de `R * (conc - 1) + 1`, avec conc = 3. Le post-hoc par regroupements garde sa forme close, avec la même règle pour chaque tableau fusionné. La formulation ci-dessus vaut pour les deux fonctions.
+**Pour m.bay.** Même moteur, une ligne : dans `.bay_cont_lbf`, la concentration de la loi commune sous H0 devient `R * conc` au lieu de `R * (conc - 1) + 1`, avec conc = 2 ; ou, plus simple, appeler `.bay_dm_neutral_bf(tab, a)` de `R/sys_bay_dm_neutral.R`, avec `.bay_dm_neutral_a()` et `.bay_dm_neutral_grid()`. Le post-hoc par regroupements garde sa forme close, avec la même règle pour chaque tableau fusionné. La formulation ci-dessus vaut pour les deux fonctions.
 
 **G10 et G11** restent retirés. **G2** (ajustement) est inchangé.
 

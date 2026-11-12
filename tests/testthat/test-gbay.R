@@ -13,7 +13,8 @@ test_that("independance (G12) : forme close = loi predictive a priori par Monte-
 			expect_equal(.gbay_lbf_ct(t(t), a), .gbay_lbf_ct(t, a), tolerance = 1e-10)
 		}
 		r <- g.bay(t, verbose = FALSE, sensitivity = FALSE)
-		expect_equal(r$log_bf, .gbay_lbf_ct(t, 3), tolerance = 1e-12)
+		expect_equal(r$log_bf, .bay_dm_neutral_bf(t, 2), tolerance = 1e-12)
+		expect_identical(.bay_dm_neutral_a(), 2)
 		expect_equal(r$prob_effect, 1 / (1 + exp(-r$log_bf)), tolerance = 1e-12)
 		expect_equal(r$G, unname(suppressWarnings(DescTools::GTest(t)$statistic)), tolerance = 1e-8)
 	}
@@ -31,6 +32,19 @@ test_that("independance (G12) : forme close = loi predictive a priori par Monte-
 	d <- data.frame(g = factor(rep(c("a", "b", "c"), each = 30)))
 	d$y <- factor(ifelse(rbinom(90, 1, c(.5, .5, .8)[d$g]) == 1, "oui", "non"))
 	expect_equal(g.bay(d$g, d$y, verbose = FALSE, sensitivity = FALSE)$log_bf, g.bay(y ~ g, data = d, verbose = FALSE, sensitivity = FALSE)$log_bf)
+})
+
+test_that(".bay_dm_neutral_bf (fonction partagee avec m.bay) : forme jointe, symetrie, table de type table", {
+	t <- matrix(c(12, 11, 6, 9, 10, 14, 7, 12, 19), 3, byrow = TRUE)
+	j <- function(t, a) .gbay_ldm(as.vector(t), rep(a, length(t))) - .gbay_ldm(rowSums(t), rep(ncol(t) * a, nrow(t))) - .gbay_ldm(colSums(t), rep(nrow(t) * a, ncol(t)))
+	for (a in c(1, 2, 4)) {
+		expect_equal(.bay_dm_neutral_bf(t, a), j(t, a), tolerance = 1e-10)
+		expect_equal(.bay_dm_neutral_bf(t(t), a), .bay_dm_neutral_bf(t, a), tolerance = 1e-10)
+	}
+	expect_equal(.bay_dm_neutral_bf(as.table(t)), .bay_dm_neutral_bf(t))
+	expect_identical(.bay_dm_neutral_grid(), c(1, 2, 4))
+	# Table de l'audit : BF 0,51 a a = 2 (expert, passe 2).
+	expect_equal(exp(.bay_dm_neutral_bf(t, 2)), 0.51, tolerance = 0.01)
 })
 
 test_that("calibration : marges equilibrees sans lien (4 x 5, N = 50) ; un lien modere ne fait pas une independance forte", {

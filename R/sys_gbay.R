@@ -5,11 +5,9 @@
 #
 #   Goodness of fit (G2): multinomial, point H0 (the proportions given) against a Dirichlet(a)
 #     alternative, closed form (Good 1967; Sarafoglou et al. 2023, multibridge).
-#   Independence (G12, replaces G3 and G11): Dirichlet-multinomial with neutral margins. Under
-#     a link, each row its own proportions, Dirichlet(a); under independence, common
-#     proportions with the law that a link gives to the margins, Dirichlet(r a). Closed form,
-#     a = 3 calibrated in advance by simulation; the same number whether the total, the rows or
-#     the columns were fixed.
+#   Independence (G12, replaces G3 and G11): Dirichlet-multinomial with neutral margins,
+#     .bay_dm_neutral_bf() (sys_bay_dm_neutral.R, shared with m.bay), a = 2, sensitivity
+#     a = 1, 2, 4; the same number whether the total, the rows or the columns were fixed.
 #   Estimation (G4, G6, G7): draws of the cell probabilities, uniform Dirichlet posterior
 #     (contingencyTableBF(posterior = TRUE), joint multinomial: estimation only, its Bayes factor
 #     is not used); odds ratio (2 x 2), ratio of each cell to its value under independence,
@@ -27,19 +25,8 @@
 	.gbay_ldm(n[keep], rep(a, sum(keep))) - sum(n[keep] * log(p[keep]))
 }
 
-# Independence (G12): Dirichlet-multinomial with neutral margins, concentration a.
-#   H1: the r x c cell probabilities Dirichlet(a); equivalently (aggregation property) the rows
-#     Dirichlet(c a) and, given its row, each row profile Dirichlet(a), independently.
-#   H0: row and column margins independent, rows Dirichlet(c a), columns Dirichlet(r a): the
-#     laws that H1 gives to the margins, so that balanced margins say nothing of a link.
-# The row margin cancels: log BF10 = sum_i log DM(row_i; a) - log DM(column totals; r a), the
-# independent-multinomial form of Gunel and Dickey with H0 Dirichlet(r a) in place of
-# BayesFactor's Dirichlet(r (a - 1) + 1); by symmetry the same with the columns fixed.
-.gbay_a_ct <- function() 3
-.gbay_lbf_ct <- function(tab, a = .gbay_a_ct()) {
-	tab <- unclass(as.matrix(tab))
-	sum(apply(tab, 1L, .gbay_ldm, a = rep(a, ncol(tab)))) - .gbay_ldm(colSums(tab), rep(nrow(tab) * a, ncol(tab)))
-}
+# Independence (G12): Dirichlet-multinomial with neutral margins (sys_bay_dm_neutral.R).
+.gbay_lbf_ct <- function(tab, a = .bay_dm_neutral_a()) .bay_dm_neutral_bf(tab, a)
 # G statistic and its degrees of freedom, given for reference (the Bayes factor does not use it).
 .gbay_G <- function(tab) {
 	E <- outer(rowSums(tab), colSums(tab)) / sum(tab)
@@ -434,7 +421,7 @@
 
 .gbay_cite <- function(obj) {
 	if (identical(obj$test, "gof")) return(list(en = "Dirichlet against the proportions given, Good 1967", fr = "Dirichlet contre les proportions donn\u00e9es, Good 1967"))
-	list(en = "Dirichlet-multinomial with neutral margins, a = 3, Gunel and Dickey 1974", fr = "Dirichlet-multinomiale \u00e0 marges neutres, a = 3, Gunel et Dickey 1974")
+	list(en = "Dirichlet-multinomial with neutral margins (BDe), a = 2, Gunel and Dickey 1974", fr = "Dirichlet-multinomiale \u00e0 marges neutres (BDe), a = 2, Gunel et Dickey 1974")
 }
 
 # ---------------------------------------------------------------------------------------------
@@ -594,12 +581,12 @@
 		say("Estimation: posterior Dirichlet(n + 1); per category, ratio of the proportion to the one given, 95 % HDI (bayestestR); Cohen's w.",
 			"Estimation : Dirichlet(n + 1) a posteriori ; par modalit\u00e9, rapport de la proportion \u00e0 celle donn\u00e9e, HDI \u00e0 95 % (bayestestR) ; w de Cohen.")
 	} else {
-		say("Prior: under a link, Dirichlet(3) on the cell probabilities; under independence, rows Dirichlet(3c) and columns Dirichlet(3r), the laws that a link gives to the margins (neutral margins). Closed form (Gunel and Dickey 1974; DECISIONS, G12).",
-			"A priori : s'il y a un lien, Dirichlet(3) sur les probabilit\u00e9s des cases ; sous l'ind\u00e9pendance, lignes Dirichlet(3c) et colonnes Dirichlet(3r), les lois qu'un lien donne aux marges (marges neutres). Forme close (Gunel et Dickey 1974 ; DECISIONS, G12).")
+		say("Prior: under a link, Dirichlet(2) on the cell probabilities; under independence, rows Dirichlet(2c) and columns Dirichlet(2r), the laws that a link gives to the margins (neutral margins; the BDe score of Heckerman et al. 1995). Closed form (Gunel and Dickey 1974; DECISIONS, G12).",
+			"A priori : s'il y a un lien, Dirichlet(2) sur les probabilit\u00e9s des cases ; sous l'ind\u00e9pendance, lignes Dirichlet(2c) et colonnes Dirichlet(2r), les lois qu'un lien donne aux marges (marges neutres ; score BDe de Heckerman et al. 1995). Forme close (Gunel et Dickey 1974 ; DECISIONS, G12).")
 		say("The same Bayes factor whether the total, the rows or the columns were fixed (the row margin cancels).",
 			"Le m\u00eame facteur de Bayes que le total, les lignes ou les colonnes aient \u00e9t\u00e9 fix\u00e9s (la marge des lignes se simplifie).")
-		say("a = 3 chosen in advance by simulation: under independence, a link announced at P > 0.95 in 0.6 % of the tables at most; under a moderate link (V = 0.2 or 0.3), independence strongly supported in 2.3 % at most (dev/gbay/VALIDATION.md, section 10). Sensitivity: a = 2, 3, 4 crossed with the starting chances.",
-			"a = 3 choisi d'avance par simulation : sous l'ind\u00e9pendance, un lien annonc\u00e9 \u00e0 P > 0,95 dans 0,6 % des tables au plus ; sous un lien mod\u00e9r\u00e9 (V = 0,2 ou 0,3), l'ind\u00e9pendance fortement soutenue dans 2,3 % au plus (dev/gbay/VALIDATION.md, section 10). Sensibilit\u00e9 : a = 2, 3, 4 crois\u00e9 avec les chances de d\u00e9part.")
+		say("a = 2 chosen in advance: the prior median of Cramer's V under a link is 0.2 to 0.4 depending on the table, a medium effect. Sensitivity: a = 1, 2, 4 crossed with the starting chances. Measures: dev/gbay/VALIDATION.md, sections 10 and 12.",
+			"a = 2 choisi d'avance : sous un lien, le V de Cram\u00e9r m\u00e9dian a priori vaut 0,2 \u00e0 0,4 selon la table, un effet moyen. Sensibilit\u00e9 : a = 1, 2, 4 crois\u00e9 avec les chances de d\u00e9part. Mesures : dev/gbay/VALIDATION.md, sections 10 et 12.")
 		say("Estimation (cells, V, odds ratio): uniform Dirichlet posterior on the cell probabilities, Dirichlet(n + 1).",
 			"Estimation (cases, V, rapport des cotes) : loi a posteriori de Dirichlet uniforme sur les probabilit\u00e9s des cases, Dirichlet(n + 1).")
 		say("Cells: ratio pi_ij / (pi_i+ pi_+j) on the posterior draws, 95 % HDI on its log; a cell is read when the interval excludes 1 (Albert 1997; Kruschke 2015, ch. 24).",
@@ -726,10 +713,10 @@
 		.bay_tell(story, "Prior: Dirichlet(1, ..., 1) under a departure, the proportions given under none (Good 1967; Sarafoglou et al. 2023).",
 			"A priori : Dirichlet(1, ..., 1) s'il y a un \u00e9cart, les proportions donn\u00e9es sinon (Good 1967 ; Sarafoglou et al. 2023).", "detail")
 	} else {
-		.bay_tell(story, "If there is a link, moderate gaps between rows are expected rather than extreme ones (Dirichlet of concentration 3).",
-			"S'il y a un lien, on attend des \u00e9carts mod\u00e9r\u00e9s entre lignes plut\u00f4t qu'extr\u00eames (Dirichlet de concentration 3).")
-		.bay_tell(story, "Prior: Dirichlet(3) per row under a link, Dirichlet(3r) common under independence (neutral margins; DECISIONS, G12).",
-			"A priori : Dirichlet(3) par ligne s'il y a un lien, Dirichlet(3r) commune sous l'ind\u00e9pendance (marges neutres ; DECISIONS, G12).", "detail")
+		.bay_tell(story, "If there is a link, a link of medium size is expected (prior median of Cramer's V about 0.3).",
+			"S'il y a un lien, on attend un lien de taille moyenne (V de Cram\u00e9r m\u00e9dian a priori vers 0,3).")
+		.bay_tell(story, "Prior: Dirichlet(2) per row under a link, Dirichlet(2r) common under independence (neutral margins, BDe score; DECISIONS, G12).",
+			"A priori : Dirichlet(2) par ligne s'il y a un lien, Dirichlet(2r) commune sous l'ind\u00e9pendance (marges neutres, score BDe ; DECISIONS, G12).", "detail")
 	}
 	.bay_tell(story, "these values are not tuned on the data; step 5 varies them.",
 		"ces valeurs ne sont pas ajust\u00e9es sur les donn\u00e9es ; l'\u00e9tape 5 les fait varier.", "note")
@@ -753,7 +740,7 @@
 	.bay_tell(story, "Precision: exact computation, without draws.", "Pr\u00e9cision : calcul exact, sans tirage.")
 	sens <- NULL
 	if (isTRUE(sensitivity)) {
-		concs <- if (gof) c(1 / 2, 1, 2) else c(2, 3, 4)
+		concs <- if (gof) c(1 / 2, 1, 2) else .bay_dm_neutral_grid()
 		phs <- c(1 / 3, 1 / 2, 2 / 3)
 		lbs <- vapply(concs, function(a) if (gof) .gbay_lbf_gof(tab, inp$p, a) else .gbay_lbf_ct(tab, a), numeric(1))
 		grid <- outer(lbs, phs, function(l, p) .gbay_prob(l, p))
@@ -766,9 +753,9 @@
 		.bay_tell(story, paste0("Sensitivity: the leading answer ", .bay_range_txt(rng)$en, "."),
 			paste0("Sensibilit\u00e9 : la r\u00e9ponse en t\u00eate ", .bay_range_txt(rng)$fr, "."))
 		.bay_tell(story, if (gof) "what varies is the expected spread of the proportions (a = 1/2, 1, 2) and the starting chances (1 against 2 to 2 against 1)." else
-				"what varies is the expected spread between rows (a = 2, 3, 4) and the starting chances (1 against 2 to 2 against 1).",
+				"what varies is the expected size of a link (a = 1, 2, 4) and the starting chances (1 against 2 to 2 against 1).",
 			if (gof) "on fait varier l'\u00e9talement attendu des proportions (a = 1/2, 1, 2) et les chances de d\u00e9part (1 contre 2 \u00e0 2 contre 1)." else
-				"on fait varier l'\u00e9cart attendu entre lignes (a = 2, 3, 4) et les chances de d\u00e9part (1 contre 2 \u00e0 2 contre 1).", "note")
+				"on fait varier la taille attendue d'un lien (a = 1, 2, 4) et les chances de d\u00e9part (1 contre 2 \u00e0 2 contre 1).", "note")
 		if (identical(verdict, "changes")) {
 			.bay_tell(story, "Caution added: the answer can reverse; it will be called not settled.",
 				"Prudence ajout\u00e9e : la r\u00e9ponse peut s'inverser ; elle sera dite non tranch\u00e9e.", "decide")
@@ -796,9 +783,9 @@
 		table = tab, expected = E, p = if (gof) inp$p else NULL, cells = est$cells,
 		cramer_v = est$cramer_v, odds_ratio = est$odds_ratio, w = est$w,
 		sensitivity = sens, contradiction = FALSE, detail = isTRUE(detail),
-		priors = list(concentration = if (gof) 1 else .gbay_a_ct(), prior_h1 = prior_h1, law = if (gof) "multinomial" else "Dirichlet-multinomial, neutral margins"),
+		priors = list(concentration = if (gof) 1 else .bay_dm_neutral_a(), prior_h1 = prior_h1, law = if (gof) "multinomial" else "Dirichlet-multinomial, neutral margins"),
 		method = if (gof) "Goodness of fit, Dirichlet-multinomial against a point (Good 1967)" else
-			"Independence, Dirichlet-multinomial with neutral margins, a = 3 (G12)",
+			"Independence, Dirichlet-multinomial with neutral margins (BDe), a = 2 (G12)",
 		label = if (gof) nm else paste(nm, collapse = " x "), n = N, call = call_expr)
 	out$label <- if (gof) nm else paste0(nm[1L], " x ", nm[2L])
 	pk <- if (gof) c("g.bay() {KefiR}", "hdi() {bayestestR}") else c("posterior() {BayesFactor}", "hdi() {bayestestR}")

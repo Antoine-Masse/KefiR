@@ -21,13 +21,16 @@
 #'   each row has its own proportions, Dirichlet(a); under independence, the rows share their
 #'   proportions, Dirichlet(r a), which is the law a link gives to the margin. Balanced margins
 #'   thus say nothing of a link, and the Bayes factor is the same whether the total, the rows
-#'   or the columns were fixed. a = 3 was chosen in advance by simulation (dev/gbay/VALIDATION.md,
-#'   section 10): under independence, a link is announced at P > 0.95 in 0.6 % of the tables at
-#'   most; under a moderate link (Cramer's V 0.2 or 0.3), independence is strongly supported in
-#'   2.3 % at most. Two other engines were measured and set aside: the default Bayes factors of
-#'   [BayesFactor::contingencyTableBF()] (up to 90 % of false strong links in 4 x 5 tables) and
-#'   the BIC of the log-linear model (strong support for independence in up to 89 % of tables
-#'   with a moderate link).
+#'   or the columns were fixed. It is the BDe score of Bayesian networks (Heckerman et al.
+#'   1995) and the Gunel and Dickey (1974) Bayes factor with coherent margins. a = 2, chosen in
+#'   advance: under a link, the prior median of Cramer's V is 0.2 to 0.4, a medium effect.
+#'   Measured on 1 000 tables per scenario: under independence, a link announced at P > 0.95 in
+#'   0.7 % of the tables at most (1.2 % with very unequal margins); under a moderate link (V = 0.2), independence strongly
+#'   supported in up to 7 % of the bilans (dev/gbay/VALIDATION.md, sections 10 and 12). Two
+#'   other engines were measured and set aside: the default Bayes factors of
+#'   [BayesFactor::contingencyTableBF()] (up to 90 % of false strong links in 4 x 5 tables)
+#'   and the BIC of the log-linear model (strong support for independence in up to 89 % of
+#'   tables with a moderate link).
 #' - **Coherence**: if independence (or the fit) leads with strong support while some cells
 #'   depart from it with a 95 % interval that excludes 1, its support is brought back to
 #'   moderate and the bilan says why.
@@ -39,10 +42,10 @@
 #'   without a link: a size, not a proof.
 #' - **Small counts**: no minimum count and no correction (exact computation); small counts
 #'   make the answer less decisive.
-#' - **Power**: for a moderate link (V = 0.2) at N = 200, 70 to 80 % of the tables give
+#' - **Power**: for a moderate link (V = 0.2) at N = 200, 60 to 74 % of the tables give
 #'   P > 0.75, against 81 to 90 % for the G test at p < 0.05; for a goodness of fit, clearly
 #'   lower than the G test, in exchange for almost no false "yes".
-#' - **Sensitivity**: the concentration of the Dirichlet (2, 3, 4 for independence; 1/2, 1, 2
+#' - **Sensitivity**: the concentration of the Dirichlet (1, 2, 4 for independence; 1/2, 1, 2
 #'   for a goodness of fit), crossed with the starting chances (1 against 2 to 2 against 1).
 #'
 #' Not handled: tables with three dimensions or more; paired data (McNemar); which groups
@@ -94,6 +97,12 @@
 #' @references
 #' Gunel, E., & Dickey, J. M. (1974). Bayes factors for independence in contingency tables.
 #' Biometrika, 61(3), 545-557.
+#'
+#' Heckerman, D., Geiger, D., & Chickering, D. M. (1995). Learning Bayesian networks: the
+#' combination of knowledge and statistical data. Machine Learning, 20, 197-243.
+#'
+#' Buntine, W. (1991). Theory refinement on Bayesian networks. Proceedings of the 7th
+#' Conference on Uncertainty in Artificial Intelligence, 52-60.
 #'
 #' Good, I. J. (1967). A Bayesian significance test for multinomial distributions. Journal of
 #' the Royal Statistical Society B, 29(3), 399-431.

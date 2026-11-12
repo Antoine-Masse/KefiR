@@ -235,3 +235,16 @@ Les § 9 (BIC) et 2 à 4 (ancien moteur, partie indépendance) ne décrivent plu
 `R CMD check --no-manual --ignore-vignettes --no-tests` : **Status: 1 NOTE**. Il s'agit de la même NOTE NEWS.md qu'au § 8 : l'en-tête posé par m.bay, présent depuis c8e8976. Code, documentation et exemples sont OK.
 
 La suite complète n'a pas été relancée. Elle passait sur 1ecbda5 (§ 8), et depuis seuls `R/g.bay.R`, `R/sys_gbay.R`, `man/g.bay.Rd` et `tests/testthat/test-gbay.R` ont changé (`git diff 1ecbda5 -- R/ tests/`). `test-gbay.R` passe en entier sur 605a2c1 : 166 attentes, 0 échec.
+
+## 12. a = 2 ou a = 3 (12 novembre) : a = 2 retenu
+
+Scripts : `scripts/sim_a2_a3.R` (sous H0, et médiane a priori de V) et `scripts/sim_a2_bilan.R` (bilan, sensibilité et garde-fou compris ; `GBAY_A=3` pour a = 3). Sorties `.out` correspondantes.
+
+- **Sous H0, facteur de Bayes brut, P > 0,95** : a = 3 dépasse 1 % sur la table 2 × 6 à lignes 0,8 / 0,2 (1,3 % à N = 60, 2,0 % à N = 120). a = 2 donne 1,0 % et 1,2 %. Sur 4 × 5 à N = 20, les deux valeurs restent sous 0,2 %.
+- **Sous H0, bilan, « lien très probable »** : a = 2 donne 0,9 % (N = 60) et 0,5 % (N = 120) ; a = 3, 1,1 % et 1,9 %.
+- **Sous un lien V = 0,2, bilan, « indépendance forte »** : a = 2, de 1,3 à 7,3 % (le maximum en 3 × 4 à N = 100) ; a = 3, de 0,1 à 1,7 %.
+- **V de Cramér médian a priori** : 0,22 à 0,39 pour a = 2, 0,18 à 0,33 pour a = 3.
+
+Décision (DECISIONS, G12) : a = 2, par la règle de la session parente (a = 3 seulement s'il tient 1 % sous H0 partout). Le coût est l'« indépendance forte » à tort jusqu'à 7,3 % sous un lien V = 0,2 à N = 100 ; il reste un point ouvert.
+
+Tableaux du § 10 pour a = 2 (`sim_neutral.out`, colonnes `a2_`) : sous H0 sur la grille de 24 scénarios, P > 0,95 dans 0,7 % au plus. Puissance à V = 0,2 et N = 200 : 60 à 74 %, contre 81 à 90 % au test G.
