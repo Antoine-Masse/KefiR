@@ -214,3 +214,38 @@ Demande de la session parente, pour la cohérence avec m.bay et g.bay : le bilan
 - **0 jeu sur 6000** avec « aucun lien » soutenu (modéré ou fort) et un intervalle excluant 0 ; le seuil de 5 % fixé par la session parente n'est pas approché. **Aucune ligne n'est ajoutée au bilan.**
 - « Aucun lien » en tête avec un intervalle excluant 0 n'arrive que dans 2 jeux sur 1000 (rho = 0,2, n = 100), toujours sans soutien : le bilan y dit « indécis » et l'estimation y est donnée « si un lien existe ».
 - À surveiller : à rho = 0,2 et n = 100, « aucun lien » en tête avec un soutien modéré dans 5,1 % des jeux (« plutôt pas de lien, sans conclure », jamais « très probablement ») ; l'intervalle contient alors 0, les deux lectures s'accordent. C'est le prix, déjà mesuré en §4, d'un a priori qui attend des liens d'ordre moyen.
+
+## 8. Estimation à rho = 0 et aux petits n ; Kendall avec l'écart-type de l'éq. 14 (`check_estim2.R`, 200 jeux par case, 12 novembre)
+
+Demande de l'expert (passe 2) : sous Jeffreys (bêta 1/2, en U vers ±1), l'estimation pourrait s'éloigner de 0 quand il n'y a pas de lien, aux très petits n. Données normales ; intervalle à 95 % ; « médiane moyenne » = moyenne des médianes a posteriori (centrage) ; « |médiane| » = moyenne de leur valeur absolue (dispersion). « Jeffreys » est l'estimation du bilan ; « test » est la même sous l'a priori du test (kappa = 1/3, `$estimate_test`). Pour Kendall, « éq. 14 » remplace l'écart-type 1 de T* par la borne sqrt(2,5 n (1 - tau^2) / (2n + 5)) de van Doorn et al. (2018), pour l'estimation seulement.
+
+**À rho = 0 :**
+
+| Estimation | n | couverture | largeur | médiane moyenne | moyenne des \|médiane\| | 90e centile des \|médiane\| |
+|---|---|---|---|---|---|---|
+| Pearson, Jeffreys | 10 | 90,5 | 1,06 | 0,011 | 0,237 | 0,478 |
+| Pearson, Jeffreys | 20 | 92,0 | 0,80 | 0,027 | 0,187 | 0,366 |
+| Pearson, Jeffreys | 30 | 94,0 | 0,67 | -0,001 | 0,147 | 0,306 |
+| Pearson, test | 10 | 97,5 | 0,93 | 0,009 | 0,163 | 0,340 |
+| Pearson, test | 30 | 96,0 | 0,63 | -0,001 | 0,127 | 0,264 |
+| Kendall, Jeffreys, sd 1 | 10 | 93,0 | 0,82 | 0,014 | 0,174 | 0,358 |
+| Kendall, Jeffreys, éq. 14 | 10 | 91,5 | 0,72 | 0,013 | 0,168 | 0,346 |
+| Kendall, Jeffreys, éq. 14 | 20 | 93,0 | 0,56 | 0,014 | 0,123 | 0,260 |
+| Kendall, Jeffreys, éq. 14 | 30 | 92,0 | 0,47 | -0,001 | 0,102 | 0,212 |
+| Kendall, test | 10 | 96,5 | 0,64 | 0,008 | 0,109 | 0,226 |
+
+**Lien fort (rho = 0,9 ; tau = 0,71) :**
+
+| Estimation | n | couverture | largeur | médiane moyenne |
+|---|---|---|---|---|
+| Pearson, Jeffreys | 10 / 20 / 30 | 95,0 / 94,0 / 95,5 | 0,36 / 0,21 / 0,16 | 0,86 / 0,88 / 0,89 |
+| Pearson, test | 10 / 20 / 30 | 62,0 / 86,0 / 87,5 | 0,50 / 0,28 / 0,20 | 0,71 / 0,82 / 0,85 |
+| Kendall, Jeffreys, sd 1 | 10 / 20 / 30 | 97,5 / 99,5 / 100 | 0,70 / 0,55 / 0,46 | 0,61 / 0,65 / 0,67 |
+| Kendall, Jeffreys, éq. 14 | 10 / 20 / 30 | 95,0 / 97,0 / 98,5 | 0,59 / 0,44 / 0,36 | 0,60 / 0,64 / 0,66 |
+| Kendall, test | 10 / 20 / 30 | 14,0 / 44,0 / 66,5 | 0,59 / 0,46 / 0,39 | 0,37 / 0,48 / 0,54 |
+
+Table complète (rho = 0 ; 0,3 ; 0,6 ; 0,9) : `resultats/check_estim2.log`.
+
+**Lecture.**
+- **À rho = 0, Jeffreys reste centré** : médiane moyenne entre -0,001 et 0,027. La forme en U ne tire pas l'estimation vers ±1. Il est plus dispersé et plus large que l'a priori du test (Pearson, n = 10 : |médiane| moyenne 0,24 contre 0,16 ; largeur 1,06 contre 0,93), ce qui est attendu d'un a priori qui ne favorise pas 0. Couverture de 90,5 à 94 %, un peu sous 95 % à n = 10 : c'est le prix, faible, payé à rho = 0 pour une couverture tenue à rho = 0,9, où l'a priori du test tombe à 62 % (Pearson) et 14 % (Kendall). Comme l'estimation est dite « si un lien existe » quand aucun lien n'est affirmé, cette dispersion à rho = 0 ne contredit pas le bilan, qui y dit « aucun lien » ou « indécis ».
+- **Kendall, éq. 14 : ADOPTÉ pour l'estimation** (point 3 de l'expert). L'intervalle se resserre (rho = 0,9, n = 30 : 0,36 contre 0,46 ; rho = 0,6, n = 30 : 0,43 contre 0,47), avec une couverture rapprochée de 95 % (95 à 98,5 % contre 97,5 à 100 % à rho = 0,9 ; 94 à 96,5 % à rho = 0,6). À rho = 0, il ne change presque rien (91,5 à 93 %). Le test garde l'écart-type 1 de l'article, calibré en §3.

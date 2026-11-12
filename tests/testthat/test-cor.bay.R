@@ -193,6 +193,8 @@ test_that("vocabulaire de la famille : compte rendu indecis comme m.bay, note fi
 		expect_match(txt, "1 \u00e0 3 faible, 3 \u00e0 20 mod\u00e9r\u00e9, 20 \u00e0 150 fort, au-del\u00e0 tr\u00e8s fort", fixed = TRUE)
 		expect_match(txt, "probabilit\u00e9s d'hypoth\u00e8ses, pas des p-values ; la m\u00e9thode", fixed = TRUE)
 		expect_match(txt, "non tranch\u00e9", fixed = TRUE)
+		# compte rendu indecis : l'estimation y figure, sous la reserve (C10)
+		expect_match(txt, "en faveur de l'absence de lien ; si un lien existe, rho = ", fixed = TRUE)
 	}
 	expect_false(is.null(r$estimate_test))
 	det <- gsub("[[:space:]]+", " ", paste(capture.output(print(r, detail = TRUE)), collapse = " "))

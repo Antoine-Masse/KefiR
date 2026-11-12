@@ -60,9 +60,12 @@
 }
 
 # Integrand of the marginal likelihood under H1, scaled by the likelihood under H0 (eq. 13).
-.corbay_kendall_f <- function(ts, m, kappa) {
+# n given (estimate only, DECISIONS C8): the standard deviation of T* under H1 is taken from the
+# upper bound of eq. 14, sqrt(2.5 n (1 - tau^2) / (2 n + 5)), at most 1; the test keeps 1.
+.corbay_kendall_f <- function(ts, m, kappa, n = NULL) {
 	l0 <- stats::dnorm(ts, 0, 1, log = TRUE)
-	function(t) exp(stats::dnorm(ts, m * t, 1, log = TRUE) - l0) * .corbay_prior_tau(t, kappa)
+	sdf <- if (is.null(n)) function(t) 1 else function(t) pmin(1, sqrt(pmax(2.5 * n * (1 - t^2) / (2 * n + 5), 1e-6)))
+	function(t) exp(stats::dnorm(ts, m * t, sdf(t), log = TRUE) - l0) * .corbay_prior_tau(t, kappa)
 }
 
 .corbay_lbf_kendall <- function(x, y, kappa) {
@@ -181,7 +184,7 @@
 
 # Under the hypothesis of a link (both signs, or the sign tested). Pearson and Spearman:
 # draws of rho from BayesFactor; Kendall: the posterior of tau on a grid, then draws.
-.corbay_estimate <- function(method, x, y, kappa, alternative, draws, seed, ci) {
+.corbay_estimate <- function(method, x, y, kappa, alternative, draws, seed, ci, var_h1 = TRUE) {
 	ni <- switch(alternative, two.sided = NULL, greater = c(0, 1), less = c(-1, 0))
 	if (method %in% c("pearson", "spearman")) {
 		xx <- if (method == "spearman") rank(x) else x
@@ -195,7 +198,7 @@
 	} else {
 		n <- length(x)
 		tm <- .corbay_tstar(x, y); ts <- tm[["ts"]]; m <- tm[["m"]]
-		f <- .corbay_kendall_f(ts, m, kappa)
+		f <- .corbay_kendall_f(ts, m, kappa, n = if (isTRUE(var_h1)) n else NULL)
 		pk <- min(max(ts / m, -1), 1)
 		lo <- max(-1, pk - 12 / m); hi <- min(1, pk + 12 / m)
 		if (identical(alternative, "greater")) lo <- max(lo, 0)
@@ -555,18 +558,20 @@
 		paste0("Coefficients observ\u00e9s : r = ", .corbay_num(ob[["r"]], 2L, ","), " (Pearson), tau = ", .corbay_num(ob[["tau"]], 2L, ","), " (Kendall), rho = ",
 			.corbay_num(ob[["rho_s"]], 2L, ","), " (Spearman), N = ", obj$n, " paires."))
 	if (length(obj$notes$en) && !isTRUE(narrated)) for (i in seq_along(obj$notes$en)) emit("fact", obj$notes$en[i], obj$notes$fr[i])
-	est_en <- if (!is.null(est)) paste0("; ", mw$par, " = ", .corbay_est_txt(est, "."), ", ", format(round(100 * est$ci)), " % credible interval") else ""
-	est_fr <- if (!is.null(est)) paste0(" ; ", mw$par, " = ", .corbay_est_txt(est, ","), ", intervalle de cr\u00e9dibilit\u00e9 \u00e0 ", format(round(100 * est$ci)), " %") else ""
-	if (h0) { est_en <- ""; est_fr <- "" }
+	# The estimate goes into the report too; when no link is asserted it is said "if a link exists"
+	# (two priors, DECISIONS C8 and C10: its interval may exclude 0 while "no link" leads).
+	cond <- h0 || undecided
+	est_en <- if (!is.null(est)) paste0("; ", if (cond) "if a link exists, " else "", mw$par, " = ", .corbay_est_txt(est, "."), ", ", format(round(100 * est$ci)), " % credible interval") else ""
+	est_fr <- if (!is.null(est)) paste0(" ; ", if (cond) "si un lien existe, " else "", mw$par, " = ", .corbay_est_txt(est, ","), ", intervalle de cr\u00e9dibilit\u00e9 \u00e0 ", format(round(100 * est$ci)), " %") else ""
 	h1 <- which(!h$null)[1L]
 	p_link <- sum(h$posterior[!h$null])
 	if (undecided) {
 		# Same form as m.bay: the Bayes factor of the leading hypothesis against the second, said
 		# in favour of the absence when "no link" leads.
 		emit("note", paste0("for a report: \"The data do not settle it (probability of a link ", .bay_pct(p_link, "."), ", Bayes factor ", bf_en,
-				if (h0) " in favour of no link" else "", "); cor.bay {KefiR}, ", mw$cite_en, ".\""),
+				if (h0) " in favour of no link" else "", est_en, "); cor.bay {KefiR}, ", mw$cite_en, ".\""),
 			paste0("pour un compte rendu : \u00ab Les donn\u00e9es ne permettent pas de conclure (probabilit\u00e9 d'un lien ", .bay_pct(p_link, ","), ", facteur de Bayes ",
-				bf_fr, if (h0) " en faveur de l'absence de lien" else "", ") ; cor.bay {KefiR}, ", mw$cite_fr, ". \u00bb"))
+				bf_fr, if (h0) " en faveur de l'absence de lien" else "", est_fr, ") ; cor.bay {KefiR}, ", mw$cite_fr, ". \u00bb"))
 	} else {
 		emit("note", paste0("for a report: \"", h$label_en[1L], " (posterior probability ", .bay_pct(h$posterior[1L], "."), "), Bayes factor ", bf_en, est_en,
 				" (cor.bay {KefiR}, ", mw$cite_en, ").\""),
@@ -592,8 +597,8 @@
 		paste0("Hypoth\u00e8ses : aucun lien (rho = 0), a priori ", .bay_pct(1 - obj$priors$prior_h1, ","), " ; un lien, a priori ", .bay_pct(obj$priors$prior_h1, ","),
 			if (obj$alternative == "two.sided") ", partag\u00e9 \u00e9galement entre ses deux signes." else ", sur le seul signe test\u00e9."))
 	if (obj$method == "kendall") {
-		say("For Kendall: T* = standardised tau-b, normal with mean 3/2 tau sqrt(N) and standard deviation 1 (van Doorn et al. 2018, eq. 6 and 11); Bayes factor by numerical integration (eq. 13); normal approximation checked from N = 10 (Ferguson et al. 2000).",
-			"Pour Kendall : T* = tau-b standardis\u00e9, normal de moyenne 3/2 tau racine(N) et d'\u00e9cart-type 1 (van Doorn et al. 2018, \u00e9q. 6 et 11) ; facteur de Bayes par int\u00e9gration num\u00e9rique (\u00e9q. 13) ; approximation normale v\u00e9rifi\u00e9e d\u00e8s N = 10 (Ferguson et al. 2000).")
+		say("For Kendall: T* = standardised tau-b, normal with mean 3/2 tau sqrt(N) and standard deviation 1 (van Doorn et al. 2018, eq. 6 and 11); Bayes factor by numerical integration (eq. 13); normal approximation checked from N = 10 (Ferguson et al. 2000). For the estimate, the standard deviation under H1 is the bound of eq. 14.",
+			"Pour Kendall : T* = tau-b standardis\u00e9, normal de moyenne 3/2 tau racine(N) et d'\u00e9cart-type 1 (van Doorn et al. 2018, \u00e9q. 6 et 11) ; facteur de Bayes par int\u00e9gration num\u00e9rique (\u00e9q. 13) ; approximation normale v\u00e9rifi\u00e9e d\u00e8s N = 10 (Ferguson et al. 2000). Pour l'estimation, l'\u00e9cart-type sous H1 est la borne de l'\u00e9q. 14.")
 	} else {
 		say(paste0(if (obj$method == "spearman") "For Spearman: ranks, then " else "", "correlationBF() {BayesFactor}, bivariate normal model, Jeffreys's test with a stretched beta prior (Ly et al. 2016); kappa = ", kt$en, "."),
 			paste0(if (obj$method == "spearman") "Pour Spearman : rangs, puis " else "", "correlationBF() {BayesFactor}, mod\u00e8le normal bivari\u00e9, test de Jeffreys avec a priori b\u00eata \u00e9tir\u00e9 (Ly et al. 2016) ; kappa = ", kt$fr, "."))
