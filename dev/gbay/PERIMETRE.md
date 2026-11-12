@@ -28,7 +28,7 @@
 
 | GTest | g.bay |
 |---|---|
-| statistique G, ddl, p-value | G et ddl (le facteur de Bayes d'indépendance se lit dessus : (G − ddl·log N)/2, G11), facteur de Bayes, probabilité a posteriori de chaque hypothèse, qualificatif ; jamais de p-value |
+| statistique G, ddl, p-value | G et ddl (pour mémoire), facteur de Bayes, probabilité a posteriori de chaque hypothèse, qualificatif ; jamais de p-value |
 | `expected` | `expected` (mêmes valeurs) |
 | — | rapport à l'indépendance par case (ou à la proportion théorique par modalité) avec intervalle de crédibilité (G6) |
 | — | V de Cramér a posteriori (G7), w de Cohen pour l'ajustement |
@@ -44,4 +44,4 @@
 - Ordre des modalités : ignoré, comme dans `GTest` (une réponse ordonnée relève de `m.bay`).
 - Cases structurellement nulles (quasi-indépendance) : non traitées ; une ligne ou colonne entièrement vide est retirée (G3).
 
-**Mise à jour du 11 novembre au soir (G11).** Les arguments `sampling` et `fixed` sont retirés : le test log-linéaire de l'interaction donne la même réponse sous tous les plans d'échantillonnage.
+**Mises à jour (G11, puis G12, 12 novembre).** Les arguments `sampling` et `fixed` sont retirés : le moteur à marges neutres de G12 donne la même réponse que les lignes, les colonnes ou le seul total soient fixés.

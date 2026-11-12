@@ -1,14 +1,15 @@
 # sys_gbay.R
 # Engine, story and bilan of g.bay(), the Bayesian counterpart of the G test (DescTools::GTest).
-# Decisions and references: dev/gbay/DECISIONS.md (G1 to G11). The layout functions of m.bay
+# Decisions and references: dev/gbay/DECISIONS.md (G1 to G12). The layout functions of m.bay
 # (sys_bay_story.R, sys_bay_layout.R, sys_bay_bilan.R) are called, never modified.
 #
 #   Goodness of fit (G2): multinomial, point H0 (the proportions given) against a Dirichlet(a)
 #     alternative, closed form (Good 1967; Sarafoglou et al. 2023, multibridge).
-#   Independence (G11, replaces G3): test of the interaction of a log-linear Poisson model,
-#     margins free under both hypotheses; Bayes factor by -BIC/2 with n = N (unit information;
-#     Raftery 1986, 1995), i.e. log BF10 = (G - df log N) / 2, G the statistic of the G test.
-#     The same answer whatever the sampling plan (Poisson, multinomial, one margin fixed).
+#   Independence (G12, replaces G3 and G11): Dirichlet-multinomial with neutral margins. Under
+#     a link, each row its own proportions, Dirichlet(a); under independence, common
+#     proportions with the law that a link gives to the margins, Dirichlet(r a). Closed form,
+#     a = 3 calibrated in advance by simulation; the same number whether the total, the rows or
+#     the columns were fixed.
 #   Estimation (G4, G6, G7): draws of the cell probabilities, uniform Dirichlet posterior
 #     (contingencyTableBF(posterior = TRUE), joint multinomial: estimation only, its Bayes factor
 #     is not used); odds ratio (2 x 2), ratio of each cell to its value under independence,
@@ -26,20 +27,24 @@
 	.gbay_ldm(n[keep], rep(a, sum(keep))) - sum(n[keep] * log(p[keep]))
 }
 
-# Independence (G11): -BIC/2 of the log-linear Poisson model with and without the interaction,
-# n = N, the number of individuals (Raftery 1986). The saturated model has deviance 0, so the
-# difference of the deviances is that of the independence model, the G statistic of GTest.
-.gbay_loglin <- function(tab) {
+# Independence (G12): Dirichlet-multinomial with neutral margins, concentration a.
+#   H1: the r x c cell probabilities Dirichlet(a); equivalently (aggregation property) the rows
+#     Dirichlet(c a) and, given its row, each row profile Dirichlet(a), independently.
+#   H0: row and column margins independent, rows Dirichlet(c a), columns Dirichlet(r a): the
+#     laws that H1 gives to the margins, so that balanced margins say nothing of a link.
+# The row margin cancels: log BF10 = sum_i log DM(row_i; a) - log DM(column totals; r a), the
+# independent-multinomial form of Gunel and Dickey with H0 Dirichlet(r a) in place of
+# BayesFactor's Dirichlet(r (a - 1) + 1); by symmetry the same with the columns fixed.
+.gbay_a_ct <- function() 3
+.gbay_lbf_ct <- function(tab, a = .gbay_a_ct()) {
 	tab <- unclass(as.matrix(tab))
-	d <- data.frame(n = as.numeric(tab), r = factor(rep(seq_len(nrow(tab)), ncol(tab))),
-		c = factor(rep(seq_len(ncol(tab)), each = nrow(tab))))
-	fit0 <- stats::glm(n ~ r + c, family = stats::poisson(), data = d)
-	G <- stats::deviance(fit0)
-	df <- (nrow(tab) - 1) * (ncol(tab) - 1)
-	N <- sum(tab)
-	list(G = G, df = df, N = N, log_bf = (G - df * log(N)) / 2)
+	sum(apply(tab, 1L, .gbay_ldm, a = rep(a, ncol(tab)))) - .gbay_ldm(colSums(tab), rep(nrow(tab) * a, ncol(tab)))
 }
-.gbay_lbf_ct <- function(tab) .gbay_loglin(tab)$log_bf
+# G statistic and its degrees of freedom, given for reference (the Bayes factor does not use it).
+.gbay_G <- function(tab) {
+	E <- outer(rowSums(tab), colSums(tab)) / sum(tab)
+	list(G = 2 * sum(ifelse(tab > 0, tab * log(tab / E), 0)), df = (nrow(tab) - 1L) * (ncol(tab) - 1L))
+}
 
 .gbay_prob <- function(lb, prior_h1) 1 / (1 + exp(-lb) * (1 - prior_h1) / prior_h1)
 
@@ -429,18 +434,31 @@
 
 .gbay_cite <- function(obj) {
 	if (identical(obj$test, "gof")) return(list(en = "Dirichlet against the proportions given, Good 1967", fr = "Dirichlet contre les proportions donn\u00e9es, Good 1967"))
-	list(en = "log-linear test of the interaction, BIC, Raftery 1986", fr = "test log-lin\u00e9aire de l'interaction, BIC, Raftery 1986")
+	list(en = "Dirichlet-multinomial with neutral margins, a = 3, Gunel and Dickey 1974", fr = "Dirichlet-multinomiale \u00e0 marges neutres, a = 3, Gunel et Dickey 1974")
 }
 
 # ---------------------------------------------------------------------------------------------
 # Bilan
 
+# Coherence guard (G12): independence (or the fit) strongly supported while cells depart from it.
+.gbay_guard <- function(obj, li = .bay_lead_info(obj)) {
+	n_flag <- if (is.null(obj$cells)) 0L else sum(obj$cells$reading != "-")
+	list(on = isTRUE(li$h$null[1L]) && li$sup$level >= 4L && n_flag > 0L, n_flag = n_flag)
+}
+
 .gbay_print_bilan <- function(obj, detail = FALSE, narrated = FALSE) {
 	emit <- .bay_block_emitter()
 	li <- .bay_lead_info(obj)
 	h <- li$h
-	undecided <- li$open || li$sup$level <= 1L || h$posterior[1L] < 0.6
 	gof <- identical(obj$test, "gof")
+	# Coherence guard (G12): no "strong" support for independence (or for the proportions given)
+	# while the estimation finds cells whose 95 % interval excludes 1, i.e. a gap that it does not
+	# attribute to chance. The support is brought back to moderate, and the bilan says why.
+	gd <- .gbay_guard(obj, li)
+	n_flag <- gd$n_flag
+	guard <- gd$on
+	if (guard) li$sup <- .bay_support(0.8)
+	undecided <- li$open || li$sup$level <= 1L || h$posterior[1L] < 0.6
 	lead_en <- if (undecided) paste0("undecided (", h$label_en[1L], ": ", .bay_pct(h$posterior[1L], "."), ")") else
 		paste0(h$label_en[1L], ": ", .bay_pct(h$posterior[1L], "."), " (", li$sup$en, ")")
 	lead_fr <- if (undecided) paste0("ind\u00e9cis (", h$label_fr[1L], " : ", .bay_pct(h$posterior[1L], ","), ")") else
@@ -454,7 +472,19 @@
 			paste0("Bilan de g.bay (", obj$label, ", N = ", obj$n, ") - ", lead_fr, "."))
 	}
 	v <- .gbay_verdict(obj, undecided)
+	if (guard && !undecided) {
+		v <- if (gof) list(en = "Verdict: rather no departure, without concluding.", fr = "Verdict : plut\u00f4t pas d'\u00e9cart, sans conclure.") else
+			list(en = "Verdict: rather no link, without concluding.", fr = "Verdict : plut\u00f4t pas de lien, sans conclure.")
+	}
 	emit("fact", v$en, v$fr)
+	if (guard) {
+		emit("decide", paste0("Caution: ", if (gof) "the fit" else "independence", " leads, but ", n_flag, if (n_flag == 1L) (if (gof) " category departs" else " cell departs") else (if (gof) " categories depart" else " cells depart"),
+				" from it with a 95 % interval that excludes 1; its support is brought back to moderate. The Bayes factor prefers the simpler model; the data do not rule out ",
+				if (gof) "a departure." else "a link."),
+			paste0("Prudence : ", if (gof) "l'ajustement" else "l'ind\u00e9pendance", " est en t\u00eate, mais ", n_flag, if (n_flag == 1L) (if (gof) " modalit\u00e9 s'en \u00e9carte" else " case s'en \u00e9carte") else (if (gof) " modalit\u00e9s s'en \u00e9cartent" else " cases s'en \u00e9cartent"),
+				" avec un intervalle \u00e0 95 % qui exclut 1 ; son soutien est ramen\u00e9 \u00e0 mod\u00e9r\u00e9. Le facteur de Bayes pr\u00e9f\u00e8re le mod\u00e8le le plus simple ; les donn\u00e9es n'excluent pas ",
+				if (gof) "un \u00e9cart." else "un lien."))
+	}
 	w_en <- max(nchar(h$label_en)); w_fr <- max(nchar(h$label_fr))
 	fit <- max(w_en, w_fr) + 32L <= .bay_width() - 12L
 	pad <- function(x, w) if (fit) paste0(x, strrep("\u00a0", w - nchar(x))) else x
@@ -485,7 +515,9 @@
 	emit("block", "", "")
 	.gbay_size_line(obj, emit, short = isTRUE(narrated))
 	if (!is.null(obj$cells)) {
-		if (h$null[1L] || undecided) {
+		if (guard) {
+			.gbay_cell_lines(obj, emit, top = 3L, short = isTRUE(narrated))
+		} else if (h$null[1L] || undecided) {
 			emit("fact", if (gof) "No departure established: the categories are not read one by one (they are in $cells)." else "No link established: the cells are not read one by one (they are in $cells).",
 				if (gof) "Aucun \u00e9cart \u00e9tabli : les modalit\u00e9s ne sont pas lues une \u00e0 une (elles sont dans $cells)." else "Aucun lien \u00e9tabli : les cases ne sont pas lues une \u00e0 une (elles sont dans $cells).")
 		} else {
@@ -521,9 +553,9 @@
 				if (h$null[1L]) against_fr else "", ") ; g.bay {KefiR}, ", ct$fr, ". \u00bb"))
 	} else {
 		emit("note", paste0("for a report: \"", h$label_en[1L], " (posterior probability ", .bay_pct(h$posterior[1L], "."), "), Bayes factor ", bf_en,
-				if (!h$null[1L]) size_en else "", " (g.bay {KefiR}, ", ct$en, ").\""),
+				if (!h$null[1L]) size_en else "", if (guard) "; support brought back to moderate, cells depart" else "", " (g.bay {KefiR}, ", ct$en, ").\""),
 			paste0("pour un compte rendu : \u00ab ", h$label_fr[1L], " (probabilit\u00e9 a posteriori ", .bay_pct(h$posterior[1L], ","), "), facteur de Bayes ", bf_fr,
-				if (!h$null[1L]) size_fr else "", " (g.bay {KefiR}, ", ct$fr, "). \u00bb"))
+				if (!h$null[1L]) size_fr else "", if (guard) " ; soutien ramen\u00e9 \u00e0 mod\u00e9r\u00e9, des cases s'en \u00e9cartent" else "", " (g.bay {KefiR}, ", ct$fr, "). \u00bb"))
 	}
 	if (length(obj$notes$en) && !isTRUE(narrated)) {
 		for (i in seq_along(obj$notes$en)) emit("fact", obj$notes$en[i], obj$notes$fr[i])
@@ -562,12 +594,12 @@
 		say("Estimation: posterior Dirichlet(n + 1); per category, ratio of the proportion to the one given, 95 % HDI (bayestestR); Cohen's w.",
 			"Estimation : Dirichlet(n + 1) a posteriori ; par modalit\u00e9, rapport de la proportion \u00e0 celle donn\u00e9e, HDI \u00e0 95 % (bayestestR) ; w de Cohen.")
 	} else {
-		say("Model: log-linear Poisson, margins free under both hypotheses; a link is the interaction, (r - 1)(c - 1) parameters. Bayes factor by -BIC/2 with n = N (unit-information prior; Schwarz 1978; Raftery 1986, 1995): log BF = (G - df log N) / 2.",
-			"Mod\u00e8le : log-lin\u00e9aire de Poisson, marges libres sous les deux hypoth\u00e8ses ; un lien est l'interaction, (r - 1)(c - 1) param\u00e8tres. Facteur de Bayes par -BIC/2 avec n = N (a priori d'information unitaire ; Schwarz 1978 ; Raftery 1986, 1995) : log BF = (G - ddl log N) / 2.")
-		say("The same answer whether the total, one margin or nothing was fixed: the interaction test does not depend on the sampling plan (DECISIONS, G11).",
-			"M\u00eame r\u00e9ponse que le total, une marge ou rien ait \u00e9t\u00e9 fix\u00e9 : le test de l'interaction ne d\u00e9pend pas du plan d'\u00e9chantillonnage (DECISIONS, G11).")
-		say("Sensitivity: the starting chances 1:2, 1:1, 2:1 (no prior scale with unit information, as in m.bay, D25).",
-			"Sensibilit\u00e9 : les chances de d\u00e9part 1:2, 1:1, 2:1 (pas d'\u00e9chelle a priori avec l'information unitaire, comme dans m.bay, D25).")
+		say("Prior: under a link, Dirichlet(3) on the cell probabilities; under independence, rows Dirichlet(3c) and columns Dirichlet(3r), the laws that a link gives to the margins (neutral margins). Closed form (Gunel and Dickey 1974; DECISIONS, G12).",
+			"A priori : s'il y a un lien, Dirichlet(3) sur les probabilit\u00e9s des cases ; sous l'ind\u00e9pendance, lignes Dirichlet(3c) et colonnes Dirichlet(3r), les lois qu'un lien donne aux marges (marges neutres). Forme close (Gunel et Dickey 1974 ; DECISIONS, G12).")
+		say("The same Bayes factor whether the total, the rows or the columns were fixed (the row margin cancels).",
+			"Le m\u00eame facteur de Bayes que le total, les lignes ou les colonnes aient \u00e9t\u00e9 fix\u00e9s (la marge des lignes se simplifie).")
+		say("a = 3 chosen in advance by simulation: under independence, a link announced at P > 0.95 in 0.6 % of the tables at most; under a moderate link (V = 0.2 or 0.3), independence strongly supported in 2.3 % at most (dev/gbay/VALIDATION.md, section 10). Sensitivity: a = 2, 3, 4 crossed with the starting chances.",
+			"a = 3 choisi d'avance par simulation : sous l'ind\u00e9pendance, un lien annonc\u00e9 \u00e0 P > 0,95 dans 0,6 % des tables au plus ; sous un lien mod\u00e9r\u00e9 (V = 0,2 ou 0,3), l'ind\u00e9pendance fortement soutenue dans 2,3 % au plus (dev/gbay/VALIDATION.md, section 10). Sensibilit\u00e9 : a = 2, 3, 4 crois\u00e9 avec les chances de d\u00e9part.")
 		say("Estimation (cells, V, odds ratio): uniform Dirichlet posterior on the cell probabilities, Dirichlet(n + 1).",
 			"Estimation (cases, V, rapport des cotes) : loi a posteriori de Dirichlet uniforme sur les probabilit\u00e9s des cases, Dirichlet(n + 1).")
 		say("Cells: ratio pi_ij / (pi_i+ pi_+j) on the posterior draws, 95 % HDI on its log; a cell is read when the interval excludes 1 (Albert 1997; Kruschke 2015, ch. 24).",
@@ -672,14 +704,16 @@
 		.bay_tell(story, "No departure: the proportions are exactly those expected.", "Pas d'\u00e9cart : les proportions sont exactement celles attendues.")
 	} else {
 		.bay_tell(story, "Law of the data", "Loi des donn\u00e9es", "step")
-		.bay_step_result(story, "log-linear Poisson, margins free", "log-lin\u00e9aire de Poisson, marges libres")
-		df <- (nrow(tab) - 1L) * (ncol(tab) - 1L)
-		.bay_tell(story, paste0("Link: each cell its own frequency; independence: the margins alone. The link adds ", df, if (df == 1L) " parameter (the interaction)." else " parameters (the interaction)."),
-			paste0("Lien : chaque case sa propre fr\u00e9quence ; ind\u00e9pendance : les marges seules. Le lien ajoute ", df, if (df == 1L) " param\u00e8tre (l'interaction)." else " param\u00e8tres (l'interaction)."))
-		.bay_tell(story, "The same answer whether the total, one margin or nothing was fixed when the data were collected.",
-			"M\u00eame r\u00e9ponse que le total, une marge ou rien ait \u00e9t\u00e9 fix\u00e9 au recueil des donn\u00e9es.", "decide")
-		.bay_tell(story, "the margins are free under both hypotheses: balanced margins say nothing of a link.",
-			"les marges sont libres sous les deux hypoth\u00e8ses : des marges \u00e9quilibr\u00e9es ne disent rien d'un lien.", "note")
+		.bay_step_result(story, "multinomial, margins neutral", "multinomiale, marges neutres")
+		unnamed_t <- identical(nm, c("rows", "columns"))
+		.bay_tell(story, if (unnamed_t) "Link: each row its own proportions; independence: the same proportions in every row." else
+				paste0("Link: each level of ", nm[1L], " its own proportions of ", nm[2L], "; independence: the same proportions for every level."),
+			if (unnamed_t) "Lien : chaque ligne a ses propres proportions ; ind\u00e9pendance : les m\u00eames proportions dans toutes les lignes." else
+				paste0("Lien : chaque modalit\u00e9 de ", nm_fr[1L], " a ses propres proportions de ", nm_fr[2L], " ; ind\u00e9pendance : les m\u00eames proportions pour toutes."))
+		.bay_tell(story, "The same answer whether the total, the rows or the columns were fixed when the data were collected.",
+			"M\u00eame r\u00e9ponse que le total, les lignes ou les colonnes aient \u00e9t\u00e9 fix\u00e9s au recueil des donn\u00e9es.", "decide")
+		.bay_tell(story, "the margins follow the same law under both hypotheses: balanced margins say nothing of a link.",
+			"les marges suivent la m\u00eame loi sous les deux hypoth\u00e8ses : des marges \u00e9quilibr\u00e9es ne disent rien d'un lien.", "note")
 	}
 
 	# Step 4: priors.
@@ -692,13 +726,13 @@
 		.bay_tell(story, "Prior: Dirichlet(1, ..., 1) under a departure, the proportions given under none (Good 1967; Sarafoglou et al. 2023).",
 			"A priori : Dirichlet(1, ..., 1) s'il y a un \u00e9cart, les proportions donn\u00e9es sinon (Good 1967 ; Sarafoglou et al. 2023).", "detail")
 	} else {
-		.bay_tell(story, "If there is a link, the prior on its size weighs as much as one individual (unit information).",
-			"S'il y a un lien, l'a priori sur sa taille p\u00e8se autant qu'un seul individu (information unitaire).")
-		.bay_tell(story, "Prior: unit information on the interaction terms, the prior behind the BIC (Kass and Wasserman 1995; Raftery 1995).",
-			"A priori : information unitaire sur les termes d'interaction, celui qui fonde le BIC (Kass et Wasserman 1995 ; Raftery 1995).", "detail")
+		.bay_tell(story, "If there is a link, moderate gaps between rows are expected rather than extreme ones (Dirichlet of concentration 3).",
+			"S'il y a un lien, on attend des \u00e9carts mod\u00e9r\u00e9s entre lignes plut\u00f4t qu'extr\u00eames (Dirichlet de concentration 3).")
+		.bay_tell(story, "Prior: Dirichlet(3) per row under a link, Dirichlet(3r) common under independence (neutral margins; DECISIONS, G12).",
+			"A priori : Dirichlet(3) par ligne s'il y a un lien, Dirichlet(3r) commune sous l'ind\u00e9pendance (marges neutres ; DECISIONS, G12).", "detail")
 	}
-	.bay_tell(story, if (gof) "these values are not tuned on the data; step 5 varies them." else "these values are not tuned on the data; step 5 varies the starting chances.",
-		if (gof) "ces valeurs ne sont pas ajust\u00e9es sur les donn\u00e9es ; l'\u00e9tape 5 les fait varier." else "ces valeurs ne sont pas ajust\u00e9es sur les donn\u00e9es ; l'\u00e9tape 5 fait varier les chances de d\u00e9part.", "note")
+	.bay_tell(story, "these values are not tuned on the data; step 5 varies them.",
+		"ces valeurs ne sont pas ajust\u00e9es sur les donn\u00e9es ; l'\u00e9tape 5 les fait varier.", "note")
 
 	# Step 5: Bayes factor and sensitivity.
 	ll <- NULL
@@ -706,9 +740,9 @@
 		.bay_tell(story, "Solidity of the answer", "Solidit\u00e9 de la r\u00e9ponse", "step", fun = c("g.bay() {KefiR}", "g.bay() {KefiR}"))
 		lb <- .gbay_lbf_gof(tab, inp$p, 1)
 	} else {
-		.bay_tell(story, "Solidity of the answer", "Solidit\u00e9 de la r\u00e9ponse", "step", fun = "glm() {stats}")
-		ll <- .gbay_loglin(tab)
-		lb <- ll$log_bf
+		.bay_tell(story, "Solidity of the answer", "Solidit\u00e9 de la r\u00e9ponse", "step", fun = c("g.bay() {KefiR}", "g.bay() {KefiR}"))
+		ll <- .gbay_G(tab)
+		lb <- .gbay_lbf_ct(tab)
 	}
 	p_h1 <- .gbay_prob(lb, prior_h1)
 	inv_en <- if (lb < 0) paste0(", i.e. ", .bay_bf_txt(-lb, "."), " in favour of ", if (gof) "the proportions given" else "independence") else ""
@@ -716,31 +750,25 @@
 	.bay_tell(story, paste0("Bayes factor: ", .bay_bf_txt(lb, "."), inv_en, "."), paste0("Facteur de Bayes : ", .bay_bf_txt(lb, ","), inv_fr, "."))
 	.bay_tell(story, paste0("The Bayes factor says how many times more probable the counts are with ", if (gof) "a departure" else "a link", " than without."),
 		paste0("Le facteur de Bayes dit combien de fois les effectifs sont plus probables avec ", if (gof) "un \u00e9cart" else "un lien", " que sans."), "note")
-	if (gof) {
-		.bay_tell(story, "Precision: exact computation, without draws.", "Pr\u00e9cision : calcul exact, sans tirage.")
-	} else {
-		g_en <- formatC(ll$G, format = "f", digits = 2)
-		.bay_tell(story, paste0("Read on the G statistic: G = ", g_en, ", ", ll$df, " df, N = ", ll$N, "; log BF = (G - df log N) / 2 (BIC approximation, without draws)."),
-			paste0("Lu sur la statistique G : G = ", gsub(".", ",", g_en, fixed = TRUE), ", ", ll$df, " ddl, N = ", ll$N, " ; log BF = (G - ddl log N) / 2 (approximation BIC, sans tirage)."))
-	}
+	.bay_tell(story, "Precision: exact computation, without draws.", "Pr\u00e9cision : calcul exact, sans tirage.")
 	sens <- NULL
 	if (isTRUE(sensitivity)) {
-		concs <- if (gof) c(1 / 2, 1, 2) else 1
+		concs <- if (gof) c(1 / 2, 1, 2) else c(2, 3, 4)
 		phs <- c(1 / 3, 1 / 2, 2 / 3)
-		lbs <- if (gof) vapply(concs, function(a) .gbay_lbf_gof(tab, inp$p, a), numeric(1)) else lb
+		lbs <- vapply(concs, function(a) if (gof) .gbay_lbf_gof(tab, inp$p, a) else .gbay_lbf_ct(tab, a), numeric(1))
 		grid <- outer(lbs, phs, function(l, p) .gbay_prob(l, p))
 		lead_h1 <- p_h1 >= 0.5
 		rng <- range(if (lead_h1) grid else 1 - grid)
 		verdict <- .bay_sensitivity_verdict(max(p_h1, 1 - p_h1), rng)
-		sens <- list(conc = if (gof) concs else NULL, prior_h1 = phs, p = grid, log_bf = lbs, range_lead = rng, verdict = verdict)
+		sens <- list(conc = concs, prior_h1 = phs, p = grid, log_bf = lbs, range_lead = rng, verdict = verdict)
 		stb <- .bay_stab_txt(verdict)
 		.bay_step_result(story, paste0("Bayes factor ", .bay_bf_txt(lb, "."), ", ", stb$en), paste0("facteur de Bayes ", .bay_bf_txt(lb, ","), ", ", stb$fr))
 		.bay_tell(story, paste0("Sensitivity: the leading answer ", .bay_range_txt(rng)$en, "."),
 			paste0("Sensibilit\u00e9 : la r\u00e9ponse en t\u00eate ", .bay_range_txt(rng)$fr, "."))
 		.bay_tell(story, if (gof) "what varies is the expected spread of the proportions (a = 1/2, 1, 2) and the starting chances (1 against 2 to 2 against 1)." else
-				"what varies is the starting chances (1 against 2 to 2 against 1); the unit-information prior has no scale to vary.",
+				"what varies is the expected spread between rows (a = 2, 3, 4) and the starting chances (1 against 2 to 2 against 1).",
 			if (gof) "on fait varier l'\u00e9talement attendu des proportions (a = 1/2, 1, 2) et les chances de d\u00e9part (1 contre 2 \u00e0 2 contre 1)." else
-				"on fait varier les chances de d\u00e9part (1 contre 2 \u00e0 2 contre 1) ; l'a priori d'information unitaire n'a pas d'\u00e9chelle \u00e0 faire varier.", "note")
+				"on fait varier l'\u00e9cart attendu entre lignes (a = 2, 3, 4) et les chances de d\u00e9part (1 contre 2 \u00e0 2 contre 1).", "note")
 		if (identical(verdict, "changes")) {
 			.bay_tell(story, "Caution added: the answer can reverse; it will be called not settled.",
 				"Prudence ajout\u00e9e : la r\u00e9ponse peut s'inverser ; elle sera dite non tranch\u00e9e.", "decide")
@@ -768,9 +796,9 @@
 		table = tab, expected = E, p = if (gof) inp$p else NULL, cells = est$cells,
 		cramer_v = est$cramer_v, odds_ratio = est$odds_ratio, w = est$w,
 		sensitivity = sens, contradiction = FALSE, detail = isTRUE(detail),
-		priors = list(concentration = if (gof) 1 else NULL, prior_h1 = prior_h1, law = if (gof) "multinomial" else "log-linear Poisson, unit information (BIC)"),
+		priors = list(concentration = if (gof) 1 else .gbay_a_ct(), prior_h1 = prior_h1, law = if (gof) "multinomial" else "Dirichlet-multinomial, neutral margins"),
 		method = if (gof) "Goodness of fit, Dirichlet-multinomial against a point (Good 1967)" else
-			"Independence, log-linear test of the interaction, BIC with n = N (Raftery 1986)",
+			"Independence, Dirichlet-multinomial with neutral margins, a = 3 (G12)",
 		label = if (gof) nm else paste(nm, collapse = " x "), n = N, call = call_expr)
 	out$label <- if (gof) nm else paste0(nm[1L], " x ", nm[2L])
 	pk <- if (gof) c("g.bay() {KefiR}", "hdi() {bayestestR}") else c("posterior() {BayesFactor}", "hdi() {bayestestR}")
@@ -801,6 +829,7 @@
 		if (gof) "w est positif m\u00eame sans \u00e9cart : une taille, pas une preuve (la preuve est le facteur de Bayes)." else "V est positif m\u00eame sans lien : une taille, pas une preuve (la preuve est le facteur de Bayes).", "note")
 
 	out$notes <- get_notes()
+	out$guard <- .gbay_guard(out)$on
 	class(out) <- "gbay"
 	out$story <- .bay_story_lines(story)
 	if (isTRUE(verbose)) .gbay_print_bilan(out, detail = detail, narrated = TRUE)

@@ -36,15 +36,17 @@ columns.
 
 * Goodness of fit to given proportions: Dirichlet against the proportions given, closed-form
   Bayes factor (Good 1967; the model of `multibridge`).
-* Independence in an r x c table: test of the interaction of a log-linear Poisson model,
-  margins free under both hypotheses, Bayes factor by -BIC/2 with n = N (Raftery 1986), the
-  method of `m.bay()` for discrete responses. It is read on the G statistic itself,
-  log BF = (G - df log N) / 2, and does not depend on the sampling plan. The default
-  `contingencyTableBF()` Bayes factors were measured and set aside: under independence they
-  announced a strong link (Bayes factor above 20) in up to 21 % (joint multinomial) and 90 %
-  (Poisson) of 4 x 5 tables with N = 30. With the log-linear test, 0.2 % at most; the price
-  is a low power in large tables (3 x 4, N = 200, medium link: 16 % against 93 % for the G
-  test).
+* Independence in an r x c table: Dirichlet-multinomial with neutral margins (closed form,
+  a = 3): under independence the margins follow the law that a link gives them, so balanced
+  margins say nothing of a link, and the answer is the same whatever the sampling plan.
+  Chosen among four engines measured on 1 000 tables per scenario: under independence, a
+  strong link (P > 0.95) in 0.6 % of the tables at most; under a moderate link, independence
+  strongly supported in 2.3 % at most; power 73 to 100 % of the G test. The default
+  `contingencyTableBF()` Bayes factors (up to 90 % of false strong links), the BIC of the
+  log-linear model (independence strongly supported under a moderate link in up to 89 %) and
+  `BAS::bas.glm` were set aside.
+* Coherence guard: independence is never "strongly supported" while some cells depart from it
+  with a 95 % interval that excludes 1; the bilan says why.
 * 2 x 2 tables: odds ratio with its 95 % credible interval.
 * Which cells carry the link: ratio of each cell to its value without a link, with a 95 %
   credible interval (in place of the standardised residuals); Cramer's V a posteriori

@@ -186,3 +186,46 @@ Script : `scripts/sim_loglin.R` (sortie `sim_loglin.out`, `.rds`). 2 000 tables 
 - En 2 × 2, un lien moyen (w = 0,3) est dit à P > 0,75 dans 94 % des tables à N = 200, contre 99 % au test G. À N = 30-60, la puissance est environ deux tiers de celle du test G.
 - Dans les grandes tables, la pénalité ddl·log N rend le BIC très prudent : en 3 × 4, un lien moyen n'est presque jamais dit à N = 60 (2,4 %), et rarement à N = 200 (15,7 %, contre 93 % au test G). Le bilan dit alors « indécis » ou « plutôt pas de lien » ; le V de Cramér et les cases (étape 6) restent lisibles. C'est le prix d'un taux de faux « oui » quasi nul (Raftery 1995 : le BIC favorise les modèles simples plus que les p-values).
 - Suite possible, à décider à part : un a priori moins diffus que l'information unitaire sur l'interaction rendrait de la puissance aux grandes tables ; il faudrait le calibrer de même.
+
+## 10. Choix du moteur d'indépendance (G12), 12 novembre
+
+Scripts :
+- `scripts/sim_engines.R` : BIC, BAS robuste, BAS hyper-g/n et marges neutres (a = 1). Sorties `sim_engines_h0.out` sous H0 ; `sim_engines_h1.out` sous un lien, sans BAS, dont `bas.glm` a planté pendant ces scénarios après avoir échoué sous H0.
+- `scripts/sim_neutral.R` : marges neutres à a = 1, 2, 3, avec le garde-fou ; sortie `sim_neutral.out`.
+
+1 000 tables par scénario. Lien diagonal de V de Cramér donné, marges égales.
+
+### Sous H0 : P(lien) > 0,95, valeur la plus haute sur les 24 à 26 scénarios (2 × 2 à 4 × 5, N = 30, 60, 200, marges égales et inégales, lignes fixées)
+
+| Moteur | Maximum | Où |
+|---|---|---|
+| BIC (G11) | 0,4 % | 2 × 2 |
+| BAS robuste, n = N | 98,4 % | 4 × 5, N = 30 |
+| BAS hyper-g/n, n = N | 83,0 % | 4 × 5, N = 30 |
+| marges neutres, a = 1 | 1,1 % | 3 × 4, N = 30 |
+| marges neutres, a = 2 | 0,7 % | 4 × 5, N = 60 |
+| **marges neutres, a = 3** | **0,6 %** | 2 × 2 et 4 × 5 |
+
+### Sous un lien modéré : indépendance « forte » (P(indépendance) ≥ 0,95), maximum sur les scénarios
+
+| Moteur | V = 0,2 | V = 0,3 |
+|---|---|---|
+| BIC | 88,8 % (3 × 4, N = 50) | 66,3 % (3 × 4, N = 50) |
+| marges neutres, a = 1 | 35,7 % (21,2 % avec le garde-fou) | 8,2 % |
+| marges neutres, a = 2 | 8,9 % (7,4 %) | 0,8 % |
+| **marges neutres, a = 3** | **2,9 % (2,3 %)** | **0 %** |
+
+### Puissance de a = 3 (P > 0,75) et du test G (p < 0,05)
+
+| Table | V | N = 50 | 100 | 200 |
+|---|---|---|---|---|
+| 2 × 2 | 0,2 | 24 % / 33 % | 40 / 53 | 71 / 81 |
+| 3 × 3 | 0,2 | 29 / 34 | 51 / 58 | 78 / 90 |
+| 3 × 4 | 0,2 | 28 / 31 | 43 / 52 | 70 / 85 |
+| 2 × 2 | 0,3 | 49 / 59 | 76 / 87 | 98 / 99 |
+| 3 × 3 | 0,3 | 64 / 63 | 88 / 93 | 99 / 100 |
+| 3 × 4 | 0,3 | 56 / 60 | 85 / 88 | 99 / 100 |
+
+**Lecture.** Les marges neutres à a = 3 sont le seul moteur qui tienne les deux critères à la fois : moins de 1 % de faux lien fort sous H0, au plus 5 % d'indépendance forte sous un lien modéré. Leur puissance vaut 73 à 100 % de celle du test G. La table de l'audit (12 11 6 / 9 10 14 / 7 12 19) passe de « indépendantes : 99,6 % (soutien très fort) » (BIC) à « indécis » (indépendance 53,9 %, BF 1,17, sensibilité 31 % à 80 %).
+
+Les § 9 (BIC) et 2 à 4 (ancien moteur, partie indépendance) ne décrivent plus le moteur actuel. L'ajustement (§ 2) et l'estimation (§ 5, 6) n'ont pas changé.

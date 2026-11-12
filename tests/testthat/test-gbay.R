@@ -3,39 +3,70 @@
 tab23 <- matrix(c(20, 15, 25, 30, 10, 12), nrow = 2,
 	dimnames = list(sexe = c("F", "M"), couleur = c("bleu", "vert", "rouge")))
 
-test_that("independance : log BF = (G - ddl log N) / 2, G de GTest ; = -BIC/2 des glm a une ligne par individu (D25)", {
+test_that("independance (G12) : forme close = loi predictive a priori par Monte-Carlo ; meme nombre lignes, colonnes ou total fixes", {
+	# Forme jointe (marges neutres) : DM(cases ; a) - DM(lignes ; c a) - DM(colonnes ; r a).
+	joint <- function(t, a) .gbay_ldm(as.vector(t), rep(a, length(t))) - .gbay_ldm(rowSums(t), rep(ncol(t) * a, nrow(t))) - .gbay_ldm(colSums(t), rep(nrow(t) * a, ncol(t)))
 	for (t in list(tab23, matrix(c(18, 7, 9, 16), 2), matrix(c(30, 10, 12, 8, 25, 9, 5, 6, 28), 3), matrix(c(3, 0, 1, 2, 5, 1), 2))) {
-		G <- unname(suppressWarnings(DescTools::GTest(t)$statistic))
-		df <- (nrow(t) - 1) * (ncol(t) - 1)
+		t <- unname(unclass(t))
+		for (a in c(1, 3)) {
+			expect_equal(.gbay_lbf_ct(t, a), joint(t, a), tolerance = 1e-10)
+			expect_equal(.gbay_lbf_ct(t(t), a), .gbay_lbf_ct(t, a), tolerance = 1e-10)
+		}
 		r <- g.bay(t, verbose = FALSE, sensitivity = FALSE)
-		expect_equal(r$log_bf, (G - df * log(sum(t))) / 2, tolerance = 1e-8)
-		expect_equal(r$G, G, tolerance = 1e-8)
+		expect_equal(r$log_bf, .gbay_lbf_ct(t, 3), tolerance = 1e-12)
 		expect_equal(r$prob_effect, 1 / (1 + exp(-r$log_bf)), tolerance = 1e-12)
+		expect_equal(r$G, unname(suppressWarnings(DescTools::GTest(t)$statistic)), tolerance = 1e-8)
 	}
-	# Une reponse oui/non et un facteur, une ligne par individu : -BIC/2 des glm logistiques.
+	# Controle independant : vraisemblances marginales par Monte-Carlo sur les a priori.
+	set.seed(3)
+	t <- matrix(c(4, 1, 2, 5), 2); a <- 3; S <- 200000
+	rd <- function(S, al) { g <- matrix(stats::rgamma(S * length(al), rep(al, each = S)), S); g / rowSums(g) }
+	p1 <- rd(S, rep(a, 4))
+	m1 <- mean(exp(colSums(as.vector(t) * t(log(p1)))))
+	pr <- rd(S, rep(2 * a, 2)); pc <- rd(S, rep(2 * a, 2))
+	m0 <- mean(exp(rowSums(t)[1] * log(pr[, 1]) + rowSums(t)[2] * log(pr[, 2]) + colSums(t)[1] * log(pc[, 1]) + colSums(t)[2] * log(pc[, 2])))
+	expect_equal(log(m1 / m0), .gbay_lbf_ct(t, a), tolerance = 0.02)
+	# La table, x et y, et y ~ g donnent le meme nombre.
 	set.seed(41)
 	d <- data.frame(g = factor(rep(c("a", "b", "c"), each = 30)))
 	d$y <- factor(ifelse(rbinom(90, 1, c(.5, .5, .8)[d$g]) == 1, "oui", "non"))
-	b1 <- stats::BIC(stats::glm(y ~ g, data = d, family = stats::binomial()))
-	b0 <- stats::BIC(stats::glm(y ~ 1, data = d, family = stats::binomial()))
-	expect_equal(g.bay(y ~ g, data = d, verbose = FALSE, sensitivity = FALSE)$log_bf, (b0 - b1) / 2, tolerance = 1e-8)
-	# Deux facteurs a une ligne par individu : -BIC/2 du modele log-lineaire sur les individus
-	# revient au meme ; la table, x et y, et y ~ g donnent le meme nombre (plan sans effet).
-	t <- table(d$g, d$y)
 	expect_equal(g.bay(d$g, d$y, verbose = FALSE, sensitivity = FALSE)$log_bf, g.bay(y ~ g, data = d, verbose = FALSE, sensitivity = FALSE)$log_bf)
-	expect_equal(g.bay(t(t), verbose = FALSE, sensitivity = FALSE)$log_bf, g.bay(t, verbose = FALSE, sensitivity = FALSE)$log_bf, tolerance = 1e-10)
 })
 
-test_that("calibration sous H0 : marges equilibrees ne font pas un lien (cas de l'audit, 4 x 5, N = 50)", {
+test_that("calibration : marges equilibrees sans lien (4 x 5, N = 50) ; un lien modere ne fait pas une independance forte", {
 	set.seed(2026)
-	P <- outer(rep(0.25, 4), rep(0.2, 5))
-	X <- stats::rmultinom(300, 50, as.numeric(P))
-	lb <- apply(X, 2L, function(x) {
-		t <- matrix(x, 4); t <- t[rowSums(t) > 0, colSums(t) > 0, drop = FALSE]
-		.gbay_lbf_ct(t)
-	})
-	expect_equal(mean(lb > log(20)), 0)
-	expect_lt(mean(lb > log(3)), 0.01)
+	X <- stats::rmultinom(300, 50, rep(1 / 20, 20))
+	lb <- apply(X, 2L, function(x) { t <- matrix(x, 4); .gbay_lbf_ct(t[rowSums(t) > 0, colSums(t) > 0, drop = FALSE]) })
+	expect_lt(mean(lb > log(19)), 0.01)
+	# Table de l'audit : 3 x 3, N = 100, V de Cramer 0,21 ; le BIC disait l'independance a 99,6 %.
+	t <- matrix(c(12, 11, 6, 9, 10, 14, 7, 12, 19), 3, byrow = TRUE)
+	r <- g.bay(t, verbose = FALSE)
+	expect_lt(1 - r$prob_effect, 0.95)
+})
+
+test_that("garde-fou de coherence : pas d'independance forte avec des cases qui s'en ecartent", {
+	# Table ou l'independance est en tete mais une case s'ecarte (construite pour l'exemple).
+	found <- NULL
+	set.seed(8)
+	for (i in 1:400) {
+		t <- matrix(stats::rmultinom(1, 300, rep(1 / 12, 12)), 3)
+		if (.gbay_lbf_ct(t) < -log(19)) {
+			r <- g.bay(t, verbose = FALSE, sensitivity = FALSE, draws = 2000)
+			if (any(r$cells$reading != "-")) { found <- r; break }
+		}
+	}
+	skip_if(is.null(found))
+	expect_true(found$guard)
+	out <- capture.output(print(found))
+	expect_true(any(grepl("ramen\u00e9 \u00e0 mod\u00e9r\u00e9|brought back to moderate", out)))
+	expect_false(any(grepl("soutien fort|soutien tr\u00e8s fort|strong support", out)))
+})
+
+test_that("visibilite : verbose = TRUE rend un objet invisible, verbose = FALSE un objet visible", {
+	invisible(capture.output(v <- withVisible(g.bay(tab23, sensitivity = FALSE, draws = 1000))))
+	expect_false(v$visible)
+	expect_true(withVisible(g.bay(tab23, verbose = FALSE, sensitivity = FALSE, draws = 1000))$visible)
+	expect_length(capture.output(invisible(g.bay(tab23, verbose = FALSE, sensitivity = FALSE, draws = 1000))), 0L)
 })
 
 test_that("ajustement : forme close = integration numerique (2 modalites) et multibridge (proportions egales)", {
@@ -145,7 +176,7 @@ test_that("recit : 80 colonnes au plus, marques sur chaque ligne, francais et an
 	vis <- function(x) nchar(gsub("\t", "        ", x, fixed = TRUE), type = "width")
 	old_loc <- Sys.getlocale("LC_CTYPE"); old_w <- getOption("width")
 	on.exit({ Sys.setlocale("LC_CTYPE", old_loc); options(width = old_w) }, add = TRUE)
-	ok_line <- function(s) s == "" || grepl("^([0-9]+\\) |   |\t(==> |--> |Note|    |      |       )|Method|Méthode|Bilan)", s)
+	ok_line <- function(s) s == "" || grepl("^([0-9]+\\) |   |\t(==> |--> |Note|    |      |       )|Method|M\u00e9thode|Bilan)", s)
 	for (lc in c("French_France.utf8", "English_United States.utf8")) {
 		if (identical(suppressWarnings(Sys.setlocale("LC_CTYPE", lc)), "")) next
 		for (w in c(80, 120)) {

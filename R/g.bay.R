@@ -13,34 +13,37 @@
 #' then says where the link lies (which cells), how large it is, and gives a sentence ready for
 #' a report.
 #'
-#' @section Method (dev/gbay/DECISIONS.md, G1 to G11):
+#' @section Method (dev/gbay/DECISIONS.md, G1 to G12):
 #' - **Goodness of fit**: multinomial counts; under "no departure" the proportions are exactly
 #'   `p`, under "departure" they follow a uniform Dirichlet. The Bayes factor has a closed form
 #'   (Good 1967; the model of `multibridge`, Sarafoglou et al. 2023).
-#' - **Independence**: test of the interaction of a log-linear Poisson model, the margins
-#'   free under both hypotheses. The Bayes factor is -BIC/2 with n = N, the number of
-#'   individuals (unit-information prior; Raftery 1986, 1995), the same method as [m.bay()] for
-#'   discrete responses (D25). It is read on the G statistic itself:
-#'   log BF = (G - df log N) / 2. The answer does not depend on how the data were collected
-#'   (total fixed, one margin fixed, or nothing fixed). The default Bayes factors of
-#'   [BayesFactor::contingencyTableBF()] are not used: under independence they announced a
-#'   strong link (Bayes factor above 20) in up to 21 % (joint multinomial) and 90 % (Poisson)
-#'   of 4 x 5 tables with N = 30 (dev/gbay/VALIDATION.md, section 9).
+#' - **Independence**: Dirichlet-multinomial with neutral margins (closed form). Under a link,
+#'   each row has its own proportions, Dirichlet(a); under independence, the rows share their
+#'   proportions, Dirichlet(r a), which is the law a link gives to the margin. Balanced margins
+#'   thus say nothing of a link, and the Bayes factor is the same whether the total, the rows
+#'   or the columns were fixed. a = 3 was chosen in advance by simulation (dev/gbay/VALIDATION.md,
+#'   section 10): under independence, a link is announced at P > 0.95 in 0.6 % of the tables at
+#'   most; under a moderate link (Cramer's V 0.2 or 0.3), independence is strongly supported in
+#'   2.3 % at most. Two other engines were measured and set aside: the default Bayes factors of
+#'   [BayesFactor::contingencyTableBF()] (up to 90 % of false strong links in 4 x 5 tables) and
+#'   the BIC of the log-linear model (strong support for independence in up to 89 % of tables
+#'   with a moderate link).
+#' - **Coherence**: if independence (or the fit) leads with strong support while some cells
+#'   depart from it with a 95 % interval that excludes 1, its support is brought back to
+#'   moderate and the bilan says why.
 #' - **2 x 2 tables**: odds ratio with its 95 % credible interval.
 #' - **Cells**: for each cell, how many times it is more (or less) frequent than without a
 #'   link, with a 95 % credible interval: the Bayesian counterpart of the standardised
 #'   residuals. A cell is read when its interval excludes 1.
 #' - **Size**: Cramer's V a posteriori (Cohen's w for a goodness of fit). It is positive even
 #'   without a link: a size, not a proof.
-#' - **Small counts**: no minimum count and no correction. Small counts make the answer less
-#'   decisive: the Bayes factor stays near 1 or leans towards no link.
-#' - **Power**: lower than the G test at p < 0.05, in exchange for almost no false "yes"
-#'   (under independence, a Bayes factor above 20 in 0.2 % of the tables at most). In large
-#'   tables the BIC is very cautious: in a 3 x 4 table with N = 200, a medium link (w = 0.3)
-#'   is found in 16 % of the cases, against 93 % for the G test. Measures in
-#'   dev/gbay/VALIDATION.md.
-#' - **Sensitivity**: the starting chances (1 against 2 to 2 against 1); for a goodness of fit,
-#'   also the concentration of the Dirichlet (1/2, 1, 2).
+#' - **Small counts**: no minimum count and no correction (exact computation); small counts
+#'   make the answer less decisive.
+#' - **Power**: for a moderate link (V = 0.2) at N = 200, 70 to 80 % of the tables give
+#'   P > 0.75, against 81 to 90 % for the G test at p < 0.05; for a goodness of fit, clearly
+#'   lower than the G test, in exchange for almost no false "yes".
+#' - **Sensitivity**: the concentration of the Dirichlet (2, 3, 4 for independence; 1/2, 1, 2
+#'   for a goodness of fit), crossed with the starting chances (1 against 2 to 2 against 1).
 #'
 #' Not handled: tables with three dimensions or more; paired data (McNemar); which groups
 #' differ two by two (use [m.bay()] with `y ~ g`).
@@ -74,8 +77,9 @@
 #'     \item{prob_effect, bf10, log_bf}{Posterior probability of a link (or departure), Bayes
 #'       factor and its log.}
 #'     \item{test}{`"independence"` or `"gof"`.}
-#'     \item{G, df}{The G statistic and its degrees of freedom (independence: the Bayes factor
-#'       is read on them).}
+#'     \item{G, df}{The G statistic and its degrees of freedom, for reference.}
+#'     \item{guard}{`TRUE` when the coherence guard brought the support of independence (or of
+#'       the fit) back to moderate.}
 #'     \item{table, expected, p}{Counts, counts expected without a link (or under `p`), `p`.}
 #'     \item{cells}{Per cell (or category): observed, expected, `ratio` to its value without a
 #'       link (or to `p`) with `ratio_low`, `ratio_high` (95 % HDI), `p_more` (probability that
@@ -88,11 +92,8 @@
 #'   }
 #'
 #' @references
-#' Raftery, A. E. (1986). Choosing models for cross-classifications. American Sociological
-#' Review, 51(1), 145-146.
-#'
-#' Raftery, A. E. (1995). Bayesian model selection in social research. Sociological
-#' Methodology, 25, 111-163.
+#' Gunel, E., & Dickey, J. M. (1974). Bayes factors for independence in contingency tables.
+#' Biometrika, 61(3), 545-557.
 #'
 #' Good, I. J. (1967). A Bayesian significance test for multinomial distributions. Journal of
 #' the Royal Statistical Society B, 29(3), 399-431.

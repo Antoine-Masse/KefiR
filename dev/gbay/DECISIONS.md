@@ -136,7 +136,10 @@ L'a priori uniforme (Dirichlet(1) sur r × c probabilités) met beaucoup de mass
 
 **Suite possible, non faite.** Un a priori mieux adapté aux tables creuses (mélange sur la concentration, Good et Crook 1987) rendrait de la puissance. Il faudrait le coder à la main (pas de paquet établi) et le calibrer ; c'est une décision à part.
 
-## G11. Indépendance : test log-linéaire de l'interaction, BIC avec n = N : DÉCIDÉ ET FAIT (11 novembre, soir), remplace G3 et G10
+## G11. Indépendance : test log-linéaire de l'interaction, BIC avec n = N : REMPLACÉE par G12 (12 novembre)
+
+*Le BIC tenait la calibration sous H0, mais il « prouvait » l'indépendance quand un lien modéré existe (G12). Texte conservé pour l'historique.*
+
 
 **Origine.** Point bloquant de la session parente, après l'avis d'un expert, recalculé par elle et par moi. Sous indépendance vraie, `contingencyTableBF` (a = 1) annonce un lien fort (BF > 20) dans :
 - 82,7 % des tables 4 × 5 à N = 50 (plan Poisson), 11,0 % (joint), 2,7 % (indépendant, lignes fixées), d'après la mesure de la session parente ;
@@ -172,6 +175,75 @@ Le facteur de Bayes est −BIC/2 de chaque modèle, avec n = N, le nombre d'indi
 **Ajustement (G2) inchangé.** H0 y est un vrai point (les proportions données) ; il n'y a pas de marges à traiter, et la calibration de G2 tient (§ 2).
 
 **Pour m.bay.** La même correction est demandée à `sys_bay_contingency.R`. La formulation ci-dessus vaut pour les deux fonctions : test de l'interaction, marges libres, −BIC/2 avec n = N.
+
+## G12. Indépendance : Dirichlet-multinomiale à marges neutres, a = 3, et garde-fou de cohérence : DÉCIDÉ ET FAIT (12 novembre), remplace G11
+
+**Origine.** Audit de 01effef (G11) par la session parente. Le défaut sous H0 est corrigé, mais le BIC fait l'erreur inverse :
+- sur 150 tables 3 × 3 à N = 100 avec un lien diagonal modéré (V ≈ 0,2), g.bay dit « lien » à P > 0,75 dans 18 % des cas, contre 65 % pour le test G à p < 0,05 ;
+- la table 12 11 6 / 9 10 14 / 7 12 19 donne « indépendantes : 99,6 % (soutien très fort) », BF 232, alors que le V de Cramér vaut 0,21 [0,10 ; 0,32] ;
+- sous H0, la probabilité moyenne d'un lien vaut 1e-5 en grande table : l'échelle est écrasée.
+
+Deux critères sont demandés ensemble : sous H0, P(lien) > 0,95 dans moins de 1 % des tables ; sous un lien modéré (V = 0,2 et 0,3), un « soutien fort » de l'indépendance dans au plus 5 % des tables, avec une puissance raisonnable face au test G.
+
+**Moteurs comparés** (VALIDATION.md, § 10 ; 1 000 tables par scénario, 26 scénarios sous H0 et 18 à 24 sous un lien) :
+
+1. **BIC (G11)** : sous H0, 0,4 % au plus. Mais sous un lien modéré, l'indépendance est fortement soutenue dans 37 à 89 % des tables 3 × 3 et 3 × 4 à V = 0,2. **Écarté.**
+2. **`BAS::bas.glm`, Poisson, interaction contre effets principaux, a priori robuste (Bayarri et al. 2012) ou hyper-g/n (Li et Clyde 2018), n = N.** Sous H0, un lien annoncé à P > 0,95 dans 83 % (hyper-g/n) et 98 % (robuste) des tables 4 × 5 à N = 30, dans 16 à 40 % des tables 3 × 4 à N = 30. De plus, `bas.glm` échoue sur certaines tables : NA en 2 × 2 avec l'a priori robuste, et une erreur interne « VECTOR_ELT() » qui a arrêté la simulation. Sur une table agrégée, la vraisemblance de Poisson des cases ne se prête pas à ces a priori pensés pour des observations individuelles. **Écarté.**
+   - Li, Y., & Clyde, M. A. (2018). Mixtures of g-priors in generalized linear models. *JASA*, 113(524), 1828-1845.
+   - Bayarri, M. J., Berger, J. O., Forte, A., & García-Donato, G. (2012). Criteria for Bayesian model choice with application to variable selection. *Annals of Statistics*, 40(3), 1550-1577.
+3. **Dirichlet-multinomiale à marges neutres** (forme de l'expert, `expert/scripts/chk_gbay3.R`). Sous H1, Dirichlet(a) sur les cases. Sous H0, lignes Dirichlet(c·a) et colonnes Dirichlet(r·a), les lois que H1 induit sur les marges. Mesurée à a = 1, 2, 3 :
+
+   | a | H0 : P > 0,95, au plus | Lien modéré : indépendance forte, au plus (avec garde-fou) |
+   |---|---|---|
+   | 1 | 1,1 % | 35,7 % (21,2 %) |
+   | 2 | 0,7 % | 8,9 % (7,4 %) |
+   | **3** | **0,6 %** | **2,9 % (2,3 %)** |
+
+   **Retenue, a = 3.**
+
+**Pourquoi la forme à marges neutres est juste.**
+- Propriété d'agrégation de la Dirichlet : Dirichlet(a) sur les r × c cases équivaut à des lignes Dirichlet(c·a) et, indépendamment, à chaque profil de ligne Dirichlet(a). La marge des lignes se simplifie donc dans le facteur de Bayes :
+
+  log BF₁₀ = Σᵢ log DM(ligneᵢ ; a) − log DM(totaux des colonnes ; r·a)
+
+- C'est exactement le facteur de Bayes « multinomiales indépendantes » de Gunel et Dickey (1974). La seule différence : l'a priori commun sous H0 est Dirichlet(r·a), la loi qu'induit H1, au lieu de la Dirichlet(r(a − 1) + 1) de BayesFactor.
+- Le même nombre vaut, par symétrie, que les lignes, les colonnes ou le seul total soient fixés (tests : formes jointe, lignes et colonnes égales à 1e-10). Le problème du plan d'échantillonnage (G3) disparaît sans approximation.
+- Contrôle indépendant : vraisemblances marginales par Monte-Carlo sur les a priori, 200 000 tirages, égales à 0,02 près en log (test).
+
+**Pourquoi a = 3.**
+- Sur la ligne d'une table, Dirichlet(3) attend des écarts modérés entre lignes plutôt qu'extrêmes ; Dirichlet(1) met autant de masse sur des profils très déséquilibrés. C'est le même raisonnement que Jamil et al. (2017) : « si l'on attend de petits effets, on peut augmenter a ».
+- a est fixé avant toute analyse, par la calibration ci-dessus, jamais sur les données de l'utilisateur.
+- La sensibilité fait varier a de 2 à 4, croisé avec les chances de départ.
+- Contrepartie à dire honnêtement : c'est un réglage KefiR, pas un défaut d'un paquet établi. Le calcul est une forme close de trois lignes ; aucun paquet ne propose ces marges neutres.
+
+**Puissance** (P > 0,75, contre le test G à p < 0,05), à V = 0,2 et N = 200 :
+
+| Table | g.bay | test G |
+|---|---|---|
+| 2 × 2 | 71 % | 81 % |
+| 3 × 3 | 78 % | 90 % |
+| 3 × 4 | 70 % | 85 % |
+
+À V = 0,3 et N = 100 :
+
+| Table | g.bay | test G |
+|---|---|---|
+| 2 × 2 | 76 % | 87 % |
+| 3 × 3 | 88 % | 93 % |
+| 3 × 4 | 85 % | 88 % |
+
+**Garde-fou de cohérence.** Si l'indépendance (ou, pour l'ajustement, les proportions données) est en tête avec un soutien fort ou très fort, alors qu'au moins une case s'en écarte avec un intervalle à 95 % qui exclut 1 (lecture G6) :
+- le soutien est ramené à « modéré » et le verdict devient « plutôt pas de lien, sans conclure » ;
+- une ligne « Prudence » dit pourquoi ;
+- la phrase de compte rendu le mentionne, et `$guard` vaut TRUE.
+
+La demande parlait d'un « intervalle du V de Cramér qui exclut 0 ». Ce critère ne peut pas servir : V est positif par construction, son intervalle n'atteint jamais 0, même sous indépendance. L'intervalle d'une case (et, en 2 × 2, celui du rapport des cotes, qui va avec) exclut ou non l'absence d'effet : c'est la lecture que le critère visait. Mesure : il fait passer l'indépendance forte sous un lien modéré de 2,9 % à 2,3 % au plus (a = 3). Sous H0, en grande table à N = 200, il retire le soutien fort dans 0 à 43 % des tables où il était donné (une case signalée par hasard). C'est une prudence, pas une erreur : le bilan dit alors « plutôt pas de lien ».
+
+**Visibilité.** `g.bay()` rend son objet avec `invisible()` quand `verbose = TRUE` (le récit et le bilan sont déjà imprimés), et visible sinon (testé). `print(g.bay(...))` imprime donc le bilan une seconde fois par construction, comme `print(m.bay(...))`.
+
+**Pour m.bay.** Même moteur, une ligne : dans `.bay_cont_lbf`, la concentration de la loi commune sous H0 devient `R * conc` au lieu de `R * (conc - 1) + 1`, avec conc = 3. Le post-hoc par regroupements garde sa forme close, avec la même règle pour chaque tableau fusionné. La formulation ci-dessus vaut pour les deux fonctions.
+
+**G10 et G11** restent retirés. **G2** (ajustement) est inchangé.
 
 ## G9. Validation : PRÉVUE, résultats dans VALIDATION.md
 
