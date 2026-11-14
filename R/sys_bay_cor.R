@@ -22,8 +22,16 @@
 # Two halves from correlationBF (nullInterval), the two-sided BF as their mean
 # (equal prior mass on each half). Error of the integration kept, in %.
 .corbay_lbf_pearson <- function(x, y, kappa) {
-	b <- BayesFactor::correlationBF(y = y, x = x, rscale = kappa, nullInterval = c(0, 1))
-	e <- BayesFactor::extractBF(b, logbf = TRUE)
+	na <- c(plus = NA_real_, minus = NA_real_, two = NA_real_, error_pct = NA_real_)
+	# |r| = 1: the likelihood is degenerate and correlationBF stops (DECISIONS, C11). Any other
+	# failure gives NA too, never a raw error of BayesFactor (its messages are silenced).
+	if (!isTRUE(abs(stats::cor(x, y)) <= 1 - 1e-6)) return(na)
+	b <- NULL
+	utils::capture.output(b <- tryCatch(suppressMessages(suppressWarnings(
+		BayesFactor::correlationBF(y = y, x = x, rscale = kappa, nullInterval = c(0, 1)))), error = function(e) NULL), type = "message")
+	if (is.null(b)) return(na)
+	e <- tryCatch(BayesFactor::extractBF(b, logbf = TRUE), error = function(e) NULL)
+	if (is.null(e) || length(e$bf) < 2L || any(!is.finite(e$bf))) return(na)
 	l <- e$bf
 	m <- max(l)
 	c(plus = l[1L], minus = l[2L], two = m + log((exp(l[1L] - m) + exp(l[2L] - m)) / 2),
@@ -321,9 +329,23 @@
 		if (nf > 0L) paste0(nf, if (nf == 1L) " paire \u00e0 part, gard\u00e9e" else " paires \u00e0 part, gard\u00e9es") else "rien \u00e0 retirer")
 }
 
-.corbay_story_method <- function(st, method, auto, why, xn, yn) {
+.corbay_story_method <- function(st, method, auto, why, xn, yn, perfect = FALSE, asked = method, r0 = NA_real_) {
 	mw <- .corbay_method_words(method)
 	.bay_tell(st, "Choice of the method.", "Choix de la m\u00e9thode.", "step", fun = "cor.bay() {KefiR}")
+	if (isTRUE(perfect)) {
+		lin <- isTRUE(abs(r0) > 1 - 1e-6)
+		.bay_tell(st, paste0("Perfect link: ", if (lin) paste0("the points lie exactly on a line (r = ", .corbay_num(r0, 6L, "."), ")") else "the ranks agree exactly (Spearman's rho = 1)",
+				"; a unit conversion or a copied column?"),
+			paste0("Lien parfait : ", if (lin) paste0("les points sont exactement align\u00e9s (r = ", .corbay_num(r0, 6L, ","), ")") else "les rangs concordent exactement (rho de Spearman = 1)",
+				" ; conversion d'unit\u00e9s ou colonne recopi\u00e9e ?"))
+		.bay_tell(st, paste0("Change of strategy: Kendall's tau", if (!auto && asked != "kendall") paste0(" in place of the ", asked, " method asked for") else "",
+				"; Pearson's Bayesian test cannot be computed on a perfect link (its likelihood is degenerate)."),
+			paste0("Changement de strat\u00e9gie : tau de Kendall", if (!auto && asked != "kendall") paste0(" \u00e0 la place de la m\u00e9thode demand\u00e9e (", asked, ")") else "",
+				" ; le test bay\u00e9sien de Pearson ne se calcule pas sur un lien parfait (sa vraisemblance est d\u00e9g\u00e9n\u00e9r\u00e9e)."), "decide")
+		.bay_tell(st, paste0("the method measures ", mw$what_en, "."), paste0("la m\u00e9thode mesure ", mw$what_fr, "."), "note_first")
+		.bay_step_result(st, paste0(mw$en, ", perfect link"), paste0(mw$fr, ", lien parfait"))
+		return(invisible(NULL))
+	}
 	why_en <- c(far = "far values", influence = "influential pairs", scale = "a short scale (7 values or fewer)")
 	why_fr <- c(far = "valeurs \u00e9loign\u00e9es", influence = "paires influentes", scale = "une \u00e9chelle courte (7 valeurs ou moins)")
 	if (auto) {
@@ -391,6 +413,10 @@
 			if (obj$alternative == "two.sided") paste0(" (", .bay_bf_txt(lb, "."), " for a link of either sign against none).") else "."),
 		paste0("Facteur de Bayes : ", .bay_bf_txt(ll, ","), " pour ", sg_fr[h$key[1L]], " contre ", sg_fr[h$key[2L]],
 			if (obj$alternative == "two.sided") paste0(" (", .bay_bf_txt(lb, ","), " pour un lien de l'un ou l'autre sens contre aucun).") else "."))
+	if (!is.null(obj$failed)) {
+		.bay_tell(st, "Change of strategy: Pearson's Bayes factor could not be computed on these data; Kendall's tau answers.",
+			"Changement de strat\u00e9gie : le facteur de Bayes de Pearson n'a pas pu \u00eatre calcul\u00e9 sur ces donn\u00e9es ; le tau de Kendall r\u00e9pond.", "decide")
+	}
 	o <- obj$other
 	if (!is.null(o)) {
 		ow <- .corbay_method_words(o$method)
@@ -435,6 +461,16 @@
 .corbay_story_estimate <- function(st, obj) {
 	est <- obj$estimate
 	mw <- .corbay_method_words(obj$method)
+	if (is.null(est)) {
+		ob <- obj$observed
+		.bay_tell(st, "Strength of the link.", "Force du lien.", "step")
+		.bay_step_result(st, "perfect link", "lien parfait")
+		.bay_tell(st, paste0("Observed: r = ", .corbay_num(ob[["r"]], 3L, "."), ", tau = ", .corbay_num(ob[["tau"]], 2L, "."), "; the strength is known, no interval is given."),
+			paste0("Observ\u00e9 : r = ", .corbay_num(ob[["r"]], 3L, ","), ", tau = ", .corbay_num(ob[["tau"]], 2L, ","), " ; la force est connue, aucun intervalle n'est donn\u00e9."))
+		.bay_tell(st, "a credible interval would rest on approximations that break down at |tau| = 1.",
+			"un intervalle de cr\u00e9dibilit\u00e9 reposerait sur des approximations qui ne tiennent plus \u00e0 |tau| = 1.", "note")
+		return(invisible(NULL))
+	}
 	.bay_tell(st, "Strength of the link.", "Force du lien.", "step",
 		fun = paste0(if (obj$method == "kendall") "cor.bay() {KefiR}" else "posterior() {BayesFactor}", ", hdi() {bayestestR}"))
 	.bay_step_result(st, paste0(mw$par, " = ", .corbay_est_txt(est, ".")), paste0(mw$par, " = ", .corbay_est_txt(est, ",")))
@@ -471,17 +507,20 @@
 		return(list(en = "Verdict: undecided. The data allow no conclusion, neither a link nor its absence.",
 			fr = "Verdict : ind\u00e9cis. Les donn\u00e9es ne permettent de conclure ni \u00e0 un lien, ni \u00e0 son absence."))
 	}
+	# The adverb follows the label of the bilan, which follows the Bayes factor (expert, pass 3):
+	# "strong" or "very strong" -> "very probably", "moderate" -> "probably", else "rather".
+	lv <- li$sup$level
 	if (isTRUE(h$null[1L])) {
-		if (p >= 0.95 && !open) return(list(en = "Verdict: very probably no link of the size expected. This is not a proof of independence.",
+		if (lv >= 4L && !open) return(list(en = "Verdict: very probably no link of the size expected. This is not a proof of independence.",
 			fr = "Verdict : tr\u00e8s probablement pas de lien de l'ordre attendu. Ce n'est pas une preuve d'ind\u00e9pendance."))
 		return(list(en = "Verdict: rather no link, without concluding. This does not prove that the variables are independent.",
 			fr = "Verdict : plut\u00f4t pas de lien, sans conclure. Cela ne prouve pas que les variables sont ind\u00e9pendantes."))
 	}
 	s_en <- if (h$key[1L] == "pos") "positive" else "negative"
 	s_fr <- if (h$key[1L] == "pos") "positif" else "n\u00e9gatif"
-	if (p >= 0.95 && !open) return(list(en = paste0("Verdict: a ", s_en, " link very probably exists. This says neither that it is strong, nor that it is a cause."),
+	if (lv >= 4L && !open) return(list(en = paste0("Verdict: a ", s_en, " link very probably exists. This says neither that it is strong, nor that it is a cause."),
 		fr = paste0("Verdict : un lien ", s_fr, " existe tr\u00e8s probablement. Cela ne dit ni qu'il est fort, ni qu'il est une cause.")))
-	if (p >= 0.75 && !open) return(list(en = paste0("Verdict: a ", s_en, " link probably exists. This says neither that it is strong, nor that it is a cause."),
+	if (lv >= 3L && !open) return(list(en = paste0("Verdict: a ", s_en, " link probably exists. This says neither that it is strong, nor that it is a cause."),
 		fr = paste0("Verdict : un lien ", s_fr, " existe probablement. Cela ne dit ni qu'il est fort, ni qu'il est une cause.")))
 	list(en = paste0("Verdict: rather a ", s_en, " link, without concluding."), fr = paste0("Verdict : plut\u00f4t un lien ", s_fr, ", sans conclure."))
 }
@@ -544,10 +583,15 @@
 		paste0("les donn\u00e9es sont ", bf_fr, " fois plus probables sous l'hypoth\u00e8se 1 que sous la 2 (facteur de Bayes ; 1 \u00e0 3 faible, 3 \u00e0 20 mod\u00e9r\u00e9, 20 \u00e0 150 fort, au-del\u00e0 tr\u00e8s fort)."))
 	emit("block", "", "")
 	est <- obj$estimate
+	ob0 <- obj$observed
 	h0 <- isTRUE(h$null[1L])
 	if (!is.null(est)) {
 		emit("fact", paste0(if (h0) "If a link exists, estimated " else "Estimated ", mw$par, ": ", .corbay_est_txt(est, "."), if (narrated) " (step 6)." else "."),
 			paste0(if (h0) "Si un lien existe, " else "", mw$par, " estim\u00e9 : ", .corbay_est_txt(est, ","), if (narrated) " (\u00e9tape 6)." else "."))
+	}
+	if (isTRUE(obj$perfect)) {
+		emit("fact", paste0("Perfect link: r = ", .corbay_num(ob0[["r"]], 3L, "."), ", tau = ", .corbay_num(ob0[["tau"]], 2L, "."), "; probability by Kendall's tau, no interval (the strength is known)."),
+			paste0("Lien parfait : r = ", .corbay_num(ob0[["r"]], 3L, ","), ", tau = ", .corbay_num(ob0[["tau"]], 2L, ","), " ; probabilit\u00e9 par le tau de Kendall, sans intervalle (la force est connue)."))
 	}
 	if (!narrated) emit("fact", paste0("Method: ", mw$en, if (obj$auto) " (chosen by the rule of method = \"auto\")" else "", "."),
 		paste0("M\u00e9thode : ", mw$fr, if (obj$auto) " (choisie par la r\u00e8gle de method = \u00ab auto \u00bb)" else "", "."))
@@ -563,6 +607,10 @@
 	cond <- h0 || undecided
 	est_en <- if (!is.null(est)) paste0("; ", if (cond) "if a link exists, " else "", mw$par, " = ", .corbay_est_txt(est, "."), ", ", format(round(100 * est$ci)), " % credible interval") else ""
 	est_fr <- if (!is.null(est)) paste0(" ; ", if (cond) "si un lien existe, " else "", mw$par, " = ", .corbay_est_txt(est, ","), ", intervalle de cr\u00e9dibilit\u00e9 \u00e0 ", format(round(100 * est$ci)), " %") else ""
+	if (isTRUE(obj$perfect)) {
+		est_en <- paste0("; perfect link, r = ", .corbay_num(ob0[["r"]], 3L, "."))
+		est_fr <- paste0(" ; lien parfait, r = ", .corbay_num(ob0[["r"]], 3L, ","))
+	}
 	h1 <- which(!h$null)[1L]
 	p_link <- sum(h$posterior[!h$null])
 	if (undecided) {
