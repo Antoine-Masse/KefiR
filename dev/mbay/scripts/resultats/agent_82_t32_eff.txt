@@ -1,0 +1,4 @@
+R version 4.6.1 (2026-06-24 ucrt)
+agent_82 : oui/non a un facteur, scenario t32_eff, N = 1000
+|P marges neutres - P deviance| : mediane 0.096, 95e centile 0.139, max 0.147 | classes differentes : 0.259
+marges neutres BF>3 0.387, BF>20 0.110 | deviance BF>3 0.275, BF>20 0.081

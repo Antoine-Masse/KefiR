@@ -1026,3 +1026,16 @@ Demande de l'expert : 60 à 200 jeux ne permettent pas de se comparer à 0,7 %. 
 ## 31. Discret à plusieurs facteurs, BIC contre facteur de Bayes de déviance (D31, `agent_80`), 12 novembre
 
 Sur les mêmes jeux : 2 × 2, n = 25 par case, 1000 jeux par scénario, a priori HOP, sans sensibilité. Le tableau est dans DECISIONS, D31. Résultats complets avec intervalles de Wilson : `scripts/resultats/agent_80_*.txt`. Le test du rapport de vraisemblance à p < 0,05 détecte 42,5 % (oui/non) et 70,1 % (comptages) sous les effets. Sous H0, il est à 4,6 % et 5,4 %.
+
+## 32. Voies à un facteur, notes entières et comptages, BIC contre déviance (D31 suite, `agent_81`), 14 novembre
+
+Notes de 0 à 10 (normale (6 ; 1,8) arrondie, le jeu de l'expert) et comptages (binomiale négative de taille 2, moyenne 4, puis 4 contre 6), 2 groupes de 20, 1000 jeux par scénario, routage automatique pour les notes (voie ordinale choisie dans 97 à 100 % des jeux), sans sensibilité ni post-hoc. Le tableau est dans DECISIONS, D31. Résultats complets avec intervalles de Wilson : `scripts/resultats/agent_81_*.txt`. Le test t ou le rapport de vraisemblance à p < 0,05 est à 5,0 % et 5,1 % sous H0, et détecte 45,2 % (notes) et 32,7 % (comptages) sous les effets.
+
+## 33. Oui/non à un facteur, marges neutres contre déviance (D34, `agent_82`), 14 novembre
+
+2 × 2 (20 par groupe) et 3 × 2 (15 par groupe), sous H0 et sous effet, 1000 tables par scénario, les deux moteurs sur les mêmes tables, cotes égales. Le tableau est dans DECISIONS, D34. Résultats complets : `scripts/resultats/agent_82_*.txt`.
+
+## 34. Groupe d'une valeur, 3 + 3 valeurs, seuils du soutien (D32, D33), 14 novembre
+
+`test-bay-tiny.R` : 1 valeur contre 20, aucune erreur brute imprimée, seules les lois à variance commune, soutien plafonné à faible ; à 3 + 3, la forme du bruit n'est pas annoncée quand aucune ne dépasse 50 % ; facteurs de Bayes 19 et 149 dits modéré et fort, et non plus fort et très fort.
+

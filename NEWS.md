@@ -44,6 +44,24 @@ Plans covered:
 Refused with a message, until validated: random slopes, covariates with subjects, MANOVA with
 covariates or subjects, discrete responses with subjects, paired yes/no.
 
+Discrete responses, in detail:
+
+* Yes/no and categories with one factor: Dirichlet-multinomial with neutral margins, shared
+  with `g.bay()` (D30); it can differ from the several-factor engine by up to 0.15 on the same
+  table, said in the help (D34).
+* Counts and ordered ratings, with one factor or several, and their post-hocs: deviance Bayes
+  factor with a Zellner-Siow g, r = sqrt(2)/4 (D31). On 0-10 ratings with a 0.6 SD gap, a wrong
+  "no" falls from 27 % to 7 % of datasets, with the level under H0 unchanged.
+
+Small samples:
+
+* A group of one value is analysed with the common-variance laws only, says so at step 2, and
+  its support is capped at weak; the raw BayesFactor error is no longer printed (D32).
+* With very few values (3 + 3), step 3 says that the shape of the noise cannot be recognised
+  instead of naming a law ahead (D33).
+* "Strong" and "very strong" support now start at Bayes factors 20 and 150, as printed in the
+  bilan, instead of 19 and 142 (D33).
+
 Every choice and its measure by simulation are in `dev/mbay/DECISIONS.md` and
 `dev/mbay/VALIDATION.md`. `m.test()` is unchanged.
 

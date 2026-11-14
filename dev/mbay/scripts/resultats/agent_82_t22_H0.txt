@@ -1,0 +1,4 @@
+R version 4.6.1 (2026-06-24 ucrt)
+agent_82 : oui/non a un facteur, scenario t22_H0, N = 1000
+|P marges neutres - P deviance| : mediane 0.052, 95e centile 0.076, max 0.086 | classes differentes : 0.386
+marges neutres BF>3 0.036, BF>20 0.003 | deviance BF>3 0.020, BF>20 0.002
