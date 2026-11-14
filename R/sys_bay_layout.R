@@ -29,7 +29,7 @@
 	sup <- .bay_support_bf(h$posterior[1L], lb)
 	if (isTRUE(obj$contradiction)) sup <- .bay_support(min(h$posterior[1L], 0.6))
 	if (isTRUE(any(obj$overlap$poor)) && sup$level > 2L) sup <- .bay_support(0.7)
-	if (isTRUE(obj$het_cells) && !isTRUE(h$null[1L]) && sup$level > 2L) sup <- .bay_support(0.7)
+	if ((isTRUE(obj$het_cells) || isTRUE(obj$tiny_group)) && !isTRUE(h$null[1L]) && sup$level > 2L) sup <- .bay_support(0.7)
 	open <- identical(obj$sensitivity$verdict, "changes")
 	if (open) sup <- list(en = "not settled", fr = "non tranch\u00e9", level = 1L)
 	list(h = h, lb = lb, sup = sup, open = open)
@@ -41,8 +41,8 @@
 		oneway = list(en = "comparison of noise laws, Rouder et al. 2012", fr = "comparaison de lois du bruit, Rouder et al. 2012"),
 		paired = list(en = "Bayesian paired t test, Rouder et al. 2009", fr = "test t appari\u00e9 bay\u00e9sien, Rouder et al. 2009"),
 		contingency = list(en = "Dirichlet-multinomial with neutral margins, Heckerman et al. 1995", fr = "Dirichlet-multinomiale \u00e0 marges neutres, Heckerman et al. 1995"),
-		ordinal = list(en = "proportional odds, MASS::polr, BIC approximation", fr = "cotes proportionnelles, MASS::polr, approximation BIC"),
-		counts = list(en = "Poisson and negative binomial, BIC approximation, Raftery 1995", fr = "Poisson et binomiale n\u00e9gative, approximation BIC, Raftery 1995"),
+		ordinal = list(en = "proportional odds, MASS::polr, deviance Bayes factor (Held et al. 2015)", fr = "cotes proportionnelles, MASS::polr, facteur de Bayes de d\u00e9viance (Held et al. 2015)"),
+		counts = list(en = "Poisson and negative binomial, deviance Bayes factor (Held et al. 2015)", fr = "Poisson et binomiale n\u00e9gative, facteur de Bayes de d\u00e9viance (Held et al. 2015)"),
 		discrete_fact = if (identical(obj$kind, "ordinal")) list(en = "proportional odds, MASS::polr, deviance Bayes factor (Held et al. 2015), HOP prior", fr = "cotes proportionnelles, MASS::polr, facteur de Bayes de d\u00e9viance (Held et al. 2015), a priori HOP") else if (identical(obj$kind, "binary")) list(en = "logistic regression, deviance Bayes factor (Held et al. 2015), HOP prior", fr = "r\u00e9gression logistique, facteur de Bayes de d\u00e9viance (Held et al. 2015), a priori HOP") else
 			list(en = "Poisson and negative binomial, deviance Bayes factor (Held et al. 2015), HOP prior", fr = "Poisson et binomiale n\u00e9gative, facteur de Bayes de d\u00e9viance (Held et al. 2015), a priori HOP"),
 		list(en = "BayesFactor, Rouder et al. 2012", fr = "BayesFactor, Rouder et al. 2012"))

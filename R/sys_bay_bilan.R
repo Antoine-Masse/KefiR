@@ -11,7 +11,10 @@
 
 # Qualifier of the support for the leading hypothesis. Never called "confidence", so
 # that it cannot be mistaken for a confidence interval or a frequentist threshold.
-.bay_support_breaks <- function() c(0.6, 0.75, 0.95, 0.993)
+# 0.75, 20/21 and 150/151 are the posterior probabilities of Bayes factors 3, 20 and 150 at
+# even odds, the scale printed in the bilan ("3 to 20 moderate, 20 to 150 strong"): with 0.95,
+# a Bayes factor of 19 was called strong (expert, passe 3).
+.bay_support_breaks <- function() c(0.6, 0.75, 20 / 21, 150 / 151)
 
 # Qualifier of the support when the data bring little: with a Bayes factor between 1/3 and 3
 # ("not worth more than a bare mention", Kass and Raftery 1995), the data hardly move the odds
@@ -85,7 +88,7 @@
 
 # The sentence a reader looks for first. Never an equivalence, a size or a cause.
 .bay_verdict <- function(obj) {
-	if (isTRUE(obj$het_cells) || isTRUE(any(obj$overlap$poor))) {
+	if (isTRUE(obj$het_cells) || isTRUE(any(obj$overlap$poor)) || isTRUE(obj$tiny_group)) {
 		# A capped support cannot make a firm verdict.
 		h <- obj$hypotheses
 		if (isTRUE(h$posterior[1L] > 0.74) && !isTRUE(h$null[1L])) {
@@ -119,14 +122,14 @@
 			fr = "Verdict : non tranch\u00e9. Les donn\u00e9es ne permettent de conclure ni \u00e0 une diff\u00e9rence, ni \u00e0 son absence."))
 	}
 	if (!lead_h1) {
-		if (p >= 0.95 && !open) {
+		if (p >= 20 / 21 && !open) {
 			return(list(en = "Verdict: very probably no difference of the size expected. This is not a proof of equivalence.",
 				fr = "Verdict : tr\u00e8s probablement pas de diff\u00e9rence de l'ordre attendu. Ce n'est pas une preuve d'\u00e9quivalence."))
 		}
 		return(list(en = "Verdict: not settled, leaning towards no difference. This does not prove that the groups are equivalent.",
 			fr = "Verdict : non tranch\u00e9, penche vers aucune diff\u00e9rence. Cela ne prouve pas que les groupes sont \u00e9quivalents."))
 	}
-	if (p >= 0.95 && !open) {
+	if (p >= 20 / 21 && !open) {
 		return(list(en = "Verdict: a difference very probably exists. This says neither that it matters, nor which groups differ, nor why.",
 			fr = "Verdict : une diff\u00e9rence existe tr\u00e8s probablement. Cela ne dit ni qu'elle est importante, ni quels groupes diff\u00e8rent, ni pourquoi."))
 	}
@@ -177,8 +180,10 @@
 		emit("fact", paste0(if (centres) "Observed medians: " else "Observed means: ", obs("."), "."),
 			paste0(if (centres) "M\u00e9dianes observ\u00e9es : " else "Moyennes observ\u00e9es : ", obs(","), "."))
 		if (!is.null(d$SD) && any(is.finite(d$SD))) {
-			emit("fact", paste0("Standard deviations: ", paste0(d$group, " = ", .bay_fx(d$SD, dg, "."), collapse = "; "), "."),
-				paste0("\u00c9carts-types : ", paste0(d$group, " = ", .bay_fx(d$SD, dg, ","), collapse = " ; "), "."))
+			# A group of one value has no standard deviation (I3): said, not "NA".
+			sd_txt <- function(dc) ifelse(is.na(d$SD), if (dc == ",") "une seule valeur" else "one value only", .bay_fx(d$SD, dg, dc))
+			emit("fact", paste0("Standard deviations: ", paste0(d$group, " = ", sd_txt("."), collapse = "; "), "."),
+				paste0("\u00c9carts-types : ", paste0(d$group, " = ", sd_txt(","), collapse = " ; "), "."))
 		}
 		if (isTRUE(obj$contradiction)) {
 			emit("decide", "centres and means do not tell the same story (step 5): support capped at weak.",
