@@ -18,7 +18,6 @@
 #'   }
 #'
 #' @importFrom car leveneTest
-#' @importFrom onewaytests bf.test
 #'
 #' @keywords internal
 .variance <- function(x, g, check_normality=TRUE, alpha=0.05,

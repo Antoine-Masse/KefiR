@@ -70,7 +70,7 @@
 #' Mardia, K. V. (1970). Measures of multivariate skewness and kurtosis with applications.
 #' \emph{Biometrika}, 57(3), 519-530. https://doi.org/10.1093/biomet/57.3.519
 #'
-#' \emph{Tests used:} Mardia's test, Henze-Zirkler test, Royston's test (package: MVN)
+#' \emph{Tests used:} Mardia's test and Henze-Zirkler test (closed forms, internal)
 #'
 #' \strong{2. Homogeneity of Covariance Matrices}
 #'
@@ -139,7 +139,6 @@
 #'
 #' @importFrom stats manova aov na.omit cor mahalanobis qchisq
 #' @importFrom car Anova
-#' @importFrom MVN mvn
 #' @importFrom biotools boxM
 #' @importFrom rstatix identify_outliers
 #'
@@ -148,7 +147,7 @@
 #'
 #' @seealso
 #' \code{\link{.multi_factor_analysis}}, \code{.one_factor_analysis},
-#' \code{\link[stats]{manova}}, \code{\link[car]{Anova}}, \code{\link[MVN]{mvn}}
+#' \code{\link[stats]{manova}}, \code{\link[car]{Anova}}
 #'
 #' @examples
 #' \dontrun{
@@ -710,37 +709,27 @@
   # - Henze & Zirkler (1990): A class of invariant consistent tests for multivariate normality
   # - Royston (1983): Extension of Shapiro-Wilk test to multivariate case
   #
-  # Tests available in MVN package: mardia, hz (Henze-Zirkler), royston
+  # Tests computed internally: mardia, hz (Henze-Zirkler)
   #============================================================================
 
   .dbg("Check: Multivariate normality.",
        "Contr\u00f4le: Normalit\u00e9 multivari\u00e9e.", debug=debug)
 
-  k <- .vbse("ASSUMPTION 5/6: Multivariate normality [mvn() {MVN}]\n\tMardia's test (skewness, kurtosis) and Henze-Zirkler test",
-             "ASSOMPTION 5/6 : Normalit\u00e9 multivari\u00e9e [mvn() {MVN}]\n\tTest de Mardia (asym\u00e9trie, kurtosis) et test de Henze-Zirkler",
+  k <- .vbse("ASSUMPTION 5/6: Multivariate normality [Mardia 1970; Henze & Zirkler 1990]\n\tMardia's test (skewness, kurtosis) and Henze-Zirkler test",
+             "ASSOMPTION 5/6 : Normalit\u00e9 multivari\u00e9e [Mardia 1970; Henze & Zirkler 1990]\n\tTest de Mardia (asym\u00e9trie, kurtosis) et test de Henze-Zirkler",
              verbose=verbose, k=k, cpt="on")
 
   # Ne pas afficher une valeur interne quand le test annonce seulement un seuil
   .mvn_fmt <- function(p) if (isTRUE(p < 0.001)) "< 0.001" else .format_pval(p)
 
-  # Use MVN package for multivariate normality testing
-  if (requireNamespace("MVN", quietly = TRUE)) {
-    # MVN >= 6 : mvn_test et $multivariate_normality$p.value (parfois "<0.001") ;
-    # MVN < 6 : mvnTest et $multivariateNormality$`p value`
+  # Closed forms written in R/sys_mvn_tests.R (checked against the MVN package)
+  {
     .mvn_pvalues <- function(test_name) {
-      res <- tryCatch(suppressWarnings(suppressMessages(
-        if ("mvn_test" %in% names(formals(MVN::mvn))) {
-          MVN::mvn(data = x_resid, mvn_test = test_name)$multivariate_normality$p.value
-        } else {
-          MVN::mvn(data = x_resid, mvnTest = test_name, multivariatePlot = "none")$multivariateNormality$`p value`
-        }
-      )), error = function(e) NULL)
-      if (is.null(res)) return(NULL)
-      res <- trimws(as.character(res))
-      is_below <- startsWith(res, "<")
-      res <- suppressWarnings(as.numeric(sub("^<\\s*", "", res)))
-      res[is_below] <- res[is_below] / 2  # sous le seuil annonc\u00e9
-      res
+      res <- tryCatch(suppressWarnings(
+        if (test_name == "mardia") .mvn_mardia(x_resid) else .mvn_hz(x_resid)
+      ), error = function(e) NULL)
+      if (is.null(res) || anyNA(res)) return(NULL)
+      unname(res)
     }
 
     # Mardia's test
@@ -793,11 +782,6 @@
                  "Assomption de normalit\u00e9 multivari\u00e9e respect\u00e9e (majorit\u00e9 des tests non significatifs).",
                  verbose=verbose, k=k, cpt="off")
     }
-  } else {
-    k <- .vbse("Warning: MVN package not available. Multivariate normality not tested.\n\tInstall with: install.packages('MVN')",
-               "Attention : Package MVN non disponible. Normalit\u00e9 multivari\u00e9e non test\u00e9e.\n\tInstaller avec : install.packages('MVN')",
-               verbose=verbose, k=k, cpt="on")
-    check_multivariate_normality <- NA
   }
 
   #============================================================================

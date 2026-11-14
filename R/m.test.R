@@ -176,7 +176,6 @@
 #' @importFrom lawstat levene.test
 #' @importFrom WRS2 med1way medpb2 t1way lincon
 #' @importFrom FSA dunnTest
-#' @importFrom onewaytests bf.test
 #' @importFrom vioplot vioplot
 #' @importFrom DescTools DunnettTest
 #' @import methods

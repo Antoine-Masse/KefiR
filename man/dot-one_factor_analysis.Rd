@@ -91,7 +91,6 @@ g <- factor(rep(1:2, each = 50))
 \item \code{\link[agricolae:kurtosis]{agricolae::kurtosis()}}
 \item \code{\link[lawstat:levene.test]{lawstat::levene.test()}}
 \item \code{\link[WRS2:med1way]{WRS2::med1way()}}
-\item \code{\link[onewaytests:bf.test]{onewaytests::bf.test()}}
 }
 }
 \keyword{internal}

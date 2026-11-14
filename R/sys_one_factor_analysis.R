@@ -28,7 +28,6 @@
 #' @importFrom fda.usc fanova.hetero
 #' @importFrom agricolae kurtosis skewness
 #' @importFrom WRS2 med1way t1way
-#' @importFrom onewaytests bf.test
 #'
 #' @examples
 #' \dontrun{
@@ -54,7 +53,6 @@
 #' - [agricolae::kurtosis()]
 #' - [lawstat::levene.test()]
 #' - [WRS2::med1way()]
-#' - [onewaytests::bf.test()]
 #'
 #' @keywords internal
 .one_factor_analysis <- function(x=NULL,g=NULL,formula=NULL,data=NULL,

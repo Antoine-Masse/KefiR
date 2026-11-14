@@ -98,6 +98,7 @@ test_that("deux facteurs : les post-hocs aboutissent", {
 })
 
 test_that("les assomptions sont controlees dans les groupes, pas sur les donnees brutes", {
+  skip_if_not_installed("MVN")
   set.seed(5)
   d <- data.frame(g = rep(c("A", "B"), each = 60), a = rnorm(120), b = rnorm(120))
   d$a[d$g == "B"] <- d$a[d$g == "B"] + 8

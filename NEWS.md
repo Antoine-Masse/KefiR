@@ -1,3 +1,13 @@
+# KefiR 0.0.3.1
+
+## Lighter installation
+
+* Multivariate normality in the MANOVA (Mardia, Henze-Zirkler) is now computed inside KefiR,
+  from the closed forms of the original papers. The p-values are those of the MVN package
+  (checked on 9 datasets and in the tests). MVN is no longer installed with KefiR.
+* `onewaytests` removed: it was imported but no longer called.
+* 17 packages fewer to install (225 to 208), 9 of them with compiled code.
+
 # KefiR 0.0.3.0
 
 ## New: `cor.bay()`, the Bayesian counterpart of `cor.test()`
