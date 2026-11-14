@@ -8,12 +8,14 @@
 	data.frame(y = y, g = g)
 }
 
-test_that("facteur de Bayes : -BIC/2 des quatre modeles, moyenne sur les deux lois", {
+test_that("facteur de Bayes : nuls a -BIC/2, effet par la deviance (D31), moyenne sur les deux lois", {
 	d <- .cnt(c(4, 4, 8), theta = 2, seed = 51)
 	r <- m.bay(y ~ g, data = d, response = "counts", verbose = FALSE, sensitivity = FALSE, posthoc = FALSE)
 	expect_identical(r$plan, "counts")
-	lm <- c(-BIC(glm(y ~ 1, data = d, family = poisson())) / 2, -BIC(glm(y ~ g, data = d, family = poisson())) / 2,
-		-BIC(suppressWarnings(MASS::glm.nb(y ~ 1, data = d))) / 2, -BIC(suppressWarnings(MASS::glm.nb(y ~ g, data = d))) / 2)
+	p0 <- glm(y ~ 1, data = d, family = poisson()); p1 <- glm(y ~ g, data = d, family = poisson())
+	n0 <- suppressWarnings(MASS::glm.nb(y ~ 1, data = d)); n1 <- suppressWarnings(MASS::glm.nb(y ~ g, data = d))
+	dz <- function(a, b) .bay_dev_lbf(2 * as.numeric(logLik(b) - logLik(a)), 2, nrow(d))
+	lm <- c(-BIC(p0) / 2, -BIC(p0) / 2 + dz(p0, p1), -BIC(n0) / 2, -BIC(n0) / 2 + dz(n0, n1))
 	w <- exp(lm - max(lm)); w <- w / sum(w)
 	expect_equal(r$prob_effect, w[2] + w[4], tolerance = 1e-8)
 	expect_equal(r$laws$posterior[2], w[3] + w[4], tolerance = 1e-8)

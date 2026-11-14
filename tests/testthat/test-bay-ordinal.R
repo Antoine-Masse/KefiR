@@ -22,14 +22,14 @@ test_that("routage automatique : comptages surdisperses, tailles entieres, notes
 	expect_false(identical(m.bay(likert, g, response = "continuous", verbose = FALSE, sensitivity = FALSE, posthoc = FALSE, draws = 500)$plan, "ordinal"))
 })
 
-test_that("ordinal : facteur de Bayes = -BIC/2 de polr, rapports des cotes cumulees de polr", {
+test_that("ordinal : facteur de Bayes de deviance de polr (D31), rapports des cotes cumulees de polr", {
 	set.seed(8)
 	g <- factor(rep(c("a", "b", "c"), each = 30))
 	y <- pmin(5, pmax(1, round(3 + c(-0.5, 0, 0.8)[g] + rnorm(90))))
 	r <- m.bay(y, g, verbose = FALSE, sensitivity = FALSE)
 	yo <- factor(y, ordered = TRUE)
 	m1 <- MASS::polr(yo ~ g, Hess = TRUE); m0 <- MASS::polr(yo ~ 1, Hess = TRUE)
-	lb <- (-BIC(m1) + BIC(m0)) / 2
+	lb <- .bay_dev_lbf(2 * as.numeric(logLik(m1) - logLik(m0)), 2, 90)
 	expect_equal(r$effects$log_bf, lb, tolerance = 1e-8)
 	pr <- r$posthoc$pairs
 	expect_equal(pr$diff[pr$group1 == "a" & pr$group2 == "c"], unname(exp(coef(m1)["gc"])), tolerance = 1e-6)
