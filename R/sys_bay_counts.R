@@ -3,8 +3,10 @@
 #   Two laws compared, not chosen: Poisson, and negative binomial for counts more spread
 #   than Poisson allows (overdispersion). Each law with and without a difference according
 #   to the factor: four models, glm(family = poisson) [stats] and glm.nb() [MASS].
-#   Marginal likelihoods by the unit-information approximation, -BIC / 2 (Schwarz 1978;
-#   Raftery 1995; Wagenmakers 2007): no compiler, no draws. The answer is averaged over the
+#   The two laws compared on the model without groups by -BIC/2; the groups against no
+#   difference by the deviance Bayes factor with a Zellner-Siow g, r = sqrt(2)/4 (Held,
+#   Sabanes Bove and Gravestock 2015; D31, extended to one factor after passe 3 of the expert:
+#   the BIC said "no" wrongly under moderate effects). No compiler, no draws. The answer is averaged over the
 #   two laws by their posterior probabilities, as for the continuous one-factor route.
 #   The share of the negative binomial is the finding of overdispersion; the Pearson ratio
 #   (chi-squared / degrees of freedom of the Poisson model) is said beside it.
@@ -49,14 +51,27 @@
 	fo <- if (one) y ~ 1 else y ~ h
 	p <- .bay_quiet(stats::glm(fo, data = d, family = stats::poisson()))
 	nb <- tryCatch(.bay_quiet(MASS::glm.nb(fo, data = d)), error = function(e) NULL)
-	list(pois = p, nb = nb,
+	nb_bad <- is.null(nb) || !is.finite(nb$theta) || nb$theta > 1e6
+	llp <- stats::logLik(p)
+	lln <- if (nb_bad) NULL else stats::logLik(nb)
+	list(pois = p, nb = nb, N = length(y),
 		lm_pois = -stats::BIC(p) / 2,
-		lm_nb = if (is.null(nb) || !is.finite(nb$theta) || nb$theta > 1e6) NA_real_ else -stats::BIC(nb) / 2)
+		lm_nb = if (nb_bad) NA_real_ else -stats::BIC(nb) / 2,
+		ll_pois = as.numeric(llp), k_pois = attr(llp, "df"),
+		ll_nb = if (nb_bad) NA_real_ else as.numeric(lln), k_nb = if (nb_bad) NA_real_ else attr(lln, "df"))
 }
 
-# Joint posterior over {law} x {no difference, difference}.
-.bay_counts_post <- function(f0, f1, prior_h1) {
-	lm <- c(pois0 = f0$lm_pois, pois1 = f1$lm_pois, nb0 = f0$lm_nb, nb1 = f1$lm_nb)
+# Joint posterior over {law} x {no difference, difference}. The null model of each law by
+# -BIC/2 (one parameter apart between the laws); the model with the groups against the null by
+# the deviance Bayes factor with a Zellner-Siow g of scale r (D31, extended to one factor,
+# audit of the expert, passe 3, I1): the BIC said "no" wrongly under moderate effects.
+.bay_counts_post <- function(f0, f1, prior_h1, r = .bay_dev_r()) {
+	d1 <- function(law) {
+		ll1 <- f1[[paste0("ll_", law)]]; ll0 <- f0[[paste0("ll_", law)]]
+		if (!is.finite(ll1) || !is.finite(ll0)) return(NA_real_)
+		f0[[paste0("lm_", law)]] + .bay_dev_lbf(2 * (ll1 - ll0), f1[[paste0("k_", law)]] - f0[[paste0("k_", law)]], f1$N, r)
+	}
+	lm <- c(pois0 = f0$lm_pois, pois1 = d1("pois"), nb0 = f0$lm_nb, nb1 = d1("nb"))
 	lp <- log(c(0.5 * (1 - prior_h1), 0.5 * prior_h1, 0.5 * (1 - prior_h1), 0.5 * prior_h1))
 	ok <- is.finite(lm)
 	lw <- lm + lp
@@ -166,14 +181,14 @@
 	}
 	.bay_tell(story, "the answer is weighted over the two laws by their probability.",
 		"la r\u00e9ponse est pond\u00e9r\u00e9e sur les deux lois par leur probabilit\u00e9.", "note")
-	.bay_tell(story, "Laws: Poisson, and negative binomial glm.nb() [MASS]; marginal likelihoods by -BIC/2, the unit-information approximation (Schwarz 1978; Raftery 1995; Wagenmakers 2007).",
-		"Lois : Poisson, et binomiale n\u00e9gative glm.nb() [MASS] ; vraisemblances marginales par -BIC/2, approximation d'information unitaire (Schwarz 1978 ; Raftery 1995 ; Wagenmakers 2007).", "detail")
+	.bay_tell(story, "Laws: Poisson, and negative binomial glm.nb() [MASS]; the two laws compared on the model without groups by -BIC/2; the groups against no difference by the deviance Bayes factor with a Zellner-Siow g, r = sqrt(2)/4 (Held, Saban\u00e9s Bov\u00e9 and Gravestock 2015; DECISIONS, D31).",
+		"Lois : Poisson, et binomiale n\u00e9gative glm.nb() [MASS] ; les deux lois compar\u00e9es sur le mod\u00e8le sans groupes par -BIC/2 ; les groupes contre l'absence de diff\u00e9rence par le facteur de Bayes de d\u00e9viance \u00e0 g de Zellner-Siow, r = sqrt(2)/4 (Held, Saban\u00e9s Bov\u00e9 et Gravestock 2015 ; DECISIONS, D31).", "detail")
 
 	.bay_tell(story, "Starting point (priors)", "Point de d\u00e9part (a priori)", "step")
 	.bay_step_result(story, paste0(.bay_pct(prior_h1, "."), " chance of a difference"), paste0(.bay_pct(prior_h1, ","), " de chances d'une diff\u00e9rence"))
 	.bay_tell(story, "Each law starts at 50.0 %.", "Chaque loi part \u00e0 50,0 %.")
-	.bay_tell(story, "prior on the effects: worth one observation (unit information), no scale to choose.",
-		"a priori sur les effets : le poids d'une seule observation (information unitaire), sans \u00e9chelle \u00e0 choisir.", "note")
+	.bay_tell(story, paste0("Expected size r = ", .bay_num_txt(.bay_dev_r())$en, ", the same yardstick as for a continuous response."),
+		paste0("Taille attendue r = ", .bay_num_txt(.bay_dev_r())$fr, ", le m\u00eame \u00e9talon que pour une r\u00e9ponse continue."))
 
 	.bay_tell(story, "Solidity of the answer", "Solidit\u00e9 de la r\u00e9ponse", "step")
 	lb <- po$log_bf
@@ -184,7 +199,8 @@
 	sens <- NULL
 	if (isTRUE(sensitivity)) {
 		phs <- c(1 / 3, 1 / 2, 2 / 3)
-		grid <- vapply(phs, function(p) .bay_counts_post(f0, f1, p)$p_h1, numeric(1))
+		r0 <- .bay_dev_r()
+		grid <- as.vector(vapply(c(r0 / 2, r0, 2 * r0), function(r) vapply(phs, function(p) .bay_counts_post(f0, f1, p, r)$p_h1, numeric(1)), numeric(3)))
 		lead_h1 <- po$p_h1 >= 0.5
 		rng <- range(if (lead_h1) grid else 1 - grid)
 		verdict <- .bay_sensitivity_verdict(max(po$p_h1, 1 - po$p_h1), rng)
@@ -195,7 +211,7 @@
 			paste0("Sensibilit\u00e9 : la r\u00e9ponse en t\u00eate ", .bay_range_txt(rng)$fr, "."))
 		.bay_tell(story, if (identical(verdict, "changes")) "Caution added: the answer can reverse; it will be called not settled." else "The order does not change.",
 			if (identical(verdict, "changes")) "Prudence ajout\u00e9e : la r\u00e9ponse peut s'inverser ; elle sera dite non tranch\u00e9e." else "L'ordre ne change pas.", "decide")
-		.bay_tell(story, "the starting chances go from 1 against 2 to 2 against 1.", "les chances de d\u00e9part vont de 1 contre 2 \u00e0 2 contre 1.", "note")
+		.bay_tell(story, "r goes from r/2 to 2r, the starting chances from 1 against 2 to 2 against 1.", "r va de r/2 \u00e0 2r, les chances de d\u00e9part de 1 contre 2 \u00e0 2 contre 1.", "note")
 	} else {
 		.bay_step_result(story, paste0("Bayes factor ", .bay_bf_txt(lb, "."), ", sensitivity not computed"), paste0("facteur de Bayes ", .bay_bf_txt(lb, ","), ", sensibilit\u00e9 non calcul\u00e9e"))
 		.bay_tell(story, "Sensitivity to the priors not computed (sensitivity = FALSE).", "Sensibilit\u00e9 aux a priori non calcul\u00e9e (sensitivity = FALSE).")
@@ -221,9 +237,9 @@
 		laws = data.frame(law = c("poisson", "negbin"), posterior = c(1 - po$p_nb, po$p_nb), stringsAsFactors = FALSE),
 		models = po$w, dispersion = phi, sensitivity = sens, posthoc = ph, nb_warnings = n_warn,
 		descriptive_stats = data.frame(group = levels(g), n = n, mean = mu, var = vv, stringsAsFactors = FALSE),
-		priors = list(prior_h1 = prior_h1, effects = "unit information (BIC)", laws = "Poisson 1/2, negative binomial 1/2"),
+		priors = list(prior_h1 = prior_h1, effects = "deviance Bayes factor, Zellner-Siow g, r = sqrt(2)/4", laws = "Poisson 1/2, negative binomial 1/2"),
 		contradiction = FALSE, heavy = FALSE, detail = isTRUE(detail), prob_effect = po$p_h1,
-		method = "Counts: Poisson and negative binomial compared (BIC approximation)", plan = "counts",
+		method = "Counts: Poisson and negative binomial compared, deviance Bayes factor with a Zellner-Siow g", plan = "counts",
 		label = input$label, n = length(y), notes = get_notes(), call = call_expr)
 	class(out) <- "mbay"
 	out$story <- .bay_story_lines(story)

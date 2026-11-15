@@ -782,6 +782,7 @@ Testé (`test-bay-story.R`). Au passage, l'estimation de la ligne d'attente cro�
 - **Source.** C'est le score « Bayesian Dirichlet equivalent » des réseaux bayésiens, X → Y contre le graphe vide : Heckerman, D., Geiger, D., & Chickering, D. M. (1995), *Machine Learning*, 20, 197-243 ; version uniforme Buntine (1991).
 - **Commun avec g.bay.** La valeur, a = 2 par case, et la formule sont celles de `.bay_dm_neutral_bf` de g.bay (G12, branche `claude/feat-g-bay-1f2987`, commits 90583a7 et 4683bdb). g.bay a écarté a = 3, qui dépassait 1 % de faux liens sous H0 quand les marges sont très inégales. Ma fonction `.bay_cont_lbf` rend le même nombre, contrôlé sur dix tables (2 × 2 à 5 × 6, dont des tables creuses) avec un écart nul.
   - Une première version retirait les lignes et colonnes vides avant le calcul. Elle différait de g.bay sur une table à ligne vide (0,40 en échelle log), car une ligne vide entre dans r·a. Elle est alignée sur G12 : rien n'est retiré.
+  - **Rectifié (passe 3 de l'expert, 14 novembre).** La phrase précédente décrit la fonction, pas m.bay. m.bay bâtit la table sur les niveaux présents : un groupe vide disparaît avec `droplevels`, et une modalité de réponse jamais observée aussi (la réponse passe désormais par `droplevels`). g.bay retire de même un niveau vide, et le dit. Sur la table de l'expert à niveau vide, m.bay et g.bay rendent tous deux 0,4915. Seul `.bay_cont_lbf`, appelé directement sur une table à ligne vide, la garde, comme `.bay_dm_neutral_bf`.
 - **Sensibilité** : a/2, a, 2a (soit 1, 2, 4), croisés avec les chances de départ.
 - **Post-hoc** : la même formule sur le tableau fusionné de chaque regroupement.
 - Le BIC de D30 est gardé à part (`.bay_cont_lbf_bic`), pour les comparaisons seulement.
@@ -815,4 +816,61 @@ BF = ∫ (1 + g)^(−p/2) exp[g/(1 + g) · z/2] π(g) dg, avec π(g) = InvGamma(
 - La puissance monte de 7 à 10 points.
 - Un « non » à soutien modéré reste fréquent sous un effet modéré en oui/non (33 %). C'est la prudence d'un terme à 1 ddl avec n = 25 par case, sans « non » fort à tort.
 
-**Reste à faire.** Les voies à un facteur (comptages, D17 voie 2 ; ordinal, voie 3, avec son post-hoc par regroupements) emploient encore −BIC/2. Elles sont à basculer sur le même moteur, après la même mesure (« non » à tort sous un effet modéré).
+**Voies à un facteur : FAITES (14 novembre, I1 de la passe 3).** Les comptages (D17 voie 2) et la réponse ordonnée (voie 3), avec leurs post-hocs par regroupements, emploient désormais le même facteur de Bayes de déviance, r = √2/4. La comparaison de Poisson à la binomiale négative et la vérification des cotes proportionnelles restent au BIC. La sensibilité porte sur r/2, r et 2r, croisés avec les chances de départ.
+
+Mesure (`agent_81`, mêmes jeux pour les deux moteurs, 2 groupes de 20, 1000 jeux par scénario ; VALIDATION §32) :
+
+| | BIC | ZS √2/4 |
+|---|---:|---:|
+| Notes 0-10, H0 : P > 0,95 | 0,2 % | 0,2 % [0,1 ; 0,7] |
+| Notes 0-10, H0 : « oui » | 1,3 % | 1,6 % |
+| Notes, écart de 0,6 ET : « non » à tort | 27,0 % | **6,7 % [5,3 ; 8,4]** |
+| Notes, écart de 0,6 ET : « oui » | 27,9 % | 29,8 % |
+| Comptages, H0 : P > 0,95 | 0,3 % | 0,3 % [0,1 ; 0,9] |
+| Comptages 4 → 6 : « non » à tort | 38,3 % | 10,6 % [8,8 ; 12,7] |
+| Comptages 4 → 6 : « oui » | 17,1 % | 18,7 % |
+
+Le critère de l'expert (« non » à tort ≤ 10 % sous un écart de 0,6 ET, notes, niveau sous H0 inchangé) est tenu. Les mêmes notes en voie continue donnent 8,8 % de « non » à tort : la voie ordinale n'est plus plus sévère que la voie continue. Les comptages, plus bruités (binomiale négative de taille 2), sont à la limite des 10 %.
+
+## D32. Groupe d'une seule valeur : analysé, pas refusé, soutien plafonné à faible (14 novembre, I3 de l'expert)
+
+**Défaut.** Avec 1 valeur contre 20, `BayesFactor` imprimait « Error in ttest.tstat… not enough observations » au milieu du récit (une erreur qu'il attrape lui-même par `try`), et les lois à une variance par groupe étaient calculées sur une dispersion inconnue.
+
+**Correction.**
+- Dès l'étape 2, le récit le dit : « Groupe d'une seule valeur : b. Sa dispersion est inconnue : seules les lois à variance commune sont gardées, et le soutien sera plafonné à faible. »
+- Les lois à variance par groupe (`normal_het`, `t_het`) sont écartées ; la loi normale et la loi t à variance commune restent.
+- Le soutien d'un « oui » est plafonné à faible, comme pour les cellules hétérogènes (le « non » n'est pas plafonné : il ne s'appuie pas sur la dispersion du groupe isolé).
+- Les messages imprimés par les `try` de BayesFactor sont détournés (`.bay_no_try_print`) ; ses erreurs restent traitées comme avant.
+- Le bilan écrit « une seule valeur » à la place d'un écart-type NA.
+
+**Refuser sous 2 valeurs par groupe ? Non.** Un groupe d'une valeur reste informatif sous variance commune : c'est le test t de Student classique, qu'acceptent `t.test(var.equal = TRUE)` et m.test. Sa moyenne est la valeur elle-même, et la variance vient des autres groupes. Refuser priverait l'étudiant d'une réponse légitime ; il la reçoit, avec ses limites dites et un soutien plafonné. Un groupe vide est retiré (D30), comme avant.
+
+**Test** : `test-bay-tiny.R` (pas d'erreur brute, lois à variance commune seules, `tiny_group`, pas de soutien fort, « une seule valeur »).
+
+## D33. Seuils du soutien et forme du bruit à petit effectif (14 novembre, passe 3 de l'expert)
+
+- **Seuils.** Les bornes « fort » et « très fort » passent de 0,95 et 0,993 à 20/21 et 150/151 : les probabilités a posteriori, à cotes égales, des facteurs de Bayes 20 et 150 de l'échelle imprimée dans le bilan (« 3 à 20 modéré, 20 à 150 fort »). Avec 0,95, un facteur de Bayes de 19 était dit fort. Les bornes 0,6 et 0,75 (facteur 3) ne changent pas. Le même seuil sert au texte du bilan (« oui » franc à 20/21).
+- **3 + 3 valeurs.** Quand aucune forme du bruit ne dépasse 50 %, l'étape 3 dit « trop peu de valeurs pour reconnaître la forme du bruit » au lieu d'annoncer une loi en tête, avec la ligne « Aucune forme ne se détache (la plus probable à … %) : la réponse les pèse toutes. » La réponse, elle, était déjà la moyenne sur les lois.
+- **Test** : `test-bay-tiny.R`.
+
+## D34. Oui/non à un facteur : marges neutres GARDÉES, l'écart avec le moteur de déviance DIT (14 novembre, I4 de la passe 3)
+
+**Question de l'expert.** À un facteur, le oui/non passe par la Dirichlet-multinomiale à marges neutres (a = 2, D30, commune avec g.bay) ; à plusieurs facteurs, par le facteur de Bayes de déviance (D31). Sur la même table, les deux diffèrent jusqu'à 0,13.
+
+**Mesure** (`agent_82`, mêmes tables pour les deux moteurs, 1000 tables par scénario, cotes égales ; VALIDATION §33).
+
+| Scénario | Écart de P : médiane / max | Classes différentes | BF > 20 marges neutres | BF > 20 déviance |
+|---|---:|---:|---:|---:|
+| 2 × 2, 20 par groupe, H0 (p = 0,4) | 0,052 / 0,086 | 38,6 % | 0,3 % | 0,2 % |
+| 2 × 2, p = 0,3 contre 0,6 | 0,055 / 0,077 | 18,2 % | 13,7 % | 13,3 % |
+| 3 × 2, 15 par groupe, H0 (p = 0,5) | 0,082 / 0,145 | 25,5 % | 0,8 % | 0,2 % |
+| 3 × 2, p = (0,5 ; 0,5 ; 0,8) | 0,096 / 0,147 | 25,9 % | 11,0 % | 8,1 % |
+
+« Classes » : non (P < 0,25), non tranché, oui (P > 0,75). Les marges neutres donnent un P plus élevé : sous H0, la déviance dit plus souvent « non » ; sous effet, les marges neutres disent plus souvent « oui » (BF > 3 : 46 % contre 34 % en 2 × 2, 39 % contre 28 % en 3 × 2).
+
+**Décision : garder les marges neutres à un facteur, et le dire.**
+- Les deux tiennent le niveau sous H0 (BF > 20 ≤ 0,8 %, borne de Wilson < 1,6 %).
+- Les marges neutres sont plus puissantes à un facteur, et restent identiques à g.bay sur toute table (D30, G12). Basculer imposerait de changer g.bay, ou de rompre l'identité m.bay = g.bay.
+- L'écart vient des a priori, pas d'une erreur : une Dirichlet sur les cases contre une loi g sur les log-cotes. Il ne dépasse pas 0,15 et ne franchit pas la frontière entre « oui » et « non » (il fait passer de non tranché à oui ou non).
+- Une phrase le dit dans l'aide de m.bay (Discrete responses). g.bay n'a rien à changer.
+

@@ -851,3 +851,12 @@
 	}
 	out
 }
+
+# Runs expr with the messages that try() prints (BayesFactor catches some of its own errors,
+# "not enough observations" with a group of one value) sent nowhere (I3 of the expert, passe 3).
+.bay_no_try_print <- function(expr) {
+	zz <- file(tempfile(), open = "wt")
+	op <- options(try.outFile = zz)
+	on.exit({ options(op); close(zz) })
+	expr
+}

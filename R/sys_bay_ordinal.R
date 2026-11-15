@@ -1,7 +1,8 @@
 # sys_bay_ordinal.R
 # Ordered response with one factor (DECISIONS, D17, way 3): ratings 1 to 5, 1 to 7, 0 to 10.
-#   Proportional odds (cumulative logit) model, MASS::polr(); marginal likelihoods by -BIC/2,
-#   the unit-information approximation, as for the counts (way 2): no compiler, no draws.
+#   Proportional odds (cumulative logit) model, MASS::polr(); each grouping against no
+#   difference by the deviance Bayes factor with a Zellner-Siow g, r = sqrt(2)/4 (D31, extended
+#   to one factor after passe 3 of the expert, I1), as for the counts (way 2): no draws.
 #   Which groups differ: the partitions of D11, each grouping fitted by polr.
 #   How much: cumulative odds ratio of each pair (above 1: higher values in the second group),
 #   95 % interval from the Laplace approximation (log ratio approximately normal).
@@ -69,7 +70,16 @@
 	d <- data.frame(y = yo, h = h)
 	one <- nlevels(droplevels(as.factor(h))) < 2L
 	fit <- tryCatch(.bay_quiet(MASS::polr(if (one) y ~ 1 else y ~ h, data = d, Hess = TRUE)), error = function(e) NULL)
-	list(fit = fit, lm = if (is.null(fit)) NA_real_ else -stats::BIC(fit) / 2)
+	ll <- if (is.null(fit)) NULL else stats::logLik(fit)
+	list(fit = fit, lm = if (is.null(fit)) NA_real_ else -stats::BIC(fit) / 2,
+		ll = if (is.null(ll)) NA_real_ else as.numeric(ll), k = if (is.null(ll)) NA_real_ else attr(ll, "df"), N = length(yo))
+}
+
+# Log Bayes factor of a grouping (fit f1) against no difference (fit f0): deviance Bayes factor
+# with a Zellner-Siow g of scale r (D31 extended to one factor, I1 of the expert, passe 3).
+.bay_polr_lbf <- function(f0, f1, r = .bay_dev_r()) {
+	if (!is.finite(f0$ll) || !is.finite(f1$ll)) return(NA_real_)
+	.bay_dev_lbf(2 * (f1$ll - f0$ll), f1$k - f0$k, f1$N, r)
 }
 
 .bay_ord_posthoc <- function(yo, g, prior_h1, alphas = c(1, 1/2, 2)) {
@@ -81,8 +91,8 @@
 	parts_tab <- NULL
 	if (k <= .bay_posthoc_max_groups()) {
 		parts <- .bay_partitions(k)
-		l0 <- .bay_polr_lm(yo, factor(rep(1L, length(yo))))$lm
-		lb <- vapply(parts, function(p) if (max(p) == 1L) 0 else .bay_polr_lm(yo, factor(p[as.integer(g)]))$lm - l0, numeric(1))
+		f00 <- .bay_polr_lm(yo, factor(rep(1L, length(yo))))
+		lb <- vapply(parts, function(p) if (max(p) == 1L) 0 else .bay_polr_lbf(f00, .bay_polr_lm(yo, factor(p[as.integer(g)]))), numeric(1))
 		lb[!is.finite(lb)] <- -Inf
 		pm <- do.call(rbind, parts)
 		post_of <- function(alpha) {
@@ -162,11 +172,12 @@
 
 	.bay_tell(story, "Starting point (priors)", "Point de d\u00e9part (a priori)", "step")
 	.bay_step_result(story, paste0(.bay_pct(prior_h1, "."), " chance of a difference"), paste0(.bay_pct(prior_h1, ","), " de chances d'une diff\u00e9rence"))
-	.bay_tell(story, "Prior on the effects: worth one observation (unit information).", "A priori sur les effets : le poids d'une seule observation (information unitaire).")
+	.bay_tell(story, paste0("Expected size r = ", .bay_num_txt(.bay_dev_r())$en, ", the same yardstick as for a continuous response."),
+		paste0("Taille attendue r = ", .bay_num_txt(.bay_dev_r())$fr, ", le m\u00eame \u00e9talon que pour une r\u00e9ponse continue."))
 	.bay_tell(story, "these values are not tuned on the data; step 5 varies them.", "ces valeurs ne sont pas ajust\u00e9es sur les donn\u00e9es ; l'\u00e9tape 5 les fait varier.", "note")
 
 	.bay_tell(story, "Solidity of the answer", "Solidit\u00e9 de la r\u00e9ponse", "step")
-	lb <- f1$lm - f0$lm
+	lb <- .bay_polr_lbf(f0, f1)
 	p_h1 <- 1 / (1 + exp(-lb) * (1 - prior_h1) / prior_h1)
 	inv_en <- if (lb < 0) paste0(", i.e. ", .bay_bf_txt(-lb, "."), " in favour of no difference") else ""
 	inv_fr <- if (lb < 0) paste0(", soit ", .bay_bf_txt(-lb, ","), " en faveur de l'absence de diff\u00e9rence") else ""
@@ -175,7 +186,9 @@
 	sens <- NULL
 	if (isTRUE(sensitivity)) {
 		phs <- c(1 / 3, 1 / 2, 2 / 3)
-		grid <- vapply(phs, function(p) 1 / (1 + exp(-lb) * (1 - p) / p), numeric(1))
+		r0 <- .bay_dev_r()
+		lbs <- c(.bay_polr_lbf(f0, f1, r0 / 2), lb, .bay_polr_lbf(f0, f1, 2 * r0))
+		grid <- as.vector(outer(lbs, phs, function(l, p) 1 / (1 + exp(-l) * (1 - p) / p)))
 		rng <- range(if (p_h1 >= 0.5) grid else 1 - grid)
 		verdict <- .bay_sensitivity_verdict(max(p_h1, 1 - p_h1), rng)
 		sens <- list(prior_h1 = phs, p = grid, range_lead = rng, verdict = verdict, verdict_terms = verdict, range_terms = matrix(range(grid), 1L))
@@ -185,7 +198,7 @@
 			paste0("Sensibilit\u00e9 : la r\u00e9ponse en t\u00eate ", .bay_range_txt(rng)$fr, "."))
 		.bay_tell(story, if (identical(verdict, "changes")) "Caution added: the answer can reverse; it will be called not settled." else "The order does not change.",
 			if (identical(verdict, "changes")) "Prudence ajout\u00e9e : la r\u00e9ponse peut s'inverser ; elle sera dite non tranch\u00e9e." else "L'ordre ne change pas.", "decide")
-		.bay_tell(story, "the starting chances go from 1 against 2 to 2 against 1.", "les chances de d\u00e9part vont de 1 contre 2 \u00e0 2 contre 1.", "note")
+		.bay_tell(story, "r goes from r/2 to 2r, the starting chances from 1 against 2 to 2 against 1.", "r va de r/2 \u00e0 2r, les chances de d\u00e9part de 1 contre 2 \u00e0 2 contre 1.", "note")
 	} else {
 		.bay_step_result(story, paste0("Bayes factor ", .bay_bf_txt(lb, "."), ", sensitivity not computed"), paste0("facteur de Bayes ", .bay_bf_txt(lb, ","), ", sensibilit\u00e9 non calcul\u00e9e"))
 		.bay_tell(story, "Sensitivity to the priors not computed (sensitivity = FALSE).", "Sensibilit\u00e9 aux a priori non calcul\u00e9e (sensitivity = FALSE).")
@@ -212,9 +225,9 @@
 		table = tab, sensitivity = sens, posthoc = ph,
 		descriptive_stats = data.frame(group = levels(g), n = n, median = as.numeric(tapply(y, g, stats::median)),
 			mean = as.numeric(tapply(y, g, mean)), stringsAsFactors = FALSE),
-		priors = list(prior_h1 = prior_h1, effects = "unit information (BIC)"),
+		priors = list(prior_h1 = prior_h1, effects = "deviance Bayes factor, Zellner-Siow g, r = sqrt(2)/4"),
 		contradiction = FALSE, heavy = FALSE, detail = isTRUE(detail), prob_effect = p_h1,
-		method = "Ordered response: proportional odds (MASS::polr, BIC approximation)", plan = "ordinal",
+		method = "Ordered response: proportional odds (MASS::polr), deviance Bayes factor with a Zellner-Siow g", plan = "ordinal",
 		label = input$label, n = length(y), notes = get_notes(), call = call_expr)
 	class(out) <- "mbay"
 	out$story <- .bay_story_lines(story)

@@ -41,9 +41,11 @@
 #'   response.
 #' - **Discrete responses**: yes/no or categories with one factor
 #'   (Dirichlet-multinomial with neutral margins, shared with g.bay, D30); counts (Poisson and negative binomial) and
-#'   ordered ratings (proportional odds, [MASS::polr()]) with one factor (D17); yes/no,
-#'   counts and ordered ratings with several factors between groups (glm or polr, deviance Bayes factor with a Zellner-Siow g,
-#'   HOP, D25, D26, D31).
+#'   ordered ratings (proportional odds, [MASS::polr()]) with one factor (D17, deviance Bayes factor with a
+#'   Zellner-Siow g, D31); yes/no, counts and ordered ratings with several factors between groups
+#'   (glm or polr, the same deviance Bayes factor, HOP, D25, D26, D31). Yes/no with one factor and
+#'   with several factors rest on two priors (on the cells, on the log-odds): on the same table,
+#'   the two probabilities can differ by up to 0.15 (D34).
 #'
 #' **Refused, with a message**: random slopes; covariates with subjects; MANOVA with
 #' covariates or subjects; discrete responses with subjects or covariates; categories (more
@@ -351,7 +353,8 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 			.exit("Binary or categorical response with several factors, covariates or subjects: not handled by m.bay() yet (one factor only).",
 				"R\u00e9ponse binaire ou cat\u00e9gorielle avec plusieurs facteurs, des covariables ou des sujets : pas encore trait\u00e9e par m.bay() (un facteur seulement).")
 		}
-		yc <- if (is.factor(y)) y else factor(y)
+		# An unused category is dropped, as g.bay drops an empty level (D30, expert, passe 3).
+		yc <- if (is.factor(y)) droplevels(y) else factor(y)
 		if (nlevels(yc) < 2L) .exit("The response has a single category.", "La r\u00e9ponse n'a qu'une seule modalit\u00e9.")
 		return(.bay_m_contingency(input, input$factors[[1L]], yc, call_expr, function() notes, note, prior_h1, sensitivity,
 			draws, seed, detail, verbose, return, story, posthoc, !("laws" %in% names(call_expr)), laws))
@@ -430,12 +433,22 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	}
 
 	laws_kept <- .bay_laws_allowed(st, laws, u)
+	# A group of one value (I3 of the expert, passe 3): its spread is unknown, so the laws with
+	# one variance per group make no sense; the common-variance laws stay (legitimate, as the
+	# Student t test), the support is capped at weak. Not refused: decided in DECISIONS, D32.
+	tiny <- min(st$n) < 2L
+	if (tiny) {
+		one <- st$levels[st$n < 2L]
+		laws_kept <- intersect(laws_kept, c("normal_eq", "t_eq"))
+		.bay_tell(story, paste0("Group of one value: ", paste(one, collapse = ", "), ". Its spread is unknown: only the laws with a common variance are kept, and the support will be capped at weak."),
+			paste0("Groupe d'une seule valeur : ", paste(one, collapse = ", "), ". Sa dispersion est inconnue : seules les lois \u00e0 variance commune sont gard\u00e9es, et le soutien sera plafonn\u00e9 \u00e0 faible."), "decide")
+	}
 	if (length(laws_kept) == 0L) {
 		.exit("Repeated values: none of the requested laws applies. Allow normal_eq in laws.",
 			"Valeurs r\u00e9p\u00e9t\u00e9es : aucune des lois demand\u00e9es ne s'applique. Autoriser normal_eq dans laws.")
 	}
 	lab <- .bay_law_labels()
-	if (length(laws_kept) < length(laws)) {
+	if (length(laws_kept) < length(laws) && !tiny) {
 		left <- setdiff(laws, laws_kept)
 		note(paste0("Repeated values: for these data the integral of some laws diverges, they were left out: ",
 				paste(lab$en[left], collapse = "; "), ". A law for discrete data is not validated yet."),
@@ -473,7 +486,8 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 		message(.msg(paste0("Computing the laws of the noise for ", k_g, " groups", if (isTRUE(posthoc) && k_g > .bay_posthoc_max_groups()) " and the groupings by draws" else "", ", about ", 10 * ceiling(est / 10), " s..."),
 			paste0("Calcul des lois du bruit pour ", k_g, " groupes", if (isTRUE(posthoc) && k_g > .bay_posthoc_max_groups()) " et des regroupements par tirage" else "", ", environ ", 10 * ceiling(est / 10), " s...")))
 	}
-	tab <- .bay_laws_table(st, rs, u, draws, seed, laws = laws)
+	# BayesFactor prints the errors it catches itself (try): kept off the console (I3).
+	tab <- .bay_no_try_print(.bay_laws_table(st, rs, u, draws, seed, laws = laws))
 	ans <- .bay_laws_average(tab, rscale, prior_h1 = prior_h1)
 	if (length(ans$laws_dropped)) {
 		note(paste0("Law(s) left out because the computation is not reliable here, so the comparison is incomplete and the answer may change: ",
@@ -486,8 +500,16 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 			"Changement de strat\u00e9gie : ces lois sont \u00e9cart\u00e9es ; la r\u00e9ponse peut changer (essayer un draws plus grand).", "decide")
 	}
 	pl <- sort(ans$p_law, decreasing = TRUE)
-	.bay_step_result(story, paste0(lab$en[names(pl)[1L]], " ahead (", .bay_pct(pl[1L], "."), ")"),
-		paste0(lab$fr[names(pl)[1L]], " en t\u00eate (", .bay_pct(pl[1L], ","), ")"))
+	if (length(pl) > 1L && pl[1L] < 0.5) {
+		# Too few values to tell the shapes apart (expert, passe 3: at 3 + 3 the four laws
+		# share the weights from 0.15 to 0.37): said, rather than announcing a law ahead.
+		.bay_step_result(story, "too few values to recognise the shape of the noise", "trop peu de valeurs pour reconna\u00eetre la forme du bruit")
+		.bay_tell(story, paste0("No shape stands out (the most probable at ", .bay_pct(pl[1L], "."), "): the answer weighs them all."),
+			paste0("Aucune forme ne se d\u00e9tache (la plus probable \u00e0 ", .bay_pct(pl[1L], ","), ") : la r\u00e9ponse les p\u00e8se toutes."), "decide")
+	} else {
+		.bay_step_result(story, paste0(lab$en[names(pl)[1L]], " ahead (", .bay_pct(pl[1L], "."), ")"),
+			paste0(lab$fr[names(pl)[1L]], " en t\u00eate (", .bay_pct(pl[1L], ","), ")"))
+	}
 	.bay_tell(story, paste0("Probabilities: ", paste0(lab$en[names(pl)], " ", vapply(pl, .bay_pct, character(1), dec = "."), collapse = "; "), "."),
 		paste0("Probabilit\u00e9s : ", paste0(lab$fr[names(pl)], " ", vapply(pl, .bay_pct, character(1), dec = ","), collapse = " ; "), "."))
 
@@ -665,7 +687,7 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 	# Step 6: which groups differ, and by how much (DECISIONS, D11).
 	ph <- NULL
 	if (isTRUE(posthoc)) {
-		ph <- .bay_posthoc_oneway(y, gr, rscale, prior_h1, draws, seed)
+		ph <- .bay_no_try_print(.bay_posthoc_oneway(y, gr, rscale, prior_h1, draws, seed))
 		p_het_all <- sum(ans$p_law[intersect(names(ans$p_law), c("normal_het", "t_het"))])
 		ph$caution <- isTRUE(p_het_all >= 0.75) || isTRUE(p_t > 0.5)
 		.bay_story_posthoc(story, ph, caution = ph$caution)
@@ -688,7 +710,7 @@ m.bay <- function(x = NULL, g = NULL, data = NULL, formula = NULL,
 			nu = "nu - 2 ~ Exp(1)"),
 		questions = list(en = paste0("Does ", input$response_name, " differ according to ", shown, "?"),
 			fr = paste0(input$response_name, " diff\u00e8re-t-il selon ", shown, " ?")),
-		contradiction = contradiction, p_normal = p_normal, heavy = heavy, p_tails = p_t, posthoc = ph, detail = isTRUE(detail),
+		contradiction = contradiction, p_normal = p_normal, tiny_group = tiny, heavy = heavy, p_tails = p_t, posthoc = ph, detail = isTRUE(detail),
 		descriptive_stats = desc, prob_effect = ans$p_h1,
 		largest_gap = (max(desc$mean) - min(desc$mean)) / (st$unit * max(abs(st$y_raw))),
 		method = "Averaged over sampling laws", plan = input$plan,

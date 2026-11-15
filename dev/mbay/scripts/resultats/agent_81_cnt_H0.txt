@@ -1,0 +1,6 @@
+R version 4.6.1 (2026-06-24 ucrt)
+agent_81 : un facteur, scenario cnt_H0, N = 1000 (voie ordinale ou comptages choisie : 1.000)
+nouveau (deviance ZS) : oui 0.020 [0.013 ; 0.031] | non 0.346 [0.317 ; 0.376] | P>.95 0.003 [0.001 ; 0.009]
+ancien (BIC)          : oui 0.019 [0.012 ; 0.029] | non 0.762 [0.735 ; 0.787] | P>.95 0.003 [0.001 ; 0.009]
+voie continue         : oui - | non -
+test t ou rapport de vraisemblance p<.05 : 0.051 [0.039 ; 0.066]

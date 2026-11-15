@@ -187,9 +187,11 @@ stacked, individual random; one or several factors between groups; reading per
 response.
 \item \strong{Discrete responses}: yes/no or categories with one factor
 (Dirichlet-multinomial with neutral margins, shared with g.bay, D30); counts (Poisson and negative binomial) and
-ordered ratings (proportional odds, \code{\link[MASS:polr]{MASS::polr()}}) with one factor (D17); yes/no,
-counts and ordered ratings with several factors between groups (glm or polr, deviance Bayes factor with a Zellner-Siow g,
-HOP, D25, D26, D31).
+ordered ratings (proportional odds, \code{\link[MASS:polr]{MASS::polr()}}) with one factor (D17, deviance Bayes factor with a
+Zellner-Siow g, D31); yes/no, counts and ordered ratings with several factors between groups
+(glm or polr, the same deviance Bayes factor, HOP, D25, D26, D31). Yes/no with one factor and
+with several factors rest on two priors (on the cells, on the log-odds): on the same table,
+the two probabilities can differ by up to 0.15 (D34).
 }
 
 \strong{Refused, with a message}: random slopes; covariates with subjects; MANOVA with
