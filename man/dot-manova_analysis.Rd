@@ -113,7 +113,7 @@ The vector of dependent variables must follow a multivariate normal distribution
 Mardia, K. V. (1970). Measures of multivariate skewness and kurtosis with applications.
 \emph{Biometrika}, 57(3), 519-530. https://doi.org/10.1093/biomet/57.3.519
 
-\emph{Tests used:} Mardia's test, Henze-Zirkler test, Royston's test (package: MVN)
+\emph{Tests used:} Mardia's test and Henze-Zirkler test (closed forms, internal)
 
 \strong{2. Homogeneity of Covariance Matrices}
 
@@ -212,6 +212,6 @@ result <- .manova_analysis(
 }
 \seealso{
 \code{\link{.multi_factor_analysis}}, \code{.one_factor_analysis},
-\code{\link[stats]{manova}}, \code{\link[car]{Anova}}, \code{\link[MVN]{mvn}}
+\code{\link[stats]{manova}}, \code{\link[car]{Anova}}
 }
 \keyword{internal}
