@@ -1,4 +1,14 @@
-# KefiR 0.0.3.1
+# KefiR 0.0.3.2
+
+## Bayesian family: fixes after an independent audit
+
+* `m.bay()`: whole-number ratings and counts with one factor now use the deviance Bayes
+  factor (Zellner-Siow g) instead of the BIC, which answered "no difference" too often
+  under a real moderate effect (26 % of datasets, now under 10 %).
+* `m.bay()`: a group with a single value no longer shows a raw error; it is announced and
+  the support is capped at "weak".
+* `cor.bay()`: a perfect link no longer stops on an internal error; it is answered by
+  Kendall's tau and announced as such.
 
 ## Lighter installation
 
