@@ -10,6 +10,12 @@
 * `cor.bay()`: a perfect link no longer stops on an internal error; it is answered by
   Kendall's tau and announced as such.
 
+## `m.test()` no longer resets the random generator
+
+* On the robust route (ANOVA on medians, `WRS2::med1way()`), `m.test()` left R's random
+  generator at a fixed seed. Data simulated after such a call repeated in a loop. The
+  generator is now left exactly as it was.
+
 ## Lighter installation
 
 * Multivariate normality in the MANOVA (Mardia, Henze-Zirkler) is now computed inside KefiR,

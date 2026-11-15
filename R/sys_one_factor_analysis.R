@@ -1259,7 +1259,8 @@
 						  ))
 						}
 
-						pvals3 <- tryCatch(med1way(x~g)$p.value, error = function(e) NA)
+						# WRS2::med1way() calls set.seed(2) internally: keep the user's random generator intact
+						pvals3 <- tryCatch(withr::with_preserve_seed(med1way(x~g))$p.value, error = function(e) NA)
 						if (is.na(pvals3)) {
 						  k <- .vbse(
 						    "Oneway ANOVA of medians [med1way()] - Failed, return NA.\n\t--> Fallback: Kruskal-Wallis test [kruskal.test()].",
