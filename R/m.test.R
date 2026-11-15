@@ -171,7 +171,6 @@
 #'   \item For multi-factor analyses: NA preserved (may be handled by mixed models)
 #' }
 #'
-#' @importFrom fda.usc fanova.hetero
 #' @importFrom agricolae kurtosis skewness SNK.test
 #' @importFrom lawstat levene.test
 #' @importFrom WRS2 med1way medpb2 t1way lincon

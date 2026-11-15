@@ -25,7 +25,6 @@
 #' - Applies appropriate statistical tests: t-test, Mann-Whitney, ANOVA, Kruskal-Wallis.
 #' - Handles cases with equal or unequal variances and non-normal data.
 #'
-#' @importFrom fda.usc fanova.hetero
 #' @importFrom agricolae kurtosis skewness
 #' @importFrom WRS2 med1way t1way
 #'
@@ -49,7 +48,7 @@
 #' - Results of normality checks and variance assessments.
 #'
 #' @seealso
-#' - [fda.usc::fanova.hetero()]
+#' - Brunner-Dette-Munk heteroscedastic ANOVA (internal)
 #' - [agricolae::kurtosis()]
 #' - [lawstat::levene.test()]
 #' - [WRS2::med1way()]
@@ -1541,11 +1540,10 @@
 					"oneway.test(x ~ g, var.equal = FALSE)"
 				))
 			}
-			myf <- try(fanova.hetero(data.frame(x,g = as.factor(g)),x~g),silent=silent)
-			if (inherits(myf,"try-error")) {
-			  #if (isTRUE(verbose)) {cat("Error on fanova.hetero()\n")}
-			  pvals2 <- alpha
-			} else {pvals2 <- myf$ans[4]}
+			# Brunner-Dette-Munk heteroscedastic ANOVA, computed by KefiR (R/sys_hetero_anova.R):
+			# it replaces fda.usc::fanova.hetero(), with the unbiased variances of the article.
+			myf <- tryCatch(.bdm_oneway(x, g), error = function(e) NULL)
+			pvals2 <- if (is.null(myf)) NA_real_ else unname(myf["p.value"])
 			if (isTRUE(verbose)) {
 				ang <- paste0("Welch's heteroscedastic F-test [oneway.test()].\n\t",
 				             "Result: ", sub("ddl", "df", welch_stats), ", p = ", .format_pval(pvals),
@@ -1557,10 +1555,15 @@
 				            if (pvals <= alpha) "==> Diff\u00e9rences de moyennes significatives entre groupes." else "==> Aucune diff\u00e9rence de moyennes significative entre groupes.")
 				k <- .vbse(ang, fr, verbose = verbose, code = code, k = k)
 
-				# Check fanova.hetero consistency
-				if ((pvals <= alpha && pvals2 > alpha) || (pvals > alpha && pvals2 <= alpha)) {
-					ang <- paste0("\tNote: fanova.hetero() suggests distribution differences (p = ", .format_pval(pvals2), ").")
-					fr <- paste0("\tNote : fanova.hetero() sugg\u00e8re des diff\u00e9rences de distributions (p = ", .format_pval(pvals2), ").")
+				# Second opinion: said only when the two tests disagree
+				if (!is.na(pvals2) && ((pvals <= alpha) != (pvals2 <= alpha))) {
+					if (pvals2 <= alpha) {
+						ang <- paste0("\tNote: the Brunner-Dette-Munk heteroscedastic ANOVA suggests differences (p = ", .format_pval(pvals2), ").")
+						fr <- paste0("\tNote : l'ANOVA h\u00e9t\u00e9rosc\u00e9dastique de Brunner-Dette-Munk sugg\u00e8re des diff\u00e9rences (p = ", .format_pval(pvals2), ").")
+					} else {
+						ang <- paste0("\tNote: the Brunner-Dette-Munk heteroscedastic ANOVA does not confirm these differences (p = ", .format_pval(pvals2), ").")
+						fr <- paste0("\tNote : l'ANOVA h\u00e9t\u00e9rosc\u00e9dastique de Brunner-Dette-Munk ne confirme pas ces diff\u00e9rences (p = ", .format_pval(pvals2), ").")
+					}
 					k <- .vbse(ang, fr, verbose = verbose, code = code, k = k, cpt = "off")
 				}
 			}
