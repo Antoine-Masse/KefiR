@@ -1,3 +1,14 @@
+# KefiR 0.0.3.3
+
+## Lighter installation
+
+* `m.test()` no longer needs the `fda.usc` package. The heteroscedastic ANOVA used as a
+  second opinion beside Welch's test (Brunner, Dette and Munk, 1997) is now computed by
+  KefiR itself, with the same result as `fda.usc::fanova.hetero()` (checked on 500
+  simulated datasets).
+* The note printed when this test disagrees with Welch's test now names the method and
+  says which way it disagrees (it used to say "suggests differences" in both cases).
+
 # KefiR 0.0.3.2
 
 ## Bayesian family: fixes after an independent audit

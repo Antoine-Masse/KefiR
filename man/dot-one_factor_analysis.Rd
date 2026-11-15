@@ -87,7 +87,7 @@ g <- factor(rep(1:2, each = 50))
 }
 \seealso{
 \itemize{
-\item \code{\link[fda.usc:fanova.hetero]{fda.usc::fanova.hetero()}}
+\item Brunner-Dette-Munk heteroscedastic ANOVA (internal)
 \item \code{\link[agricolae:kurtosis]{agricolae::kurtosis()}}
 \item \code{\link[lawstat:levene.test]{lawstat::levene.test()}}
 \item \code{\link[WRS2:med1way]{WRS2::med1way()}}
