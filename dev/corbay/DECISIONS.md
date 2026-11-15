@@ -109,3 +109,19 @@ m.bay et cor.bay ont été lancés sur des données comparables (deux groupes de
 - « Observé : » devient « Coefficients observés : », sur le modèle de « Moyennes observées : ».
 
 **Écart gardé** : l'estimation est dite « Si un lien existe, rho estimé : … » quand « aucun lien » est en tête ; m.bay dit « Écart estimé » sans cette réserve. La réserve est exacte (l'estimation est faite sous l'hypothèse d'un lien) ; elle pourrait être reprise par m.bay. Le test `test-cor.bay.R` (« vocabulaire de la famille ») fige ces formes.
+
+## C11. Lien parfait : DÉCIDÉ ET FAIT (14 novembre, expert passe 3, I2)
+
+**Défaut.** Sur un lien parfait (`cor.bay(x, 1.8 * x + 32)` : conversion d'unités, colonne recopiée, étalonnage à quelques points), `correlationBF` s'arrêtait (« Error in integrate(...) : non-finite function value », puis « argument non numérique pour une fonction mathématique ») : la vraisemblance de Pearson dégénère à |r| = 1. Kendall, lui, répondait.
+
+**Décision.**
+- Quand |r| > 1 - 1e-6 (ou que le rho de Spearman sur les rangs vaut ±1 avec `method = "spearman"`), `correlationBF` n'est pas appelé : la probabilité vient du tau de Kendall, quelle que soit la méthode demandée. L'étape 3 dit « Lien parfait : les points sont exactement alignés (r = 1,000000) ; conversion d'unités ou colonne recopiée ? », puis le changement de stratégie et sa raison.
+- **Pas d'intervalle** : la force est connue (r = ±1), et l'intervalle de Kendall reposerait sur des approximations qui ne tiennent plus à |tau| = 1 (il donnait tau = 0,82 [0,54 ; 0,97] pour des points alignés). L'étape 6, le bilan et la phrase de compte rendu disent « lien parfait, r = 1,000 ».
+- Pas de contre-épreuve par Pearson (elle ne se calcule pas).
+- **Tout autre échec** de `correlationBF` rend NA au lieu d'une erreur, et la sortie de BayesFactor est tue (`capture.output(type = "message")`). cor.bay passe alors à Kendall en le disant à l'étape 5. Aucune erreur brute de BayesFactor n'atteint l'utilisateur.
+- Vérifié (test « lien parfait ») : n = 4, 10, 30 ; pente négative ; bruit de 1e-8 ; `method = "pearson"` et `"spearman"` imposés ; aucune sortie sur la console. Probabilité du lien par Kendall : 57 % à n = 4 (indécis), 98,7 % à n = 10, > 99,9 % à n = 30.
+- Seuil : avec un bruit de 1e-3 sur des valeurs de l'ordre de 50, r = 1 - 2e-9, et le cas est lu comme parfait ; c'est voulu (le seuil est celui de l'expert).
+
+## C10 bis. Adverbe du verdict accordé à l'étiquette (14 novembre, expert passe 3)
+
+L'étiquette de soutien suit le facteur de Bayes de l'hypothèse en tête contre la deuxième (`.bay_support_bf`, échelle 3 / 20 / 150), mais l'adverbe du verdict suivait la probabilité (0,75 / 0,95). Avec trois hypothèses, cela donnait « 90,6 % (soutien fort) » et « existe probablement » (facteur de Bayes 20,9). L'adverbe suit maintenant le niveau de l'étiquette : « fort » ou « très fort » → « très probablement » ; « modéré » → « probablement » ; en dessous → « plutôt … sans conclure ». La règle « indécis » sous 0,6 et le cas « non tranché » ne changent pas. L'écart avec m.bay (94,2 % « modéré ») vient de ce que les deux fonctions lisent le facteur de Bayes, pas la probabilité : c'est la même règle, et c'est maintenant le même mot dans l'étiquette et dans le verdict.

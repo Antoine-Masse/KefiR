@@ -32,6 +32,10 @@
 #' method. The other method is computed too, as a cross-check: if both answer firmly and
 #' differently, the bilan does not decide.
 #'
+#' A perfect link (|r| = 1: a unit conversion, a copied column) is answered by Kendall's tau,
+#' whatever the method asked for, without a credible interval: Pearson's Bayesian test cannot be
+#' computed there.
+#'
 #' @param x Numeric vector, a column name or index of `data`, or a formula `~ x + y`.
 #' @param y Numeric vector of the same length, or a column name or index of `data`.
 #' @param data Data.frame, for the formula or the column names.
@@ -169,10 +173,24 @@ cor.bay <- function(x, y = NULL, data = NULL, method = c("auto", "pearson", "ken
 	ch <- .corbay_choose(ck)
 	auto <- identical(method, "auto")
 	meth <- if (auto) ch$method else method
-	.corbay_story_method(story, meth, auto, ch$why, xn, yn)
+	# A perfect link (DECISIONS, C11): Pearson's likelihood is degenerate at |r| = 1 and
+	# correlationBF stops on it; Kendall's tau answers, and no interval is given.
+	r0 <- stats::cor(xv, yv)
+	rr <- stats::cor(rank(xv), rank(yv))
+	perfect <- isTRUE(abs(r0) > 1 - 1e-6) || (identical(meth, "spearman") && isTRUE(abs(rr) > 1 - 1e-6))
+	asked <- meth
+	if (perfect) meth <- "kendall"
+	.corbay_story_method(story, meth, auto, ch$why, xn, yn, perfect = perfect, asked = asked, r0 = r0)
 	.corbay_story_prior(story, kappa, prior_h1, alternative, meth)
 
 	lbf <- .corbay_lbf(meth, xv, yv, kappa)
+	failed <- NULL
+	if (anyNA(lbf[c("plus", "minus")]) && meth != "kendall") {
+		# correlationBF failed on these data: Kendall's tau, said as a change of strategy.
+		failed <- meth
+		meth <- "kendall"
+		lbf <- .corbay_lbf(meth, xv, yv, kappa)
+	}
 	if (anyNA(lbf[c("plus", "minus")])) {
 		.exit("The Bayes factor could not be computed on these data.",
 			"Le facteur de Bayes n'a pas pu \u00eatre calcul\u00e9 sur ces donn\u00e9es.")
@@ -182,7 +200,7 @@ cor.bay <- function(x, y = NULL, data = NULL, method = c("auto", "pearson", "ken
 	lb10 <- switch(alternative, two.sided = lbf[["two"]], greater = lbf[["plus"]], less = lbf[["minus"]])
 	other <- NULL
 	contradiction <- FALSE
-	if (auto) {
+	if (auto && !perfect && is.null(failed)) {
 		om <- if (meth == "kendall") "pearson" else "kendall"
 		ol <- .corbay_lbf(om, xv, yv, kappa)
 		if (!anyNA(ol[c("plus", "minus")])) {
@@ -197,9 +215,10 @@ cor.bay <- function(x, y = NULL, data = NULL, method = c("auto", "pearson", "ken
 	}
 	sens <- if (isTRUE(sensitivity)) .corbay_sensitivity(meth, xv, yv, kappa, alternative, prior_h1, lead, xn, yn, lbf) else NULL
 	# Estimation under Jeffreys's estimation prior, stretched beta 1/2 (DECISIONS, C8).
-	est <- .corbay_estimate(meth, xv, yv, .corbay_kappa_est(), alternative, as.integer(draws), seed, conf.level)
+	# A perfect link has no interval to give: its strength is known, r = 1 or -1 (C11).
+	est <- if (perfect) NULL else .corbay_estimate(meth, xv, yv, .corbay_kappa_est(), alternative, as.integer(draws), seed, conf.level)
 	# The same estimate under the prior of the test, kept and shown with detail = TRUE.
-	est_test <- .corbay_estimate(meth, xv, yv, kappa, alternative, as.integer(draws), seed, conf.level)
+	est_test <- if (perfect) NULL else .corbay_estimate(meth, xv, yv, kappa, alternative, as.integer(draws), seed, conf.level)
 	observed <- c(r = stats::cor(xv, yv), tau = suppressWarnings(stats::cor(xv, yv, method = "kendall")),
 		rho_s = suppressWarnings(stats::cor(xv, yv, method = "spearman")))
 	if (alternative != "two.sided" && isTRUE(sign(observed[["r"]]) == (if (alternative == "greater") -1 else 1))) {
@@ -209,7 +228,7 @@ cor.bay <- function(x, y = NULL, data = NULL, method = c("auto", "pearson", "ken
 	out <- list(hypotheses = hyp, prob_link = sum(hyp$posterior[!hyp$null]),
 		bf = list(log_bf10 = unname(lb10), log_bf_plus = unname(lbf[["plus"]]), log_bf_minus = unname(lbf[["minus"]]), error_pct = unname(lbf[["error_pct"]])),
 		estimate = est, estimate_test = est_test, observed = observed, method = meth, auto = auto, why = ch$why, other = other,
-		contradiction = contradiction, sensitivity = sens, checks = ck, n = n, n_removed = n_removed,
+		contradiction = contradiction, perfect = perfect, failed = failed, sensitivity = sens, checks = ck, n = n, n_removed = n_removed,
 		alternative = alternative, priors = list(prior_h1 = prior_h1, kappa = kappa),
 		label = paste0(xn, ", ", yn), notes = notes, call = call_expr, detail = isTRUE(detail))
 	.corbay_story_solidity(story, out)

@@ -115,6 +115,10 @@ beyond 3 interquartile ranges, when a pair has a Cook's distance above 1 (from 2
 when a variable has 7 distinct values or fewer; Pearson otherwise. No p-value chooses the
 method. The other method is computed too, as a cross-check: if both answer firmly and
 differently, the bilan does not decide.
+
+A perfect link (|r| = 1: a unit conversion, a copied column) is answered by Kendall's tau,
+whatever the method asked for, without a credible interval: Pearson's Bayesian test cannot be
+computed there.
 }
 
 \examples{

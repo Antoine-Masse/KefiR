@@ -200,3 +200,40 @@ test_that("vocabulaire de la famille : compte rendu indecis comme m.bay, note fi
 	det <- gsub("[[:space:]]+", " ", paste(capture.output(print(r, detail = TRUE)), collapse = " "))
 	expect_true(grepl("kappa = 0.333), rho", det, fixed = TRUE) || grepl("kappa = 0,333), rho", det, fixed = TRUE))
 })
+
+test_that("lien parfait : jamais d'erreur brute, Kendall en chiffre, aucun intervalle (C11, expert passe 3, I2)", {
+	set.seed(1)
+	X <- round(runif(30, 10, 40), 1)
+	cases <- list(list(X[1:4], 1.8 * X[1:4] + 32, "auto"), list(X[1:10], 1.8 * X[1:10] + 32, "auto"),
+		list(X, 1.8 * X + 32, "auto"), list(X, -2 * X + 5, "auto"), list(X, 1.8 * X + 32 + rnorm(30, 0, 1e-8), "auto"),
+		list(X, 1.8 * X + 32, "pearson"), list(X, exp(X / 10), "spearman"))
+	for (cs in cases) {
+		msg <- capture.output(r <- cor.bay(cs[[1]], cs[[2]], method = cs[[3]], verbose = FALSE, draws = 1000), type = "message")
+		expect_length(msg, 0L)
+		expect_true(r$perfect)
+		expect_identical(r$method, "kendall")
+		expect_null(r$estimate)
+		expect_identical(r$hypotheses$key[1], if (cor(cs[[1]], cs[[2]]) > 0) "pos" else "neg")
+		txt <- gsub("[[:space:]]+", " ", paste(capture.output(print(r, story = TRUE)), collapse = " "))
+		expect_true(grepl("Lien parfait|Perfect link", txt))
+	}
+	# Pearson et Spearman rendent NA, sans appeler correlationBF ni imprimer
+	expect_true(all(is.na(.corbay_lbf_pearson(X, 2 * X, 1/3)[1:3])))
+	expect_true(all(is.na(.corbay_lbf_spearman(X, exp(X), 1/3)[1:3])))
+	# un lien presque parfait mais sous le seuil reste a Pearson
+	y <- X + rnorm(30, 0, 2)
+	expect_false(cor.bay(X, y, verbose = FALSE, sensitivity = FALSE, draws = 1000)$perfect)
+})
+
+test_that("l'adverbe du verdict suit l'etiquette de soutien (expert passe 3)", {
+	h <- data.frame(key = c("pos", "none", "neg"), label_en = "a", label_fr = "a", posterior = c(0.906, 0.09, 0.004),
+		prior = c(0.25, 0.5, 0.25), log_bf = 0, null = c(FALSE, TRUE, FALSE), stringsAsFactors = FALSE)
+	obj <- list(hypotheses = h, sensitivity = NULL, contradiction = FALSE)
+	li <- .corbay_lead_info(obj)
+	expect_identical(li$sup$level, 4L)  # BF = 20,1 : "fort"
+	expect_match(.corbay_verdict(obj, li)$fr, "tr\u00e8s probablement")
+	obj$hypotheses$posterior <- c(0.85, 0.14, 0.01)
+	li <- .corbay_lead_info(obj)
+	expect_identical(li$sup$level, 3L)
+	expect_match(.corbay_verdict(obj, li)$fr, "existe probablement")
+})
