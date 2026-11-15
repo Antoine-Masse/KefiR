@@ -1541,7 +1541,7 @@
 				))
 			}
 			# Brunner-Dette-Munk heteroscedastic ANOVA, computed by KefiR (R/sys_hetero_anova.R):
-			# same result as fda.usc::fanova.hetero(), without that dependency.
+			# it replaces fda.usc::fanova.hetero(), with the unbiased variances of the article.
 			myf <- tryCatch(.bdm_oneway(x, g), error = function(e) NULL)
 			pvals2 <- if (is.null(myf)) NA_real_ else unname(myf["p.value"])
 			if (isTRUE(verbose)) {

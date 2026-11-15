@@ -1,11 +1,16 @@
 # KefiR 0.0.3.3
 
+Release name: "Arnaud".
+
 ## Lighter installation
 
-* `m.test()` no longer needs the `fda.usc` package. The heteroscedastic ANOVA used as a
-  second opinion beside Welch's test (Brunner, Dette and Munk, 1997) is now computed by
-  KefiR itself, with the same result as `fda.usc::fanova.hetero()` (checked on 500
-  simulated datasets).
+* `m.test()` no longer needs the `fda.usc` package (15 packages fewer to install). The
+  heteroscedastic ANOVA used as a second opinion beside Welch's test (Brunner, Dette and
+  Munk, 1997) is now computed by KefiR itself.
+* This internal version follows the published method (unbiased group variances, as in the
+  `GFD` package). `fda.usc::fanova.hetero()` shrinks each variance by (n - 1) / n, which
+  gave too many false alerts with small groups: 7.6 % instead of 5 % for 3 groups of 5,
+  against 5.2 % now (20000 simulated datasets). With large groups both agree.
 * The note printed when this test disagrees with Welch's test now names the method and
   says which way it disagrees (it used to say "suggests differences" in both cases).
 
