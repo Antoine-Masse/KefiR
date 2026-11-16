@@ -79,7 +79,7 @@ procedures (e.g., Dunnett-type comparisons), when applicable.}
 \item{return}{Logical. If \code{TRUE}, returns a summary object (p-values, compact
 letter displays, etc.). If \code{FALSE}, returns raw model output.}
 
-\item{boot}{Logical. Enable bootstrap for means/medians where relevant.}
+\item{boot}{Logical. If \code{TRUE} (default), the post-hoc letters of the classical test are also re-checked by bootstrap, a warning is printed when they disagree, and the result gains a \code{bootstrap} element. \code{FALSE} skips only this re-check: the bootstrap comparison of means or medians (first column of letters in \code{groups}) is always computed.}
 
 \item{boot_type}{Character. Force the bootstrap type: \code{"mean"}, \code{"median"}, or \code{"meanbp"}.
 If \code{NULL} (default), automatically determined based on normality tests.}
